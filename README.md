@@ -37,7 +37,7 @@ use 'julwrites/llm-nvim'
   config = function()
     -- Configure the plugin
     require('llm').setup({
-      model = 'gpt-4',
+      model = 'claude-3-sonnet-20240229',
       system_prompt = 'You are a helpful assistant.'
     })
   end
@@ -49,21 +49,17 @@ use 'julwrites/llm-nvim'
 ```lua
 -- Setup with configuration options
 require('llm').setup({
-  model = 'gpt-4',                           -- Default model to use
+  model = 'claude-3-sonnet-20240229',        -- Default model to use
   system_prompt = 'You are a helpful assistant.', -- Default system prompt
   no_mappings = false,                       -- Set to true to disable default mappings
 })
-
--- For backward compatibility, these global variables still work:
--- vim.g.llm_model = 'gpt-4'
--- vim.g.llm_system_prompt = 'You are a helpful assistant.'
--- vim.g.llm_no_mappings = 1
 
 -- Custom mappings
 vim.keymap.set('n', '<leader>lp', '<Plug>(llm-prompt)')
 vim.keymap.set('v', '<leader>ls', '<Plug>(llm-selection)')
 vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)')
 vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')
+vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 ```
 
 ## Usage
@@ -74,6 +70,7 @@ vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')
 - `:LLMWithSelection {prompt}` - Send selected text with an optional prompt
 - `:LLMChat {model}` - Start an interactive chat session (optional model)
 - `:LLMExplain` - Explain the code in the current buffer
+- `:LLMSelectModel` - Select a model from available models
 
 ### Default Mappings
 
@@ -81,6 +78,7 @@ vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')
 - `<leader>llm` - In visual mode, send selection to LLM
 - `<leader>lle` - Explain the current buffer
 - `<leader>llc` - Start a chat session
+- `<leader>lls` - Select a model from available models
 
 ## License
 

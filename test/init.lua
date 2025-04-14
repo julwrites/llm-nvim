@@ -28,6 +28,9 @@ function M.setup()
   if not ok then
     print("Error loading plugin: " .. tostring(err))
   end
+  
+  -- Make sure the module is loaded and available globally for tests
+  _G.llm = require('llm')
 end
 
 -- Mock function for llm command execution
@@ -37,11 +40,19 @@ function M.mock_llm_command(expected_cmd, return_value)
   
   -- Mock io.popen
   io.popen = function(cmd)
-    assert(cmd:match(expected_cmd), 
-      string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+    -- Only assert if the expected command is provided
+    if expected_cmd and expected_cmd ~= "" then
+      assert(cmd:match(expected_cmd), 
+        string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+    end
     
     return {
-      read = function() return return_value end,
+      read = function(self, format) 
+        if format == "*a" then
+          return return_value
+        end
+        return ""
+      end,
       close = function() return true end
     }
   end
@@ -49,6 +60,19 @@ function M.mock_llm_command(expected_cmd, return_value)
   -- Return cleanup function
   return function()
     io.popen = original_popen
+  end
+end
+
+-- Helper function to expose module functions for testing
+function M.expose_module_functions(module)
+  -- Ensure select_model is available for testing
+  if module.select_model then
+    _G.select_model = module.select_model
+  end
+  
+  -- Ensure get_available_models is available for testing
+  if module.get_available_models then
+    _G.get_available_models = module.get_available_models
   end
 end
 

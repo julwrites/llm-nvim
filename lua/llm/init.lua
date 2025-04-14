@@ -26,10 +26,39 @@ end
 -- Expose for testing
 _G.check_llm_installed = check_llm_installed
 
+-- Get available models from llm CLI
+function M.get_available_models()
+  if not check_llm_installed() then
+    return {}
+  end
+  
+  local handle = io.popen("llm models")
+  local result = handle:read("*a")
+  handle:close()
+  
+  local models = {}
+  for line in result:gmatch("[^\r\n]+") do
+    -- Skip header lines and empty lines
+    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") then
+      -- Extract model name (first column)
+      local model = line:match("^([^%s]+)")
+      if model then
+        table.insert(models, model)
+      end
+    end
+  end
+  
+  return models
+end
+-- Expose for testing
+_G.get_available_models = function()
+  return M.get_available_models()
+end
+
 -- Get the model argument if specified
 local function get_model_arg()
   local model = config.get("model")
-  if model ~= "" then
+  if model and model ~= "" then
     return "-m " .. model
   end
   return ""
@@ -183,6 +212,80 @@ function M.start_chat(model_override)
   api.nvim_command('new')
   api.nvim_command('terminal llm chat ' .. model_arg)
   api.nvim_command('startinsert')
+end
+
+-- Select a model from available models
+function M.select_model()
+  if not check_llm_installed() then
+    return
+  end
+  
+  local models = get_available_models()
+  if #models == 0 then
+    api.nvim_err_writeln("No models found. Make sure llm is properly configured.")
+    return
+  end
+  
+  -- Check if we have telescope
+  local has_telescope, telescope = pcall(require, "telescope.builtin")
+  if has_telescope then
+    -- Use telescope for selection
+    local pickers = require("telescope.pickers")
+    local finders = require("telescope.finders")
+    local conf = require("telescope.config").values
+    local actions = require("telescope.actions")
+    local action_state = require("telescope.actions.state")
+    
+    pickers.new({}, {
+      prompt_title = "Select LLM Model",
+      finder = finders.new_table({
+        results = models
+      }),
+      sorter = conf.generic_sorter({}),
+      attach_mappings = function(prompt_bufnr, map)
+        actions.select_default:replace(function()
+          local selection = action_state.get_selected_entry(prompt_bufnr)
+          actions.close(prompt_bufnr)
+          
+          if selection then
+            -- Update the model in config
+            config.options.model = selection[1]
+            vim.notify("Model set to: " .. selection[1], vim.log.levels.INFO)
+          end
+        end)
+        return true
+      end,
+    }):find()
+  else
+    -- Fallback to vim.ui.select if available (Neovim 0.6+)
+    if vim.ui and vim.ui.select then
+      vim.ui.select(models, {
+        prompt = "Select LLM Model:",
+        format_item = function(item)
+          return item
+        end,
+      }, function(model)
+        if model then
+          -- Update the model in config
+          config.options.model = model
+          vim.notify("Model set to: " .. model, vim.log.levels.INFO)
+        end
+      end)
+    else
+      -- Very basic fallback using inputlist
+      local options = {"Select a model:"}
+      for i, model in ipairs(models) do
+        table.insert(options, i .. ": " .. model)
+      end
+      
+      local choice = vim.fn.inputlist(options)
+      if choice >= 1 and choice <= #models then
+        local model = models[choice]
+        config.options.model = model
+        vim.notify("Model set to: " .. model, vim.log.levels.INFO)
+      end
+    end
+  end
 end
 
 -- Setup function for configuration

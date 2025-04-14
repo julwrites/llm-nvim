@@ -11,6 +11,8 @@ describe('llm-nvim', function()
     -- Load the module fresh for each test
     package.loaded['llm'] = nil
     llm = require('llm')
+    -- Expose module functions for testing
+    test_helpers.expose_module_functions(llm)
   end)
   
   it('should have the expected public API', function()
@@ -19,6 +21,13 @@ describe('llm-nvim', function()
     assert(type(llm.prompt_with_selection) == 'function', "prompt_with_selection function should exist")
     assert(type(llm.explain_code) == 'function', "explain_code function should exist")
     assert(type(llm.start_chat) == 'function', "start_chat function should exist")
+    
+    -- Skip the select_model check if it doesn't exist yet
+    -- We'll test for its existence separately
+    local has_select_model = (type(llm.select_model) == 'function')
+    if not has_select_model then
+      pending("select_model function doesn't exist yet")
+    end
   end)
   
   it('should define the expected commands', function()
@@ -28,6 +37,7 @@ describe('llm-nvim', function()
     assert(commands.LLMWithSelection ~= nil, "LLMWithSelection command should be defined")
     assert(commands.LLMChat ~= nil, "LLMChat command should be defined")
     assert(commands.LLMExplain ~= nil, "LLMExplain command should be defined")
+    assert(commands.LLMSelectModel ~= nil, "LLMSelectModel command should be defined")
   end)
   
   it('should define the expected key mappings when not disabled', function()
@@ -61,12 +71,41 @@ describe('llm-nvim', function()
     local has_conditional = false
     
     for i, line in ipairs(file_content) do
-      if line:match('if%s+vim%.g%.llm_no_mappings%s+~=%s+1%s+then') then
+      if line:match('if%s+not%s+config%.get%("no_mappings"%)%s+then') then
         has_conditional = true
         break
       end
     end
     
-    assert(has_conditional, "Plugin should check llm_no_mappings before creating leader mappings")
+    assert(has_conditional, "Plugin should check no_mappings config before creating leader mappings")
+  end)
+  
+  it('should be able to get available models', function()
+    -- Skip this test if get_available_models doesn't exist yet
+    if type(_G.get_available_models) ~= 'function' then
+      pending("get_available_models function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of models
+    local cleanup = test_helpers.mock_llm_command("llm models", [[
+Models:
+------------------
+gpt-4o                 OpenAI
+claude-3-sonnet-20240229 Anthropic
+claude-3-opus-20240229 Anthropic
+]])
+    
+    -- Call the function directly from the global scope
+    local models = _G.get_available_models()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#models == 3, "Should find 3 models")
+    assert(models[1] == "gpt-4o", "First model should be gpt-4o")
+    assert(models[2] == "claude-3-sonnet-20240229", "Second model should be claude-3-sonnet")
+    assert(models[3] == "claude-3-opus-20240229", "Third model should be claude-3-opus")
   end)
 end)

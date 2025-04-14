@@ -33,11 +33,16 @@ vim.api.nvim_create_user_command("LLMExplain", function()
   llm.explain_code()
 end, { nargs = 0 })
 
+vim.api.nvim_create_user_command("LLMSelectModel", function()
+  llm.select_model()
+end, { nargs = 0 })
+
 -- Define key mappings
 vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true })
 vim.keymap.set("v", "<Plug>(llm-selection)", ":LLMWithSelection ", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-explain)", ":LLMExplain<CR>", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-chat)", ":LLMChat<CR>", { silent = true })
+vim.keymap.set("n", "<Plug>(llm-select-model)", ":LLMSelectModel<CR>", { silent = true })
 
 -- Default mappings (can be disabled with config option)
 local config = require("llm.config")
@@ -46,4 +51,5 @@ if not config.get("no_mappings") then
   vim.keymap.set("v", "<leader>llm", "<Plug>(llm-selection)")
   vim.keymap.set("n", "<leader>lle", "<Plug>(llm-explain)")
   vim.keymap.set("n", "<leader>llc", "<Plug>(llm-chat)")
+  vim.keymap.set("n", "<leader>lls", "<Plug>(llm-select-model)")
 end

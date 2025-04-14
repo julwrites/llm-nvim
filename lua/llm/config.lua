@@ -5,8 +5,8 @@ local M = {}
 
 -- Default configuration
 M.defaults = {
-  model = "",
-  system_prompt = "",
+  model = "gpt-4o",
+  system_prompt = "You are a helpful assistant.",
   no_mappings = false,
 }
 
@@ -17,19 +17,6 @@ M.options = {}
 function M.setup(opts)
   opts = opts or {}
   M.options = vim.tbl_deep_extend("force", {}, M.defaults, opts)
-  
-  -- For backward compatibility, also check global variables
-  if vim.g.llm_model and vim.g.llm_model ~= "" then
-    M.options.model = vim.g.llm_model
-  end
-  
-  if vim.g.llm_system_prompt and vim.g.llm_system_prompt ~= "" then
-    M.options.system_prompt = vim.g.llm_system_prompt
-  end
-  
-  if vim.g.llm_no_mappings == 1 then
-    M.options.no_mappings = true
-  end
 end
 
 -- Get a configuration value
