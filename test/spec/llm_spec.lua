@@ -108,4 +108,37 @@ claude-3-opus-20240229 Anthropic
     assert(models[2] == "claude-3-sonnet-20240229", "Second model should be claude-3-sonnet")
     assert(models[3] == "claude-3-opus-20240229", "Third model should be claude-3-opus")
   end)
+  
+  it('should correctly parse model names from llm models output', function()
+    -- Skip this test if get_available_models doesn't exist yet
+    if type(_G.get_available_models) ~= 'function' then
+      pending("get_available_models function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of models with different spacing
+    local cleanup = test_helpers.mock_llm_command("llm models", [[
+Models:
+------------------
+gpt-4o                 OpenAI
+claude-3-sonnet-20240229 Anthropic
+claude-3-opus-20240229   Anthropic
+gemini-pro              Google
+mistral-large            Mistral AI
+]])
+    
+    -- Call the function directly from the global scope
+    local models = _G.get_available_models()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#models == 5, "Should find 5 models")
+    assert(models[1] == "gpt-4o", "First model should be gpt-4o")
+    assert(models[2] == "claude-3-sonnet-20240229", "Second model should be claude-3-sonnet")
+    assert(models[3] == "claude-3-opus-20240229", "Third model should be claude-3-opus")
+    assert(models[4] == "gemini-pro", "Fourth model should be gemini-pro")
+    assert(models[5] == "mistral-large", "Fifth model should be mistral-large")
+  end)
 end)
