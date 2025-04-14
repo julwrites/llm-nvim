@@ -700,8 +700,11 @@ function M.select_model()
       config.options.model = model_name
       vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
       
-      -- Update the UI
-      update_model_status(model_name, true)
+      -- Close and reopen the model manager to refresh
+      vim.api.nvim_win_close(0, true)
+      vim.schedule(function()
+        M.select_model()
+      end)
     else
       vim.notify("Failed to set default model", vim.log.levels.ERROR)
     end
