@@ -12,7 +12,7 @@ A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://git
 
 ## Requirements
 
-- Neovim 0.5.0 or later
+- Neovim 0.7.0 or later
 - [llm CLI tool](https://github.com/simonw/llm) installed (`pip install llm` or `brew install llm`)
 
 ## Installation
@@ -44,21 +44,21 @@ use 'julwrites/llm-nvim'
 
 ## Configuration
 
-```vim
-" Optional: Set default model
-let g:llm_model = 'gpt-4'
+```lua
+-- Optional: Set default model
+vim.g.llm_model = 'gpt-4'
 
-" Optional: Set default system prompt
-let g:llm_system_prompt = 'You are a helpful assistant.'
+-- Optional: Set default system prompt
+vim.g.llm_system_prompt = 'You are a helpful assistant.'
 
-" Optional: Disable default mappings
-let g:llm_no_mappings = 1
+-- Optional: Disable default mappings
+vim.g.llm_no_mappings = 1
 
-" Custom mappings
-nmap <leader>lp <Plug>(llm-prompt)
-vmap <leader>ls <Plug>(llm-selection)
-nmap <leader>le <Plug>(llm-explain)
-nmap <leader>lc <Plug>(llm-chat)
+-- Custom mappings
+vim.keymap.set('n', '<leader>lp', '<Plug>(llm-prompt)')
+vim.keymap.set('v', '<leader>ls', '<Plug>(llm-selection)')
+vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)')
+vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')
 ```
 
 ## Usage

@@ -1,7 +1,11 @@
 -- llm.lua - Main plugin code for llm Neovim integration
 -- License: Apache 2.0
 
+-- Create module
 local M = {}
+
+-- Set up the module
+_G.llm = M
 local api = vim.api
 local fn = vim.fn
 
@@ -17,6 +21,8 @@ local function check_llm_installed()
   end
   return true
 end
+-- Expose for testing
+_G.check_llm_installed = check_llm_installed
 
 -- Get the model argument if specified
 local function get_model_arg()
@@ -26,6 +32,8 @@ local function get_model_arg()
   end
   return ""
 end
+-- Expose for testing
+_G.get_model_arg = get_model_arg
 
 -- Get the system prompt argument if specified
 local function get_system_arg()
@@ -35,6 +43,8 @@ local function get_system_arg()
   end
   return ""
 end
+-- Expose for testing
+_G.get_system_arg = get_system_arg
 
 -- Run an llm command and return the result
 local function run_llm_command(cmd)
@@ -48,6 +58,8 @@ local function run_llm_command(cmd)
   
   return result
 end
+-- Expose for testing
+_G.run_llm_command = run_llm_command
 
 -- Create a new buffer with the LLM response
 local function create_response_buffer(content)
@@ -169,15 +181,6 @@ function M.start_chat(model_override)
   api.nvim_command('new')
   api.nvim_command('terminal llm chat ' .. model_arg)
   api.nvim_command('startinsert')
-end
-
--- VimScript interface functions
-_G.llm_prompt = function(prompt)
-  M.prompt(prompt)
-end
-
-_G.llm_prompt_with_selection = function(prompt)
-  M.prompt_with_selection(prompt)
 end
 
 return M
