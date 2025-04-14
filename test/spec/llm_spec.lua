@@ -22,12 +22,11 @@ describe('llm-nvim', function()
     assert(type(llm.explain_code) == 'function', "explain_code function should exist")
     assert(type(llm.start_chat) == 'function', "start_chat function should exist")
     
-    -- Skip the select_model check if it doesn't exist yet
-    -- We'll test for its existence separately
-    local has_select_model = (type(llm.select_model) == 'function')
-    if not has_select_model then
-      pending("select_model function doesn't exist yet")
-    end
+    -- Check for select_model function in global scope (exposed by test helper)
+    assert(type(_G.select_model) == 'function', "select_model function should exist in global scope")
+    
+    -- Check for manage_plugins function
+    assert(type(llm.manage_plugins) == 'function', "manage_plugins function should exist")
   end)
   
   it('should define the expected commands', function()
@@ -38,6 +37,7 @@ describe('llm-nvim', function()
     assert(commands.LLMChat ~= nil, "LLMChat command should be defined")
     assert(commands.LLMExplain ~= nil, "LLMExplain command should be defined")
     assert(commands.LLMSelectModel ~= nil, "LLMSelectModel command should be defined")
+    assert(commands.LLMPlugins ~= nil, "LLMPlugins command should be defined")
   end)
   
   it('should define the expected key mappings when not disabled', function()
@@ -194,5 +194,129 @@ Default: gpt-4o-mini
     
     -- Check the result
     assert(success, "set_default_model should return true on success")
+  end)
+  
+  it('should be able to get available plugins', function()
+    -- Skip this test if get_available_plugins doesn't exist yet
+    if type(_G.get_available_plugins) ~= 'function' then
+      pending("get_available_plugins function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Call the function directly from the global scope
+    local plugins = _G.get_available_plugins()
+    
+    -- Check the results
+    assert(#plugins > 0, "Should find plugins")
+    assert(vim.tbl_contains(plugins, "llm-gguf"), "Should include llm-gguf")
+    assert(vim.tbl_contains(plugins, "llm-mlx"), "Should include llm-mlx")
+    assert(vim.tbl_contains(plugins, "llm-ollama"), "Should include llm-ollama")
+  end)
+  
+  it('should be able to get installed plugins', function()
+    -- Skip this test if get_installed_plugins doesn't exist yet
+    if type(_G.get_installed_plugins) ~= 'function' then
+      pending("get_installed_plugins function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of installed plugins
+    local cleanup = test_helpers.mock_llm_command("llm plugins", [[
+[
+  {
+    "name": "llm-gguf",
+    "hooks": [
+      "register_commands",
+      "register_models"
+    ],
+    "version": "0.1a0"
+  },
+  {
+    "name": "llm-ollama",
+    "hooks": [
+      "register_models"
+    ],
+    "version": "0.2"
+  }
+]
+]])
+    
+    -- Call the function directly from the global scope
+    local plugins = _G.get_installed_plugins()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#plugins == 2, "Should find 2 installed plugins")
+    assert(plugins[1] == "llm-gguf", "First installed plugin should be llm-gguf")
+    assert(plugins[2] == "llm-ollama", "Second installed plugin should be llm-ollama")
+  end)
+  
+  it('should correctly check if a plugin is installed', function()
+    -- Skip this test if is_plugin_installed doesn't exist yet
+    if type(_G.is_plugin_installed) ~= 'function' then
+      pending("is_plugin_installed function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of installed plugins
+    local cleanup = test_helpers.mock_llm_command("llm plugins list", [[
+Installed plugins:
+------------------
+llm-gguf
+llm-ollama
+]])
+    
+    -- Call the function directly from the global scope
+    local is_gguf_installed = _G.is_plugin_installed("llm-gguf")
+    local is_mlx_installed = _G.is_plugin_installed("llm-mlx")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(is_gguf_installed, "llm-gguf should be detected as installed")
+    assert(not is_mlx_installed, "llm-mlx should be detected as not installed")
+  end)
+  
+  it('should install a plugin using llm CLI', function()
+    -- Skip this test if install_plugin doesn't exist yet
+    if type(_G.install_plugin) ~= 'function' then
+      pending("install_plugin function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate installing a plugin
+    local cleanup = test_helpers.mock_llm_command("llm install llm-mlx", "Successfully installed llm-mlx")
+    
+    -- Call the function
+    local success = _G.install_plugin("llm-mlx")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "install_plugin should return true on success")
+  end)
+  
+  it('should uninstall a plugin using llm CLI', function()
+    -- Skip this test if uninstall_plugin doesn't exist yet
+    if type(_G.uninstall_plugin) ~= 'function' then
+      pending("uninstall_plugin function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate uninstalling a plugin
+    local cleanup = test_helpers.mock_llm_command("llm uninstall llm-gguf -y", "Successfully uninstalled llm-gguf")
+    
+    -- Call the function
+    local success = _G.uninstall_plugin("llm-gguf")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "uninstall_plugin should return true on success")
   end)
 end)

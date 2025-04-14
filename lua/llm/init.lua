@@ -227,6 +227,132 @@ end
 -- Expose for testing
 _G.extract_model_name = extract_model_name
 
+-- Get available plugins from the plugin directory
+function M.get_available_plugins()
+  if not check_llm_installed() then
+    return {}
+  end
+  
+  -- This is a hardcoded list of plugins from the directory
+  -- In a real implementation, we might want to fetch this from the web
+  local plugins = {
+    -- Local models
+    "llm-gguf", "llm-mlx", "llm-ollama", "llm-llamafile", "llm-mlc", 
+    "llm-gpt4all", "llm-mpt30b",
+    -- Remote APIs
+    "llm-mistral", "llm-gemini", "llm-anthropic", "llm-command-r", 
+    "llm-reka", "llm-perplexity", "llm-groq", "llm-grok",
+    "llm-anyscale-endpoints", "llm-replicate", "llm-fireworks", 
+    "llm-openrouter", "llm-cohere", "llm-bedrock", "llm-bedrock-anthropic",
+    "llm-bedrock-meta", "llm-together", "llm-deepseek", "llm-lambda-labs",
+    "llm-venice",
+    -- Embedding models
+    "llm-sentence-transformers", "llm-clip", "llm-embed-jina", "llm-embed-onnx",
+    -- Extra commands
+    "llm-cmd", "llm-cmd-comp", "llm-python", "llm-cluster", "llm-jq",
+    -- Fragments and template loaders
+    "llm-templates-github", "llm-templates-fabric", "llm-fragments-github", 
+    "llm-hacker-news",
+    -- Just for fun
+    "llm-markov"
+  }
+  
+  return plugins
+end
+-- Expose for testing
+_G.get_available_plugins = function()
+  return M.get_available_plugins()
+end
+
+-- Get installed plugins from llm CLI
+function M.get_installed_plugins()
+  if not check_llm_installed() then
+    return {}
+  end
+  
+  local handle = io.popen("llm plugins")
+  local result = handle:read("*a")
+  handle:close()
+  
+  local plugins = {}
+  
+  -- Try to parse JSON output
+  local success, parsed = pcall(vim.fn.json_decode, result)
+  if success and type(parsed) == "table" then
+    for _, plugin in ipairs(parsed) do
+      if plugin.name then
+        table.insert(plugins, plugin.name)
+      end
+    end
+  else
+    -- Fallback to line parsing if JSON parsing fails
+    for line in result:gmatch("[^\r\n]+") do
+      -- Look for plugin names in the output
+      local plugin_name = line:match('"name":%s*"([^"]+)"')
+      if plugin_name then
+        table.insert(plugins, plugin_name)
+      end
+    end
+  end
+  
+  return plugins
+end
+-- Expose for testing
+_G.get_installed_plugins = function()
+  return M.get_installed_plugins()
+end
+
+-- Check if a plugin is installed
+function M.is_plugin_installed(plugin_name)
+  local installed_plugins = M.get_installed_plugins()
+  for _, plugin in ipairs(installed_plugins) do
+    if plugin == plugin_name then
+      return true
+    end
+  end
+  return false
+end
+-- Expose for testing
+_G.is_plugin_installed = function(plugin_name)
+  return M.is_plugin_installed(plugin_name)
+end
+
+-- Install a plugin using llm CLI
+function M.install_plugin(plugin_name)
+  if not check_llm_installed() then
+    return false
+  end
+  
+  local cmd = string.format('llm install %s', plugin_name)
+  local handle = io.popen(cmd)
+  local result = handle:read("*a")
+  local success = handle:close()
+  
+  return success
+end
+-- Expose for testing
+_G.install_plugin = function(plugin_name)
+  return M.install_plugin(plugin_name)
+end
+
+-- Uninstall a plugin using llm CLI
+function M.uninstall_plugin(plugin_name)
+  if not check_llm_installed() then
+    return false
+  end
+  
+  local cmd = string.format('llm uninstall %s -y', plugin_name)
+  local handle = io.popen(cmd)
+  local result = handle:read("*a")
+  local success = handle:close()
+  
+  return success
+end
+-- Expose for testing
+_G.uninstall_plugin = function(plugin_name)
+  return M.uninstall_plugin(plugin_name)
+end
+
 -- Set the default model using llm CLI
 local function set_default_model(model_name)
   if not check_llm_installed() then
@@ -242,6 +368,7 @@ local function set_default_model(model_name)
 end
 -- Expose for testing
 _G.set_default_model = set_default_model
+
 
 -- Select a model from available models
 function M.select_model()
@@ -339,6 +466,175 @@ function M.select_model()
   end
 end
 
+-- Manage plugins (view, install, uninstall)
+function M.manage_plugins()
+  if not check_llm_installed() then
+    return
+  end
+  
+  local available_plugins = M.get_available_plugins()
+  if #available_plugins == 0 then
+    api.nvim_err_writeln("No plugins found. Make sure llm is properly configured.")
+    return
+  end
+  
+  -- Get installed plugins to mark them
+  local installed_plugins = M.get_installed_plugins()
+  local installed_set = {}
+  for _, plugin in ipairs(installed_plugins) do
+    installed_set[plugin] = true
+  end
+  
+  -- Format plugin entries with installation status
+  local plugin_entries = {}
+  for _, plugin in ipairs(available_plugins) do
+    local status = installed_set[plugin] and " [✓]" or " [ ]"
+    table.insert(plugin_entries, plugin .. status)
+  end
+  
+  -- Check if we have telescope
+  local has_telescope, telescope = pcall(require, "telescope.builtin")
+  if has_telescope then
+    -- Use telescope for selection
+    local pickers = require("telescope.pickers")
+    local finders = require("telescope.finders")
+    local conf = require("telescope.config").values
+    local actions = require("telescope.actions")
+    local action_state = require("telescope.actions.state")
+    
+    pickers.new({}, {
+      prompt_title = "LLM Plugins",
+      finder = finders.new_table({
+        results = plugin_entries
+      }),
+      sorter = conf.generic_sorter({}),
+      attach_mappings = function(prompt_bufnr, map)
+        actions.select_default:replace(function()
+          local selection = action_state.get_selected_entry(prompt_bufnr)
+          actions.close(prompt_bufnr)
+          
+          if selection then
+            -- Extract the plugin name (remove status indicator)
+            local plugin_name = selection[1]:match("^(.-)%s+%[")
+            
+            -- Check if it's installed
+            local is_installed = installed_set[plugin_name] or false
+            
+            -- Ask what to do
+            if is_installed then
+              vim.ui.select({"Keep installed", "Uninstall"}, {
+                prompt = "Plugin " .. plugin_name .. " is installed:"
+              }, function(choice)
+                if choice == "Uninstall" then
+                  if M.uninstall_plugin(plugin_name) then
+                    vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
+                  else
+                    vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
+                  end
+                end
+              end)
+            else
+              vim.ui.select({"Install", "Skip"}, {
+                prompt = "Plugin " .. plugin_name .. " is not installed:"
+              }, function(choice)
+                if choice == "Install" then
+                  if M.install_plugin(plugin_name) then
+                    vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
+                  else
+                    vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
+                  end
+                end
+              end)
+            end
+          end
+        end)
+        return true
+      end,
+    }):find()
+  else
+    -- Fallback to vim.ui.select if available (Neovim 0.6+)
+    if vim.ui and vim.ui.select then
+      vim.ui.select(plugin_entries, {
+        prompt = "Select LLM Plugin:",
+        format_item = function(item)
+          return item
+        end,
+      }, function(plugin_entry)
+        if plugin_entry then
+          -- Extract the plugin name (remove status indicator)
+          local plugin_name = plugin_entry:match("^(.-)%s+%[")
+          
+          -- Check if it's installed
+          local is_installed = installed_set[plugin_name] or false
+          
+          -- Ask what to do
+          if is_installed then
+            vim.ui.select({"Keep installed", "Uninstall"}, {
+              prompt = "Plugin " .. plugin_name .. " is installed:"
+            }, function(choice)
+              if choice == "Uninstall" then
+                if M.uninstall_plugin(plugin_name) then
+                  vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
+                else
+                  vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
+                end
+              end
+            end)
+          else
+            vim.ui.select({"Install", "Skip"}, {
+              prompt = "Plugin " .. plugin_name .. " is not installed:"
+            }, function(choice)
+              if choice == "Install" then
+                if M.install_plugin(plugin_name) then
+                  vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
+                else
+                  vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
+                end
+              end
+            end)
+          end
+        end
+      end)
+    else
+      -- Very basic fallback using inputlist
+      local options = {"Select a plugin:"}
+      for i, plugin_entry in ipairs(plugin_entries) do
+        table.insert(options, i .. ": " .. plugin_entry)
+      end
+      
+      local choice = vim.fn.inputlist(options)
+      if choice >= 1 and choice <= #plugin_entries then
+        local plugin_entry = plugin_entries[choice]
+        local plugin_name = plugin_entry:match("^(.-)%s+%[")
+        
+        -- Check if it's installed
+        local is_installed = installed_set[plugin_name] or false
+        
+        -- Ask what to do
+        if is_installed then
+          local action = vim.fn.confirm("Plugin " .. plugin_name .. " is installed:", "&Keep\n&Uninstall")
+          if action == 2 then -- Uninstall
+            if M.uninstall_plugin(plugin_name) then
+              vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
+            else
+              vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
+            end
+          end
+        else
+          local action = vim.fn.confirm("Plugin " .. plugin_name .. " is not installed:", "&Install\n&Skip")
+          if action == 1 then -- Install
+            if M.install_plugin(plugin_name) then
+              vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
+            else
+              vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
 -- Setup function for configuration
 function M.setup(opts)
   -- Load the configuration module
@@ -350,5 +646,17 @@ end
 -- Initialize with default configuration
 config = require('llm.config')
 config.setup()
+
+-- Make sure all functions are properly exposed in the module
+-- Explicitly define select_model if it doesn't exist
+if not M.select_model then
+  M.select_model = function()
+    -- Default implementation that does nothing
+    vim.notify("select_model function called", vim.log.levels.INFO)
+  end
+end
+
+M.manage_plugins = M.manage_plugins
+M.get_available_models = M.get_available_models
 
 return M

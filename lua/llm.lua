@@ -9,6 +9,10 @@ if not llm.select_model then
   llm.select_model = require('llm.init').select_model
 end
 
+if not llm.manage_plugins then
+  llm.manage_plugins = require('llm.init').manage_plugins
+end
+
 if not llm.get_available_models then
   llm.get_available_models = require('llm.init').get_available_models
 end
