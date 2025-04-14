@@ -260,8 +260,15 @@ local function extract_model_name(model_line)
     return model_name
   end
   
-  -- Fallback to the first word if the pattern doesn't match
-  return model_line:match("^([^%s]+)")
+  -- Try to match format like "Anthropic Messages: anthropic/claude-3-opus-20240229"
+  model_name = model_line:match(": ([^%s]+)")
+  if model_name then
+    return model_name
+  end
+  
+  -- Fallback to the full line if no patterns match
+  -- This ensures we can still find the model in the list
+  return model_line
 end
 -- Expose for testing
 _G.extract_model_name = extract_model_name
@@ -457,8 +464,14 @@ function M.select_model()
   
   local default_model = default_model_output:match("Default model: ([^\r\n]+)")
   if not default_model then
+    -- Try alternative format (some versions just output the model name)
+    default_model = default_model_output:match("([^\r\n]+)")
+  end
+  if not default_model or default_model == "" then
     default_model = ""
   end
+  
+  vim.notify("Default model: " .. (default_model or "none"), vim.log.levels.DEBUG)
   
   -- Set buffer content
   local lines = {
@@ -491,6 +504,7 @@ function M.select_model()
     -- Check if this is the default model
     if entry.model_name == default_model then
       entry.is_default = true
+      vim.notify("Found default model: " .. entry.model_name, vim.log.levels.DEBUG)
     end
     
     if model_line:match("OpenAI") then
@@ -514,6 +528,36 @@ function M.select_model()
   local model_data = {}
   local line_to_model = {}
   local current_line = #lines + 1
+  
+  -- Check if we found the default model in any category
+  local default_found = false
+  for _, provider_models in pairs(providers) do
+    for _, model in ipairs(provider_models) do
+      if model.is_default then
+        default_found = true
+        break
+      end
+    end
+    if default_found then break end
+  end
+  
+  -- If default model wasn't found but we have a default model name,
+  -- try a more flexible matching approach
+  if not default_found and default_model ~= "" then
+    for _, provider_models in pairs(providers) do
+      for _, model in ipairs(provider_models) do
+        -- Try to match by substring
+        if model.model_name:find(default_model, 1, true) or 
+           default_model:find(model.model_name, 1, true) then
+          model.is_default = true
+          vim.notify("Matched default model by substring: " .. model.model_name, vim.log.levels.DEBUG)
+          default_found = true
+          break
+        end
+      end
+      if default_found then break end
+    end
+  end
   
   -- Add categories and models to the buffer
   for provider, provider_models in pairs(providers) do
