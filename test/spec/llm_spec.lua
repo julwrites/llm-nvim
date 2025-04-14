@@ -175,4 +175,24 @@ Default: gpt-4o-mini
           test_case.expected, result, test_case.input))
     end
   end)
+  
+  it('should set default model using llm CLI', function()
+    -- Skip this test if set_default_model doesn't exist yet
+    if type(_G.set_default_model) ~= 'function' then
+      pending("set_default_model function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate setting the default model
+    local cleanup = test_helpers.mock_llm_command("llm models default gpt-4o", "Default model set to gpt-4o")
+    
+    -- Call the function
+    local success = _G.set_default_model("gpt-4o")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "set_default_model should return true on success")
+  end)
 end)

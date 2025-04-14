@@ -227,6 +227,22 @@ end
 -- Expose for testing
 _G.extract_model_name = extract_model_name
 
+-- Set the default model using llm CLI
+local function set_default_model(model_name)
+  if not check_llm_installed() then
+    return false
+  end
+  
+  local cmd = string.format('llm models default %s', model_name)
+  local handle = io.popen(cmd)
+  local result = handle:read("*a")
+  local success = handle:close()
+  
+  return success
+end
+-- Expose for testing
+_G.set_default_model = set_default_model
+
 -- Select a model from available models
 function M.select_model()
   if not check_llm_installed() then
@@ -263,9 +279,14 @@ function M.select_model()
           if selection then
             -- Extract the model name from the full line
             local model_name = extract_model_name(selection[1])
-            -- Update the model in config
-            config.options.model = model_name
-            vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
+            -- Set as default model using llm CLI
+            if set_default_model(model_name) then
+              -- Update the model in config
+              config.options.model = model_name
+              vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
+            else
+              vim.notify("Failed to set default model", vim.log.levels.ERROR)
+            end
           end
         end)
         return true
@@ -283,9 +304,14 @@ function M.select_model()
         if model_line then
           -- Extract the model name from the full line
           local model_name = extract_model_name(model_line)
-          -- Update the model in config
-          config.options.model = model_name
-          vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
+          -- Set as default model using llm CLI
+          if set_default_model(model_name) then
+            -- Update the model in config
+            config.options.model = model_name
+            vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
+          else
+            vim.notify("Failed to set default model", vim.log.levels.ERROR)
+          end
         end
       end)
     else
@@ -300,9 +326,14 @@ function M.select_model()
         local model_line = models[choice]
         -- Extract the model name from the full line
         local model_name = extract_model_name(model_line)
-        -- Update the model in config
-        config.options.model = model_name
-        vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
+        -- Set as default model using llm CLI
+        if set_default_model(model_name) then
+          -- Update the model in config
+          config.options.model = model_name
+          vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
+        else
+          vim.notify("Failed to set default model", vim.log.levels.ERROR)
+        end
       end
     end
   end
