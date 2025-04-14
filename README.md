@@ -37,7 +37,7 @@ use 'julwrites/llm-nvim'
   config = function()
     -- Configure the plugin
     require('llm').setup({
-      model = 'claude-3-sonnet-20240229',
+      model = 'gpt-4o',
       system_prompt = 'You are a helpful assistant.'
     })
   end
@@ -49,7 +49,7 @@ use 'julwrites/llm-nvim'
 ```lua
 -- Setup with configuration options
 require('llm').setup({
-  model = 'claude-3-sonnet-20240229',        -- Default model to use
+  model = 'gpt-4o',                          -- Default model to use
   system_prompt = 'You are a helpful assistant.', -- Default system prompt
   no_mappings = false,                       -- Set to true to disable default mappings
 })
