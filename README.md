@@ -35,9 +35,11 @@ use 'julwrites/llm-nvim'
 {
   'julwrites/llm-nvim',
   config = function()
-    -- Optional configuration
-    vim.g.llm_model = 'gpt-4'
-    vim.g.llm_system_prompt = 'You are a helpful assistant.'
+    -- Configure the plugin
+    require('llm').setup({
+      model = 'gpt-4',
+      system_prompt = 'You are a helpful assistant.'
+    })
   end
 }
 ```
@@ -45,14 +47,17 @@ use 'julwrites/llm-nvim'
 ## Configuration
 
 ```lua
--- Optional: Set default model
-vim.g.llm_model = 'gpt-4'
+-- Setup with configuration options
+require('llm').setup({
+  model = 'gpt-4',                           -- Default model to use
+  system_prompt = 'You are a helpful assistant.', -- Default system prompt
+  no_mappings = false,                       -- Set to true to disable default mappings
+})
 
--- Optional: Set default system prompt
-vim.g.llm_system_prompt = 'You are a helpful assistant.'
-
--- Optional: Disable default mappings
-vim.g.llm_no_mappings = 1
+-- For backward compatibility, these global variables still work:
+-- vim.g.llm_model = 'gpt-4'
+-- vim.g.llm_system_prompt = 'You are a helpful assistant.'
+-- vim.g.llm_no_mappings = 1
 
 -- Custom mappings
 vim.keymap.set('n', '<leader>lp', '<Plug>(llm-prompt)')

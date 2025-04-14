@@ -51,6 +51,17 @@ Or install and configure a plugin for local models:
 ==============================================================================
 3. CONFIGURATION                                            *llm-configuration*
 
+Using Lua (recommended):
+>
+    require('llm').setup({
+      model = 'gpt-4',                           -- Default model to use
+      system_prompt = 'You are a helpful assistant.', -- Default system prompt
+      no_mappings = false,                       -- Set to true to disable default mappings
+    })
+<
+
+For backward compatibility, these global variables still work:
+
 Default model (optional):
 >
     let g:llm_model = 'gpt-4'

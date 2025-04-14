@@ -9,9 +9,11 @@ if vim.g.loaded_llm == 1 then
 end
 vim.g.loaded_llm = 1
 
--- Default configuration
-vim.g.llm_model = vim.g.llm_model or ""
-vim.g.llm_system_prompt = vim.g.llm_system_prompt or ""
+-- Load the configuration module
+local config = require("llm.config")
+
+-- Initialize with default configuration
+config.setup()
 
 -- Load the main module
 local ok, llm = pcall(require, "llm")
@@ -43,8 +45,8 @@ vim.keymap.set("v", "<Plug>(llm-selection)", ":LLMWithSelection ", { silent = tr
 vim.keymap.set("n", "<Plug>(llm-explain)", ":LLMExplain<CR>", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-chat)", ":LLMChat<CR>", { silent = true })
 
--- Default mappings (can be disabled with let g:llm_no_mappings = 1)
-if vim.g.llm_no_mappings ~= 1 then
+-- Default mappings (can be disabled with config option)
+if not config.get("no_mappings") then
   vim.keymap.set("n", "<leader>llm", "<Plug>(llm-prompt)")
   vim.keymap.set("v", "<leader>llm", "<Plug>(llm-selection)")
   vim.keymap.set("n", "<leader>lle", "<Plug>(llm-explain)")

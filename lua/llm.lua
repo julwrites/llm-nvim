@@ -5,9 +5,11 @@
 local M = {}
 
 -- Set up the module
-_G.llm = M
 local api = vim.api
 local fn = vim.fn
+
+-- Load configuration
+local config = require('llm.config')
 
 -- Check if llm is installed
 local function check_llm_installed()
@@ -26,7 +28,7 @@ _G.check_llm_installed = check_llm_installed
 
 -- Get the model argument if specified
 local function get_model_arg()
-  local model = vim.g.llm_model or ""
+  local model = config.get("model")
   if model ~= "" then
     return "-m " .. model
   end
@@ -37,7 +39,7 @@ _G.get_model_arg = get_model_arg
 
 -- Get the system prompt argument if specified
 local function get_system_arg()
-  local system = vim.g.llm_system_prompt or ""
+  local system = config.get("system_prompt")
   if system ~= "" then
     return "-s \"" .. system .. "\""
   end
@@ -174,13 +176,18 @@ function M.start_chat(model_override)
     return
   end
   
-  local model = model_override or vim.g.llm_model or ""
+  local model = model_override or config.get("model") or ""
   local model_arg = model ~= "" and "-m " .. model or ""
   
   -- Create a terminal buffer
   api.nvim_command('new')
   api.nvim_command('terminal llm chat ' .. model_arg)
   api.nvim_command('startinsert')
+end
+
+-- Setup function for configuration
+function M.setup(opts)
+  config.setup(opts)
 end
 
 return M
