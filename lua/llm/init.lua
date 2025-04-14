@@ -421,124 +421,264 @@ function M.select_model()
     return
   end
   
-  -- Create syntax highlighting for model types
+  -- Create a new buffer for the model manager
+  local buf = api.nvim_create_buf(false, true)
+  api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+  api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+  api.nvim_buf_set_option(buf, 'swapfile', false)
+  api.nvim_buf_set_name(buf, 'LLM Models')
+  
+  -- Create a new window
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.8)
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+  
+  local opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' LLM Models ',
+    title_pos = 'center',
+  }
+  
+  local win = api.nvim_open_win(buf, true, opts)
+  api.nvim_win_set_option(win, 'cursorline', true)
+  api.nvim_win_set_option(win, 'winblend', 0)
+  
+  -- Get current default model
+  local handle = io.popen("llm models default")
+  local default_model_output = handle:read("*a")
+  handle:close()
+  
+  local default_model = default_model_output:match("Default model: ([^\r\n]+)")
+  if not default_model then
+    default_model = ""
+  end
+  
+  -- Set buffer content
+  local lines = {
+    "# LLM Models Manager",
+    "",
+    "Press 's' to set as default model, 'c' to chat with model, 'q' to quit",
+    "──────────────────────────────────────────────────────────────",
+    ""
+  }
+  
+  -- Group models by provider
+  local providers = {
+    ["OpenAI"] = {},
+    ["Anthropic"] = {},
+    ["Mistral"] = {},
+    ["Gemini"] = {},
+    ["Groq"] = {},
+    ["Local Models"] = {},
+    ["Other"] = {}
+  }
+  
+  -- Categorize models
+  for _, model_line in ipairs(models) do
+    local entry = {
+      full_line = model_line,
+      model_name = extract_model_name(model_line),
+      is_default = false
+    }
+    
+    -- Check if this is the default model
+    if entry.model_name == default_model then
+      entry.is_default = true
+    end
+    
+    if model_line:match("OpenAI") then
+      table.insert(providers["OpenAI"], entry)
+    elseif model_line:match("Anthropic") then
+      table.insert(providers["Anthropic"], entry)
+    elseif model_line:match("Mistral") then
+      table.insert(providers["Mistral"], entry)
+    elseif model_line:match("Gemini") then
+      table.insert(providers["Gemini"], entry)
+    elseif model_line:match("Groq") then
+      table.insert(providers["Groq"], entry)
+    elseif model_line:match("gguf") or model_line:match("ollama") or model_line:match("local") then
+      table.insert(providers["Local Models"], entry)
+    else
+      table.insert(providers["Other"], entry)
+    end
+  end
+  
+  -- Model data for lookup
+  local model_data = {}
+  local line_to_model = {}
+  local current_line = #lines + 1
+  
+  -- Add categories and models to the buffer
+  for provider, provider_models in pairs(providers) do
+    if #provider_models > 0 then
+      table.insert(lines, provider)
+      table.insert(lines, string.rep("─", #provider))
+      current_line = current_line + 2
+      
+      table.sort(provider_models, function(a, b) return a.full_line < b.full_line end)
+      
+      for _, model in ipairs(provider_models) do
+        local status = model.is_default and "✓" or " "
+        local line = string.format("[%s] %s", status, model.full_line)
+        table.insert(lines, line)
+        
+        -- Store model data for lookup
+        model_data[model.model_name] = {
+          line = current_line,
+          is_default = model.is_default,
+          full_line = model.full_line
+        }
+        line_to_model[current_line] = model.model_name
+        current_line = current_line + 1
+      end
+      
+      table.insert(lines, "")
+      current_line = current_line + 1
+    end
+  end
+  
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  
+  -- Set buffer options
+  api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Set up syntax highlighting
+  M.setup_buffer_highlighting(buf)
+  
+  -- Add model-specific highlighting
   vim.cmd([[
     highlight default LLMModelOpenAI guifg=#56b6c2
     highlight default LLMModelAnthropic guifg=#98c379
     highlight default LLMModelMistral guifg=#c678dd
     highlight default LLMModelGemini guifg=#e5c07b
     highlight default LLMModelGroq guifg=#61afef
-    highlight default LLMModelOther guifg=#abb2bf
+    highlight default LLMModelLocal guifg=#d19a66
     highlight default LLMModelDefault guifg=#e06c75 gui=bold
   ]])
   
-  -- Check if we have telescope
-  local has_telescope, telescope = pcall(require, "telescope.builtin")
-  if has_telescope then
-    -- Use telescope for selection
-    local pickers = require("telescope.pickers")
-    local finders = require("telescope.finders")
-    local conf = require("telescope.config").values
-    local actions = require("telescope.actions")
-    local action_state = require("telescope.actions.state")
-    
-    -- Create a function to highlight different model types
-    local function model_highlighter(model_line)
-      if model_line:match("OpenAI") then
-        return "LLMModelOpenAI"
-      elseif model_line:match("Anthropic") then
-        return "LLMModelAnthropic"
-      elseif model_line:match("Mistral") then
-        return "LLMModelMistral"
-      elseif model_line:match("Gemini") then
-        return "LLMModelGemini"
-      elseif model_line:match("Groq") then
-        return "LLMModelGroq"
-      else
-        return "LLMModelOther"
+  -- Apply provider-specific highlighting
+  local syntax_cmds = {
+    "syntax match LLMModelOpenAI /^OpenAI.*$/",
+    "syntax match LLMModelOpenAI /\\[ \\] OpenAI.*/",
+    "syntax match LLMModelAnthropic /^Anthropic.*$/",
+    "syntax match LLMModelAnthropic /\\[ \\] Anthropic.*/",
+    "syntax match LLMModelMistral /^Mistral.*$/",
+    "syntax match LLMModelMistral /\\[ \\] Mistral.*/",
+    "syntax match LLMModelGemini /^Gemini.*$/",
+    "syntax match LLMModelGemini /\\[ \\] Gemini.*/",
+    "syntax match LLMModelGroq /^Groq.*$/",
+    "syntax match LLMModelGroq /\\[ \\] Groq.*/",
+    "syntax match LLMModelLocal /^Local Models.*$/",
+    "syntax match LLMModelLocal /\\[ \\] .*gguf.*/",
+    "syntax match LLMModelLocal /\\[ \\] .*ollama.*/",
+    "syntax match LLMModelDefault /\\[✓\\].*/",
+  }
+  
+  for _, cmd in ipairs(syntax_cmds) do
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd(cmd)
+    end)
+  end
+  
+  -- Helper function to update model status in the buffer
+  local function update_model_status(model_name, is_default)
+    -- Reset all models to not default
+    for name, data in pairs(model_data) do
+      if data.is_default and name ~= model_name then
+        local line_num = data.line
+        
+        api.nvim_buf_set_option(buf, 'modifiable', true)
+        local line = api.nvim_buf_get_lines(buf, line_num - 1, line_num, false)[1]
+        local new_line = "[ ]" .. line:sub(4)
+        api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, {new_line})
+        api.nvim_buf_set_option(buf, 'modifiable', false)
+        
+        -- Update model data
+        model_data[name].is_default = false
       end
     end
     
-    pickers.new({}, {
-      prompt_title = "Select LLM Model",
-      finder = finders.new_table({
-        results = models,
-        entry_maker = function(entry)
-          return {
-            value = entry,
-            display = entry,
-            ordinal = entry,
-            highlight = model_highlighter(entry)
-          }
-        end
-      }),
-      sorter = conf.generic_sorter({}),
-      attach_mappings = function(prompt_bufnr, map)
-        actions.select_default:replace(function()
-          local selection = action_state.get_selected_entry(prompt_bufnr)
-          actions.close(prompt_bufnr)
-          
-          if selection then
-            -- Extract the model name from the full line
-            local model_name = extract_model_name(selection[1])
-            -- Set as default model using llm CLI
-            if set_default_model(model_name) then
-              -- Update the model in config
-              config.options.model = model_name
-              vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
-            else
-              vim.notify("Failed to set default model", vim.log.levels.ERROR)
-            end
-          end
-        end)
-        return true
-      end,
-    }):find()
-  else
-    -- Fallback to vim.ui.select if available (Neovim 0.6+)
-    if vim.ui and vim.ui.select then
-      vim.ui.select(models, {
-        prompt = "Select LLM Model:",
-        format_item = function(item)
-          return item
-        end,
-      }, function(model_line)
-        if model_line then
-          -- Extract the model name from the full line
-          local model_name = extract_model_name(model_line)
-          -- Set as default model using llm CLI
-          if set_default_model(model_name) then
-            -- Update the model in config
-            config.options.model = model_name
-            vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
-          else
-            vim.notify("Failed to set default model", vim.log.levels.ERROR)
-          end
-        end
-      end)
-    else
-      -- Very basic fallback using inputlist
-      local options = {"Select a model:"}
-      for i, model_line in ipairs(models) do
-        table.insert(options, i .. ": " .. model_line)
-      end
+    -- Set the new default
+    if model_data[model_name] then
+      local line_num = model_data[model_name].line
       
-      local choice = vim.fn.inputlist(options)
-      if choice >= 1 and choice <= #models then
-        local model_line = models[choice]
-        -- Extract the model name from the full line
-        local model_name = extract_model_name(model_line)
-        -- Set as default model using llm CLI
-        if set_default_model(model_name) then
-          -- Update the model in config
-          config.options.model = model_name
-          vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
-        else
-          vim.notify("Failed to set default model", vim.log.levels.ERROR)
-        end
-      end
+      api.nvim_buf_set_option(buf, 'modifiable', true)
+      local line = api.nvim_buf_get_lines(buf, line_num - 1, line_num, false)[1]
+      local new_line = "[✓]" .. line:sub(4)
+      api.nvim_buf_set_lines(buf, line_num - 1, line_num, false, {new_line})
+      api.nvim_buf_set_option(buf, 'modifiable', false)
+      
+      -- Update model data
+      model_data[model_name].is_default = true
     end
   end
+  
+  -- Set keymaps
+  local function set_keymap(mode, lhs, rhs)
+    api.nvim_buf_set_keymap(buf, mode, lhs, rhs, {noremap = true, silent = true})
+  end
+  
+  -- Set model under cursor as default
+  set_keymap('n', 's', [[<cmd>lua require('llm.model_manager').set_model_under_cursor()<CR>]])
+  
+  -- Chat with model under cursor
+  set_keymap('n', 'c', [[<cmd>lua require('llm.model_manager').chat_with_model_under_cursor()<CR>]])
+  
+  -- Close window
+  set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+  set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+  
+  -- Create model manager module for the helper functions
+  local model_manager = {}
+  
+  function model_manager.set_model_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local model_name = line_to_model[current_line]
+    
+    if not model_name then return end
+    if model_data[model_name].is_default then
+      vim.notify("Model " .. model_name .. " is already the default", vim.log.levels.INFO)
+      return
+    end
+    
+    vim.notify("Setting default model to: " .. model_name, vim.log.levels.INFO)
+    
+    -- Set as default model using llm CLI
+    if set_default_model(model_name) then
+      -- Update the model in config
+      config.options.model = model_name
+      vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
+      
+      -- Update the UI
+      update_model_status(model_name, true)
+    else
+      vim.notify("Failed to set default model", vim.log.levels.ERROR)
+    end
+  end
+  
+  function model_manager.chat_with_model_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local model_name = line_to_model[current_line]
+    
+    if not model_name then return end
+    
+    -- Close the window and start chat with the selected model
+    vim.api.nvim_win_close(0, true)
+    
+    vim.schedule(function()
+      M.start_chat(model_name)
+    end)
+  end
+  
+  -- Store the model manager module
+  package.loaded['llm.model_manager'] = model_manager
 end
 
 -- Manage plugins (view, install, uninstall)
