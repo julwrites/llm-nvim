@@ -1,0 +1,115 @@
+*llm.txt*  Neovim plugin for simonw/llm
+
+==============================================================================
+CONTENTS                                                         *llm-contents*
+
+    1. Introduction ........................... |llm-introduction|
+    2. Installation ........................... |llm-installation|
+    3. Configuration .......................... |llm-configuration|
+    4. Commands ............................... |llm-commands|
+    5. Mappings ............................... |llm-mappings|
+    6. License ................................ |llm-license|
+
+==============================================================================
+1. INTRODUCTION                                              *llm-introduction*
+
+This plugin integrates Simon Willison's llm CLI tool with Neovim, allowing you
+to interact with large language models directly from your editor.
+
+The llm CLI tool provides access to various LLMs including OpenAI models and
+local models through plugins.
+
+Visit https://github.com/simonw/llm for more information about the llm CLI.
+
+==============================================================================
+2. INSTALLATION                                              *llm-installation*
+
+Prerequisites:
+- Neovim 0.5.0 or later
+- llm CLI tool installed (`pip install llm` or `brew install llm`)
+
+Using vim-plug:
+>
+    Plug 'yourusername/llm-nvim'
+<
+
+Using packer.nvim:
+>
+    use 'yourusername/llm-nvim'
+<
+
+After installing the plugin, make sure you have the llm CLI tool configured:
+>
+    llm keys set openai
+<
+
+Or install and configure a plugin for local models:
+>
+    llm install llm-gpt4all
+<
+
+==============================================================================
+3. CONFIGURATION                                            *llm-configuration*
+
+Default model (optional):
+>
+    let g:llm_model = 'gpt-4'
+<
+or
+>
+    let g:llm_model = 'mistral-7b-instruct-v0'
+<
+
+Default system prompt (optional):
+>
+    let g:llm_system_prompt = 'You are a helpful assistant.'
+<
+
+Disable default mappings:
+>
+    let g:llm_no_mappings = 1
+<
+
+==============================================================================
+4. COMMANDS                                                      *llm-commands*
+
+*:LLM* {prompt}
+    Send a prompt to the configured LLM and display the response in a new
+    buffer.
+
+*:LLMWithSelection* [{prompt}]
+    Send the currently selected text to the LLM, optionally with an additional
+    prompt.
+
+*:LLMChat* [{model}]
+    Start an interactive chat session with the LLM in a terminal buffer.
+    Optionally specify a model to use for this chat.
+
+*:LLMExplain*
+    Send the current buffer to the LLM with a system prompt to explain the
+    code.
+
+==============================================================================
+5. MAPPINGS                                                      *llm-mappings*
+
+Default mappings (can be disabled with g:llm_no_mappings = 1):
+
+<leader>llm     - Prompt for input and send to LLM
+<leader>llm     - In visual mode, send selection to LLM
+<leader>lle     - Explain the current buffer
+<leader>llc     - Start a chat session
+
+Custom mappings:
+>
+    nmap <leader>lp <Plug>(llm-prompt)
+    vmap <leader>ls <Plug>(llm-selection)
+    nmap <leader>le <Plug>(llm-explain)
+    nmap <leader>lc <Plug>(llm-chat)
+<
+
+==============================================================================
+6. LICENSE                                                        *llm-license*
+
+This plugin is released under the Apache License, Version 2.0.
+
+ vim:tw=78:ts=8:ft=help:norl:
