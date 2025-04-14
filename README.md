@@ -71,6 +71,8 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `:LLMChat {model}` - Start an interactive chat session (optional model)
 - `:LLMExplain` - Explain the code in the current buffer
 - `:LLMSelectModel` - Select a model from available models
+- `:LLMPlugins` - Manage LLM plugins (install/uninstall)
+- `:LLMKeys` - Manage API keys for different LLM providers
 
 ### Default Mappings
 
@@ -80,6 +82,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>llc` - Start a chat session
 - `<leader>lls` - Select a model from available models
 - `<leader>llp` - Open the plugin manager
+- `<leader>llk` - Manage API keys
 - `<leader>llp` - Open the plugin manager
 
 ## License

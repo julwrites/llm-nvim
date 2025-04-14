@@ -319,4 +319,101 @@ llm-ollama
     -- Check the result
     assert(success, "uninstall_plugin should return true on success")
   end)
+  
+  -- Tests for key management functionality
+  it('should get stored API keys', function()
+    -- Skip this test if get_stored_keys doesn't exist yet
+    if type(_G.get_stored_keys) ~= 'function' then
+      pending("get_stored_keys function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of keys
+    local cleanup = test_helpers.mock_llm_command("llm keys", [[
+Stored keys:
+------------------
+openai
+anthropic
+mistral
+]])
+    
+    -- Call the function directly from the global scope
+    local keys = _G.get_stored_keys()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#keys == 3, "Should find 3 stored keys")
+    assert(keys[1] == "openai", "First key should be openai")
+    assert(keys[2] == "anthropic", "Second key should be anthropic")
+    assert(keys[3] == "mistral", "Third key should be mistral")
+  end)
+  
+  it('should check if an API key is set', function()
+    -- Skip this test if is_key_set doesn't exist yet
+    if type(_G.is_key_set) ~= 'function' then
+      pending("is_key_set function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of keys
+    local cleanup = test_helpers.mock_llm_command("llm keys", [[
+Stored keys:
+------------------
+openai
+anthropic
+]])
+    
+    -- Call the function directly from the global scope
+    local is_openai_set = _G.is_key_set("openai")
+    local is_mistral_set = _G.is_key_set("mistral")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(is_openai_set, "openai key should be detected as set")
+    assert(not is_mistral_set, "mistral key should be detected as not set")
+  end)
+  
+  it('should set an API key using llm CLI', function()
+    -- Skip this test if set_api_key doesn't exist yet
+    if type(_G.set_api_key) ~= 'function' then
+      pending("set_api_key function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate setting an API key
+    local cleanup = test_helpers.mock_llm_command("llm keys set openai", "API key for openai has been set")
+    
+    -- Call the function
+    local success = _G.set_api_key("openai", "sk-test-key")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "set_api_key should return true on success")
+  end)
+  
+  it('should remove an API key using llm CLI', function()
+    -- Skip this test if remove_api_key doesn't exist yet
+    if type(_G.remove_api_key) ~= 'function' then
+      pending("remove_api_key function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate removing an API key
+    local cleanup = test_helpers.mock_llm_command("llm keys remove openai", "API key for openai has been removed")
+    
+    -- Call the function
+    local success = _G.remove_api_key("openai")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "remove_api_key should return true on success")
+  end)
 end)

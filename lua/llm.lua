@@ -17,4 +17,8 @@ if not llm.get_available_models then
   llm.get_available_models = require('llm.init').get_available_models
 end
 
+if not llm.manage_keys then
+  llm.manage_keys = require('llm.init').manage_keys
+end
+
 return llm
