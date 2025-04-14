@@ -40,9 +40,9 @@ function M.get_available_models()
   for line in result:gmatch("[^\r\n]+") do
     -- Skip header lines and empty lines
     if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") then
-      -- Extract model name (first column)
-      local model = line:match("^([^%s]+)")
-      if model then
+      -- Extract model name (first column) and provider (second column)
+      local model, provider = line:match("^([^%s]+)%s+(.+)")
+      if model and provider then
         table.insert(models, model)
       end
     end
