@@ -111,6 +111,24 @@ local function create_response_buffer(content)
   -- Set filetype for syntax highlighting
   api.nvim_buf_set_option(buf, 'filetype', 'markdown')
   
+  -- Add custom highlighting for the response buffer
+  vim.cmd([[
+    highlight default LLMCodeBlock guibg=#2c323c
+    highlight default LLMHeading guifg=#61afef gui=bold
+    highlight default LLMSubHeading guifg=#56b6c2 gui=bold
+    highlight default LLMBold guifg=#e5c07b gui=bold
+    highlight default LLMItalic guifg=#c678dd gui=italic
+    highlight default LLMListItem guifg=#98c379
+    
+    " Define syntax regions and matches
+    syntax region LLMCodeBlock start=/```/ end=/```/ contains=@Markdown
+    syntax match LLMHeading /^# .*/
+    syntax match LLMSubHeading /^## .*/
+    syntax match LLMBold /\*\*.\{-}\*\*/
+    syntax match LLMItalic /\*.\{-}\*/
+    syntax match LLMListItem /^- .*/
+  ]])
+  
   return buf
 end
 
@@ -208,6 +226,27 @@ function M.start_chat(model_override)
   -- Create a terminal buffer
   api.nvim_command('new')
   api.nvim_command('terminal llm chat ' .. model_arg)
+  
+  -- Set buffer name
+  local buf = api.nvim_get_current_buf()
+  local chat_title = model ~= "" and "LLM Chat (" .. model .. ")" or "LLM Chat"
+  api.nvim_buf_set_name(buf, chat_title)
+  
+  -- Set terminal colors
+  vim.cmd([[
+    highlight default LLMChatUser ctermfg=14 guifg=#56b6c2
+    highlight default LLMChatAssistant ctermfg=10 guifg=#98c379
+    highlight default LLMChatSystem ctermfg=13 guifg=#c678dd
+    highlight default LLMChatPrompt ctermfg=11 guifg=#e5c07b
+    
+    " Match patterns in the terminal buffer
+    match LLMChatUser /^User: .*/
+    match LLMChatAssistant /^Assistant: .*/
+    match LLMChatSystem /^System: .*/
+    match LLMChatPrompt /^Prompt: .*/
+  ]])
+  
+  -- Start insert mode
   api.nvim_command('startinsert')
 end
 
@@ -382,6 +421,17 @@ function M.select_model()
     return
   end
   
+  -- Create syntax highlighting for model types
+  vim.cmd([[
+    highlight default LLMModelOpenAI guifg=#56b6c2
+    highlight default LLMModelAnthropic guifg=#98c379
+    highlight default LLMModelMistral guifg=#c678dd
+    highlight default LLMModelGemini guifg=#e5c07b
+    highlight default LLMModelGroq guifg=#61afef
+    highlight default LLMModelOther guifg=#abb2bf
+    highlight default LLMModelDefault guifg=#e06c75 gui=bold
+  ]])
+  
   -- Check if we have telescope
   local has_telescope, telescope = pcall(require, "telescope.builtin")
   if has_telescope then
@@ -392,10 +442,35 @@ function M.select_model()
     local actions = require("telescope.actions")
     local action_state = require("telescope.actions.state")
     
+    -- Create a function to highlight different model types
+    local function model_highlighter(model_line)
+      if model_line:match("OpenAI") then
+        return "LLMModelOpenAI"
+      elseif model_line:match("Anthropic") then
+        return "LLMModelAnthropic"
+      elseif model_line:match("Mistral") then
+        return "LLMModelMistral"
+      elseif model_line:match("Gemini") then
+        return "LLMModelGemini"
+      elseif model_line:match("Groq") then
+        return "LLMModelGroq"
+      else
+        return "LLMModelOther"
+      end
+    end
+    
     pickers.new({}, {
       prompt_title = "Select LLM Model",
       finder = finders.new_table({
-        results = models
+        results = models,
+        entry_maker = function(entry)
+          return {
+            value = entry,
+            display = entry,
+            ordinal = entry,
+            highlight = model_highlighter(entry)
+          }
+        end
       }),
       sorter = conf.generic_sorter({}),
       attach_mappings = function(prompt_bufnr, map)
@@ -599,6 +674,9 @@ function M.manage_plugins()
   
   -- Set buffer options
   api.nvim_buf_set_option(buf, 'modifiable', false)
+  
+  -- Set up syntax highlighting
+  M.setup_buffer_highlighting(buf)
   
   -- Helper function to update plugin status in the buffer
   local function update_plugin_status(plugin_name, installed)
@@ -886,6 +964,9 @@ function M.manage_keys()
   -- Set buffer options
   api.nvim_buf_set_option(buf, 'modifiable', false)
   
+  -- Set up syntax highlighting
+  M.setup_buffer_highlighting(buf)
+  
   -- Map of line numbers to provider names
   local line_to_provider = {}
   local provider_start_line = 8 -- Line where providers start
@@ -988,6 +1069,47 @@ function M.manage_keys()
   
   -- Store the key manager module
   package.loaded['llm.key_manager'] = key_manager
+end
+
+-- Set up syntax highlighting for plugin/key manager buffers
+function M.setup_buffer_highlighting(buf)
+  -- Create syntax groups if they don't exist yet
+  vim.cmd([[
+    highlight default LLMHeader guifg=#61afef gui=bold
+    highlight default LLMSubHeader guifg=#56b6c2 gui=bold
+    highlight default LLMInstalled guifg=#98c379 gui=bold
+    highlight default LLMNotInstalled guifg=#e06c75
+    highlight default LLMAction guifg=#c678dd gui=italic
+    highlight default LLMDivider guifg=#3b4048
+    highlight default LLMCustom guifg=#e5c07b gui=bold
+  ]])
+  
+  -- Define syntax matching
+  local syntax_cmds = {
+    -- Headers
+    "syntax match LLMHeader /^#.*/",
+    "syntax match LLMSubHeader /^##.*/",
+    
+    -- Installed/not installed items
+    "syntax match LLMInstalled /\\[✓\\].*/",
+    "syntax match LLMNotInstalled /\\[ \\].*/",
+    
+    -- Action text
+    "syntax match LLMAction /Press.*quit/",
+    
+    -- Dividers
+    "syntax match LLMDivider /^─\\+$/",
+    
+    -- Custom items
+    "syntax match LLMCustom /\\[+\\].*/",
+  }
+  
+  -- Apply syntax commands to the buffer
+  for _, cmd in ipairs(syntax_cmds) do
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd(cmd)
+    end)
+  end
 end
 
 -- Make sure all functions are properly exposed in the module
