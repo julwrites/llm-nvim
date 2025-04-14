@@ -120,11 +120,11 @@ claude-3-opus-20240229 Anthropic
     local cleanup = test_helpers.mock_llm_command("llm models", [[
 Models:
 ------------------
-gpt-4o                 OpenAI
-claude-3-sonnet-20240229 Anthropic
-claude-3-opus-20240229   Anthropic
-gemini-pro              Google
-mistral-large            Mistral AI
+OpenAI Chat: gpt-4o (aliases: 4o)
+OpenAI Chat: gpt-3.5-turbo (aliases: 3.5, chatgpt)
+Anthropic Messages: anthropic/claude-3-opus-20240229
+Anthropic Messages: anthropic/claude-3-sonnet-20240229 (aliases: claude-3-sonnet)
+Default: gpt-4o-mini
 ]])
     
     -- Call the function directly from the global scope
@@ -134,11 +134,45 @@ mistral-large            Mistral AI
     cleanup()
     
     -- Check the results
-    assert(#models == 5, "Should find 5 models")
-    assert(models[1] == "gpt-4o", "First model should be gpt-4o")
-    assert(models[2] == "claude-3-sonnet-20240229", "Second model should be claude-3-sonnet")
-    assert(models[3] == "claude-3-opus-20240229", "Third model should be claude-3-opus")
-    assert(models[4] == "gemini-pro", "Fourth model should be gemini-pro")
-    assert(models[5] == "mistral-large", "Fifth model should be mistral-large")
+    assert(#models == 4, "Should find 4 models (excluding Default line)")
+    assert(models[1] == "OpenAI Chat: gpt-4o (aliases: 4o)", "First model should include full line")
+    assert(models[2] == "OpenAI Chat: gpt-3.5-turbo (aliases: 3.5, chatgpt)", "Second model should include full line")
+    assert(models[3] == "Anthropic Messages: anthropic/claude-3-opus-20240229", "Third model should include full line")
+    assert(models[4] == "Anthropic Messages: anthropic/claude-3-sonnet-20240229 (aliases: claude-3-sonnet)", "Fourth model should include full line")
+  end)
+  
+  it('should correctly extract model names from full model lines', function()
+    -- Skip this test if extract_model_name doesn't exist yet
+    if type(_G.extract_model_name) ~= 'function' then
+      pending("extract_model_name function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Test various model line formats
+    local test_cases = {
+      {
+        input = "OpenAI Chat: gpt-4o (aliases: 4o)",
+        expected = "gpt-4o"
+      },
+      {
+        input = "OpenAI Chat: gpt-3.5-turbo (aliases: 3.5, chatgpt)",
+        expected = "gpt-3.5-turbo"
+      },
+      {
+        input = "Anthropic Messages: anthropic/claude-3-opus-20240229",
+        expected = "anthropic/claude-3-opus-20240229"
+      },
+      {
+        input = "Anthropic Messages: anthropic/claude-3-sonnet-20240229 (aliases: claude-3-sonnet)",
+        expected = "anthropic/claude-3-sonnet-20240229"
+      }
+    }
+    
+    for _, test_case in ipairs(test_cases) do
+      local result = _G.extract_model_name(test_case.input)
+      assert(result == test_case.expected, 
+        string.format("Expected '%s', got '%s' for input '%s'", 
+          test_case.expected, result, test_case.input))
+    end
   end)
 end)

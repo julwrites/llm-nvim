@@ -39,12 +39,9 @@ function M.get_available_models()
   local models = {}
   for line in result:gmatch("[^\r\n]+") do
     -- Skip header lines and empty lines
-    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") then
-      -- Extract model name (first column)
-      local model = line:match("^([^%s]+)")
-      if model then
-        table.insert(models, model)
-      end
+    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
+      -- Use the whole line for display
+      table.insert(models, line)
     end
   end
   
@@ -214,6 +211,22 @@ function M.start_chat(model_override)
   api.nvim_command('startinsert')
 end
 
+-- Extract model name from the full model line
+local function extract_model_name(model_line)
+  -- Extract the actual model name (after the provider type)
+  local model_name = model_line:match(": ([^%(]+)")
+  if model_name then
+    -- Trim whitespace
+    model_name = model_name:match("^%s*(.-)%s*$")
+    return model_name
+  end
+  
+  -- Fallback to the first word if the pattern doesn't match
+  return model_line:match("^([^%s]+)")
+end
+-- Expose for testing
+_G.extract_model_name = extract_model_name
+
 -- Select a model from available models
 function M.select_model()
   if not check_llm_installed() then
@@ -248,9 +261,11 @@ function M.select_model()
           actions.close(prompt_bufnr)
           
           if selection then
+            -- Extract the model name from the full line
+            local model_name = extract_model_name(selection[1])
             -- Update the model in config
-            config.options.model = selection[1]
-            vim.notify("Model set to: " .. selection[1], vim.log.levels.INFO)
+            config.options.model = model_name
+            vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
           end
         end)
         return true
@@ -264,25 +279,30 @@ function M.select_model()
         format_item = function(item)
           return item
         end,
-      }, function(model)
-        if model then
+      }, function(model_line)
+        if model_line then
+          -- Extract the model name from the full line
+          local model_name = extract_model_name(model_line)
           -- Update the model in config
-          config.options.model = model
-          vim.notify("Model set to: " .. model, vim.log.levels.INFO)
+          config.options.model = model_name
+          vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
         end
       end)
     else
       -- Very basic fallback using inputlist
       local options = {"Select a model:"}
-      for i, model in ipairs(models) do
-        table.insert(options, i .. ": " .. model)
+      for i, model_line in ipairs(models) do
+        table.insert(options, i .. ": " .. model_line)
       end
       
       local choice = vim.fn.inputlist(options)
       if choice >= 1 and choice <= #models then
-        local model = models[choice]
-        config.options.model = model
-        vim.notify("Model set to: " .. model, vim.log.levels.INFO)
+        local model_line = models[choice]
+        -- Extract the model name from the full line
+        local model_name = extract_model_name(model_line)
+        -- Update the model in config
+        config.options.model = model_name
+        vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
       end
     end
   end
