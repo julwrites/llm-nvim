@@ -9,16 +9,10 @@ if vim.g.loaded_llm == 1 then
 end
 vim.g.loaded_llm = 1
 
--- Load the configuration module
-local config = require("llm.config")
-
--- Initialize with default configuration
-config.setup()
-
 -- Load the main module
 local ok, llm = pcall(require, "llm")
 if not ok then
-  vim.notify("Failed to load llm module", vim.log.levels.ERROR)
+  vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
   return
 end
 
@@ -46,6 +40,7 @@ vim.keymap.set("n", "<Plug>(llm-explain)", ":LLMExplain<CR>", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-chat)", ":LLMChat<CR>", { silent = true })
 
 -- Default mappings (can be disabled with config option)
+local config = require("llm.config")
 if not config.get("no_mappings") then
   vim.keymap.set("n", "<leader>llm", "<Plug>(llm-prompt)")
   vim.keymap.set("v", "<leader>llm", "<Plug>(llm-selection)")
