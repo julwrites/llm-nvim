@@ -8,6 +8,9 @@ if exists('g:loaded_llm') || &cp || v:version < 700
 endif
 let g:loaded_llm = 1
 
+" Ensure the Lua module is loaded
+lua require('llm')
+
 " Default configuration
 if !exists('g:llm_model')
   let g:llm_model = ''  " Default to using the default model

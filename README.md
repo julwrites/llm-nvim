@@ -20,13 +20,26 @@ A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://git
 ### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
-Plug 'yourusername/llm-nvim'
+Plug 'julwrites/llm-nvim'
 ```
 
 ### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
-use 'yourusername/llm-nvim'
+use 'julwrites/llm-nvim'
+```
+
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+
+```lua
+{
+  'julwrites/llm-nvim',
+  config = function()
+    -- Optional configuration
+    vim.g.llm_model = 'gpt-4'
+    vim.g.llm_system_prompt = 'You are a helpful assistant.'
+  end
+}
 ```
 
 ## Configuration
