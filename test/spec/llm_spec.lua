@@ -25,8 +25,8 @@ describe('llm-nvim', function()
     -- Check for select_model function in global scope (exposed by test helper)
     assert(type(_G.select_model) == 'function', "select_model function should exist in global scope")
     
-    -- Check for manage_plugins function
-    assert(type(llm.manage_plugins) == 'function', "manage_plugins function should exist")
+    -- Check for manage_plugins function in global scope (exposed by test helper)
+    assert(type(_G.manage_plugins) == 'function', "manage_plugins function should exist")
   end)
   
   it('should define the expected commands', function()

@@ -79,7 +79,7 @@ function M.expose_module_functions(module)
   _G.prompt_with_selection = module.prompt_with_selection
   _G.explain_code = module.explain_code
   _G.start_chat = module.start_chat
-  _G.manage_plugins = module.manage_plugins
+  _G.manage_plugins = module.manage_plugins or function() end -- Provide a default implementation
   _G.get_available_models = module.get_available_models
   
   -- Also expose helper functions that are used in tests

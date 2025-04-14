@@ -79,6 +79,8 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>lle` - Explain the current buffer
 - `<leader>llc` - Start a chat session
 - `<leader>lls` - Select a model from available models
+- `<leader>llp` - Open the plugin manager
+- `<leader>llp` - Open the plugin manager
 
 ## License
 
