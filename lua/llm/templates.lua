@@ -352,7 +352,10 @@ function M.manage_templates()
     api.nvim_buf_set_option(content_buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(content_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(content_buf, 'swapfile', false)
-    api.nvim_buf_set_name(content_buf, 'LLM Template: ' .. template_name)
+    
+    -- Use a unique buffer name to avoid conflicts
+    local buffer_name = 'LLM Template View: ' .. template_name .. ' ' .. os.time()
+    pcall(api.nvim_buf_set_name, content_buf, buffer_name)
     
     -- Create a new window
     local content_win = api.nvim_open_win(content_buf, true, {
@@ -425,7 +428,10 @@ function M.manage_templates()
     api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
     api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(edit_buf, 'swapfile', false)
-    api.nvim_buf_set_name(edit_buf, 'LLM Template: ' .. template_name)
+    
+    -- Use a unique buffer name to avoid conflicts
+    local buffer_name = 'LLM Template: ' .. template_name .. ' ' .. os.time()
+    pcall(api.nvim_buf_set_name, edit_buf, buffer_name)
     
     -- Create a new window
     local width = math.floor(vim.o.columns * 0.8)
@@ -531,7 +537,10 @@ function M.manage_templates()
       api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
       api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
       api.nvim_buf_set_option(edit_buf, 'swapfile', false)
-      api.nvim_buf_set_name(edit_buf, 'LLM Template: ' .. name)
+      
+      -- Use a unique buffer name to avoid conflicts
+      local buffer_name = 'LLM Template: ' .. name .. ' ' .. os.time()
+      pcall(api.nvim_buf_set_name, edit_buf, buffer_name)
       
       -- Create a new window
       local width = math.floor(vim.o.columns * 0.8)
@@ -714,19 +723,34 @@ function M.manage_templates()
     -- Create a temporary file with the template content
     local temp_file = os.tmpname()
     local file = io.open(temp_file, "w")
+    
+    if not file then
+      vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+      return
+    end
+    
     file:write(content)
     file:close()
     
     -- Import the template
-    local cmd = string.format('llm templates import %s', temp_file)
+    local cmd = string.format('llm templates import "%s"', temp_file)
     local handle = io.popen(cmd)
+    
+    if not handle then
+      vim.notify("Failed to execute command", vim.log.levels.ERROR)
+      os.remove(temp_file)
+      return
+    end
+    
     local result = handle:read("*a")
-    local success = handle:close()
+    local success, exit_type, exit_code = handle:close()
     
     -- Clean up temp file
     os.remove(temp_file)
     
-    if success then
+    -- In Lua, popen:close() returns true only if the command exited with status 0
+    -- For llm CLI, we need to check the output for success indicators
+    if result and (result:match("Template saved") or result:match("saved successfully") or result:match("Imported template")) then
       if is_new then
         vim.notify("Template created: " .. name, vim.log.levels.INFO)
       else
@@ -743,7 +767,7 @@ function M.manage_templates()
         M.manage_templates()
       end)
     else
-      vim.notify("Failed to save template. Check your YAML syntax.", vim.log.levels.ERROR)
+      vim.notify("Failed to save template. Check your YAML syntax: " .. (result or "Unknown error"), vim.log.levels.ERROR)
     end
   end
   

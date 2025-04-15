@@ -368,7 +368,10 @@ function M.manage_schemas()
     api.nvim_buf_set_option(content_buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(content_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(content_buf, 'swapfile', false)
-    api.nvim_buf_set_name(content_buf, 'LLM Schema: ' .. schema_id)
+    
+    -- Use a unique buffer name to avoid conflicts
+    local buffer_name = 'LLM Schema View: ' .. schema_id .. ' ' .. os.time()
+    pcall(api.nvim_buf_set_name, content_buf, buffer_name)
     
     -- Create a new window
     local content_win = api.nvim_open_win(content_buf, true, {
@@ -428,7 +431,10 @@ function M.manage_schemas()
     api.nvim_buf_set_option(edit_buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(edit_buf, 'swapfile', false)
-    api.nvim_buf_set_name(edit_buf, 'LLM Edit Schema: ' .. schema_id)
+    
+    -- Use a unique buffer name to avoid conflicts
+    local buffer_name = 'LLM Edit Schema: ' .. schema_id .. ' ' .. os.time()
+    pcall(api.nvim_buf_set_name, edit_buf, buffer_name)
     
     -- Create a new window
     local edit_win = api.nvim_open_win(edit_buf, true, {
@@ -620,7 +626,10 @@ function M.manage_schemas()
     api.nvim_buf_set_option(create_buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(create_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(create_buf, 'swapfile', false)
-    api.nvim_buf_set_name(create_buf, 'LLM Create Schema')
+    
+    -- Use a unique buffer name to avoid conflicts
+    local buffer_name = 'LLM Create Schema ' .. os.time()
+    pcall(api.nvim_buf_set_name, create_buf, buffer_name)
     
     -- Create a new window
     local create_win = api.nvim_open_win(create_buf, true, {
