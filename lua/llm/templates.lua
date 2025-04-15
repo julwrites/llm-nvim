@@ -352,7 +352,7 @@ function M.manage_templates()
     api.nvim_buf_set_option(content_buf, 'buftype', 'nofile')
     api.nvim_buf_set_option(content_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(content_buf, 'swapfile', false)
-    api.nvim_buf_set_name(content_buf, 'Template: ' .. template_name)
+    api.nvim_buf_set_name(content_buf, 'LLM Template: ' .. template_name)
     
     -- Create a new window
     local content_win = api.nvim_open_win(content_buf, true, {
@@ -425,7 +425,7 @@ function M.manage_templates()
     api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
     api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
     api.nvim_buf_set_option(edit_buf, 'swapfile', false)
-    api.nvim_buf_set_name(edit_buf, 'Template: ' .. template_name)
+    api.nvim_buf_set_name(edit_buf, 'LLM Template: ' .. template_name)
     
     -- Create a new window
     local width = math.floor(vim.o.columns * 0.8)
@@ -531,7 +531,7 @@ function M.manage_templates()
       api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
       api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
       api.nvim_buf_set_option(edit_buf, 'swapfile', false)
-      api.nvim_buf_set_name(edit_buf, 'Template: ' .. name)
+      api.nvim_buf_set_name(edit_buf, 'LLM Template: ' .. name)
       
       -- Create a new window
       local width = math.floor(vim.o.columns * 0.8)
