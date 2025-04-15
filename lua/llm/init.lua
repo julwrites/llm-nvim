@@ -1101,7 +1101,7 @@ function M.manage_models()
         -- Close and reopen the model manager to refresh
         vim.api.nvim_win_close(0, true)
         vim.schedule(function()
-          M.select_model()
+          M.manage_models()
         end)
       else
         vim.notify("Failed to set alias", vim.log.levels.ERROR)

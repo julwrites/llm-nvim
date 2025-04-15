@@ -82,12 +82,12 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 
 ### Default Mappings
 
-- `<leader>llm` - Prompt for input and send to LLM
-- `<leader>llm` - In visual mode, send selection to LLM
+- `<leader>llp` - Prompt for input and send to LLM
+- `<leader>lls` - In visual mode, send selection to LLM
 - `<leader>lle` - Explain the current buffer
 - `<leader>llc` - Start a chat session
 - `<leader>llm` - Manage models and aliases
-- `<leader>llp` - Open the plugin manager
+- `<leader>llg` - Open the plugin manager
 - `<leader>llk` - Manage API keys
 - `<leader>llf` - Manage fragments
 - `<leader>llsf` - Select a file to use as a fragment

@@ -5,8 +5,8 @@
 local llm = require('llm.init')
 
 -- Make sure all functions are properly exposed
-if not llm.select_model then
-  llm.select_model = require('llm.init').select_model
+if not llm.manage_models then
+  llm.manage_models = require('llm.init').manage_models
 end
 
 if not llm.manage_plugins then
@@ -19,6 +19,14 @@ end
 
 if not llm.manage_keys then
   llm.manage_keys = require('llm.init').manage_keys
+end
+
+if not llm.manage_fragments then
+  llm.manage_fragments = require('llm.init').manage_fragments
+end
+
+if not llm.select_fragment then
+  llm.select_fragment = require('llm.init').select_fragment
 end
 
 return llm
