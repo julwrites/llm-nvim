@@ -72,8 +72,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `:LLMWithSelection {prompt}` - Send selected text with an optional prompt
 - `:LLMChat {model}` - Start an interactive chat session (optional model)
 - `:LLMExplain` - Explain the code in the current buffer
-- `:LLMSelectModel` - Select a model from available models and manage model aliases
-- `:LLMAliases` - Manage model aliases (same as LLMSelectModel)
+- `:LLMModels` - Manage models and aliases (set default, add/remove aliases)
 - `:LLMPlugins` - Manage LLM plugins (install/uninstall)
 - `:LLMKeys` - Manage API keys for different LLM providers
 - `:LLMFragments` - Manage fragments (view, set aliases, remove aliases)
@@ -87,8 +86,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>llm` - In visual mode, send selection to LLM
 - `<leader>lle` - Explain the current buffer
 - `<leader>llc` - Start a chat session
-- `<leader>lls` - Select a model from available models and manage aliases
-- `<leader>lla` - Manage model aliases (same as `<leader>lls`)
+- `<leader>llm` - Manage models and aliases
 - `<leader>llp` - Open the plugin manager
 - `<leader>llk` - Manage API keys
 - `<leader>llf` - Manage fragments
