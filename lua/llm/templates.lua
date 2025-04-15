@@ -221,14 +221,25 @@ function M.manage_templates()
   local lines = {
     "# LLM Templates Manager",
     "",
-    "Press 'v' to view template, 'e' to edit template, 'd' to delete template, 'c' to create new template, 'r' to run template, 'q' to quit",
+    "Keyboard shortcuts:",
+    "  v - View template details",
+    "  e - Edit template",
+    "  d - Delete template",
+    "  c - Create new template",
+    "  r - Run template",
+    "  q - Quit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
   
   -- Add templates to the buffer
-  for i, template_name in ipairs(templates) do
-    table.insert(lines, template_name)
+  if #templates > 0 then
+    table.insert(lines, "Available templates:")
+    for i, template_name in ipairs(templates) do
+      table.insert(lines, "  • " .. template_name)
+    end
+  else
+    table.insert(lines, "No templates found. Press 'c' to create a new template.")
   end
   
   -- Add option to create a new template
@@ -247,12 +258,14 @@ function M.manage_templates()
   vim.cmd([[
     highlight default LLMTemplateItem guifg=#61afef
     highlight default LLMTemplateCreate guifg=#98c379 gui=bold
+    highlight default LLMTemplateKeyShortcut guifg=#c678dd
   ]])
   
   -- Apply syntax highlighting
   local syntax_cmds = {
-    "syntax match LLMTemplateItem /^[^#\\[].\\+$/",
+    "syntax match LLMTemplateItem /^  • .\\+$/",
     "syntax match LLMTemplateCreate /^\\[+\\] Create new template$/",
+    "syntax match LLMTemplateKeyShortcut /^  [a-z] - .\\+$/",
   }
   
   for _, cmd in ipairs(syntax_cmds) do
@@ -263,9 +276,13 @@ function M.manage_templates()
   
   -- Map of line numbers to template names
   local line_to_template = {}
-  local template_start_line = 6 -- Line where templates start
-  for i, template_name in ipairs(templates) do
-    line_to_template[template_start_line + i - 1] = template_name
+  local template_start_line = 12 -- Line where templates start
+  if #templates > 0 then
+    template_start_line = 13 -- Account for the "Available templates:" line
+    for i, template_name in ipairs(templates) do
+      local line_num = template_start_line + i - 1
+      line_to_template[line_num] = template_name
+    end
   end
   
   -- Set keymaps
@@ -384,62 +401,74 @@ function M.manage_templates()
     -- Get template details
     local details = M.get_template_details(template_name)
     
-    -- Create a temporary file with the template content
-    local temp_file = os.tmpname()
-    local file = io.open(temp_file, "w")
+    -- Create a new buffer for the template editor
+    local edit_buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
+    api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
+    api.nvim_buf_set_option(edit_buf, 'swapfile', false)
+    api.nvim_buf_set_name(edit_buf, 'Template: ' .. template_name)
     
-    file:write("name: " .. template_name .. "\n\n")
+    -- Create a new window
+    local width = math.floor(vim.o.columns * 0.8)
+    local height = math.floor(vim.o.lines * 0.8)
+    local row = math.floor((vim.o.lines - height) / 2)
+    local col = math.floor((vim.o.columns - width) / 2)
+    
+    local edit_win = api.nvim_open_win(edit_buf, true, {
+      relative = 'editor',
+      width = width,
+      height = height,
+      row = row,
+      col = col,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' Edit Template: ' .. template_name .. ' ',
+      title_pos = 'center',
+    })
+    
+    -- Set initial content
+    local content_lines = {
+      "name: " .. template_name,
+      ""
+    }
     
     if details.prompt and details.prompt ~= "" then
-      file:write("prompt: " .. details.prompt .. "\n\n")
+      table.insert(content_lines, "prompt: " .. details.prompt)
+      table.insert(content_lines, "")
     end
     
     if details.system and details.system ~= "" then
-      file:write("system: " .. details.system .. "\n\n")
+      table.insert(content_lines, "system: " .. details.system)
+      table.insert(content_lines, "")
     end
     
     if details.schema then
-      file:write("schema: " .. details.schema .. "\n")
+      table.insert(content_lines, "schema: " .. details.schema)
     end
     
-    file:close()
+    table.insert(content_lines, "")
+    table.insert(content_lines, "# Press <leader>s to save the template")
+    table.insert(content_lines, "# Press q to cancel")
     
-    -- Close the template manager window
-    vim.api.nvim_win_close(0, true)
+    api.nvim_buf_set_lines(edit_buf, 0, -1, false, content_lines)
     
-    -- Open the temporary file in a new buffer
-    vim.cmd("edit " .. temp_file)
+    -- Set buffer as modifiable
+    api.nvim_buf_set_option(edit_buf, 'modifiable', true)
     
-    -- Set up autocmd to save the template when the buffer is written
-    local augroup = api.nvim_create_augroup("LLMTemplateEdit", { clear = true })
-    api.nvim_create_autocmd("BufWritePost", {
-      group = augroup,
-      buffer = api.nvim_get_current_buf(),
-      callback = function()
-        -- Import the template
-        local cmd = string.format('llm templates import %s', temp_file)
-        local handle = io.popen(cmd)
-        local result = handle:read("*a")
-        local success = handle:close()
-        
-        if success then
-          vim.notify("Template saved: " .. template_name, vim.log.levels.INFO)
-        else
-          vim.notify("Failed to save template", vim.log.levels.ERROR)
-        end
-      end
-    })
+    -- Set filetype for syntax highlighting
+    api.nvim_buf_set_option(edit_buf, 'filetype', 'yaml')
     
-    -- Set up autocmd to clean up the temporary file when the buffer is closed
-    api.nvim_create_autocmd("BufUnload", {
-      group = augroup,
-      buffer = api.nvim_get_current_buf(),
-      callback = function()
-        os.remove(temp_file)
-      end
-    })
+    -- Set keymaps
+    api.nvim_buf_set_keymap(edit_buf, 'n', '<leader>s', [[<cmd>lua require('llm.template_manager').save_template_buffer()<CR>]], {noremap = true, silent = true})
+    api.nvim_buf_set_keymap(edit_buf, 'n', 'q', [[<cmd>lua require('llm.template_manager').cancel_template_edit()<CR>]], {noremap = true, silent = true})
     
-    vim.notify("Edit the template and save to update it. The file will be automatically imported.", vim.log.levels.INFO)
+    -- Store buffer data for later use
+    template_manager.current_edit_buffer = {
+      buf = edit_buf,
+      win = edit_win,
+      name = template_name,
+      is_new = false
+    }
   end
   
   function template_manager.delete_template_under_cursor()
@@ -469,9 +498,6 @@ function M.manage_templates()
   end
   
   function template_manager.create_new_template()
-    -- Close the template manager window
-    vim.api.nvim_win_close(0, true)
-    
     -- Ask for template name
     vim.ui.input({
       prompt = "Enter template name: "
@@ -481,52 +507,65 @@ function M.manage_templates()
         return
       end
       
-      -- Create a temporary file for the template
-      local temp_file = os.tmpname()
-      local file = io.open(temp_file, "w")
+      -- Create a new buffer for the template editor
+      local edit_buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_option(edit_buf, 'buftype', 'acwrite')
+      api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
+      api.nvim_buf_set_option(edit_buf, 'swapfile', false)
+      api.nvim_buf_set_name(edit_buf, 'Template: ' .. name)
       
-      file:write("name: " .. name .. "\n\n")
-      file:write("# Add your template content below\n")
-      file:write("# Examples:\n")
-      file:write("# prompt: Your prompt text here\n")
-      file:write("# system: Your system prompt here\n")
-      file:write("# schema: name, age int, bio\n")
+      -- Create a new window
+      local width = math.floor(vim.o.columns * 0.8)
+      local height = math.floor(vim.o.lines * 0.8)
+      local row = math.floor((vim.o.lines - height) / 2)
+      local col = math.floor((vim.o.columns - width) / 2)
       
-      file:close()
-      
-      -- Open the temporary file in a new buffer
-      vim.cmd("edit " .. temp_file)
-      
-      -- Set up autocmd to save the template when the buffer is written
-      local augroup = api.nvim_create_augroup("LLMTemplateCreate", { clear = true })
-      api.nvim_create_autocmd("BufWritePost", {
-        group = augroup,
-        buffer = api.nvim_get_current_buf(),
-        callback = function()
-          -- Import the template
-          local cmd = string.format('llm templates import %s', temp_file)
-          local handle = io.popen(cmd)
-          local result = handle:read("*a")
-          local success = handle:close()
-          
-          if success then
-            vim.notify("Template created: " .. name, vim.log.levels.INFO)
-          else
-            vim.notify("Failed to create template", vim.log.levels.ERROR)
-          end
-        end
+      local edit_win = api.nvim_open_win(edit_buf, true, {
+        relative = 'editor',
+        width = width,
+        height = height,
+        row = row,
+        col = col,
+        style = 'minimal',
+        border = 'rounded',
+        title = ' New Template: ' .. name .. ' ',
+        title_pos = 'center',
       })
       
-      -- Set up autocmd to clean up the temporary file when the buffer is closed
-      api.nvim_create_autocmd("BufUnload", {
-        group = augroup,
-        buffer = api.nvim_get_current_buf(),
-        callback = function()
-          os.remove(temp_file)
-        end
-      })
+      -- Set initial content
+      local content_lines = {
+        "name: " .. name,
+        "",
+        "# Add your template content below",
+        "# Examples:",
+        "prompt: Your prompt text here",
+        "system: You are a helpful assistant.",
+        "# For schema templates, use:",
+        "# schema: name, age int, bio",
+        "",
+        "# Press <leader>s to save the template",
+        "# Press q to cancel"
+      }
       
-      vim.notify("Edit the template and save to create it. The file will be automatically imported.", vim.log.levels.INFO)
+      api.nvim_buf_set_lines(edit_buf, 0, -1, false, content_lines)
+      
+      -- Set buffer as modifiable
+      api.nvim_buf_set_option(edit_buf, 'modifiable', true)
+      
+      -- Set filetype for syntax highlighting
+      api.nvim_buf_set_option(edit_buf, 'filetype', 'yaml')
+      
+      -- Set keymaps
+      api.nvim_buf_set_keymap(edit_buf, 'n', '<leader>s', [[<cmd>lua require('llm.template_manager').save_template_buffer()<CR>]], {noremap = true, silent = true})
+      api.nvim_buf_set_keymap(edit_buf, 'n', 'q', [[<cmd>lua require('llm.template_manager').cancel_template_edit()<CR>]], {noremap = true, silent = true})
+      
+      -- Store buffer data for later use
+      template_manager.current_edit_buffer = {
+        buf = edit_buf,
+        win = edit_win,
+        name = name,
+        is_new = true
+      }
     end)
   end
   
@@ -551,6 +590,150 @@ function M.manage_templates()
     end)
   end
   
+  -- Helper function to save the template from the edit buffer
+  function template_manager.save_template_buffer()
+    if not template_manager.current_edit_buffer then
+      vim.notify("No template being edited", vim.log.levels.ERROR)
+      return
+    end
+    
+    local buf = template_manager.current_edit_buffer.buf
+    local win = template_manager.current_edit_buffer.win
+    local name = template_manager.current_edit_buffer.name
+    local is_new = template_manager.current_edit_buffer.is_new
+    
+    -- Get buffer content
+    local content = table.concat(api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+    
+    -- Create a temporary file with the template content
+    local temp_file = os.tmpname()
+    local file = io.open(temp_file, "w")
+    file:write(content)
+    file:close()
+    
+    -- Import the template
+    local cmd = string.format('llm templates import %s', temp_file)
+    local handle = io.popen(cmd)
+    local result = handle:read("*a")
+    local success = handle:close()
+    
+    -- Clean up temp file
+    os.remove(temp_file)
+    
+    if success then
+      if is_new then
+        vim.notify("Template created: " .. name, vim.log.levels.INFO)
+      else
+        vim.notify("Template updated: " .. name, vim.log.levels.INFO)
+      end
+      
+      -- Close the edit window
+      if api.nvim_win_is_valid(win) then
+        api.nvim_win_close(win, true)
+      end
+      
+      -- Refresh the template manager
+      vim.schedule(function()
+        M.manage_templates()
+      end)
+    else
+      vim.notify("Failed to save template. Check your YAML syntax.", vim.log.levels.ERROR)
+    end
+  end
+  
+  -- Helper function to cancel template editing
+  function template_manager.cancel_template_edit()
+    if not template_manager.current_edit_buffer then
+      return
+    end
+    
+    local win = template_manager.current_edit_buffer.win
+    
+    -- Close the edit window
+    if api.nvim_win_is_valid(win) then
+      api.nvim_win_close(win, true)
+    end
+    
+    -- Refresh the template manager if it was closed
+    vim.schedule(function()
+      if not api.nvim_buf_is_valid(buf) then
+        M.manage_templates()
+      end
+    end)
+  end
+
+  -- Helper function to save the template from the edit buffer
+  function template_manager.save_template_buffer()
+    if not template_manager.current_edit_buffer then
+      vim.notify("No template being edited", vim.log.levels.ERROR)
+      return
+    end
+    
+    local buf = template_manager.current_edit_buffer.buf
+    local win = template_manager.current_edit_buffer.win
+    local name = template_manager.current_edit_buffer.name
+    local is_new = template_manager.current_edit_buffer.is_new
+    
+    -- Get buffer content
+    local content = table.concat(api.nvim_buf_get_lines(buf, 0, -1, false), "\n")
+    
+    -- Create a temporary file with the template content
+    local temp_file = os.tmpname()
+    local file = io.open(temp_file, "w")
+    file:write(content)
+    file:close()
+    
+    -- Import the template
+    local cmd = string.format('llm templates import %s', temp_file)
+    local handle = io.popen(cmd)
+    local result = handle:read("*a")
+    local success = handle:close()
+    
+    -- Clean up temp file
+    os.remove(temp_file)
+    
+    if success then
+      if is_new then
+        vim.notify("Template created: " .. name, vim.log.levels.INFO)
+      else
+        vim.notify("Template updated: " .. name, vim.log.levels.INFO)
+      end
+      
+      -- Close the edit window
+      if api.nvim_win_is_valid(win) then
+        api.nvim_win_close(win, true)
+      end
+      
+      -- Refresh the template manager
+      vim.schedule(function()
+        M.manage_templates()
+      end)
+    else
+      vim.notify("Failed to save template. Check your YAML syntax.", vim.log.levels.ERROR)
+    end
+  end
+  
+  -- Helper function to cancel template editing
+  function template_manager.cancel_template_edit()
+    if not template_manager.current_edit_buffer then
+      return
+    end
+    
+    local win = template_manager.current_edit_buffer.win
+    
+    -- Close the edit window
+    if api.nvim_win_is_valid(win) then
+      api.nvim_win_close(win, true)
+    end
+    
+    -- Refresh the template manager if it was closed
+    vim.schedule(function()
+      if not api.nvim_buf_is_valid(buf) then
+        M.manage_templates()
+      end
+    end)
+  end
+
   -- Store the template manager module
   package.loaded['llm.template_manager'] = template_manager
 end

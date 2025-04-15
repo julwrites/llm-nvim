@@ -91,17 +91,34 @@ function M.create_schema(name, schema_content)
   local temp_file = os.tmpname()
   local file = io.open(temp_file, "w")
   
+  if not file then
+    vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+    return false
+  end
+  
   file:write(schema_content)
   file:close()
   
   -- Create the schema using llm CLI
-  local cmd = string.format('llm schemas save %s %s', name, temp_file)
+  local cmd = string.format('llm schemas save "%s" "%s"', name, temp_file)
   local handle = io.popen(cmd)
+  if not handle then
+    vim.notify("Failed to execute command", vim.log.levels.ERROR)
+    os.remove(temp_file)
+    return false
+  end
+  
   local result = handle:read("*a")
   local success = handle:close()
   
   -- Clean up temp file
   os.remove(temp_file)
+  
+  if success then
+    vim.notify("Schema created successfully: " .. name, vim.log.levels.INFO)
+  else
+    vim.notify("Failed to create schema: " .. (result or "Unknown error"), vim.log.levels.ERROR)
+  end
   
   return success
 end
@@ -147,12 +164,22 @@ function M.run_schema(schema_id, input, is_multi)
   end
 end
 
--- Convert DSL to JSON schema
-function M.dsl_to_schema(dsl)
-  local cmd = string.format('llm schemas dsl "%s"', dsl:gsub('"', '\\"'))
+-- Convert Concise LLM Schema Syntax to JSON schema
+function M.concise_to_schema(concise_syntax)
+  local cmd = string.format('llm schemas dsl "%s"', concise_syntax:gsub('"', '\\"'))
   local handle = io.popen(cmd)
+  if not handle then
+    vim.notify("Failed to execute command", vim.log.levels.ERROR)
+    return "{}"
+  end
+  
   local result = handle:read("*a")
   handle:close()
+  
+  if not result or result == "" then
+    vim.notify("Failed to convert schema syntax", vim.log.levels.ERROR)
+    return "{}"
+  end
   
   return result
 end
@@ -391,54 +418,166 @@ function M.manage_schemas()
     -- Get schema details
     local details = M.get_schema_details(schema_id)
     
-    -- Create a temporary file with the schema content
-    local temp_file = os.tmpname()
-    local file = io.open(temp_file, "w")
+    -- Get the current window
+    local current_win = api.nvim_get_current_win()
     
+    -- Create a new buffer for schema editing
+    local edit_buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(edit_buf, 'buftype', 'nofile')
+    api.nvim_buf_set_option(edit_buf, 'bufhidden', 'wipe')
+    api.nvim_buf_set_option(edit_buf, 'swapfile', false)
+    api.nvim_buf_set_name(edit_buf, 'Edit Schema: ' .. schema_id)
+    
+    -- Create a new window
+    local edit_win = api.nvim_open_win(edit_buf, true, {
+      relative = 'editor',
+      width = width,
+      height = height,
+      row = row,
+      col = col,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' Edit Schema: ' .. schema_id .. ' ',
+      title_pos = 'center',
+    })
+    
+    -- Set content
+    local content_lines = {
+      "# Edit Schema: " .. schema_id,
+      "",
+      "Schema Content:",
+      "```json",
+    }
+    
+    -- Add schema content
     if details.schema and details.schema ~= "" then
-      file:write(details.schema)
+      for line in details.schema:gmatch("[^\r\n]+") do
+        table.insert(content_lines, line)
+      end
     else
-      file:write("{\n  \"type\": \"object\",\n  \"properties\": {\n    \n  }\n}")
+      table.insert(content_lines, "{\n  \"type\": \"object\",\n  \"properties\": {\n    \n  }\n}")
     end
     
-    file:close()
+    table.insert(content_lines, "```")
+    table.insert(content_lines, "")
+    table.insert(content_lines, "Press <Ctrl-S> to save changes")
+    table.insert(content_lines, "Press <Esc> to cancel")
     
-    -- Close the schema manager window
-    vim.api.nvim_win_close(0, true)
+    api.nvim_buf_set_lines(edit_buf, 0, -1, false, content_lines)
+    api.nvim_buf_set_option(edit_buf, 'modifiable', true)
     
-    -- Open the temporary file in a new buffer
-    vim.cmd("edit " .. temp_file)
+    -- Set up syntax highlighting
+    require('llm').setup_buffer_highlighting(edit_buf)
     
-    -- Set up autocmd to save the schema when the buffer is written
-    local augroup = api.nvim_create_augroup("LLMSchemaEdit", { clear = true })
-    api.nvim_create_autocmd("BufWritePost", {
-      group = augroup,
-      buffer = api.nvim_get_current_buf(),
-      callback = function()
-        -- Save the schema
-        local cmd = string.format('llm schemas save %s %s', schema_id, temp_file)
-        local handle = io.popen(cmd)
-        local result = handle:read("*a")
-        local success = handle:close()
-        
-        if success then
-          vim.notify("Schema saved: " .. schema_id, vim.log.levels.INFO)
-        else
-          vim.notify("Failed to save schema", vim.log.levels.ERROR)
+    -- Apply syntax highlighting
+    local syntax_cmds = {
+      "syntax match LLMSchemaHeader /^# Edit Schema: .*$/",
+      "syntax match LLMSchemaField /^Schema Content:$/",
+      "syntax match LLMSchemaHelp /^Press.*$/",
+      "syntax region LLMSchemaContent start=/^```json$/ end=/^```$/ contains=ALL"
+    }
+    
+    for _, cmd in ipairs(syntax_cmds) do
+      vim.api.nvim_buf_call(edit_buf, function()
+        vim.cmd(cmd)
+      end)
+    end
+    
+    -- Set highlighting
+    vim.cmd([[
+      highlight default LLMSchemaHeader guifg=#61afef gui=bold
+      highlight default LLMSchemaField guifg=#c678dd gui=bold
+      highlight default LLMSchemaHelp guifg=#5c6370 gui=italic
+      highlight default LLMSchemaContent guifg=#abb2bf
+    ]])
+    
+    -- Set keymaps
+    local function set_keymap(mode, lhs, rhs)
+      api.nvim_buf_set_keymap(edit_buf, mode, lhs, rhs, {noremap = true, silent = true})
+    end
+    
+    -- Save schema
+    set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_edited_schema()<CR>]])
+    
+    -- Cancel
+    set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+    
+    -- Add save function to schema_manager
+    schema_manager.edit_buf = edit_buf
+    schema_manager.edit_win = edit_win
+    schema_manager.current_schema_id = schema_id
+    schema_manager.current_win = current_win
+    
+    schema_manager.save_edited_schema = function()
+      -- Get content from buffer
+      local start_line = 4 -- After ```json
+      local end_line
+      
+      -- Find the closing ```
+      local lines = api.nvim_buf_get_lines(schema_manager.edit_buf, 0, -1, false)
+      for i, line in ipairs(lines) do
+        if i > start_line and line == "```" then
+          end_line = i
+          break
         end
       end
-    })
-    
-    -- Set up autocmd to clean up the temporary file when the buffer is closed
-    api.nvim_create_autocmd("BufUnload", {
-      group = augroup,
-      buffer = api.nvim_get_current_buf(),
-      callback = function()
-        os.remove(temp_file)
+      
+      if not end_line then
+        vim.notify("Invalid schema format", vim.log.levels.ERROR)
+        return
       end
-    })
+      
+      local content_lines = api.nvim_buf_get_lines(schema_manager.edit_buf, start_line, end_line, false)
+      local content = table.concat(content_lines, "\n")
+      
+      -- Create a temporary file with the schema content
+      local temp_file = os.tmpname()
+      local file = io.open(temp_file, "w")
+      
+      if not file then
+        vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+        return
+      end
+      
+      file:write(content)
+      file:close()
+      
+      -- Save the schema
+      local cmd = string.format('llm schemas save "%s" "%s"', schema_manager.current_schema_id, temp_file)
+      local handle = io.popen(cmd)
+      
+      if not handle then
+        vim.notify("Failed to execute command", vim.log.levels.ERROR)
+        os.remove(temp_file)
+        return
+      end
+      
+      local result = handle:read("*a")
+      local success = handle:close()
+      
+      -- Clean up temp file
+      os.remove(temp_file)
+      
+      if success then
+        vim.notify("Schema saved: " .. schema_manager.current_schema_id, vim.log.levels.INFO)
+        
+        -- Close the edit window
+        api.nvim_win_close(schema_manager.edit_win, true)
+        
+        -- Close the schema manager window
+        api.nvim_win_close(schema_manager.current_win, true)
+        
+        -- Reopen the schema manager
+        vim.schedule(function()
+          M.manage_schemas()
+        end)
+      else
+        vim.notify("Failed to save schema: " .. (result or "Unknown error"), vim.log.levels.ERROR)
+      end
+    end
     
-    vim.notify("Edit the schema and save to update it.", vim.log.levels.INFO)
+    -- Position cursor at the beginning of the schema content
+    vim.api.nvim_win_set_cursor(edit_win, {5, 0})
   end
   
   function schema_manager.delete_schema_under_cursor()
@@ -468,108 +607,241 @@ function M.manage_schemas()
   end
   
   function schema_manager.create_new_schema()
-    -- Close the schema manager window
-    vim.api.nvim_win_close(0, true)
+    -- Get the current window and buffer
+    local current_win = api.nvim_get_current_win()
+    local current_buf = api.nvim_get_current_buf()
     
-    -- Ask for schema name
-    vim.ui.input({
-      prompt = "Enter schema name: "
-    }, function(name)
-      if not name or name == "" then
+    -- Create a new buffer for schema creation
+    local create_buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(create_buf, 'buftype', 'nofile')
+    api.nvim_buf_set_option(create_buf, 'bufhidden', 'wipe')
+    api.nvim_buf_set_option(create_buf, 'swapfile', false)
+    api.nvim_buf_set_name(create_buf, 'Create Schema')
+    
+    -- Create a new window
+    local create_win = api.nvim_open_win(create_buf, true, {
+      relative = 'editor',
+      width = width,
+      height = height,
+      row = row,
+      col = col,
+      style = 'minimal',
+      border = 'rounded',
+      title = ' Create New Schema ',
+      title_pos = 'center',
+    })
+    
+    -- Set content
+    local content_lines = {
+      "# Create New Schema",
+      "",
+      "Schema Name: ",
+      "",
+      "Schema Format:",
+      "[ ] JSON Schema",
+      "[ ] Concise LLM Schema Syntax",
+      "",
+      "Schema Content:",
+      "```",
+      "",
+      "```",
+      "",
+      "Press <Enter> on a format option to select it",
+      "Press <Tab> to navigate between fields",
+      "Press <Ctrl-S> to save the schema",
+      "Press <Esc> to cancel"
+    }
+    
+    api.nvim_buf_set_lines(create_buf, 0, -1, false, content_lines)
+    api.nvim_buf_set_option(create_buf, 'modifiable', true)
+    
+    -- Set up syntax highlighting
+    require('llm').setup_buffer_highlighting(create_buf)
+    
+    -- Apply syntax highlighting
+    local syntax_cmds = {
+      "syntax match LLMSchemaHeader /^# Create New Schema$/",
+      "syntax match LLMSchemaField /^Schema Name: \\|^Schema Format:\\|^Schema Content:$/",
+      "syntax match LLMSchemaOption /^\\[[ x]\\] .*$/",
+      "syntax match LLMSchemaHelp /^Press.*$/",
+      "syntax region LLMSchemaContent start=/^```$/ end=/^```$/ contains=ALL"
+    }
+    
+    for _, cmd in ipairs(syntax_cmds) do
+      vim.api.nvim_buf_call(create_buf, function()
+        vim.cmd(cmd)
+      end)
+    end
+    
+    -- Set highlighting
+    vim.cmd([[
+      highlight default LLMSchemaHeader guifg=#61afef gui=bold
+      highlight default LLMSchemaField guifg=#c678dd gui=bold
+      highlight default LLMSchemaOption guifg=#98c379
+      highlight default LLMSchemaHelp guifg=#5c6370 gui=italic
+      highlight default LLMSchemaContent guifg=#abb2bf
+    ]])
+    
+    -- State variables
+    local schema_name = ""
+    local selected_format = nil
+    local current_section = "name" -- name, format, content
+    
+    -- Helper functions
+    local function update_name(name)
+      schema_name = name
+      api.nvim_buf_set_lines(create_buf, 2, 3, false, {"Schema Name: " .. name})
+    end
+    
+    local function update_format(format)
+      selected_format = format
+      local json_line = "[ ] JSON Schema"
+      local concise_line = "[ ] Concise LLM Schema Syntax"
+      
+      if format == "json" then
+        json_line = "[x] JSON Schema"
+      elseif format == "concise" then
+        concise_line = "[x] Concise LLM Schema Syntax"
+      end
+      
+      api.nvim_buf_set_lines(create_buf, 5, 7, false, {json_line, concise_line})
+      
+      -- Update content template based on format
+      if format == "json" then
+        api.nvim_buf_set_lines(create_buf, 10, 11, false, {"{\n  \"type\": \"object\",\n  \"properties\": {\n    \n  }\n}"})
+      elseif format == "concise" then
+        api.nvim_buf_set_lines(create_buf, 10, 11, false, {"name, age int, bio"})
+      end
+    end
+    
+    local function get_content()
+      local lines = api.nvim_buf_get_lines(create_buf, 10, -6, false)
+      return table.concat(lines, "\n")
+    end
+    
+    local function save_schema()
+      if schema_name == "" then
         vim.notify("Schema name cannot be empty", vim.log.levels.ERROR)
         return
       end
       
-      -- Ask for schema type
-      vim.ui.select({"JSON Schema", "DSL (Simple Schema Language)"}, {
-        prompt = "Select schema format:"
-      }, function(format_type)
-        if not format_type then return end
+      if not selected_format then
+        vim.notify("Please select a schema format", vim.log.levels.ERROR)
+        return
+      end
+      
+      local content = get_content()
+      if content == "" then
+        vim.notify("Schema content cannot be empty", vim.log.levels.ERROR)
+        return
+      end
+      
+      local schema_content = content
+      if selected_format == "concise" then
+        schema_content = M.concise_to_schema(content)
+      end
+      
+      if M.create_schema(schema_name, schema_content) then
+        -- Close the create window
+        api.nvim_win_close(create_win, true)
         
-        if format_type == "DSL (Simple Schema Language)" then
-          -- Ask for DSL schema
-          vim.ui.input({
-            prompt = "Enter schema in DSL format (e.g., 'name, age int, bio'): "
-          }, function(dsl)
-            if not dsl or dsl == "" then
-              vim.notify("Schema cannot be empty", vim.log.levels.ERROR)
-              return
-            end
-            
-            -- Convert DSL to JSON schema
-            local json_schema = M.dsl_to_schema(dsl)
-            
-            -- Create a temporary file with the schema content
-            local temp_file = os.tmpname()
-            local file = io.open(temp_file, "w")
-            file:write(json_schema)
-            file:close()
-            
-            -- Save the schema
-            local cmd = string.format('llm schemas save %s %s', name, temp_file)
-            local handle = io.popen(cmd)
-            local result = handle:read("*a")
-            local success = handle:close()
-            
-            -- Clean up temp file
-            os.remove(temp_file)
-            
-            if success then
-              vim.notify("Schema created: " .. name, vim.log.levels.INFO)
-              
-              -- Open the schema manager
-              vim.schedule(function()
-                M.manage_schemas()
-              end)
-            else
-              vim.notify("Failed to create schema", vim.log.levels.ERROR)
-            end
-          end)
-        else
-          -- Create a temporary file for the schema
-          local temp_file = os.tmpname()
-          local file = io.open(temp_file, "w")
-          
-          file:write("{\n  \"type\": \"object\",\n  \"properties\": {\n    \n  }\n}")
-          
-          file:close()
-          
-          -- Open the temporary file in a new buffer
-          vim.cmd("edit " .. temp_file)
-          
-          -- Set up autocmd to save the schema when the buffer is written
-          local augroup = api.nvim_create_augroup("LLMSchemaCreate", { clear = true })
-          api.nvim_create_autocmd("BufWritePost", {
-            group = augroup,
-            buffer = api.nvim_get_current_buf(),
-            callback = function()
-              -- Save the schema
-              local cmd = string.format('llm schemas save %s %s', name, temp_file)
-              local handle = io.popen(cmd)
-              local result = handle:read("*a")
-              local success = handle:close()
-              
-              if success then
-                vim.notify("Schema created: " .. name, vim.log.levels.INFO)
-              else
-                vim.notify("Failed to create schema", vim.log.levels.ERROR)
-              end
-            end
-          })
-          
-          -- Set up autocmd to clean up the temporary file when the buffer is closed
-          api.nvim_create_autocmd("BufUnload", {
-            group = augroup,
-            buffer = api.nvim_get_current_buf(),
-            callback = function()
-              os.remove(temp_file)
-            end
-          })
-          
-          vim.notify("Edit the schema and save to create it.", vim.log.levels.INFO)
-        end
-      end)
-    end)
+        -- Close the schema manager window
+        api.nvim_win_close(current_win, true)
+        
+        -- Reopen the schema manager with the new schema
+        vim.schedule(function()
+          M.manage_schemas()
+        end)
+      end
+    end
+    
+    -- Set keymaps
+    local function set_keymap(mode, lhs, rhs)
+      api.nvim_buf_set_keymap(create_buf, mode, lhs, rhs, {noremap = true, silent = true})
+    end
+    
+    -- Tab to navigate between sections
+    set_keymap('n', '<Tab>', [[<cmd>lua require('llm.schema_manager').navigate_next_section()<CR>]])
+    set_keymap('n', '<S-Tab>', [[<cmd>lua require('llm.schema_manager').navigate_prev_section()<CR>]])
+    
+    -- Enter to select format
+    set_keymap('n', '<CR>', [[<cmd>lua require('llm.schema_manager').handle_enter()<CR>]])
+    
+    -- Save schema
+    set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_schema()<CR>]])
+    
+    -- Cancel
+    set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+    
+    -- Add navigation functions to schema_manager
+    schema_manager.current_section = current_section
+    schema_manager.schema_name = schema_name
+    schema_manager.selected_format = selected_format
+    schema_manager.create_buf = create_buf
+    schema_manager.create_win = create_win
+    schema_manager.current_win = current_win
+    
+    schema_manager.navigate_next_section = function()
+      if schema_manager.current_section == "name" then
+        schema_manager.current_section = "format"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {6, 1})
+      elseif schema_manager.current_section == "format" then
+        schema_manager.current_section = "content"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {11, 1})
+      else
+        schema_manager.current_section = "name"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {3, 13})
+      end
+    end
+    
+    schema_manager.navigate_prev_section = function()
+      if schema_manager.current_section == "content" then
+        schema_manager.current_section = "format"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {6, 1})
+      elseif schema_manager.current_section == "format" then
+        schema_manager.current_section = "name"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {3, 13})
+      else
+        schema_manager.current_section = "content"
+        vim.api.nvim_win_set_cursor(schema_manager.create_win, {11, 1})
+      end
+    end
+    
+    schema_manager.handle_enter = function()
+      local current_line = vim.api.nvim_win_get_cursor(schema_manager.create_win)[1]
+      local line_content = api.nvim_buf_get_lines(schema_manager.create_buf, current_line - 1, current_line, false)[1]
+      
+      if current_line == 3 then
+        -- Name section
+        vim.ui.input({
+          prompt = "Enter schema name: ",
+          default = schema_manager.schema_name
+        }, function(input)
+          if input and input ~= "" then
+            update_name(input)
+            schema_manager.schema_name = input
+          end
+        end)
+      elseif current_line == 6 then
+        -- JSON Schema option
+        update_format("json")
+        schema_manager.selected_format = "json"
+      elseif current_line == 7 then
+        -- Concise LLM Schema Syntax option
+        update_format("concise")
+        schema_manager.selected_format = "concise"
+      end
+    end
+    
+    schema_manager.save_schema = function()
+      save_schema()
+    end
+    
+    -- Position cursor at name field
+    vim.api.nvim_win_set_cursor(create_win, {3, 13})
+    
+    -- Enter insert mode
+    vim.cmd("startinsert!")
   end
   
   function schema_manager.run_schema_under_cursor()
