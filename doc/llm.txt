@@ -155,7 +155,11 @@ to explain the
     code.                                                    
                                                              
 *:LLMSelectModel*                                            
-    Select a model from available models.                    
+    Select a model from available models and manage model    
+    aliases.                                                 
+                                                             
+*:LLMAliases*                                                
+    Manage model aliases (same as LLMSelectModel).           
                                                              
 *:LLMPlugins*                                                
     Manage LLM plugins (install/uninstall).                  
@@ -190,7 +194,8 @@ Default mappings (can be disabled with g:llm_no_mappings =
 <leader>llm     - In visual mode, send selection to LLM      
 <leader>lle     - Explain the current buffer                 
 <leader>llc     - Start a chat session                       
-<leader>lls     - Select a model from available models       
+<leader>lls     - Select a model from available models and manage aliases
+<leader>lla     - Manage model aliases (same as <leader>lls) 
 <leader>llp     - Open the plugin manager                    
 <leader>llk     - Manage API keys                            
 <leader>llf     - Manage fragments                           

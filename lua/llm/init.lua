@@ -674,17 +674,95 @@ end
 _G.set_default_model = set_default_model
 
 
+-- Get model aliases from llm CLI
+function M.get_model_aliases()
+  if not check_llm_installed() then
+    return {}
+  end
+  
+  local handle = io.popen("llm aliases --json")
+  local result = handle:read("*a")
+  handle:close()
+  
+  local aliases = {}
+  
+  -- Try to parse JSON output
+  local success, parsed = pcall(vim.fn.json_decode, result)
+  if success and type(parsed) == "table" then
+    aliases = parsed
+  else
+    -- Fallback to line parsing if JSON parsing fails
+    for line in result:gmatch("[^\r\n]+") do
+      if not line:match("^%-%-") and not line:match("^Aliases:") then
+        local alias, model = line:match("([^%s:]+)%s*:%s*(.+)")
+        if alias and model then
+          -- Remove any trailing "(embedding)" text
+          model = model:gsub("%s*%(embedding%)", "")
+          -- Trim whitespace
+          model = model:match("^%s*(.-)%s*$")
+          aliases[alias] = model
+        end
+      end
+    end
+  end
+  
+  return aliases
+end
+-- Expose for testing
+_G.get_model_aliases = function()
+  return M.get_model_aliases()
+end
+
+-- Set a model alias using llm CLI
+function M.set_model_alias(alias, model)
+  if not check_llm_installed() then
+    return false
+  end
+  
+  local cmd = string.format('llm aliases set %s %s', alias, model)
+  local handle = io.popen(cmd)
+  local result = handle:read("*a")
+  local success = handle:close()
+  
+  return success
+end
+-- Expose for testing
+_G.set_model_alias = function(alias, model)
+  return M.set_model_alias(alias, model)
+end
+
+-- Remove a model alias using llm CLI
+function M.remove_model_alias(alias)
+  if not check_llm_installed() then
+    return false
+  end
+  
+  local cmd = string.format('llm aliases remove %s', alias)
+  local handle = io.popen(cmd)
+  local result = handle:read("*a")
+  local success = handle:close()
+  
+  return success
+end
+-- Expose for testing
+_G.remove_model_alias = function(alias)
+  return M.remove_model_alias(alias)
+end
+
 -- Select a model from available models
 function M.select_model()
   if not check_llm_installed() then
     return
   end
   
-  local models = get_available_models()
+  local models = M.get_available_models()
   if #models == 0 then
     api.nvim_err_writeln("No models found. Make sure llm is properly configured.")
     return
   end
+  
+  -- Get model aliases
+  local aliases = M.get_model_aliases()
   
   -- Create a new buffer for the model manager
   local buf = api.nvim_create_buf(false, true)
@@ -735,10 +813,19 @@ function M.select_model()
   local lines = {
     "# LLM Models Manager",
     "",
-    "Press 's' to set as default model, 'c' to chat with model, 'q' to quit",
+    "Press 's' to set as default model, 'a' to set alias, 'c' to chat with model, 'q' to quit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
+  
+  -- Create a reverse lookup of aliases to models
+  local model_to_aliases = {}
+  for alias, model in pairs(aliases) do
+    if not model_to_aliases[model] then
+      model_to_aliases[model] = {}
+    end
+    table.insert(model_to_aliases[model], alias)
+  end
   
   -- Group models by provider
   local providers = {
@@ -756,13 +843,19 @@ function M.select_model()
     local entry = {
       full_line = model_line,
       model_name = extract_model_name(model_line),
-      is_default = false
+      is_default = false,
+      aliases = {}
     }
     
     -- Check if this is the default model
     if entry.model_name == default_model then
       entry.is_default = true
       vim.notify("Found default model: " .. entry.model_name, vim.log.levels.DEBUG)
+    end
+    
+    -- Add aliases for this model
+    if model_to_aliases[entry.model_name] then
+      entry.aliases = model_to_aliases[entry.model_name]
     end
     
     if model_line:match("OpenAI") then
@@ -828,14 +921,19 @@ function M.select_model()
       
       for _, model in ipairs(provider_models) do
         local status = model.is_default and "✓" or " "
-        local line = string.format("[%s] %s", status, model.full_line)
+        local alias_text = ""
+        if #model.aliases > 0 then
+          alias_text = " (aliases: " .. table.concat(model.aliases, ", ") .. ")"
+        end
+        local line = string.format("[%s] %s%s", status, model.full_line, alias_text)
         table.insert(lines, line)
         
         -- Store model data for lookup
         model_data[model.model_name] = {
           line = current_line,
           is_default = model.is_default,
-          full_line = model.full_line
+          full_line = model.full_line,
+          aliases = model.aliases
         }
         line_to_model[current_line] = model.model_name
         current_line = current_line + 1
@@ -845,6 +943,30 @@ function M.select_model()
       current_line = current_line + 1
     end
   end
+  
+  -- Add alias section
+  table.insert(lines, "# Model Aliases")
+  table.insert(lines, "")
+  current_line = current_line + 2
+  
+  -- Sort aliases alphabetically
+  local sorted_aliases = {}
+  for alias, model in pairs(aliases) do
+    table.insert(sorted_aliases, {alias = alias, model = model})
+  end
+  table.sort(sorted_aliases, function(a, b) return a.alias < b.alias end)
+  
+  -- Add aliases to the buffer
+  for _, entry in ipairs(sorted_aliases) do
+    local line = string.format("%s -> %s", entry.alias, entry.model)
+    table.insert(lines, line)
+    current_line = current_line + 1
+  end
+  
+  -- Add option to add a new alias
+  table.insert(lines, "")
+  table.insert(lines, "[+] Add new alias")
+  table.insert(lines, "[-] Remove alias")
   
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -863,6 +985,8 @@ function M.select_model()
     highlight default LLMModelGroq guifg=#61afef
     highlight default LLMModelLocal guifg=#d19a66
     highlight default LLMModelDefault guifg=#e06c75 gui=bold
+    highlight default LLMModelAlias guifg=#c678dd
+    highlight default LLMModelAliasAction guifg=#98c379 gui=bold
   ]])
   
   -- Apply provider-specific highlighting
@@ -881,6 +1005,10 @@ function M.select_model()
     "syntax match LLMModelLocal /\\[ \\] .*gguf.*/",
     "syntax match LLMModelLocal /\\[ \\] .*ollama.*/",
     "syntax match LLMModelDefault /\\[✓\\].*/",
+    "syntax match LLMModelAlias /^# Model Aliases$/",
+    "syntax match LLMModelAlias /^[^\\[].* -> .*$/",
+    "syntax match LLMModelAliasAction /^\\[+\\] Add new alias$/",
+    "syntax match LLMModelAliasAction /^\\[-\\] Remove alias$/",
   }
   
   for _, cmd in ipairs(syntax_cmds) do
@@ -930,8 +1058,14 @@ function M.select_model()
   -- Set model under cursor as default
   set_keymap('n', 's', [[<cmd>lua require('llm.model_manager').set_model_under_cursor()<CR>]])
   
+  -- Set alias for model under cursor
+  set_keymap('n', 'a', [[<cmd>lua require('llm.model_manager').set_alias_for_model_under_cursor()<CR>]])
+  
   -- Chat with model under cursor
   set_keymap('n', 'c', [[<cmd>lua require('llm.model_manager').chat_with_model_under_cursor()<CR>]])
+  
+  -- Add new alias
+  set_keymap('n', '<CR>', [[<cmd>lua require('llm.model_manager').handle_action_under_cursor()<CR>]])
   
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
@@ -968,6 +1102,33 @@ function M.select_model()
     end
   end
   
+  function model_manager.set_alias_for_model_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local model_name = line_to_model[current_line]
+    
+    if not model_name then return end
+    
+    -- Prompt for alias
+    vim.ui.input({
+      prompt = "Enter alias for model " .. model_name .. ": "
+    }, function(alias)
+      if not alias or alias == "" then return end
+      
+      -- Set alias
+      if M.set_model_alias(alias, model_name) then
+        vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
+        
+        -- Close and reopen the model manager to refresh
+        vim.api.nvim_win_close(0, true)
+        vim.schedule(function()
+          M.select_model()
+        end)
+      else
+        vim.notify("Failed to set alias", vim.log.levels.ERROR)
+      end
+    end)
+  end
+  
   function model_manager.chat_with_model_under_cursor()
     local current_line = api.nvim_win_get_cursor(0)[1]
     local model_name = line_to_model[current_line]
@@ -980,6 +1141,98 @@ function M.select_model()
     vim.schedule(function()
       M.start_chat(model_name)
     end)
+  end
+  
+  function model_manager.handle_action_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local line_content = api.nvim_buf_get_lines(buf, current_line - 1, current_line, false)[1]
+    
+    if line_content == "[+] Add new alias" then
+      -- Add new alias
+      vim.ui.input({
+        prompt = "Enter alias name: "
+      }, function(alias)
+        if not alias or alias == "" then return end
+        
+        -- Prompt for model
+        vim.ui.input({
+          prompt = "Enter model name: "
+        }, function(model)
+          if not model or model == "" then return end
+          
+          -- Set alias
+          if M.set_model_alias(alias, model) then
+            vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
+            
+            -- Close and reopen the model manager to refresh
+            vim.api.nvim_win_close(0, true)
+            vim.schedule(function()
+              M.select_model()
+            end)
+          else
+            vim.notify("Failed to set alias", vim.log.levels.ERROR)
+          end
+        end)
+      end)
+    elseif line_content == "[-] Remove alias" then
+      -- Remove alias
+      local alias_list = {}
+      for alias, _ in pairs(aliases) do
+        table.insert(alias_list, alias)
+      end
+      
+      if #alias_list == 0 then
+        vim.notify("No aliases to remove", vim.log.levels.WARN)
+        return
+      end
+      
+      table.sort(alias_list)
+      
+      vim.ui.select(alias_list, {
+        prompt = "Select alias to remove:"
+      }, function(alias)
+        if not alias then return end
+        
+        -- Remove alias
+        if M.remove_model_alias(alias) then
+          vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+          
+          -- Close and reopen the model manager to refresh
+          vim.api.nvim_win_close(0, true)
+          vim.schedule(function()
+            M.select_model()
+          end)
+        else
+          vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+        end
+      end)
+    elseif line_content:match("^[^%[].* %-> .*$") then
+      -- Clicked on an alias entry
+      local alias = line_content:match("^([^%s]+)")
+      
+      -- Ask what to do with this alias
+      vim.ui.select({
+        "Remove alias",
+        "Cancel"
+      }, {
+        prompt = "Action for alias '" .. alias .. "':"
+      }, function(choice)
+        if choice == "Remove alias" then
+          -- Remove alias
+          if M.remove_model_alias(alias) then
+            vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+            
+            -- Close and reopen the model manager to refresh
+            vim.api.nvim_win_close(0, true)
+            vim.schedule(function()
+              M.select_model()
+            end)
+          else
+            vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+          end
+        end
+      end)
+    end
   end
   
   -- Store the model manager module
