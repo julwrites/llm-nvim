@@ -179,12 +179,6 @@ to explain the
     through selecting fragments before entering an optional  
     prompt.                                                  
                                                              
-*:LLMTemplates*                                              
-    Manage templates (view, create, edit, delete templates). 
-                                                             
-*:LLMTemplate*                                               
-    Select and run a template. You'll be prompted to select  
-    a template and optionally provide input.                 
                                                              
 =============================================================
 =================                                            
@@ -205,8 +199,6 @@ Default mappings (can be disabled with g:llm_no_mappings =
 <leader>llsf    - Select a file to use as a fragment         
 <leader>llwf    - Send a prompt with fragments               
 <leader>llwf    - In visual mode, send selection with fragments
-<leader>llt     - Manage templates                           
-<leader>llrt    - Select and run a template                  
                                                              
 Custom mappings:                                             
 >                                                            

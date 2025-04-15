@@ -393,7 +393,11 @@ function M.manage_schemas()
     end
     
     table.insert(content_lines, "")
-    table.insert(content_lines, "Press <Ctrl-S> to save changes")
+    if vim.fn.has('mac') == 1 then
+      table.insert(content_lines, "Press <Cmd-S> to save changes")
+    else
+      table.insert(content_lines, "Press <Ctrl-S> to save changes")
+    end
     table.insert(content_lines, "Press <Esc> to cancel")
     
     api.nvim_buf_set_lines(edit_buf, 0, -1, false, content_lines)
@@ -427,8 +431,12 @@ function M.manage_schemas()
       api.nvim_buf_set_keymap(edit_buf, mode, lhs, rhs, {noremap = true, silent = true})
     end
     
-    -- Save schema
-    set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_edited_schema()<CR>]])
+    -- Save schema (use Cmd+S on macOS, Ctrl+S otherwise)
+    if vim.fn.has('mac') == 1 then
+      set_keymap('n', '<D-s>', [[<cmd>lua require('llm.schema_manager').save_edited_schema()<CR>]])
+    else
+      set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_edited_schema()<CR>]])
+    end
     
     -- Cancel
     set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
@@ -534,7 +542,11 @@ function M.manage_schemas()
       "age int: their age",
       "bio: a short bio, no more than three sentences",
       "",
-      "Press <Ctrl-S> to save the schema",
+      if vim.fn.has('mac') == 1 then
+        table.insert(content_lines, "Press <Cmd-S> to save the schema")
+      else
+        table.insert(content_lines, "Press <Ctrl-S> to save the schema")
+      end
       "Press <Esc> to cancel"
     }
     
@@ -569,8 +581,12 @@ function M.manage_schemas()
       api.nvim_buf_set_keymap(create_buf, mode, lhs, rhs, {noremap = true, silent = true})
     end
     
-    -- Save schema
-    set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_new_schema()<CR>]])
+    -- Save schema (use Cmd+S on macOS, Ctrl+S otherwise)
+    if vim.fn.has('mac') == 1 then
+      set_keymap('n', '<D-s>', [[<cmd>lua require('llm.schema_manager').save_new_schema()<CR>]])
+    else
+      set_keymap('n', '<C-s>', [[<cmd>lua require('llm.schema_manager').save_new_schema()<CR>]])
+    end
     
     -- Cancel
     set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
@@ -660,6 +676,45 @@ function M.manage_schemas()
   
   -- Store the schema manager module
   package.loaded['llm.schema_manager'] = schema_manager
+end
+
+return M
+-- llm/schemas.lua - Simple schema handling for llm-nvim
+-- License: Apache 2.0
+
+local M = {}
+
+-- Disabled functionality
+function M.select_schema()
+  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
+end
+
+function M.manage_schemas()
+  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
+end
+
+-- Placeholder functions to maintain API compatibility
+function M.get_schemas()
+  return {}
+end
+
+function M.get_schema(name)
+  return nil
+end
+
+function M.save_schema(name, schema_text)
+  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
+  return false
+end
+
+function M.delete_schema(name)
+  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
+  return false
+end
+
+function M.run_schema(name, input, is_multi)
+  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
+  return nil
 end
 
 return M

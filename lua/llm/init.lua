@@ -1840,30 +1840,28 @@ end
 -- Explicitly define manage_templates if it doesn't exist
 if not M.manage_templates then
   M.manage_templates = function()
-    -- Default implementation that does nothing
-    vim.notify("manage_templates function called", vim.log.levels.INFO)
+    vim.notify("Templates functionality is currently disabled", vim.log.levels.INFO)
   end
 end
 
 -- Explicitly define select_template if it doesn't exist
 if not M.select_template then
   M.select_template = function()
-    -- Default implementation that does nothing
-    vim.notify("select_template function called", vim.log.levels.INFO)
+    vim.notify("Templates functionality is currently disabled", vim.log.levels.INFO)
   end
 end
 
 -- Explicitly define manage_schemas if it doesn't exist
 if not M.manage_schemas then
   M.manage_schemas = function()
-    require('llm.schemas').manage_schemas()
+    vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
   end
 end
 
 -- Explicitly define select_schema if it doesn't exist
 if not M.select_schema then
   M.select_schema = function()
-    require('llm.schemas').select_schema()
+    vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
   end
 end
 
