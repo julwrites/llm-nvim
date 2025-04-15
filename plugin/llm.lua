@@ -61,21 +61,21 @@ vim.api.nvim_create_user_command("LLMWithSelectionAndFragments", function(opts)
   llm.prompt_with_selection_and_fragments(opts.args)
 end, { nargs = "?", range = true })
 
-vim.api.nvim_create_user_command("LLMTemplates", function()
-  llm.manage_templates()
-end, { nargs = 0 })
-
-vim.api.nvim_create_user_command("LLMTemplate", function()
-  llm.select_template()
-end, { nargs = 0 })
-
-vim.api.nvim_create_user_command("LLMSchemas", function()
-  llm.manage_schemas()
-end, { nargs = 0 })
-
-vim.api.nvim_create_user_command("LLMSchema", function()
-  llm.select_schema()
-end, { nargs = 0 })
+-- vim.api.nvim_create_user_command("LLMTemplates", function()
+--   llm.manage_templates()
+-- end, { nargs = 0 })
+--
+-- vim.api.nvim_create_user_command("LLMTemplate", function()
+--   llm.select_template()
+-- end, { nargs = 0 })
+--
+-- vim.api.nvim_create_user_command("LLMSchemas", function()
+--   llm.manage_schemas()
+-- end, { nargs = 0 })
+--
+-- vim.api.nvim_create_user_command("LLMSchema", function()
+--   llm.select_schema()
+-- end, { nargs = 0 })
 
 -- Define key mappings
 vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true })
@@ -89,10 +89,10 @@ vim.keymap.set("n", "<Plug>(llm-fragments)", ":LLMFragments<CR>", { silent = tru
 vim.keymap.set("n", "<Plug>(llm-select-fragment)", ":LLMSelectFragment<CR>", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-with-fragments)", ":LLMWithFragments<CR>", { silent = true })
 vim.keymap.set("v", "<Plug>(llm-selection-with-fragments)", ":LLMWithSelectionAndFragments<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-templates)", ":LLMTemplates<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-template)", ":LLMTemplate<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-schemas)", ":LLMSchemas<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-schema)", ":LLMSchema<CR>", { silent = true })
+-- vim.keymap.set("n", "<Plug>(llm-templates)", ":LLMTemplates<CR>", { silent = true })
+-- vim.keymap.set("n", "<Plug>(llm-template)", ":LLMTemplate<CR>", { silent = true })
+-- vim.keymap.set("n", "<Plug>(llm-schemas)", ":LLMSchemas<CR>", { silent = true })
+-- vim.keymap.set("n", "<Plug>(llm-schema)", ":LLMSchema<CR>", { silent = true })
 
 -- Default mappings (can be disabled with config option)
 local config = require("llm.config")
@@ -108,8 +108,8 @@ if not config.get("no_mappings") then
   vim.keymap.set("n", "<leader>llsf", "<Plug>(llm-select-fragment)")
   vim.keymap.set("n", "<leader>llwf", "<Plug>(llm-with-fragments)")
   vim.keymap.set("v", "<leader>llwf", "<Plug>(llm-selection-with-fragments)")
-  vim.keymap.set("n", "<leader>llt", "<Plug>(llm-templates)")
-  vim.keymap.set("n", "<leader>llrt", "<Plug>(llm-template)")
-  vim.keymap.set("n", "<leader>lls", "<Plug>(llm-schemas)")
-  vim.keymap.set("n", "<leader>llrs", "<Plug>(llm-schema)")
+  -- vim.keymap.set("n", "<leader>llt", "<Plug>(llm-templates)")
+  -- vim.keymap.set("n", "<leader>llrt", "<Plug>(llm-template)")
+  -- vim.keymap.set("n", "<leader>lls", "<Plug>(llm-schemas)")
+  -- vim.keymap.set("n", "<leader>llrs", "<Plug>(llm-schema)")
 end
