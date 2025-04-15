@@ -1856,16 +1856,14 @@ end
 -- Explicitly define manage_schemas if it doesn't exist
 if not M.manage_schemas then
   M.manage_schemas = function()
-    -- Default implementation that does nothing
-    vim.notify("manage_schemas function called", vim.log.levels.INFO)
+    require('llm.schemas').manage_schemas()
   end
 end
 
 -- Explicitly define select_schema if it doesn't exist
 if not M.select_schema then
   M.select_schema = function()
-    -- Default implementation that does nothing
-    vim.notify("select_schema function called", vim.log.levels.INFO)
+    require('llm.schemas').select_schema()
   end
 end
 
