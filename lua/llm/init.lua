@@ -10,6 +10,7 @@ local fn = vim.fn
 
 -- Forward declaration of config module
 local config
+local fragments
 
 -- Check if llm is installed
 local function check_llm_installed()
@@ -73,6 +74,38 @@ local function get_system_arg()
 end
 -- Expose for testing
 _G.get_system_arg = get_system_arg
+
+-- Get fragment arguments if specified
+local function get_fragment_args(fragment_list)
+  if not fragment_list or #fragment_list == 0 then
+    return ""
+  end
+  
+  local args = {}
+  for _, fragment in ipairs(fragment_list) do
+    table.insert(args, "-f \"" .. fragment .. "\"")
+  end
+  
+  return table.concat(args, " ")
+end
+-- Expose for testing
+_G.get_fragment_args = get_fragment_args
+
+-- Get system fragment arguments if specified
+local function get_system_fragment_args(fragment_list)
+  if not fragment_list or #fragment_list == 0 then
+    return ""
+  end
+  
+  local args = {}
+  for _, fragment in ipairs(fragment_list) do
+    table.insert(args, "--system-fragment \"" .. fragment .. "\"")
+  end
+  
+  return table.concat(args, " ")
+end
+-- Expose for testing
+_G.get_system_fragment_args = get_system_fragment_args
 
 -- Run an llm command and return the result
 local function run_llm_command(cmd)
@@ -155,18 +188,19 @@ local function get_visual_selection()
 end
 
 -- Send a prompt to llm
-function M.prompt(prompt)
+function M.prompt(prompt, fragment_paths)
   local model_arg = get_model_arg()
   local system_arg = get_system_arg()
+  local fragment_args = get_fragment_args(fragment_paths)
   
-  local cmd = string.format('llm %s %s "%s"', model_arg, system_arg, prompt)
+  local cmd = string.format('llm %s %s %s "%s"', model_arg, system_arg, fragment_args, prompt)
   local result = run_llm_command(cmd)
   
   create_response_buffer(result)
 end
 
 -- Send selected text with a prompt to llm
-function M.prompt_with_selection(prompt)
+function M.prompt_with_selection(prompt, fragment_paths)
   local selection = get_visual_selection()
   if selection == "" then
     api.nvim_err_writeln("No text selected")
@@ -181,9 +215,10 @@ function M.prompt_with_selection(prompt)
   
   local model_arg = get_model_arg()
   local system_arg = get_system_arg()
+  local fragment_args = get_fragment_args(fragment_paths)
   local prompt_arg = prompt ~= "" and '"' .. prompt .. '"' or ""
   
-  local cmd = string.format('cat %s | llm %s %s %s', temp_file, model_arg, system_arg, prompt_arg)
+  local cmd = string.format('cat %s | llm %s %s %s %s', temp_file, model_arg, system_arg, fragment_args, prompt_arg)
   local result = run_llm_command(cmd)
   
   -- Clean up temp file
@@ -193,7 +228,7 @@ function M.prompt_with_selection(prompt)
 end
 
 -- Explain the current buffer or selection
-function M.explain_code()
+function M.explain_code(fragment_paths)
   local current_buf = api.nvim_get_current_buf()
   local lines = api.nvim_buf_get_lines(current_buf, 0, -1, false)
   local content = table.concat(lines, "\n")
@@ -205,13 +240,236 @@ function M.explain_code()
   file:close()
   
   local model_arg = get_model_arg()
-  local cmd = string.format('cat %s | llm %s -s "Explain this code"', temp_file, model_arg)
+  local fragment_args = get_fragment_args(fragment_paths)
+  
+  local cmd = string.format('cat %s | llm %s -s "Explain this code" %s', temp_file, model_arg, fragment_args)
   local result = run_llm_command(cmd)
   
   -- Clean up temp file
   os.remove(temp_file)
   
   create_response_buffer(result)
+end
+
+-- Prompt with fragments
+function M.prompt_with_fragments(prompt)
+  -- First, let the user select fragments
+  local fragments_list = {}
+  
+  local function add_more_fragments()
+    vim.ui.select({
+      "Select file as fragment",
+      "Enter fragment path/URL/alias",
+      "Use GitHub repository as fragments",
+      "Done - continue with prompt"
+    }, {
+      prompt = "Add fragments to prompt:"
+    }, function(choice)
+      if not choice then return end
+      
+      if choice == "Select file as fragment" then
+        -- Let the user select a file
+        fragments.select_file_as_fragment()
+        
+        -- Ask for the file path
+        vim.ui.input({
+          prompt = "Enter file path to use as fragment: "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          -- Check if file exists
+          if fn.filereadable(input) == 0 then
+            vim.notify("File not found: " .. input, vim.log.levels.ERROR)
+            add_more_fragments()
+            return
+          end
+          
+          table.insert(fragments_list, input)
+          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Enter fragment path/URL/alias" then
+        vim.ui.input({
+          prompt = "Enter fragment path/URL/alias: "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          table.insert(fragments_list, input)
+          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Use GitHub repository as fragments" then
+        vim.ui.input({
+          prompt = "Enter GitHub repository (owner/repo): "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          -- Check if the llm-fragments-github plugin is installed
+          local handle = io.popen("llm plugins")
+          local result = handle:read("*a")
+          handle:close()
+          
+          if not result:match("llm%-fragments%-github") then
+            vim.ui.select({
+              "Yes", "No"
+            }, {
+              prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
+            }, function(install_choice)
+              if install_choice == "Yes" then
+                local install_handle = io.popen("llm install llm-fragments-github")
+                local install_result = install_handle:read("*a")
+                install_handle:close()
+                
+                vim.notify("Installed llm-fragments-github plugin", vim.log.levels.INFO)
+              else
+                add_more_fragments()
+                return
+              end
+            end)
+          end
+          
+          table.insert(fragments_list, "github:" .. input)
+          vim.notify("Added GitHub repository as fragments: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Done - continue with prompt" then
+        -- Now ask for the prompt
+        vim.ui.input({
+          prompt = "Enter prompt: "
+        }, function(input_prompt)
+          if not input_prompt or input_prompt == "" then
+            vim.notify("Prompt cannot be empty", vim.log.levels.ERROR)
+            return
+          end
+          
+          -- Send the prompt with fragments
+          M.prompt(input_prompt, fragments_list)
+        end)
+      end
+    end)
+  end
+  
+  add_more_fragments()
+end
+
+-- Prompt with selection and fragments
+function M.prompt_with_selection_and_fragments(prompt)
+  local selection = get_visual_selection()
+  if selection == "" then
+    api.nvim_err_writeln("No text selected")
+    return
+  end
+  
+  -- First, let the user select fragments
+  local fragments_list = {}
+  
+  local function add_more_fragments()
+    vim.ui.select({
+      "Select file as fragment",
+      "Enter fragment path/URL/alias",
+      "Use GitHub repository as fragments",
+      "Done - continue with prompt"
+    }, {
+      prompt = "Add fragments to prompt:"
+    }, function(choice)
+      if not choice then return end
+      
+      if choice == "Select file as fragment" then
+        -- Let the user select a file
+        fragments.select_file_as_fragment()
+        
+        -- Ask for the file path
+        vim.ui.input({
+          prompt = "Enter file path to use as fragment: "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          -- Check if file exists
+          if fn.filereadable(input) == 0 then
+            vim.notify("File not found: " .. input, vim.log.levels.ERROR)
+            add_more_fragments()
+            return
+          end
+          
+          table.insert(fragments_list, input)
+          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Enter fragment path/URL/alias" then
+        vim.ui.input({
+          prompt = "Enter fragment path/URL/alias: "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          table.insert(fragments_list, input)
+          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Use GitHub repository as fragments" then
+        vim.ui.input({
+          prompt = "Enter GitHub repository (owner/repo): "
+        }, function(input)
+          if not input or input == "" then
+            add_more_fragments()
+            return
+          end
+          
+          -- Check if the llm-fragments-github plugin is installed
+          local handle = io.popen("llm plugins")
+          local result = handle:read("*a")
+          handle:close()
+          
+          if not result:match("llm%-fragments%-github") then
+            vim.ui.select({
+              "Yes", "No"
+            }, {
+              prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
+            }, function(install_choice)
+              if install_choice == "Yes" then
+                local install_handle = io.popen("llm install llm-fragments-github")
+                local install_result = install_handle:read("*a")
+                install_handle:close()
+                
+                vim.notify("Installed llm-fragments-github plugin", vim.log.levels.INFO)
+              else
+                add_more_fragments()
+                return
+              end
+            end)
+          end
+          
+          table.insert(fragments_list, "github:" .. input)
+          vim.notify("Added GitHub repository as fragments: " .. input, vim.log.levels.INFO)
+          add_more_fragments()
+        end)
+      elseif choice == "Done - continue with prompt" then
+        -- Now ask for the prompt
+        vim.ui.input({
+          prompt = "Enter prompt (optional): "
+        }, function(input_prompt)
+          -- Send the selection with fragments and optional prompt
+          M.prompt_with_selection(input_prompt or "", fragments_list)
+        end)
+      end
+    end)
+  end
+  
+  add_more_fragments()
 end
 
 -- Start a chat session with llm
@@ -978,12 +1236,19 @@ function M.setup(opts)
   -- Load the configuration module
   config = require('llm.config')
   config.setup(opts)
+  
+  -- Load the fragments module
+  fragments = require('llm.fragments')
+  
   return M
 end
 
 -- Initialize with default configuration
 config = require('llm.config')
 config.setup()
+
+-- Load the fragments module
+fragments = require('llm.fragments')
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()
@@ -1299,6 +1564,16 @@ function M.setup_buffer_highlighting(buf)
   end
 end
 
+-- Manage fragments
+function M.manage_fragments()
+  fragments.manage_fragments()
+end
+
+-- Select a file to use as a fragment
+function M.select_fragment()
+  fragments.select_file_as_fragment()
+end
+
 -- Make sure all functions are properly exposed in the module
 -- Explicitly define select_model if it doesn't exist
 if not M.select_model then
@@ -1313,6 +1588,14 @@ if not M.manage_plugins then
   M.manage_plugins = function()
     -- Default implementation that does nothing
     vim.notify("manage_plugins function called", vim.log.levels.INFO)
+  end
+end
+
+-- Explicitly define manage_fragments if it doesn't exist
+if not M.manage_fragments then
+  M.manage_fragments = function()
+    -- Default implementation that does nothing
+    vim.notify("manage_fragments function called", vim.log.levels.INFO)
   end
 end
 

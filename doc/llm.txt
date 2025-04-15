@@ -163,6 +163,21 @@ to explain the
 *:LLMKeys*                                                   
     Manage API keys for different LLM providers.             
                                                              
+*:LLMFragments*                                              
+    Manage fragments (view, set aliases, remove aliases).    
+                                                             
+*:LLMSelectFragment*                                         
+    Select a file to use as a fragment.                      
+                                                             
+*:LLMWithFragments* [{prompt}]                               
+    Send a prompt with fragments. You'll be guided through   
+    selecting fragments before entering your prompt.         
+                                                             
+*:LLMWithSelectionAndFragments* [{prompt}]                   
+    Send selected text with fragments. You'll be guided      
+    through selecting fragments before entering an optional  
+    prompt.                                                  
+                                                             
 =============================================================
 =================                                            
 5. MAPPINGS                                                  
@@ -178,6 +193,10 @@ Default mappings (can be disabled with g:llm_no_mappings =
 <leader>lls     - Select a model from available models       
 <leader>llp     - Open the plugin manager                    
 <leader>llk     - Manage API keys                            
+<leader>llf     - Manage fragments                           
+<leader>llsf    - Select a file to use as a fragment         
+<leader>llwf    - Send a prompt with fragments               
+<leader>llwf    - In visual mode, send selection with fragments
                                                              
 Custom mappings:                                             
 >                                                            
