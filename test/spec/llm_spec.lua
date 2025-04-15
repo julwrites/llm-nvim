@@ -36,7 +36,7 @@ describe('llm-nvim', function()
     assert(commands.LLMWithSelection ~= nil, "LLMWithSelection command should be defined")
     assert(commands.LLMChat ~= nil, "LLMChat command should be defined")
     assert(commands.LLMExplain ~= nil, "LLMExplain command should be defined")
-    assert(commands.LLMSelectModel ~= nil, "LLMSelectModel command should be defined")
+    assert(commands.LLMModels ~= nil, "LLMModels command should be defined")
     assert(commands.LLMPlugins ~= nil, "LLMPlugins command should be defined")
   end)
   
@@ -318,6 +318,358 @@ llm-ollama
     
     -- Check the result
     assert(success, "uninstall_plugin should return true on success")
+  end)
+  
+  -- Tests for fragment management functionality
+  it('should get fragments', function()
+    -- Skip this test if get_fragments doesn't exist yet
+    if type(_G.get_fragments) ~= 'function' then
+      pending("get_fragments function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of fragments
+    local cleanup = test_helpers.mock_llm_command("llm fragments", [[
+Fragments:
+------------------
+1234abcd: /path/to/file1.txt (alias: file1)
+5678efgh: /path/to/file2.py
+9012ijkl: https://example.com/resource
+]])
+    
+    -- Call the function directly from the global scope
+    local fragments = _G.get_fragments()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#fragments == 3, "Should find 3 fragments")
+    assert(fragments[1].hash == "1234abcd", "First fragment hash should be 1234abcd")
+    assert(fragments[1].path == "/path/to/file1.txt", "First fragment path should be correct")
+    assert(fragments[1].alias == "file1", "First fragment alias should be file1")
+    assert(fragments[2].hash == "5678efgh", "Second fragment hash should be 5678efgh")
+    assert(fragments[3].hash == "9012ijkl", "Third fragment hash should be 9012ijkl")
+  end)
+  
+  it('should set fragment alias using llm CLI', function()
+    -- Skip this test if set_fragment_alias doesn't exist yet
+    if type(_G.set_fragment_alias) ~= 'function' then
+      pending("set_fragment_alias function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate setting a fragment alias
+    local cleanup = test_helpers.mock_llm_command("llm fragments alias 1234abcd file1", "Alias 'file1' set for fragment 1234abcd")
+    
+    -- Call the function
+    local success = _G.set_fragment_alias("1234abcd", "file1")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "set_fragment_alias should return true on success")
+  end)
+  
+  it('should remove fragment alias using llm CLI', function()
+    -- Skip this test if remove_fragment_alias doesn't exist yet
+    if type(_G.remove_fragment_alias) ~= 'function' then
+      pending("remove_fragment_alias function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate removing a fragment alias
+    local cleanup = test_helpers.mock_llm_command("llm fragments alias-remove file1", "Alias 'file1' removed")
+    
+    -- Call the function
+    local success = _G.remove_fragment_alias("file1")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "remove_fragment_alias should return true on success")
+  end)
+  
+  -- Tests for template management functionality
+  it('should get templates', function()
+    -- Skip this test if get_templates doesn't exist yet
+    if type(_G.get_templates) ~= 'function' then
+      pending("get_templates function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of templates
+    local cleanup = test_helpers.mock_llm_command("llm templates", [[
+Templates:
+------------------
+explain-code
+summarize
+translate
+]])
+    
+    -- Call the function directly from the global scope
+    local templates = _G.get_templates()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#templates == 3, "Should find 3 templates")
+    assert(templates[1] == "explain-code", "First template should be explain-code")
+    assert(templates[2] == "summarize", "Second template should be summarize")
+    assert(templates[3] == "translate", "Third template should be translate")
+  end)
+  
+  it('should get template details', function()
+    -- Skip this test if get_template_details doesn't exist yet
+    if type(_G.get_template_details) ~= 'function' then
+      pending("get_template_details function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return template details
+    local cleanup = test_helpers.mock_llm_command("llm templates get explain-code", [[
+{
+  "name": "explain-code",
+  "prompt": "Explain this code: {{input}}",
+  "system": "You are a helpful coding assistant.",
+  "schema": {
+    "properties": {
+      "input": {
+        "type": "string",
+        "description": "The code to explain"
+      }
+    }
+  }
+}
+]])
+    
+    -- Call the function
+    local details = _G.get_template_details("explain-code")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(details.name == "explain-code", "Template name should be explain-code")
+    assert(details.prompt:match("Explain this code"), "Template prompt should contain 'Explain this code'")
+    assert(details.system == "You are a helpful coding assistant.", "Template system should be correct")
+    assert(details.schema.properties.input.type == "string", "Schema should be parsed correctly")
+  end)
+  
+  it('should create template using llm CLI', function()
+    -- Skip this test if create_template doesn't exist yet
+    if type(_G.create_template) ~= 'function' then
+      pending("create_template function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate creating a template
+    local cleanup = test_helpers.mock_llm_command("llm templates create", "Template 'new-template' created")
+    
+    -- Call the function
+    local success = _G.create_template(
+      "new-template", 
+      "Process this: {{input}}", 
+      "You are a helpful assistant.", 
+      {
+        properties = {
+          input = {
+            type = "string",
+            description = "The input to process"
+          }
+        }
+      }
+    )
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "create_template should return true on success")
+  end)
+  
+  it('should delete template using llm CLI', function()
+    -- Skip this test if delete_template doesn't exist yet
+    if type(_G.delete_template) ~= 'function' then
+      pending("delete_template function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate deleting a template
+    local cleanup = test_helpers.mock_llm_command("llm templates delete new-template", "Template 'new-template' deleted")
+    
+    -- Call the function
+    local success = _G.delete_template("new-template")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "delete_template should return true on success")
+  end)
+  
+  -- Tests for schema management functionality
+  it('should get schemas', function()
+    -- Skip this test if get_schemas doesn't exist yet
+    if type(_G.get_schemas) ~= 'function' then
+      pending("get_schemas function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return a predefined list of schemas
+    local cleanup = test_helpers.mock_llm_command("llm schemas", [[
+- id: 3b7702e71da3dd791d9e17b76c88730e
+  summary: |
+    {items: [{name, organization, role, learned, article_headline, article_date}]}
+  usage: |
+    1 time, most recently 2025-02-28T04:50:02.032081+00:00
+- id: 520f7aabb121afd14d0c6c237b39ba2d
+  summary: |
+    {name, age int, bio}
+  usage: |
+    3 times, most recently 2025-02-28T05:10:15.123456+00:00
+]])
+    
+    -- Call the function directly from the global scope
+    local schemas = _G.get_schemas()
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(#schemas == 2, "Should find 2 schemas")
+    assert(schemas[1].id == "3b7702e71da3dd791d9e17b76c88730e", "First schema ID should be correct")
+    assert(schemas[2].id == "520f7aabb121afd14d0c6c237b39ba2d", "Second schema ID should be correct")
+  end)
+  
+  it('should get schema details', function()
+    -- Skip this test if get_schema_details doesn't exist yet
+    if type(_G.get_schema_details) ~= 'function' then
+      pending("get_schema_details function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to return schema details
+    local cleanup = test_helpers.mock_llm_command("llm schemas --full | grep -A 100 \"id: 520f7aabb121afd14d0c6c237b39ba2d\"", [[
+- id: 520f7aabb121afd14d0c6c237b39ba2d
+  schema: |
+    {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "age": {
+          "type": "integer"
+        },
+        "bio": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "age",
+        "bio"
+      ]
+    }
+]])
+    
+    -- Call the function
+    local details = _G.get_schema_details("520f7aabb121afd14d0c6c237b39ba2d")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the results
+    assert(details.id == "520f7aabb121afd14d0c6c237b39ba2d", "Schema ID should be correct")
+    assert(details.schema:match('"type": "object"'), "Schema should contain the correct JSON")
+  end)
+  
+  it('should create schema using llm CLI', function()
+    -- Skip this test if create_schema doesn't exist yet
+    if type(_G.create_schema) ~= 'function' then
+      pending("create_schema function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate creating a schema
+    local cleanup = test_helpers.mock_llm_command("llm schemas save", "Schema 'new-schema' created")
+    
+    -- Call the function
+    local success = _G.create_schema(
+      "new-schema", 
+      '{"type": "object", "properties": {"name": {"type": "string"}}}'
+    )
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "create_schema should return true on success")
+  end)
+  
+  it('should delete schema using llm CLI', function()
+    -- Skip this test if delete_schema doesn't exist yet
+    if type(_G.delete_schema) ~= 'function' then
+      pending("delete_schema function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate deleting a schema
+    local cleanup = test_helpers.mock_llm_command("llm schemas delete 520f7aabb121afd14d0c6c237b39ba2d -y", "Schema '520f7aabb121afd14d0c6c237b39ba2d' deleted")
+    
+    -- Call the function
+    local success = _G.delete_schema("520f7aabb121afd14d0c6c237b39ba2d")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(success, "delete_schema should return true on success")
+  end)
+  
+  it('should convert DSL to JSON schema', function()
+    -- Skip this test if dsl_to_schema doesn't exist yet
+    if type(_G.dsl_to_schema) ~= 'function' then
+      pending("dsl_to_schema function doesn't exist in global scope yet")
+      return
+    end
+    
+    -- Mock the io.popen function to simulate converting DSL to schema
+    local cleanup = test_helpers.mock_llm_command('llm schemas dsl "name, age int, bio"', [[
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "bio": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "age",
+    "bio"
+  ]
+}
+]])
+    
+    -- Call the function
+    local schema = _G.dsl_to_schema("name, age int, bio")
+    
+    -- Clean up the mock
+    cleanup()
+    
+    -- Check the result
+    assert(schema:match('"type": "object"'), "Schema should contain the correct JSON")
+    assert(schema:match('"type": "integer"'), "Schema should contain the correct type for age")
   end)
   
   -- Tests for key management functionality

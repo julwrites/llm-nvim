@@ -29,4 +29,12 @@ if not llm.select_fragment then
   llm.select_fragment = require('llm.init').select_fragment
 end
 
+if not llm.manage_templates then
+  llm.manage_templates = require('llm.init').manage_templates
+end
+
+if not llm.select_template then
+  llm.select_template = require('llm.init').select_template
+end
+
 return llm

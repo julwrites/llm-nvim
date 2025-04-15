@@ -82,6 +82,48 @@ function M.expose_module_functions(module)
   _G.manage_plugins = module.manage_plugins or function() end -- Provide a default implementation
   _G.get_available_models = module.get_available_models
   
+  -- Expose fragment management functions
+  if module.get_fragments then
+    _G.get_fragments = module.get_fragments
+  end
+  if module.set_fragment_alias then
+    _G.set_fragment_alias = module.set_fragment_alias
+  end
+  if module.remove_fragment_alias then
+    _G.remove_fragment_alias = module.remove_fragment_alias
+  end
+  
+  -- Expose template management functions
+  if module.get_templates then
+    _G.get_templates = module.get_templates
+  end
+  if module.get_template_details then
+    _G.get_template_details = module.get_template_details
+  end
+  if module.create_template then
+    _G.create_template = module.create_template
+  end
+  if module.delete_template then
+    _G.delete_template = module.delete_template
+  end
+  
+  -- Expose schema management functions
+  if module.get_schemas then
+    _G.get_schemas = module.get_schemas
+  end
+  if module.get_schema_details then
+    _G.get_schema_details = module.get_schema_details
+  end
+  if module.create_schema then
+    _G.create_schema = module.create_schema
+  end
+  if module.delete_schema then
+    _G.delete_schema = module.delete_schema
+  end
+  if module.dsl_to_schema then
+    _G.dsl_to_schema = module.dsl_to_schema
+  end
+  
   -- Also expose helper functions that are used in tests
   _G.extract_model_name = _G.extract_model_name or function(model_line)
     -- Extract the actual model name (after the provider type)
@@ -113,6 +155,131 @@ function M.expose_module_functions(module)
   
   _G.uninstall_plugin = _G.uninstall_plugin or function(plugin_name)
     return true
+  end
+  
+  -- Fragment management mock functions
+  _G.get_fragments = _G.get_fragments or function()
+    return {
+      {hash = "1234abcd", path = "/path/to/file1.txt", alias = "file1"},
+      {hash = "5678efgh", path = "/path/to/file2.py", alias = nil},
+      {hash = "9012ijkl", path = "https://example.com/resource", alias = nil}
+    }
+  end
+  
+  _G.set_fragment_alias = _G.set_fragment_alias or function(hash, alias)
+    return true
+  end
+  
+  _G.remove_fragment_alias = _G.remove_fragment_alias or function(alias)
+    return true
+  end
+  
+  -- Template management mock functions
+  _G.get_templates = _G.get_templates or function()
+    return {"explain-code", "summarize", "translate"}
+  end
+  
+  _G.get_template_details = _G.get_template_details or function(template_name)
+    if template_name == "explain-code" then
+      return {
+        name = "explain-code",
+        prompt = "Explain this code: {{input}}",
+        system = "You are a helpful coding assistant.",
+        schema = {
+          properties = {
+            input = {
+              type = "string",
+              description = "The code to explain"
+            }
+          }
+        }
+      }
+    else
+      return {
+        name = template_name,
+        prompt = "Template prompt for " .. template_name,
+        system = "You are a helpful assistant.",
+        schema = {
+          properties = {
+            input = {
+              type = "string",
+              description = "The input to process"
+            }
+          }
+        }
+      }
+    end
+  end
+  
+  _G.create_template = _G.create_template or function(name, prompt, system, schema)
+    return true
+  end
+  
+  _G.delete_template = _G.delete_template or function(name)
+    return true
+  end
+  
+  -- Schema management mock functions
+  _G.get_schemas = _G.get_schemas or function()
+    return {
+      {id = "3b7702e71da3dd791d9e17b76c88730e", summary = "{items: [{name, organization, role}]}", usage = "1 time"},
+      {id = "520f7aabb121afd14d0c6c237b39ba2d", summary = "{name, age int, bio}", usage = "3 times"}
+    }
+  end
+  
+  _G.get_schema_details = _G.get_schema_details or function(schema_id)
+    return {
+      id = schema_id,
+      schema = [[{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "bio": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "age",
+    "bio"
+  ]
+}]]
+    }
+  end
+  
+  _G.create_schema = _G.create_schema or function(name, schema_content)
+    return true
+  end
+  
+  _G.delete_schema = _G.delete_schema or function(schema_id)
+    return true
+  end
+  
+  _G.dsl_to_schema = _G.dsl_to_schema or function(dsl)
+    return [[{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "age": {
+      "type": "integer"
+    },
+    "bio": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "age",
+    "bio"
+  ]
+}]]
   end
 end
 

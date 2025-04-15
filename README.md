@@ -11,6 +11,8 @@ A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://git
 - Support for custom models and system prompts
 - Use fragments (files, URLs, GitHub repos) with prompts
 - Manage fragment aliases
+- Create and use templates for common prompts
+- Manage templates with schemas
 
 ## Requirements
 
@@ -79,6 +81,8 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `:LLMSelectFragment` - Select a file to use as a fragment
 - `:LLMWithFragments` - Send a prompt with fragments
 - `:LLMWithSelectionAndFragments` - Send selected text with fragments
+- `:LLMTemplates` - Manage templates (view, create, edit, delete)
+- `:LLMTemplate` - Select and run a template
 
 ### Default Mappings
 
@@ -93,6 +97,30 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>llsf` - Select a file to use as a fragment
 - `<leader>llwf` - Send a prompt with fragments
 - `<leader>llwf` - In visual mode, send selection with fragments
+- `<leader>llt` - Manage templates
+- `<leader>llrt` - Select and run a template
+
+## Development
+
+### Testing
+
+The plugin includes a test suite using [plenary.nvim](https://github.com/nvim-lua/plenary.nvim). To run the tests:
+
+```bash
+# Run all tests
+./test/run.sh
+
+# Or using the Lua test runner
+nvim --headless -l test/run_tests.lua
+```
+
+Tests cover:
+- Core functionality (prompts, chat, code explanation)
+- Model management
+- Plugin management
+- API key management
+- Fragment management
+- Template management
 
 ## License
 

@@ -11,6 +11,7 @@ local fn = vim.fn
 -- Forward declaration of config module
 local config
 local fragments
+local templates
 
 -- Check if llm is installed
 local function check_llm_installed()
@@ -1448,6 +1449,9 @@ function M.setup(opts)
   -- Load the fragments module
   fragments = require('llm.fragments')
   
+  -- Load the templates module
+  templates = require('llm.templates')
+  
   return M
 end
 
@@ -1457,6 +1461,12 @@ config.setup()
 
 -- Load the fragments module
 fragments = require('llm.fragments')
+
+-- Load the templates module
+templates = require('llm.templates')
+
+-- Load the schemas module
+schemas = require('llm.schemas')
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()
@@ -1782,6 +1792,26 @@ function M.select_fragment()
   fragments.select_file_as_fragment()
 end
 
+-- Manage templates
+function M.manage_templates()
+  templates.manage_templates()
+end
+
+-- Select and run a template
+function M.select_template()
+  templates.select_template()
+end
+
+-- Manage schemas
+function M.manage_schemas()
+  schemas.manage_schemas()
+end
+
+-- Select and run a schema
+function M.select_schema()
+  schemas.select_schema()
+end
+
 -- Make sure all functions are properly exposed in the module
 -- Explicitly define manage_models if it doesn't exist
 if not M.manage_models then
@@ -1804,6 +1834,38 @@ if not M.manage_fragments then
   M.manage_fragments = function()
     -- Default implementation that does nothing
     vim.notify("manage_fragments function called", vim.log.levels.INFO)
+  end
+end
+
+-- Explicitly define manage_templates if it doesn't exist
+if not M.manage_templates then
+  M.manage_templates = function()
+    -- Default implementation that does nothing
+    vim.notify("manage_templates function called", vim.log.levels.INFO)
+  end
+end
+
+-- Explicitly define select_template if it doesn't exist
+if not M.select_template then
+  M.select_template = function()
+    -- Default implementation that does nothing
+    vim.notify("select_template function called", vim.log.levels.INFO)
+  end
+end
+
+-- Explicitly define manage_schemas if it doesn't exist
+if not M.manage_schemas then
+  M.manage_schemas = function()
+    -- Default implementation that does nothing
+    vim.notify("manage_schemas function called", vim.log.levels.INFO)
+  end
+end
+
+-- Explicitly define select_schema if it doesn't exist
+if not M.select_schema then
+  M.select_schema = function()
+    -- Default implementation that does nothing
+    vim.notify("select_schema function called", vim.log.levels.INFO)
   end
 end
 
