@@ -109,18 +109,20 @@ function M.create_schema(name, schema_content)
   end
   
   local result = handle:read("*a")
-  local success = handle:close()
+  local success, exit_type, exit_code = handle:close()
   
   -- Clean up temp file
   os.remove(temp_file)
   
-  if success then
+  -- In Lua, popen:close() returns true only if the command exited with status 0
+  -- For llm CLI, we need to check the output for success indicators
+  if result and (result:match("Schema saved") or result:match("saved successfully")) then
     vim.notify("Schema created successfully: " .. name, vim.log.levels.INFO)
+    return true
   else
     vim.notify("Failed to create schema: " .. (result or "Unknown error"), vim.log.levels.ERROR)
+    return false
   end
-  
-  return success
 end
 
 -- Delete a schema
@@ -553,12 +555,14 @@ function M.manage_schemas()
       end
       
       local result = handle:read("*a")
-      local success = handle:close()
+      local success, exit_type, exit_code = handle:close()
       
       -- Clean up temp file
       os.remove(temp_file)
       
-      if success then
+      -- In Lua, popen:close() returns true only if the command exited with status 0
+      -- For llm CLI, we need to check the output for success indicators
+      if result and (result:match("Schema saved") or result:match("saved successfully")) then
         vim.notify("Schema saved: " .. schema_manager.current_schema_id, vim.log.levels.INFO)
         
         -- Close the edit window

@@ -90,6 +90,11 @@ function M.create_template(name, prompt, system, schema)
   local temp_file = os.tmpname()
   local file = io.open(temp_file, "w")
   
+  if not file then
+    vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+    return false
+  end
+  
   file:write("name: " .. name .. "\n")
   
   if prompt and prompt ~= "" then
@@ -107,15 +112,29 @@ function M.create_template(name, prompt, system, schema)
   file:close()
   
   -- Create the template using llm CLI
-  local cmd = string.format('llm templates import %s', temp_file)
+  local cmd = string.format('llm templates import "%s"', temp_file)
   local handle = io.popen(cmd)
+  if not handle then
+    vim.notify("Failed to execute command", vim.log.levels.ERROR)
+    os.remove(temp_file)
+    return false
+  end
+  
   local result = handle:read("*a")
-  local success = handle:close()
+  local success, exit_type, exit_code = handle:close()
   
   -- Clean up temp file
   os.remove(temp_file)
   
-  return success
+  -- In Lua, popen:close() returns true only if the command exited with status 0
+  -- For llm CLI, we need to check the output for success indicators
+  if result and (result:match("Template saved") or result:match("saved successfully") or result:match("Imported template")) then
+    vim.notify("Template created successfully: " .. name, vim.log.levels.INFO)
+    return true
+  else
+    vim.notify("Failed to create template: " .. (result or "Unknown error"), vim.log.levels.ERROR)
+    return false
+  end
 end
 
 -- Delete a template
@@ -608,19 +627,34 @@ function M.manage_templates()
     -- Create a temporary file with the template content
     local temp_file = os.tmpname()
     local file = io.open(temp_file, "w")
+    
+    if not file then
+      vim.notify("Failed to create temporary file", vim.log.levels.ERROR)
+      return
+    end
+    
     file:write(content)
     file:close()
     
     -- Import the template
-    local cmd = string.format('llm templates import %s', temp_file)
+    local cmd = string.format('llm templates import "%s"', temp_file)
     local handle = io.popen(cmd)
+    
+    if not handle then
+      vim.notify("Failed to execute command", vim.log.levels.ERROR)
+      os.remove(temp_file)
+      return
+    end
+    
     local result = handle:read("*a")
-    local success = handle:close()
+    local success, exit_type, exit_code = handle:close()
     
     -- Clean up temp file
     os.remove(temp_file)
     
-    if success then
+    -- In Lua, popen:close() returns true only if the command exited with status 0
+    -- For llm CLI, we need to check the output for success indicators
+    if result and (result:match("Template saved") or result:match("saved successfully") or result:match("Imported template")) then
       if is_new then
         vim.notify("Template created: " .. name, vim.log.levels.INFO)
       else
@@ -637,7 +671,7 @@ function M.manage_templates()
         M.manage_templates()
       end)
     else
-      vim.notify("Failed to save template. Check your YAML syntax.", vim.log.levels.ERROR)
+      vim.notify("Failed to save template. Check your YAML syntax: " .. (result or "Unknown error"), vim.log.levels.ERROR)
     end
   end
   
