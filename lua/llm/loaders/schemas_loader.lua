@@ -1,18 +1,12 @@
--- llm/schemas.lua - Simple schema handling for llm-nvim
+-- llm/loaders/schemas_loader.lua - Schema loading functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
+-- Forward declarations
+local utils = require('llm.utils')
+
 -- Disabled functionality
-function M.select_schema()
-  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
-end
-
-function M.manage_schemas()
-  vim.notify("Schemas functionality is currently disabled", vim.log.levels.INFO)
-end
-
--- Placeholder functions to maintain API compatibility
 function M.get_schemas()
   return {}
 end

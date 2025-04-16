@@ -1,4 +1,4 @@
--- llm/keys.lua - API key management for llm-nvim
+-- llm/managers/keys_manager.lua - API key management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -370,12 +370,12 @@ function M.manage_keys()
     end
 
     -- Save key on Enter
-    set_keymap('i', '<CR>', [[<Cmd>lua require('llm.key_manager').save_key_from_input()<CR>]])
-    set_keymap('n', '<CR>', [[<Cmd>lua require('llm.key_manager').save_key_from_input()<CR>]])
+    set_keymap('i', '<CR>', [[<Cmd>lua require('llm.managers.key_manager').save_key_from_input()<CR>]])
+    set_keymap('n', '<CR>', [[<Cmd>lua require('llm.managers.key_manager').save_key_from_input()<CR>]])
 
     -- Cancel on Escape
-    set_keymap('i', '<Esc>', [[<Cmd>lua require('llm.key_manager').cancel_key_input()<CR>]])
-    set_keymap('n', '<Esc>', [[<Cmd>lua require('llm.key_manager').cancel_key_input()<CR>]])
+    set_keymap('i', '<Esc>', [[<Cmd>lua require('llm.managers.key_manager').cancel_key_input()<CR>]])
+    set_keymap('n', '<Esc>', [[<Cmd>lua require('llm.managers.key_manager').cancel_key_input()<CR>]])
 
     -- Store the provider name for later use
     vim.b[buf].provider_name = provider_name
@@ -492,17 +492,17 @@ function M.manage_keys()
   end
 
   -- Set a key for the provider under cursor
-  set_keymap('n', 's', [[<cmd>lua require('llm.key_manager').set_key_under_cursor()<CR>]])
+  set_keymap('n', 's', [[<cmd>lua require('llm.managers.key_manager').set_key_under_cursor()<CR>]])
 
   -- Remove a key for the provider under cursor
-  set_keymap('n', 'r', [[<cmd>lua require('llm.key_manager').remove_key_under_cursor()<CR>]])
+  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.key_manager').remove_key_under_cursor()<CR>]])
 
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
 
   -- Store the key manager module
-  package.loaded['llm.key_manager'] = key_manager
+  package.loaded['llm.managers.key_manager'] = key_manager
 end
 
 return M

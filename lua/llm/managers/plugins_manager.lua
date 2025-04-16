@@ -1,4 +1,4 @@
--- llm/plugins.lua - Plugin management for llm-nvim
+-- llm/managers/plugins_manager.lua - Plugin management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -307,20 +307,20 @@ function M.manage_plugins()
   end
 
   -- Install plugin under cursor
-  set_keymap('n', 'i', [[<cmd>lua require('llm.plugin_manager').install_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'i', [[<cmd>lua require('llm.managers.plugin_manager').install_plugin_under_cursor()<CR>]])
 
   -- Uninstall plugin under cursor
-  set_keymap('n', 'x', [[<cmd>lua require('llm.plugin_manager').uninstall_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'x', [[<cmd>lua require('llm.managers.plugin_manager').uninstall_plugin_under_cursor()<CR>]])
 
   -- Refresh plugin list
-  set_keymap('n', 'r', [[<cmd>lua require('llm.plugin_manager').refresh_plugin_list()<CR>]])
+  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.plugin_manager').refresh_plugin_list()<CR>]])
 
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
 
   -- Store the plugin manager module
-  package.loaded['llm.plugin_manager'] = plugin_manager
+  package.loaded['llm.managers.plugin_manager'] = plugin_manager
 end
 
 return M

@@ -1,18 +1,12 @@
--- llm/templates.lua - Template handling for llm-nvim
+-- llm/loaders/templates_loader.lua - Template loading functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
+-- Forward declarations
+local utils = require('llm.utils')
+
 -- Disabled functionality
-function M.select_template()
-  vim.notify("Templates functionality is currently disabled", vim.log.levels.INFO)
-end
-
-function M.manage_templates()
-  vim.notify("Templates functionality is currently disabled", vim.log.levels.INFO)
-end
-
--- Placeholder functions to maintain API compatibility
 function M.get_templates()
   return {}
 end

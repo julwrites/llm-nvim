@@ -1,4 +1,4 @@
--- llm/models.lua - Model selection and management
+-- llm/managers/models_manager.lua - Model selection and management
 -- License: Apache 2.0
 
 local M = {}
@@ -652,26 +652,26 @@ function M.manage_models()
   end
 
   -- Set model under cursor as default
-  set_keymap('n', 's', [[<cmd>lua require('llm.model_manager').set_model_under_cursor()<CR>]])
+  set_keymap('n', 's', [[<cmd>lua require('llm.managers.model_manager').set_model_under_cursor()<CR>]])
 
   -- Set alias for model under cursor
-  set_keymap('n', 'a', [[<cmd>lua require('llm.model_manager').set_alias_for_model_under_cursor()<CR>]])
+  set_keymap('n', 'a', [[<cmd>lua require('llm.managers.model_manager').set_alias_for_model_under_cursor()<CR>]])
 
   -- Remove alias for model under cursor
-  set_keymap('n', 'r', [[<cmd>lua require('llm.model_manager').remove_alias_for_model_under_cursor()<CR>]])
+  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.model_manager').remove_alias_for_model_under_cursor()<CR>]])
 
   -- Chat with model under cursor
-  set_keymap('n', 'c', [[<cmd>lua require('llm.model_manager').chat_with_model_under_cursor()<CR>]])
+  set_keymap('n', 'c', [[<cmd>lua require('llm.managers.model_manager').chat_with_model_under_cursor()<CR>]])
 
   -- Add custom alias (when on the [+] line)
-  set_keymap('n', '<CR>', [[<cmd>lua require('llm.model_manager').handle_action_under_cursor()<CR>]])
+  set_keymap('n', '<CR>', [[<cmd>lua require('llm.managers.model_manager').handle_action_under_cursor()<CR>]])
 
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
 
   -- Store the model manager module
-  package.loaded['llm.model_manager'] = model_manager
+  package.loaded['llm.managers.model_manager'] = model_manager
 end
 
 return M
