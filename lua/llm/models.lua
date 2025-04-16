@@ -117,18 +117,77 @@ function M.set_model_alias(alias, model)
   return result ~= nil
 end
 
--- Remove a model alias using llm CLI
+-- Remove a model alias by directly modifying the aliases.json file
 function M.remove_model_alias(alias)
   if not utils.check_llm_installed() then
     return false
   end
 
-  local result = utils.safe_shell_command(
-    string.format('llm aliases remove %s', alias),
-    "Failed to remove model alias"
-  )
+  -- Try CLI command first with better error handling
+  local escaped_alias = alias:gsub("'", "'\\''")
+  local cmd = string.format("llm aliases remove '%s'", escaped_alias)
   
-  return result ~= nil
+  local result = utils.safe_shell_command(cmd, nil)
+  
+  if result then
+    return true
+  end
+  
+  -- If CLI command fails, modify the aliases.json file directly
+  local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
+  
+  -- If aliases file doesn't exist, nothing to remove
+  if not aliases_file then
+    vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Read existing aliases
+  local aliases_data = {}
+  local file = io.open(aliases_file, "r")
+  
+  if file then
+    local content = file:read("*a")
+    file:close()
+    
+    -- Parse JSON if file exists and has content
+    if content and content ~= "" then
+      local success, result
+      success, result = pcall(vim.fn.json_decode, content)
+      if success and type(result) == "table" then
+        aliases_data = result
+      else
+        vim.notify("Failed to parse aliases JSON: " .. (result or "unknown error"), vim.log.levels.ERROR)
+        aliases_data = {} -- Reset to empty table if parsing failed
+      end
+    end
+  else
+    vim.notify("Failed to open aliases file for reading", vim.log.levels.ERROR)
+    return false
+  end
+
+  -- Check if the alias exists
+  if aliases_data[alias] == nil then
+    vim.notify("Alias '" .. alias .. "' not found in aliases file", vim.log.levels.WARN)
+    return false
+  end
+
+  -- Remove the alias
+  aliases_data[alias] = nil
+
+  -- Write the updated aliases back to the file
+  local updated_content = vim.fn.json_encode(aliases_data)
+  file = io.open(aliases_file, "w")
+  if not file then
+    vim.notify("Failed to open aliases file for writing: " .. aliases_file, vim.log.levels.ERROR)
+    return false
+  end
+
+  file:write(updated_content)
+  file:close()
+
+  vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
+  return true
 end
 
 -- Select a model to use
@@ -181,7 +240,26 @@ function M.manage_models()
   api.nvim_buf_set_name(buf, 'LLM Models')
 
   -- Create a new window
-  local win = utils.create_floating_window(buf, ' Model Management ')
+  local width = math.floor(vim.o.columns * 0.8)
+  local height = math.floor(vim.o.lines * 0.8)
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' Model Management ',
+    title_pos = 'center',
+  }
+
+  local win = api.nvim_open_win(buf, true, opts)
+  api.nvim_win_set_option(win, 'cursorline', true)
+  api.nvim_win_set_option(win, 'winblend', 0)
 
   -- Get current default model
   local default_model_output = utils.safe_shell_command("llm models default", "Failed to get default model")
@@ -198,7 +276,7 @@ function M.manage_models()
     default_model = ""
   end
 
-  vim.notify("Default model: " .. (default_model or "none"), vim.log.levels.DEBUG)
+  -- Skip notification about default model to avoid pausing
 
   -- Set buffer content
   local lines = {
@@ -241,7 +319,7 @@ function M.manage_models()
     -- Check if this is the default model
     if entry.model_name == default_model then
       entry.is_default = true
-      vim.notify("Found default model: " .. entry.model_name, vim.log.levels.DEBUG)
+      -- Skip notification about found default model
     end
 
     -- Add aliases for this model
@@ -292,7 +370,7 @@ function M.manage_models()
         if model.model_name:find(default_model, 1, true) or
             default_model:find(model.model_name, 1, true) then
           model.is_default = true
-          vim.notify("Matched default model by substring: " .. model.model_name, vim.log.levels.DEBUG)
+          -- Skip notification about matched default model
           default_found = true
           break
         end
@@ -345,7 +423,7 @@ function M.manage_models()
   api.nvim_buf_set_option(buf, 'modifiable', false)
 
   -- Set up syntax highlighting
-  utils.setup_buffer_highlighting(buf)
+  require('llm').setup_buffer_highlighting(buf)
 
   -- Add model-specific highlighting
   vim.cmd([[
@@ -430,13 +508,19 @@ function M.manage_models()
 
       -- Set alias
       if M.set_model_alias(alias, model_name) then
-        vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
-
-        -- Close and reopen the model manager to refresh
-        vim.api.nvim_win_close(0, true)
-        vim.schedule(function()
-          M.manage_models()
-        end)
+        -- Clear command line
+        vim.cmd('echo ""')
+        
+        -- Show notification after a short delay to ensure command line is clear
+        vim.defer_fn(function()
+          vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
+          
+          -- Close and reopen the model manager to refresh
+          vim.api.nvim_win_close(0, true)
+          vim.schedule(function()
+            M.manage_models()
+          end)
+        end, 100)
       else
         vim.notify("Failed to set alias", vim.log.levels.ERROR)
       end
@@ -476,13 +560,19 @@ function M.manage_models()
 
           -- Set alias
           if M.set_model_alias(alias, model) then
-            vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
-
-            -- Close and reopen the model manager to refresh
-            vim.api.nvim_win_close(0, true)
-            vim.schedule(function()
-              M.manage_models()
-            end)
+            -- Clear command line
+            vim.cmd('echo ""')
+            
+            -- Show notification after a short delay to ensure command line is clear
+            vim.defer_fn(function()
+              vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
+              
+              -- Close and reopen the model manager to refresh
+              vim.api.nvim_win_close(0, true)
+              vim.schedule(function()
+                M.manage_models()
+              end)
+            end, 100)
           else
             vim.notify("Failed to set alias", vim.log.levels.ERROR)
           end
@@ -505,10 +595,42 @@ function M.manage_models()
 
     -- Let user select which alias to remove
     vim.ui.select(model.aliases, {
-      prompt = "Select alias to remove:"
+      prompt = "Select alias to remove:",
+      format_item = function(item) return item end
     }, function(alias)
       if not alias then return end
 
+      -- Check if this is a system alias (not in the aliases.json file)
+      local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
+      local is_system_alias = false
+      
+      if aliases_file then
+        local file = io.open(aliases_file, "r")
+        if file then
+          local content = file:read("*a")
+          file:close()
+          
+          local success, aliases_data = pcall(vim.fn.json_decode, content)
+          if success and type(aliases_data) == "table" then
+            if aliases_data[alias] == nil then
+              is_system_alias = true
+              -- System alias detected (silently)
+            end
+          end
+        end
+      end
+      
+      if is_system_alias then
+        -- Make the message more visible with ERROR level instead of WARN
+        vim.notify("Cannot remove system alias '" .. alias .. "'. Only user-defined aliases can be removed.", vim.log.levels.ERROR)
+        return
+      end
+
+      -- Use vim.fn.confirm for a more compact confirmation dialog
+      local confirm = vim.fn.confirm("Remove alias '" .. alias .. "'?", "&Yes\n&No", 2)
+      
+      if confirm ~= 1 then return end
+    
       -- Remove alias
       if M.remove_model_alias(alias) then
         vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
@@ -519,7 +641,7 @@ function M.manage_models()
           M.manage_models()
         end)
       else
-        vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+        vim.notify("Failed to remove alias '" .. alias .. "': This may be a system alias that cannot be removed", vim.log.levels.ERROR)
       end
     end)
   end

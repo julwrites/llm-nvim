@@ -266,8 +266,12 @@ function M.manage_fragments()
     if aliases == "" then aliases = "none" end
 
     local source = fragment.source or "unknown"
-    local content_preview = fragment.content:sub(1, 50)
-    if #fragment.content > 50 then
+    -- Get first line of content for preview
+    local first_line = fragment.content:match("^[^\r\n]*")
+    local content_preview = first_line or ""
+    if #content_preview > 50 then
+      content_preview = content_preview:sub(1, 50) .. "..."
+    elseif #fragment.content > #content_preview then
       content_preview = content_preview .. "..."
     end
 

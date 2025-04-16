@@ -38,6 +38,46 @@ function M.check_llm_installed()
   return true
 end
 
+-- Get the configuration directory and file path for llm
+function M.get_config_path(filename)
+  local home = os.getenv("HOME")
+  if not home then
+    vim.notify("Could not determine home directory", vim.log.levels.ERROR)
+    return nil, nil
+  end
+
+  -- Try standard locations for the config file
+  local possible_dirs = {
+    home .. "/.config/io.datasette.llm",                     -- Linux/macOS standard
+    home .. "/.io.datasette.llm",                            -- Alternative location
+    home .. "/Library/Application Support/io.datasette.llm", -- macOS specific
+    home .. "/AppData/Roaming/io.datasette.llm",             -- Windows
+  }
+  
+  local config_dir = nil
+  local config_file = nil
+  
+  -- First check if the file exists in any of the locations
+  for _, dir in ipairs(possible_dirs) do
+    local file_path = dir .. "/" .. filename
+    local f = io.open(file_path, "r")
+    if f then
+      f:close()
+      config_dir = dir
+      config_file = file_path
+      break
+    end
+  end
+  
+  -- If file doesn't exist, use the default location
+  if not config_file then
+    config_dir = possible_dirs[1]  -- Use the first location as default
+    config_file = config_dir .. "/" .. filename
+  end
+  
+  return config_dir, config_file
+end
+
 -- Create a new buffer with content
 function M.create_buffer_with_content(content, buffer_name, filetype)
   -- Create a new split
