@@ -11,13 +11,13 @@ local fn = vim.fn
 local utils = require('llm.utils')
 local commands = require('llm.commands')
 
--- Get fragments from llm CLI
-function M.get_fragments()
+-- Get all fragments from llm CLI (including those without aliases)
+function M.get_all_fragments()
   local result = utils.safe_shell_command("llm fragments", "Failed to get fragments")
   if not result then
     return {}
   end
-
+  
   local fragments = {}
   local current_fragment = nil
 
@@ -34,16 +34,22 @@ function M.get_fragments()
         aliases = {},
         source = "",
         content = "",
-        datetime = ""
+        datetime = "",
+        in_aliases_section = false
       }
     elseif current_fragment and line:match("^%s+aliases:") then
-      local aliases_str = line:match("aliases:%s+(.+)")
-      if aliases_str and aliases_str ~= "[]" then
-        -- Parse aliases from the string
-        for alias in aliases_str:gmatch('"([^"]+)"') do
-          table.insert(current_fragment.aliases, alias)
-        end
+      -- Just store that we're in the aliases section
+      -- The actual aliases will be on the next lines with "  - alias_name" format
+      current_fragment.in_aliases_section = true
+    elseif current_fragment and current_fragment.in_aliases_section and line:match("^%s+-%s+") then
+      -- This is an alias line in the format "  - alias_name"
+      local alias = line:match("^%s+-%s+(.+)")
+      if alias and #alias > 0 then
+        table.insert(current_fragment.aliases, alias)
       end
+    elseif current_fragment and current_fragment.in_aliases_section and not line:match("^%s+-%s+") then
+      -- We've exited the aliases section
+      current_fragment.in_aliases_section = nil
     elseif current_fragment and line:match("^%s+datetime_utc:") then
       current_fragment.datetime = line:match("datetime_utc:%s+'([^']+)'")
     elseif current_fragment and line:match("^%s+source:") then
@@ -68,12 +74,115 @@ function M.get_fragments()
   return fragments
 end
 
+-- Get fragments from llm CLI (only those with aliases)
+function M.get_fragments()
+  local result = utils.safe_shell_command("llm fragments", "Failed to get fragments")
+  if not result then
+    return {}
+  end
+  
+  -- Debug the raw output from llm fragments (only in debug mode)
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Raw fragments output:\n" .. result:sub(1, 500) .. (result:len() > 500 and "..." or ""), vim.log.levels.DEBUG)
+  end
+
+  local fragments = {}
+  local current_fragment = nil
+  local has_aliases = false
+
+  for line in result:gmatch("[^\r\n]+") do
+    if line:match("^%s*-%s+hash:%s+") then
+      -- Start of a new fragment
+      if current_fragment then
+        table.insert(fragments, current_fragment)
+      end
+
+      local hash = line:match("hash:%s+([0-9a-f]+)")
+      current_fragment = {
+        hash = hash,
+        aliases = {},
+        source = "",
+        content = "",
+        datetime = "",
+        in_aliases_section = false
+      }
+    elseif current_fragment and line:match("^%s+aliases:") then
+      -- Just store that we're in the aliases section
+      -- The actual aliases will be on the next lines with "  - alias_name" format
+      current_fragment.in_aliases_section = true
+    elseif current_fragment and current_fragment.in_aliases_section and line:match("^%s+-%s+") then
+      -- This is an alias line in the format "  - alias_name"
+      local alias = line:match("^%s+-%s+(.+)")
+      if alias and #alias > 0 then
+        table.insert(current_fragment.aliases, alias)
+        local config = require('llm.config')
+        if config.get('debug') then
+          vim.notify("Added alias: " .. alias, vim.log.levels.DEBUG)
+        end
+      end
+    elseif current_fragment and current_fragment.in_aliases_section and not line:match("^%s+-%s+") then
+      -- We've exited the aliases section
+      current_fragment.in_aliases_section = nil
+    elseif current_fragment and line:match("^%s+datetime_utc:") then
+      current_fragment.datetime = line:match("datetime_utc:%s+'([^']+)'")
+    elseif current_fragment and line:match("^%s+source:") then
+      current_fragment.source = line:match("source:%s+(.+)")
+    elseif current_fragment and line:match("^%s+content:") then
+      -- Start of content
+      current_fragment.content = line:match("content:%s+(.+)")
+      if current_fragment.content:match("^%|-$") then
+        current_fragment.content = ""
+      end
+    elseif current_fragment and current_fragment.content ~= "" then
+      -- Continuation of content
+      current_fragment.content = current_fragment.content .. "\n" .. line:gsub("^%s+", "")
+    end
+  end
+
+  -- Add the last fragment if it has aliases
+  if current_fragment then
+    if #current_fragment.aliases > 0 then
+      table.insert(fragments, current_fragment)
+    end
+  end
+
+  return fragments
+end
+
 -- Set an alias for a fragment
 function M.set_fragment_alias(path, alias)
+  local config = require('llm.config')
+  local debug_mode = config.get('debug')
+  
+  -- Debug the command being executed
+  local cmd = string.format('llm fragments set "%s" "%s"', alias, path)
+  if debug_mode then
+    vim.notify("Executing command: " .. cmd, vim.log.levels.INFO)
+  end
+  
   local result = utils.safe_shell_command(
-    string.format('llm fragments set %s "%s"', alias, path),
+    cmd,
     "Failed to set fragment alias"
   )
+  
+  -- Debug the result
+  if debug_mode then
+    if result then
+      vim.notify("Command result: " .. result, vim.log.levels.INFO)
+    else
+      vim.notify("Command failed with nil result", vim.log.levels.ERROR)
+    end
+    
+    -- Verify the alias was set by checking fragments
+    vim.defer_fn(function()
+      local verify_cmd = "llm fragments --aliases"
+      local verify_result = utils.safe_shell_command(verify_cmd, "Failed to verify alias")
+      if verify_result then
+        vim.notify("Verification result:\n" .. verify_result, vim.log.levels.INFO)
+      end
+    end, 500)  -- Check after a short delay
+  end
 
   return result ~= nil
 end
@@ -87,6 +196,7 @@ function M.remove_fragment_alias(alias)
 
   return result ~= nil
 end
+
 
 -- Show a specific fragment
 function M.show_fragment(hash_or_alias)

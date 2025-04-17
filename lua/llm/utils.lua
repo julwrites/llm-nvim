@@ -9,9 +9,18 @@ local fn = vim.fn
 
 -- Error handling wrapper for shell commands
 function M.safe_shell_command(cmd, error_msg)
+  local config = require('llm.config')
+  local debug_mode = config.get('debug')
+  
+  -- Debug the command being executed (only in debug mode)
+  if debug_mode then
+    vim.notify("safe_shell_command executing: " .. cmd, vim.log.levels.DEBUG)
+  end
+  
   local success, handle = pcall(io.popen, cmd)
   if not success then
     api.nvim_err_writeln(error_msg or "Failed to execute command: " .. cmd)
+    vim.notify("Command failed to execute: " .. cmd, vim.log.levels.ERROR)
     return nil
   end
   
@@ -20,7 +29,16 @@ function M.safe_shell_command(cmd, error_msg)
   
   if not close_success then
     api.nvim_err_writeln("Command execution failed: " .. cmd)
+    vim.notify("Command execution failed: " .. cmd, vim.log.levels.ERROR)
     return nil
+  end
+  
+  -- Debug the result (truncated if too long) (only in debug mode)
+  if debug_mode and result and #result > 0 then
+    local truncated = #result > 200 and result:sub(1, 200) .. "..." or result
+    vim.notify("Command result: " .. truncated, vim.log.levels.DEBUG)
+  elseif debug_mode then
+    vim.notify("Command returned empty result", vim.log.levels.DEBUG)
   end
   
   return result
@@ -197,6 +215,73 @@ function M.setup_buffer_highlighting(buf)
     vim.api.nvim_buf_call(buf, function()
       vim.cmd(cmd)
     end)
+  end
+end
+
+-- Debug function to check fragment aliases
+function M.debug_fragment_aliases()
+  local config = require('llm.config')
+  local debug_mode = config.get('debug')
+  
+  if not debug_mode then
+    vim.notify("Debug mode is disabled. Enable it with require('llm').setup({debug = true})", vim.log.levels.INFO)
+    return
+  end
+  
+  local result = M.safe_shell_command("llm fragments --aliases", "Failed to get fragments with aliases")
+  if result then
+    vim.notify("Current fragments with aliases:\n" .. result, vim.log.levels.INFO)
+  else
+    vim.notify("Failed to get fragments with aliases", vim.log.levels.ERROR)
+  end
+  
+  -- Also run a direct test of the parsing logic
+  local test_result = M.safe_shell_command("llm fragments", "Failed to get fragments")
+  if test_result then
+    vim.notify("Testing fragment parsing with raw output", vim.log.levels.INFO)
+    
+    -- Parse the fragments manually to debug
+    local fragments = {}
+    local current_fragment = nil
+    
+    for line in test_result:gmatch("[^\r\n]+") do
+      if line:match("^%s*-%s+hash:%s+") then
+        -- Start of a new fragment
+        if current_fragment then
+          table.insert(fragments, current_fragment)
+        end
+        
+        local hash = line:match("hash:%s+([0-9a-f]+)")
+        current_fragment = {
+          hash = hash,
+          aliases = {},
+          source = "",
+          content = "",
+          datetime = ""
+        }
+      elseif current_fragment and line:match("^%s+aliases:") then
+        -- Just mark that we're in the aliases section
+        vim.notify("Found aliases section", vim.log.levels.INFO)
+        current_fragment.in_aliases_section = true
+      elseif current_fragment and current_fragment.in_aliases_section and line:match("^%s+-%s+") then
+        -- This is an alias line in the format "  - alias_name"
+        local alias = line:match("^%s+-%s+(.+)")
+        if alias and #alias > 0 then
+          table.insert(current_fragment.aliases, alias)
+          vim.notify("Added alias: " .. alias, vim.log.levels.INFO)
+        end
+      elseif current_fragment and current_fragment.in_aliases_section and not line:match("^%s+-%s+") then
+        -- We've exited the aliases section
+        current_fragment.in_aliases_section = nil
+      end
+    end
+    
+    -- Show the parsed fragments
+    for i, fragment in ipairs(fragments) do
+      local aliases = table.concat(fragment.aliases, ", ")
+      if aliases == "" then aliases = "none" end
+      vim.notify(string.format("Fragment %d: %s, Aliases: %s", i, fragment.hash:sub(1, 8), aliases), vim.log.levels.INFO)
+    end
   end
 end
 

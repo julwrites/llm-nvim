@@ -54,6 +54,7 @@ require('llm').setup({
   model = 'gpt-4o',                          -- Default model to use
   system_prompt = 'You are a helpful assistant.', -- Default system prompt
   no_mappings = false,                       -- Set to true to disable default mappings
+  debug = false,                             -- Set to true to enable debug output
 })
 
 -- Custom mappings

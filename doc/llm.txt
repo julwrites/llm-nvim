@@ -165,7 +165,10 @@ to explain the
     Manage API keys for different LLM providers.             
                                                              
 *:LLMFragments*                                              
-    Manage fragments (view, set aliases, remove aliases).    
+    Manage fragments (view, set aliases, remove aliases).
+    Shows fragments with aliases by default, but will show all fragments
+    if none have aliases. Use 'v' to view, 'a' to set alias, 'r' to remove alias.
+    Press '?' to debug line-to-fragment mapping (only useful with debug=true).
                                                              
 *:LLMSelectFragment*                                         
     Select a file to use as a fragment.                      

@@ -8,6 +8,7 @@ M.defaults = {
   model = "gpt-4o",
   system_prompt = "You are a helpful assistant.",
   no_mappings = false,
+  debug = false,  -- Debug mode disabled by default
 }
 
 -- User configuration

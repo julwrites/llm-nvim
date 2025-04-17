@@ -12,12 +12,26 @@ local utils = require('llm.utils')
 local fragments_loader = require('llm.loaders.fragments_loader')
 
 -- Manage fragments (view, set aliases, remove aliases)
-function M.manage_fragments()
-  local fragments = fragments_loader.get_fragments()
-  if #fragments == 0 then
-    vim.notify("No fragments found", vim.log.levels.INFO)
+function M.manage_fragments(show_all)
+  local fragments_with_aliases = fragments_loader.get_fragments()
+  local all_fragments = fragments_loader.get_all_fragments()
+  
+  -- Create a list of fragments without aliases
+  local fragments_without_aliases = {}
+  for _, fragment in ipairs(all_fragments) do
+    if #fragment.aliases == 0 then
+      table.insert(fragments_without_aliases, fragment)
+    end
+  end
+  
+  if #fragments_with_aliases == 0 and #fragments_without_aliases == 0 then
+    vim.notify("No fragments found. Create fragments by using files with LLM first.", vim.log.levels.INFO)
     return
   end
+  
+  -- Determine which fragments to show based on the toggle
+  local fragments = show_all and all_fragments or fragments_with_aliases
+  local show_mode = show_all and "all" or "with_aliases"
 
   -- Create a new buffer for the fragment manager
   local buf = api.nvim_create_buf(false, true)
@@ -53,9 +67,19 @@ function M.manage_fragments()
     "# LLM Fragments Manager",
     "",
     "Press 'v' to view fragment, 'a' to set alias, 'r' to remove alias, 'q' to quit",
+    "Press 't' to toggle between showing all fragments or only fragments with aliases",
+    "Press '?' to debug line-to-fragment mapping",
     "──────────────────────────────────────────────────────────────",
     ""
   }
+  
+  -- Add toggle status
+  if show_mode == "all" then
+    table.insert(lines, "Currently showing: All fragments")
+  else
+    table.insert(lines, "Currently showing: Only fragments with aliases")
+  end
+  table.insert(lines, "")
 
   -- Add fragments to the buffer
   for i, fragment in ipairs(fragments) do
@@ -114,13 +138,16 @@ function M.manage_fragments()
 
   -- Map of line numbers to fragment indices
   local line_to_fragment = {}
+  local header_lines = 8  -- Account for all header lines including toggle status
+  
   for i, fragment in ipairs(fragments) do
-    local line_num = 5 + (i - 1) * 6 + 1
-    line_to_fragment[line_num] = i
-    line_to_fragment[line_num + 1] = i
-    line_to_fragment[line_num + 2] = i
-    line_to_fragment[line_num + 3] = i
-    line_to_fragment[line_num + 4] = i
+    -- Calculate the starting line for this fragment
+    local line_num = header_lines + (i - 1) * 6 + 1
+    
+    -- Map each line of the fragment entry to its index
+    for offset = 0, 5 do  -- Map all 6 lines of each fragment entry
+      line_to_fragment[line_num + offset] = i
+    end
   end
 
   -- Set keymaps
@@ -136,6 +163,12 @@ function M.manage_fragments()
 
   -- Remove alias from fragment
   set_keymap('n', 'r', [[<cmd>lua require('llm.managers.fragment_manager').remove_alias_from_fragment_under_cursor()<CR>]])
+  
+  -- Toggle between showing all fragments or only fragments with aliases
+  set_keymap('n', 't', [[<cmd>lua require('llm.managers.fragments_manager').toggle_fragments_view()<CR>]])
+  
+  -- Debug line-to-fragment mapping
+  set_keymap('n', '?', [[<cmd>lua require('llm.managers.fragment_manager').debug_line_mapping()<CR>]])
 
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
@@ -250,12 +283,48 @@ function M.manage_fragments()
         -- Refresh the fragment manager
         vim.api.nvim_win_close(0, true)
         vim.schedule(function()
-          M.manage_fragments()
+          -- Keep the same view mode when refreshing
+          M.manage_fragments(_G.llm_fragments_show_all)
         end)
       else
         vim.notify("Failed to set alias", vim.log.levels.ERROR)
       end
     end)
+  end
+
+  function fragment_manager.debug_line_mapping()
+    local config = require('llm.config')
+    local debug_mode = config.get('debug')
+    
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local fragment_idx = line_to_fragment[current_line]
+    
+    if fragment_idx then
+      vim.notify(string.format("Line %d maps to fragment index %d", current_line, fragment_idx), vim.log.levels.INFO)
+      
+      -- Show the fragment details
+      local fragment = fragments[fragment_idx]
+      if fragment then
+        local aliases = table.concat(fragment.aliases, ", ")
+        if aliases == "" then aliases = "none" end
+        vim.notify(string.format("Fragment hash: %s, Aliases: %s", fragment.hash:sub(1, 8), aliases), vim.log.levels.INFO)
+      end
+    else
+      vim.notify(string.format("Line %d does not map to any fragment", current_line), vim.log.levels.WARN)
+    end
+    
+    -- Show additional debug info only in debug mode
+    if debug_mode then
+      vim.notify("Line to fragment mapping:", vim.log.levels.DEBUG)
+      local mapping_info = {}
+      for line, idx in pairs(line_to_fragment) do
+        table.insert(mapping_info, string.format("Line %d -> Fragment %d", line, idx))
+      end
+      table.sort(mapping_info)
+      for _, info in ipairs(mapping_info) do
+        vim.notify(info, vim.log.levels.DEBUG)
+      end
+    end
   end
 
   function fragment_manager.remove_alias_from_fragment_under_cursor()
@@ -288,7 +357,8 @@ function M.manage_fragments()
           -- Refresh the fragment manager
           vim.api.nvim_win_close(0, true)
           vim.schedule(function()
-            M.manage_fragments()
+            -- Keep the same view mode when refreshing
+            M.manage_fragments(_G.llm_fragments_show_all)
           end)
         else
           vim.notify("Failed to remove alias", vim.log.levels.ERROR)
@@ -309,16 +379,30 @@ function M.manage_fragments()
         -- Refresh the fragment manager
         vim.api.nvim_win_close(0, true)
         vim.schedule(function()
-          M.manage_fragments()
+          -- Keep the same view mode when refreshing
+          M.manage_fragments(_G.llm_fragments_show_all)
         end)
       else
         vim.notify("Failed to remove alias", vim.log.levels.ERROR)
       end
     end)
   end
+  
 
   -- Store the fragment manager module
   package.loaded['llm.managers.fragment_manager'] = fragment_manager
+end
+
+-- Toggle between showing all fragments or only fragments with aliases
+function M.toggle_fragments_view()
+  -- Store the current show_all state in a global variable
+  _G.llm_fragments_show_all = not (_G.llm_fragments_show_all or false)
+  
+  -- Close the current window and reopen with the new state
+  vim.api.nvim_win_close(0, true)
+  vim.schedule(function()
+    M.manage_fragments(_G.llm_fragments_show_all)
+  end)
 end
 
 return M

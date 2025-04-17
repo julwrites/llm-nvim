@@ -194,8 +194,8 @@ _G.remove_api_key = function(key_name)
 end
 
 -- Manage fragments
-function M.manage_fragments()
-  require('llm.managers.fragments_manager').manage_fragments()
+function M.manage_fragments(show_all)
+  require('llm.managers.fragments_manager').manage_fragments(show_all)
 end
 
 -- Select a file to use as a fragment
