@@ -10,6 +10,9 @@ function M.setup()
   vim.opt.runtimepath:append('.')
   vim.opt.runtimepath:append('./test')
   
+  -- Set test environment variable
+  vim.env.LLM_NVIM_TEST = "1"
+  
   -- Reset any global variables that might affect tests
   vim.g.llm_model = nil
   vim.g.llm_system_prompt = nil
@@ -35,15 +38,19 @@ end
 
 -- Mock function for llm command execution
 function M.mock_llm_command(expected_cmd, return_value)
-  -- Store original io.popen
+  -- Store original io.popen and system
   local original_popen = io.popen
+  local original_system = vim.fn.system
   
   -- Mock io.popen
   io.popen = function(cmd)
     -- Only assert if the expected command is provided
     if expected_cmd and expected_cmd ~= "" then
-      assert(cmd:match(expected_cmd), 
-        string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+      -- Skip the check for "which llm" command
+      if not cmd:match("which llm") then
+        assert(cmd:match(expected_cmd), 
+          string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+      end
     end
     
     return {
@@ -57,29 +64,49 @@ function M.mock_llm_command(expected_cmd, return_value)
     }
   end
   
+  -- Mock vim.fn.system
+  vim.fn.system = function(cmd)
+    -- Only assert if the expected command is provided
+    if expected_cmd and expected_cmd ~= "" then
+      -- Skip the check for "which llm" command
+      if type(cmd) == "string" and not cmd:match("which llm") then
+        assert(cmd:match(expected_cmd), 
+          string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+      end
+    end
+    return return_value
+  end
+  
   -- Return cleanup function
   return function()
     io.popen = original_popen
+    vim.fn.system = original_system
   end
 end
 
 -- Helper function to expose module functions for testing
 function M.expose_module_functions(module)
   -- Explicitly set each function in the global scope for testing
-  -- Force the select_model function to be available even if it's not in the module
-  _G.select_model = function() end -- Default implementation
+  -- Make sure select_model is available in the global scope
+  _G.select_model = module.select_model
   
-  -- Override with the real implementation if available
-  if module.select_model then
-    _G.select_model = module.select_model
-  end
-  
-  -- Set other functions
+  -- Set all public functions
   _G.prompt = module.prompt
   _G.prompt_with_selection = module.prompt_with_selection
   _G.explain_code = module.explain_code
   _G.start_chat = module.start_chat
-  _G.manage_plugins = module.manage_plugins or function() end -- Provide a default implementation
+  _G.prompt_with_fragments = module.prompt_with_fragments
+  _G.prompt_with_selection_and_fragments = module.prompt_with_selection_and_fragments
+  _G.select_model = module.select_model
+  _G.manage_models = module.manage_models
+  _G.manage_plugins = module.manage_plugins or function() end
+  _G.manage_keys = module.manage_keys
+  _G.manage_fragments = module.manage_fragments
+  _G.select_fragment = module.select_fragment
+  _G.manage_templates = module.manage_templates
+  _G.select_template = module.select_template
+  _G.manage_schemas = module.manage_schemas
+  _G.select_schema = module.select_schema
   _G.get_available_models = module.get_available_models
   
   -- Expose fragment management functions

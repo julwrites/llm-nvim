@@ -164,6 +164,8 @@ function M.setup_buffer_highlighting(buf)
     highlight default LLMAction guifg=#c678dd gui=italic
     highlight default LLMDivider guifg=#3b4048
     highlight default LLMCustom guifg=#e5c07b gui=bold
+    highlight default LLMCheckboxInstalled guifg=#98c379 gui=bold
+    highlight default LLMCheckboxAvailable guifg=#e06c75
   ]])
 
   -- Define syntax matching
@@ -171,6 +173,10 @@ function M.setup_buffer_highlighting(buf)
     -- Headers
     "syntax match LLMHeader /^#.*/",
     "syntax match LLMSubHeader /^##.*/",
+
+    -- Checkboxes
+    "syntax match LLMCheckboxInstalled /\\[✓\\]/",
+    "syntax match LLMCheckboxAvailable /\\[ \\]/",
 
     -- Installed/not installed items
     "syntax match LLMInstalled /\\[✓\\].*/",

@@ -6,6 +6,19 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local utils = require('llm.utils')
+local plugins_loader = require('llm.loaders.plugins_loader')
+
+-- Get plugin descriptions
+function M.get_plugin_descriptions()
+  local plugins_data = plugins_loader.get_plugins_with_descriptions()
+  local descriptions = {}
+  
+  for name, plugin in pairs(plugins_data) do
+    descriptions[name] = plugin.description
+  end
+  
+  return descriptions
+end
 
 -- Get available plugins from the plugin directory
 function M.get_available_plugins()
@@ -13,31 +26,17 @@ function M.get_available_plugins()
     return {}
   end
 
-  -- This is a hardcoded list of plugins from the directory
-  -- In a real implementation, we might want to fetch this from the web
-  local plugins = {
-    -- Local models
-    "llm-gguf", "llm-mlx", "llm-ollama", "llm-llamafile", "llm-mlc",
-    "llm-gpt4all", "llm-mpt30b",
-    -- Remote APIs
-    "llm-mistral", "llm-gemini", "llm-anthropic", "llm-command-r",
-    "llm-reka", "llm-perplexity", "llm-groq", "llm-grok",
-    "llm-anyscale-endpoints", "llm-replicate", "llm-fireworks",
-    "llm-openrouter", "llm-cohere", "llm-bedrock", "llm-bedrock-anthropic",
-    "llm-bedrock-meta", "llm-together", "llm-deepseek", "llm-lambda-labs",
-    "llm-venice",
-    -- Embedding models
-    "llm-sentence-transformers", "llm-clip", "llm-embed-jina", "llm-embed-onnx",
-    -- Extra commands
-    "llm-cmd", "llm-cmd-comp", "llm-python", "llm-cluster", "llm-jq",
-    -- Fragments and template loaders
-    "llm-templates-github", "llm-templates-fabric", "llm-fragments-github",
-    "llm-hacker-news",
-    -- Just for fun
-    "llm-markov"
-  }
+  -- Get plugins from the loader
+  return plugins_loader.get_all_plugin_names()
+end
 
-  return plugins
+-- Get available plugins with their descriptions
+function M.get_available_plugins_with_descriptions()
+  if not utils.check_llm_installed() then
+    return {}
+  end
+  
+  return plugins_loader.get_plugins_with_descriptions()
 end
 
 -- Get installed plugins from llm CLI
@@ -121,9 +120,12 @@ function M.manage_plugins()
   end
 
   local available_plugins = M.get_available_plugins()
-  if #available_plugins == 0 then
-    api.nvim_err_writeln("No plugins found. Make sure llm is properly configured.")
-    return
+  if not available_plugins or #available_plugins == 0 then
+    vim.notify("No plugins found from loader. Using fallback list.", vim.log.levels.WARN)
+    available_plugins = {
+      "llm-gguf", "llm-mlx", "llm-ollama", "llm-llamafile", "llm-mlc",
+      "llm-gpt4all", "llm-mpt30b", "llm-mistral", "llm-gemini", "llm-anthropic"
+    }
   end
 
   -- Get installed plugins to mark them
@@ -132,6 +134,9 @@ function M.manage_plugins()
   for _, plugin in ipairs(installed_plugins) do
     installed_set[plugin] = true
   end
+  
+  -- Get plugin descriptions
+  local plugin_descriptions = M.get_plugin_descriptions()
 
   -- Create a new buffer for the plugin manager
   local buf = api.nvim_create_buf(false, true)
@@ -145,50 +150,67 @@ function M.manage_plugins()
 
   -- Set buffer content
   local lines = {
-    "# LLM Plugins",
+    "# LLM Plugins Manager",
     "",
-    "Press 'i' to install, 'x' to uninstall, 'r' to refresh, 'q' to quit",
+    "This shows all available and installed plugins for LLM.",
+    "Plugins are shown with their descriptions",
+    "- [✓] means the plugin is installed (green)",
+    "- [ ] means the plugin is available to install (red)",
+    "",
+    "Press 'i' to install plugin under cursor",
+    "Press 'x' to uninstall plugin under cursor",
+    "Press 'r' to refresh the plugin list",
+    "Press 'q' to quit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
 
-  -- Group plugins by category
-  local categories = {
-    ["Local Models"] = {},
-    ["Remote APIs"] = {},
-    ["Embedding Models"] = {},
-    ["Extra Commands"] = {},
-    ["Templates & Fragments"] = {},
-    ["Other"] = {}
-  }
-
-  -- Categorize plugins
-  for _, plugin in ipairs(available_plugins) do
-    local status = installed_set[plugin] and "✓" or " "
-    local entry = {
-      name = plugin,
-      status = status,
-      installed = installed_set[plugin] or false
-    }
-
-    if plugin:match("^llm%-gguf") or plugin:match("^llm%-mlx") or plugin:match("^llm%-ollama") or
-        plugin:match("^llm%-llamafile") or plugin:match("^llm%-mlc") or plugin:match("^llm%-gpt4all") then
-      table.insert(categories["Local Models"], entry)
-    elseif plugin:match("^llm%-sentence") or plugin:match("^llm%-clip") or plugin:match("^llm%-embed") then
-      table.insert(categories["Embedding Models"], entry)
-    elseif plugin:match("^llm%-cmd") or plugin:match("^llm%-python") or plugin:match("^llm%-cluster") or plugin:match("^llm%-jq") then
-      table.insert(categories["Extra Commands"], entry)
-    elseif plugin:match("^llm%-templates") or plugin:match("^llm%-fragments") or plugin:match("^llm%-hacker") then
-      table.insert(categories["Templates & Fragments"], entry)
-    elseif plugin:match("^llm%-mistral") or plugin:match("^llm%-gemini") or plugin:match("^llm%-anthropic") or
-        plugin:match("^llm%-command%-r") or plugin:match("^llm%-reka") or plugin:match("^llm%-perplexity") or
-        plugin:match("^llm%-groq") or plugin:match("^llm%-grok") or plugin:match("^llm%-anyscale") or
-        plugin:match("^llm%-replicate") or plugin:match("^llm%-fireworks") or plugin:match("^llm%-openrouter") or
-        plugin:match("^llm%-cohere") or plugin:match("^llm%-bedrock") or plugin:match("^llm%-together") or
-        plugin:match("^llm%-deepseek") or plugin:match("^llm%-lambda") or plugin:match("^llm%-venice") then
-      table.insert(categories["Remote APIs"], entry)
-    else
-      table.insert(categories["Other"], entry)
+  -- Get plugins by category from the loader
+  local plugins_by_category = plugins_loader.get_plugins_by_category()
+  local categories = {}
+  
+  -- Get all plugins with descriptions
+  local all_plugins = M.get_available_plugins_with_descriptions()
+  
+  -- Convert to the format expected by the UI
+  for category_name, plugin_names in pairs(plugins_by_category) do
+    categories[category_name] = {}
+    
+    for _, plugin_name in ipairs(plugin_names) do
+      local status = installed_set[plugin_name] and "✓" or " "
+      local plugin_data = all_plugins[plugin_name] or {}
+      local entry = {
+        name = plugin_name,
+        installed = installed_set[plugin_name] or false,
+        description = plugin_data.description or ""
+      }
+      table.insert(categories[category_name], entry)
+    end
+  end
+  
+  -- Add any installed plugins that aren't in the documentation
+  local other_category = categories["Other"] or {}
+  categories["Other"] = other_category
+  
+  for plugin_name, _ in pairs(installed_set) do
+    local found = false
+    for _, category_plugins in pairs(categories) do
+      for _, entry in ipairs(category_plugins) do
+        if entry.name == plugin_name then
+          found = true
+          break
+        end
+      end
+      if found then break end
+    end
+    
+    if not found then
+      table.insert(other_category, {
+        name = plugin_name,
+        status = "✓",
+        installed = true,
+        description = "Installed plugin (no description available)"
+      })
     end
   end
 
@@ -207,7 +229,24 @@ function M.manage_plugins()
       table.sort(plugins, function(a, b) return a.name < b.name end)
 
       for _, plugin in ipairs(plugins) do
-        local line = string.format("[%s] %s", plugin.status, plugin.name)
+        local description = plugin.description or plugin_descriptions[plugin.name] or ""
+        -- Truncate description if it's too long
+        if #description > 50 then
+          description = description:sub(1, 47) .. "..."
+        end
+        
+        -- Format: [✓] plugin-name - Description
+        local status_indicator = plugin.installed and "✓" or " "
+        
+        -- Truncate description if it's too long for display
+        if #description > 50 then
+          description = description:sub(1, 47) .. "..."
+        end
+        
+        local line = string.format("[%s] %-20s - %s", 
+                                  status_indicator, 
+                                  plugin.name, 
+                                  description)
         table.insert(lines, line)
 
         -- Store plugin data for lookup
@@ -297,8 +336,20 @@ function M.manage_plugins()
   end
 
   function plugin_manager.refresh_plugin_list()
-    vim.api.nvim_win_close(0, true)
-    M.manage_plugins()
+    -- Force refresh the plugins cache
+    vim.notify("Refreshing plugin list from website...", vim.log.levels.INFO)
+    local plugins = plugins_loader.refresh_plugins_cache()
+    
+    -- Only close and reopen if we got plugins
+    if plugins and vim.tbl_count(plugins) > 0 then
+      vim.api.nvim_win_close(0, true)
+      vim.schedule(function()
+        M.manage_plugins()
+      end)
+    else
+      -- Just notify the user that refresh failed
+      vim.notify("Plugin refresh failed, keeping current view", vim.log.levels.WARN)
+    end
   end
 
   -- Set keymaps
@@ -307,20 +358,31 @@ function M.manage_plugins()
   end
 
   -- Install plugin under cursor
-  set_keymap('n', 'i', [[<cmd>lua require('llm.managers.plugin_manager').install_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'i', [[<cmd>lua require('llm.managers.plugins_manager').install_plugin_under_cursor()<CR>]])
 
   -- Uninstall plugin under cursor
-  set_keymap('n', 'x', [[<cmd>lua require('llm.managers.plugin_manager').uninstall_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'x', [[<cmd>lua require('llm.managers.plugins_manager').uninstall_plugin_under_cursor()<CR>]])
 
   -- Refresh plugin list
-  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.plugin_manager').refresh_plugin_list()<CR>]])
+  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.plugins_manager').refresh_plugin_list()<CR>]])
 
+  -- Debug functions
+  function plugin_manager.run_debug_functions()
+    vim.notify("Running plugin loader debug functions...", vim.log.levels.INFO)
+    plugins_loader.parse_debug_html()
+    plugins_loader.test_pattern_matching()
+    vim.notify("Debug complete. Check your config directory for analysis files.", vim.log.levels.INFO)
+  end
+  
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+  
+  -- Debug key
+  set_keymap('n', 'D', [[<cmd>lua require('llm.managers.plugins_manager').run_debug_functions()<CR>]])
 
   -- Store the plugin manager module
-  package.loaded['llm.managers.plugin_manager'] = plugin_manager
+  package.loaded['llm.managers.plugins_manager'] = plugin_manager
 end
 
 return M

@@ -223,11 +223,23 @@ function M.select_schema()
   schemas_manager.select_schema()
 end
 
+-- Manually refresh plugins
+function M.refresh_plugins()
+  require('llm.loaders.plugins_loader').refresh_plugins_cache()
+end
+
 -- Setup function for configuration
 function M.setup(opts)
   -- Load the configuration module
   config = require('llm.config')
   config.setup(opts)
+  
+  -- Initialize plugin data
+  local plugins_loader = require('llm.loaders.plugins_loader')
+  -- Fetch plugins in the background to avoid blocking startup
+  vim.defer_fn(function()
+    plugins_loader.refresh_plugins_cache()
+  end, 1000)  -- 1 second delay
 
   return M
 end

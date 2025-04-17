@@ -9,6 +9,16 @@ if vim.g.loaded_llm == 1 then
 end
 vim.g.loaded_llm = 1
 
+-- Ensure select_model is available in global scope for tests
+_G.select_model = function()
+  return require('llm.managers.models_manager').select_model()
+end
+
+-- Also expose it directly for tests
+if not _G.select_model then
+  _G.select_model = require('llm.managers.models_manager').select_model
+end
+
 -- Load the main module
 local ok, llm = pcall(require, "llm")
 if not ok then
