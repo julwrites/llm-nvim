@@ -255,22 +255,30 @@ _G.uninstall_plugin = function(plugin_name)
   return plugins_manager.uninstall_plugin(plugin_name)
 end
 
--- Uncomment when templates and schemas are ready
--- if not llm.manage_templates then
---   llm.manage_templates = require('llm.managers.templates_manager').manage_templates
--- end
---
--- if not llm.select_template then
---   llm.select_template = require('llm.managers.templates_manager').select_template
--- end
---
--- if not llm.manage_schemas then
---   llm.manage_schemas = require('llm.managers.schemas_manager').manage_schemas
--- end
---
--- if not llm.select_schema then
---   llm.select_schema = require('llm.managers.schemas_manager').select_schema
--- end
+-- Templates and schemas functionality
+if not llm.manage_templates then
+  llm.manage_templates = require('llm.managers.templates_manager').manage_templates
+end
+
+if not llm.select_template then
+  llm.select_template = require('llm.managers.templates_manager').select_template
+end
+
+if not llm.create_template then
+  llm.create_template = require('llm.managers.templates_manager').create_template
+end
+
+if not llm.run_template_by_name then
+  llm.run_template_by_name = require('llm.managers.templates_manager').run_template_by_name
+end
+
+if not llm.manage_schemas then
+  llm.manage_schemas = require('llm.managers.schemas_manager').manage_schemas
+end
+
+if not llm.select_schema then
+  llm.select_schema = require('llm.managers.schemas_manager').select_schema
+end
 
 -- Expose fragment functions to global scope for testing
 _G.get_fragments = function()

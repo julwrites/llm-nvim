@@ -213,6 +213,16 @@ function M.select_template()
   templates_manager.select_template()
 end
 
+-- Create a new template with guided flow
+function M.create_template()
+  templates_manager.create_template()
+end
+
+-- Run a template by name
+function M.run_template_by_name(template_name)
+  templates_manager.run_template_by_name(template_name)
+end
+
 -- Manage schemas
 function M.manage_schemas()
   schemas_manager.manage_schemas()

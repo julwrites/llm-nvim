@@ -80,6 +80,8 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `:LLMSelectFragment` - Select a file to use as a fragment
 - `:LLMWithFragments` - Send a prompt with fragments
 - `:LLMWithSelectionAndFragments` - Send selected text with fragments
+- `:LLMTemplates` - Manage templates
+- `:LLMTemplate` - Select and run a template
 
 ### Default Mappings
 
@@ -94,6 +96,10 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>llsf` - Select a file to use as a fragment
 - `<leader>llwf` - Send a prompt with fragments
 - `<leader>llwf` - In visual mode, send selection with fragments
+- `<leader>llt` - Manage templates
+- `<leader>llrt` - Select and run a template
+- `<leader>lls` - Manage schemas
+- `<leader>llrs` - Select and run a schema
 
 ## Development
 
