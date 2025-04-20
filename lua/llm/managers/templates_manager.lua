@@ -625,21 +625,8 @@ function M.manage_templates()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' LLM Templates ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Templates Manager')
   
   -- Function to refresh the template list
   local function refresh_template_list()
@@ -656,7 +643,7 @@ function M.manage_templates()
     local lines = {
       "# LLM Templates Manager",
       "",
-      "Press 'c' to create, 'r' to run, 'e' to edit, 'd' to delete, 'v' to view details, 'q' to quit",
+      "Press [c]reate, [r]un, [e]dit, [d]elete, [v]iew details, [q]uit",
       "──────────────────────────────────────────────────────────────",
       "",
     }
@@ -668,8 +655,13 @@ function M.manage_templates()
       table.insert(lines, "----------")
       
       -- Add templates with descriptions
-      for _, name in ipairs(template_names) do
-        table.insert(lines, name .. " : " .. templates[name])
+      for i, name in ipairs(template_names) do
+        -- Format template entry similar to fragments manager
+        table.insert(lines, string.format("Template %d: %s", i, name))
+        table.insert(lines, string.format("  Description: %s", templates[name]))
+        
+        -- Add empty line between templates
+        table.insert(lines, "")
       end
     end
     
@@ -678,20 +670,17 @@ function M.manage_templates()
     -- Set up highlighting
     require('llm').setup_buffer_highlighting(buf)
     
-    -- Add template-specific highlighting
-    vim.cmd([[
-      highlight default LLMTemplatesHeader guifg=#61afef
-      highlight default LLMTemplatesAction guifg=#98c379
-      highlight default LLMTemplatesSection guifg=#c678dd
-      highlight default LLMTemplatesName guifg=#e5c07b
-    ]])
-
-    -- Apply syntax highlighting
+    -- Apply syntax highlighting using the styles module
+    local styles = require('llm.styles')
+    
+    -- Apply specific syntax highlighting for templates manager
     local syntax_cmds = {
-      "syntax match LLMTemplatesHeader /^# LLM Templates Manager$/",
-      "syntax match LLMTemplatesAction /Press.*$/",
-      "syntax match LLMTemplatesSection /^Templates:$/",
-      "syntax match LLMTemplatesName /^\\w\\+/",
+      "syntax match LLMHeader /^# LLM Templates Manager$/",
+      "syntax match LLMAction /Press.*$/",
+      "syntax match LLMSection /^Templates:$/",
+      "syntax match LLMTemplateName /^Template \\d\\+: .*$/",
+      "syntax match LLMContent /^  Description: .*$/",
+      "syntax match LLMKeybinding /\\[.\\]/",
     }
 
     for _, cmd in ipairs(syntax_cmds) do
@@ -725,7 +714,7 @@ end
 -- Run template under cursor
 function M.run_template_under_cursor()
   local line = api.nvim_get_current_line()
-  local template_name = line:match("^([^%s:]+)")
+  local template_name = line:match("^Template %d+: (.+)$")
   
   if template_name then
     M.run_template_with_params(template_name)
@@ -737,7 +726,7 @@ end
 -- Edit template under cursor
 function M.edit_template_under_cursor()
   local line = api.nvim_get_current_line()
-  local template_name = line:match("^([^%s:]+)")
+  local template_name = line:match("^Template %d+: (.+)$")
   
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
@@ -754,7 +743,7 @@ end
 -- Delete template under cursor
 function M.delete_template_under_cursor()
   local line = api.nvim_get_current_line()
-  local template_name = line:match("^([^%s:]+)")
+  local template_name = line:match("^Template %d+: (.+)$")
   
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
@@ -798,7 +787,7 @@ end
 -- View template details under cursor
 function M.view_template_details_under_cursor()
   local line = api.nvim_get_current_line()
-  local template_name = line:match("^([^%s:]+)")
+  local template_name = line:match("^Template %d+: (.+)$")
   
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
@@ -836,21 +825,8 @@ function M.view_template_details_under_cursor()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' Template Details: ' .. template_name .. ' ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Template Details: ' .. template_name)
   
   -- Format template details
   local lines = {
@@ -890,7 +866,7 @@ function M.view_template_details_under_cursor()
   
   -- Add footer with instructions
   table.insert(lines, "")
-  table.insert(lines, "Press 'q' to close, 'e' to edit this template, 'r' to run this template")
+  table.insert(lines, "Press [q]uit, [e]dit template, [r]un template")
   
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -907,19 +883,18 @@ function M.view_template_details_under_cursor()
   -- Set up highlighting
   require('llm').setup_buffer_highlighting(buf)
   
-  -- Add template-specific highlighting
-  vim.cmd([[
-    highlight default LLMTemplateHeader guifg=#61afef
-    highlight default LLMTemplateSection guifg=#c678dd
-    highlight default LLMTemplateContent guifg=#98c379
-    highlight default LLMTemplateFooter guifg=#e5c07b
-  ]])
+  -- Use the styles module for highlighting
+  local styles = require('llm.styles')
 
-  -- Apply syntax highlighting
+  -- Apply syntax highlighting using the styles module
+  local styles = require('llm.styles')
+  
+  -- Apply specific syntax highlighting for template details
   local syntax_cmds = {
-    "syntax match LLMTemplateHeader /^# Template:/",
-    "syntax match LLMTemplateSection /^## .*$/",
-    "syntax match LLMTemplateFooter /^Press.*$/",
+    "syntax match LLMHeader /^# Template:/",
+    "syntax match LLMSubHeader /^## .*$/",
+    "syntax match LLMAction /^Press.*$/",
+    "syntax match LLMKeybinding /\\[.\\]/",
   }
 
   for _, cmd in ipairs(syntax_cmds) do

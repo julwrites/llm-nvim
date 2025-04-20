@@ -132,6 +132,9 @@ function M.setup(opts)
 
   -- Load the templates module
   templates = require('llm.managers.templates_manager')
+  
+  -- Initialize styles
+  require('llm.styles').setup_highlights()
 
   return M
 end

@@ -183,7 +183,7 @@ function M.create_floating_window(buf, title)
     col = col,
     style = 'minimal',
     border = 'rounded',
-    title = title or ' LLM ',
+    title = ' ' .. (title or 'LLM') .. ' ',
     title_pos = 'center',
   }
 
@@ -218,49 +218,12 @@ end
 
 -- Set up syntax highlighting for manager buffers
 function M.setup_buffer_highlighting(buf)
-  -- Create syntax groups if they don't exist yet
-  vim.cmd([[
-    highlight default LLMHeader guifg=#61afef gui=bold
-    highlight default LLMSubHeader guifg=#56b6c2 gui=bold
-    highlight default LLMInstalled guifg=#98c379 gui=bold
-    highlight default LLMNotInstalled guifg=#e06c75
-    highlight default LLMAction guifg=#c678dd gui=italic
-    highlight default LLMDivider guifg=#3b4048
-    highlight default LLMCustom guifg=#e5c07b gui=bold
-    highlight default LLMCheckboxInstalled guifg=#98c379 gui=bold
-    highlight default LLMCheckboxAvailable guifg=#e06c75
-  ]])
-
-  -- Define syntax matching
-  local syntax_cmds = {
-    -- Headers
-    "syntax match LLMHeader /^#.*/",
-    "syntax match LLMSubHeader /^##.*/",
-
-    -- Checkboxes
-    "syntax match LLMCheckboxInstalled /\\[✓\\]/",
-    "syntax match LLMCheckboxAvailable /\\[ \\]/",
-
-    -- Installed/not installed items
-    "syntax match LLMInstalled /\\[✓\\].*/",
-    "syntax match LLMNotInstalled /\\[ \\].*/",
-
-    -- Action text
-    "syntax match LLMAction /Press.*quit/",
-
-    -- Dividers
-    "syntax match LLMDivider /^─\\+$/",
-
-    -- Custom items
-    "syntax match LLMCustom /\\[+\\].*/",
-  }
-
-  -- Apply syntax commands to the buffer
-  for _, cmd in ipairs(syntax_cmds) do
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(cmd)
-    end)
-  end
+  -- Use the centralized styles module for consistent styling
+  local styles = require('llm.styles')
+  
+  -- Setup highlights and syntax patterns
+  styles.setup_highlights()
+  styles.setup_buffer_syntax(buf)
 end
 
 -- Debug function to check fragment aliases

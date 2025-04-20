@@ -167,10 +167,27 @@ function M.run_schema_with_input_source(schema_id)
         local function set_keymap(mode, lhs, rhs)
           api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
         end
-        
+      
+        -- Add a command to submit the schema input when saving
+        local group = api.nvim_create_augroup("LLMSchemaInput", { clear = true })
+        api.nvim_create_autocmd("BufWritePost", {
+          group = group,
+          buffer = buf,
+          callback = function()
+            require('llm.managers.schemas_manager').submit_schema_input(schema_id, tostring(is_multi), buf)
+          end,
+        })
+      
+        -- Add a command to cancel
+        api.nvim_buf_create_user_command(buf, "LlmSchemaCancel", function()
+          vim.api.nvim_win_close(0, true)
+        end, {})
+      
         set_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-        set_keymap("n", "<C-w>", string.format([[<cmd>lua require('llm.managers.schemas_manager').submit_schema_input('%s', %s, %s)<CR>]], schema_id, tostring(is_multi), buf))
-        
+      
+        -- Instruct the user
+        vim.notify("Enter text in this buffer. Save (:w) to submit or <Esc> to cancel.", vim.log.levels.INFO)
+      
         -- Start in insert mode
         api.nvim_command('startinsert')
       end
@@ -180,6 +197,7 @@ end
 
 -- Submit schema input from buffer
 function M.submit_schema_input(schema_id, is_multi, buf)
+  -- Get the content from the buffer, skipping the instruction lines
   local lines = api.nvim_buf_get_lines(buf, 3, -1, false)
   local content = table.concat(lines, "\n")
   
@@ -284,7 +302,7 @@ function M.create_schema()
       })
       
       -- Add a command to cancel and delete the buffer/file
-      api.nvim_buf_create_user_command(bufnr, "LlmSchemaCancel", function()
+      api.nvim_buf_create_user_command(bufnr, "LlmCancel", function()
         local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
         -- Force delete the buffer
         api.nvim_command(bufnr .. "bdelete!")
@@ -294,7 +312,7 @@ function M.create_schema()
       end, {})
       
       -- Instruct the user
-      vim.notify("Edit the schema in this buffer. Save (:w) to validate and finalize. Use :LlmSchemaCancel to abort.", vim.log.levels.INFO)
+      vim.notify("Edit the schema in this buffer. Save (:w) to validate and finalize. Use :LlmCancel to abort.", vim.log.levels.INFO)
       
     end) -- End vim.ui.select callback
   end) -- End vim.ui.input callback
@@ -373,7 +391,7 @@ function M.save_schema_from_temp_file(bufnr)
   -- If validation failed, notify user but keep the buffer open
   if not is_valid then
     vim.notify("Schema validation failed: " .. error_message, vim.log.levels.ERROR)
-    vim.notify("Schema not saved. Please fix the content and save again (:w), or use :LlmSchemaCancel to abort.", vim.log.levels.WARN)
+    vim.notify("Schema not saved. Please fix the content and save again (:w), or use :LlmCancel to abort.", vim.log.levels.WARN)
     -- Do NOT delete the buffer or temp file here
     return 
   end
@@ -424,21 +442,8 @@ function M.manage_schemas(show_named_only)
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' LLM Schemas ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Schemas Manager')
   
   -- Function to refresh the schema list
   local function refresh_schema_list()
@@ -498,7 +503,7 @@ function M.manage_schemas(show_named_only)
     local lines = {
       "# LLM Schemas Manager",
       "",
-      "Press 'c' to create, 'r' to run, 'v' to view details, 'e' to edit, 'a' to set alias, 'd' to delete alias, 't' to toggle view, 'q' to quit",
+      "Press [c]reate, [r]un, [v]iew details, [e]dit, [a]dd alias, [d]elete alias, [t]oggle view, [q]uit",
       "──────────────────────────────────────────────────────────────",
       "",
     }
@@ -518,21 +523,23 @@ function M.manage_schemas(show_named_only)
       table.insert(lines, "----------")
       
       -- Add schemas with descriptions
-      for _, schema in ipairs(schemas_to_show) do
+      for i, schema in ipairs(schemas_to_show) do
         -- Replace newlines in descriptions with spaces to avoid nvim_buf_set_lines error
         local description = schema.description:gsub("\n", " ")
         
-        -- Check if the description already starts with the schema name in brackets
-        local has_name_prefix = false
+        -- Format schema entry similar to fragments manager
+        table.insert(lines, string.format("Schema %d: %s", i, schema.id))
+        
+        -- Add name if available
         if schema.name then
-          has_name_prefix = description:match("^%[" .. schema.name .. "%]")
+          table.insert(lines, string.format("  Name: %s", schema.name))
         end
         
-        if schema.name and not has_name_prefix then
-          table.insert(lines, schema.id .. " : [" .. schema.name .. "] " .. description)
-        else
-          table.insert(lines, schema.id .. " : " .. description)
-        end
+        -- Add description
+        table.insert(lines, string.format("  Description: %s", description))
+        
+        -- Add empty line between schemas
+        table.insert(lines, "")
       end
     end
     
@@ -541,22 +548,19 @@ function M.manage_schemas(show_named_only)
     -- Set up highlighting
     require('llm').setup_buffer_highlighting(buf)
     
-    -- Add schema-specific highlighting
-    vim.cmd([[
-      highlight default LLMSchemasHeader guifg=#61afef
-      highlight default LLMSchemasAction guifg=#98c379
-      highlight default LLMSchemasSection guifg=#c678dd
-      highlight default LLMSchemasName guifg=#e5c07b
-      highlight default LLMSchemasToggle guifg=#56b6c2
-    ]])
-
-    -- Apply syntax highlighting
+    -- Apply syntax highlighting using the styles module
+    local styles = require('llm.styles')
+    
+    -- Apply specific syntax highlighting for schemas manager
     local syntax_cmds = {
-      "syntax match LLMSchemasHeader /^# LLM Schemas Manager$/",
-      "syntax match LLMSchemasAction /Press.*$/",
-      "syntax match LLMSchemasToggle /^Currently showing:.*$/",
-      "syntax match LLMSchemasSection /^Schemas:$/",
-      "syntax match LLMSchemasName /^[0-9a-f]\\+/",
+      "syntax match LLMHeader /^# LLM Schemas Manager$/",
+      "syntax match LLMAction /Press.*$/",
+      "syntax match LLMSection /^Currently showing:.*$/",
+      "syntax match LLMSection /^Schemas:$/",
+      "syntax match LLMSchemaId /^Schema \\d\\+: [0-9a-f]\\+$/",
+      "syntax match LLMSchemaName /^  Name: .*$/",
+      "syntax match LLMContent /^  Description: .*$/",
+      "syntax match LLMKeybinding /\\[.\\]/",
     }
 
     for _, cmd in ipairs(syntax_cmds) do
@@ -594,7 +598,7 @@ end -- Added missing end for M.manage_schemas
 -- Run schema under cursor
 function M.run_schema_under_cursor()
   local line = api.nvim_get_current_line()
-  local schema_id = line:match("^([0-9a-f]+)")
+  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
   
   if schema_id and #schema_id > 0 then
     if require('llm.config').get("debug") then
@@ -615,7 +619,7 @@ end
 -- View schema details under cursor
 function M.view_schema_details_under_cursor()
   local line = api.nvim_get_current_line()
-  local schema_id = line:match("^([0-9a-f]+)")
+  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
   
   if not schema_id then
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
@@ -646,21 +650,8 @@ function M.view_schema_details_under_cursor()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' Schema Details: ' .. schema_id .. ' ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Schema Details: ' .. schema_id)
   
   -- Format schema details
   local lines = {
@@ -699,7 +690,7 @@ function M.view_schema_details_under_cursor()
   
   -- Add footer with instructions
   table.insert(lines, "")
-  table.insert(lines, "Press 'q' to close, 'r' to run this schema, 'e' to edit this schema, 'a' to set alias for this schema, 'd' to delete alias")
+  table.insert(lines, "Press [q]uit, [r]un schema, [e]dit schema, [a]dd alias, [d]elete alias")
   
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   
@@ -718,19 +709,15 @@ function M.view_schema_details_under_cursor()
   -- Set up highlighting
   require('llm').setup_buffer_highlighting(buf)
   
-  -- Add schema-specific highlighting
-  vim.cmd([[
-    highlight default LLMSchemaHeader guifg=#61afef
-    highlight default LLMSchemaSection guifg=#c678dd
-    highlight default LLMSchemaContent guifg=#98c379
-    highlight default LLMSchemaFooter guifg=#e5c07b
-  ]])
-
-  -- Apply syntax highlighting
+  -- Apply syntax highlighting using the styles module
+  local styles = require('llm.styles')
+  
+  -- Apply specific syntax highlighting for schema details
   local syntax_cmds = {
-    "syntax match LLMSchemaHeader /^# Schema:/",
-    "syntax match LLMSchemaSection /^## .*$/",
-    "syntax match LLMSchemaFooter /^Press.*$/",
+    "syntax match LLMHeader /^# Schema:/",
+    "syntax match LLMSubHeader /^## .*$/",
+    "syntax match LLMAction /^Press.*$/",
+    "syntax match LLMKeybinding /\\[.\\]/",
   }
 
   for _, cmd in ipairs(syntax_cmds) do
@@ -743,7 +730,7 @@ end
 -- Set alias for schema under cursor
 function M.set_alias_for_schema_under_cursor()
   local line = api.nvim_get_current_line()
-  local schema_id = line:match("^([0-9a-f]+)")
+  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
   
   if not schema_id then
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
@@ -887,7 +874,7 @@ end
 -- Delete alias for schema under cursor
 function M.delete_alias_for_schema_under_cursor()
   local line = api.nvim_get_current_line()
-  local schema_id = line:match("^([0-9a-f]+)")
+  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
   
   if not schema_id then
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
@@ -956,7 +943,7 @@ end
 -- Edit schema under cursor
 function M.edit_schema_under_cursor()
   local line = api.nvim_get_current_line()
-  local schema_id = line:match("^([0-9a-f]+)")
+  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
   
   if not schema_id then
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
@@ -1048,7 +1035,7 @@ function M.edit_schema_under_cursor()
   })
   
   -- Add a command to cancel and delete the buffer/file
-  api.nvim_buf_create_user_command(bufnr, "LlmSchemaCancel", function()
+  api.nvim_buf_create_user_command(bufnr, "LlmCancel", function()
     local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
     -- Force delete the buffer
     api.nvim_command(bufnr .. "bdelete!")
@@ -1058,7 +1045,7 @@ function M.edit_schema_under_cursor()
   end, {})
   
   -- Instruct the user
-  vim.notify("Edit the schema in this buffer. Save (:w) to validate and update. Use :LlmSchemaCancel to abort.", vim.log.levels.INFO)
+  vim.notify("Edit the schema in this buffer. Save (:w) to validate and update. Use :LlmCancel to abort.", vim.log.levels.INFO)
 end
 
 -- Save edited schema (triggered by BufWritePost)
@@ -1088,7 +1075,7 @@ function M.save_edited_schema(bufnr)
   -- If validation failed, notify user but keep the buffer open
   if not is_valid then
     vim.notify("Schema validation failed: " .. error_message, vim.log.levels.ERROR)
-    vim.notify("Schema not updated. Please fix the content and save again (:w), or use :LlmSchemaCancel to abort.", vim.log.levels.WARN)
+    vim.notify("Schema not updated. Please fix the content and save again (:w), or use :LlmCancel to abort.", vim.log.levels.WARN)
     return 
   end
 

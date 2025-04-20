@@ -157,10 +157,7 @@ function M.manage_plugins()
     "- [✓] means the plugin is installed (green)",
     "- [ ] means the plugin is available to install (red)",
     "",
-    "Press 'i' to install plugin under cursor",
-    "Press 'x' to uninstall plugin under cursor",
-    "Press 'r' to refresh the plugin list",
-    "Press 'q' to quit",
+    "Press [i]nstall plugin, [x] uninstall plugin, [r]efresh list, [q]uit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -268,8 +265,26 @@ function M.manage_plugins()
   -- Set buffer options
   api.nvim_buf_set_option(buf, 'modifiable', false)
 
-  -- Set up syntax highlighting
+  -- Set up syntax highlighting using the styles module
   utils.setup_buffer_highlighting(buf)
+  local styles = require('llm.styles')
+  
+  -- Apply specific syntax highlighting for plugins manager
+  local syntax_cmds = {
+    "syntax match LLMHeader /^# LLM Plugins Manager$/",
+    "syntax match LLMAction /Press.*$/",
+    "syntax match LLMInstalled /\\[✓\\].*/",
+    "syntax match LLMNotInstalled /\\[ \\].*/",
+    "syntax match LLMSection /^[A-Za-z][A-Za-z0-9 ]*$/",
+    "syntax match LLMKeybinding /\\[.\\]/",
+    "syntax match LLMDivider /^─\\+$/",
+  }
+
+  for _, cmd in ipairs(syntax_cmds) do
+    vim.api.nvim_buf_call(buf, function()
+      vim.cmd(cmd)
+    end)
+  end
 
   -- Create plugin manager module for the helper functions
   local plugin_manager = {}

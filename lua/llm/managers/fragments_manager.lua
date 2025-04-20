@@ -41,29 +41,15 @@ function M.manage_fragments(show_all)
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' LLM Fragments ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Fragments Manager')
 
   -- Set buffer content
   local lines = {
     "# LLM Fragments Manager",
     "",
-    "Press 'v' to view fragment, 'a' to set alias, 'r' to remove alias",
-    "Press 'n' to add a new fragment, 't' to toggle view, 'q' to quit",
-    "Press '?' to debug line-to-fragment mapping",
+    "Press [v]iew fragment, [a]dd alias, [r]emove alias, [n]ew fragment, [t]oggle view, [q]uit",
+    "Press [?] to debug line-to-fragment mapping",
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -112,16 +98,8 @@ function M.manage_fragments(show_all)
   -- Set up syntax highlighting
   require('llm').setup_buffer_highlighting(buf)
 
-  -- Add fragment-specific highlighting
-  vim.cmd([[
-    highlight default LLMFragmentHash guifg=#61afef
-    highlight default LLMFragmentSource guifg=#98c379
-    highlight default LLMFragmentAliases guifg=#c678dd
-    highlight default LLMFragmentDate guifg=#56b6c2
-    highlight default LLMFragmentContent guifg=#e5c07b
-  ]])
-
-  -- Apply syntax highlighting
+  -- Apply fragment-specific syntax highlighting using the styles module
+  local styles = require('llm.styles')
   local syntax_cmds = {
     "syntax match LLMFragmentHash /^Fragment \\d\\+: [0-9a-f]\\+$/",
     "syntax match LLMFragmentSource /^  Source: .*$/",
@@ -210,17 +188,8 @@ function M.manage_fragments(show_all)
     api.nvim_buf_set_name(content_buf, 'Fragment: ' .. fragment.hash:sub(1, 8))
 
     -- Create a new window
-    local content_win = api.nvim_open_win(content_buf, true, {
-      relative = 'editor',
-      width = width,
-      height = height,
-      row = row,
-      col = col,
-      style = 'minimal',
-      border = 'rounded',
-      title = ' Fragment Content ',
-      title_pos = 'center',
-    })
+    -- Use the centralized window creation function
+    local content_win = utils.create_floating_window(content_buf, 'LLM Fragment Content')
 
     -- Set content
     local content_lines = {}

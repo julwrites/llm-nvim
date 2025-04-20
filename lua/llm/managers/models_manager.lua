@@ -245,21 +245,8 @@ function M.manage_models()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' Model Management ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM Models Manager')
 
   -- Get current default model
   local default_model_output = utils.safe_shell_command("llm models default", "Failed to get default model")
@@ -282,7 +269,7 @@ function M.manage_models()
   local lines = {
     "# Model Management",
     "",
-    "Actions: [s]et as default, [a]dd alias, [r]emove alias, [c]hat with model, [q]uit",
+    "Press [s]et as default, [a]dd alias, [r]emove alias, [c]hat with model, [q]uit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -425,36 +412,29 @@ function M.manage_models()
   -- Set up syntax highlighting
   require('llm').setup_buffer_highlighting(buf)
 
-  -- Add model-specific highlighting
-  vim.cmd([[
-    highlight default LLMModelOpenAI guifg=#56b6c2
-    highlight default LLMModelAnthropic guifg=#98c379
-    highlight default LLMModelMistral guifg=#c678dd
-    highlight default LLMModelGemini guifg=#e5c07b
-    highlight default LLMModelGroq guifg=#61afef
-    highlight default LLMModelLocal guifg=#d19a66
-    highlight default LLMModelDefault guifg=#e06c75 gui=bold
-    highlight default LLMModelAlias guifg=#c678dd
-    highlight default LLMModelAliasAction guifg=#98c379 gui=bold
-  ]])
-
-  -- Apply provider-specific highlighting
+  -- Apply provider-specific highlighting using the styles module
+  local styles = require('llm.styles')
   local syntax_cmds = {
-    "syntax match LLMModelOpenAI /^OpenAI.*$/",
+    "syntax match LLMHeader /^# Model Management$/",
+    "syntax match LLMAction /Press.*$/",
+    "syntax match LLMSection /^OpenAI.*$/",
+    "syntax match LLMSection /^Anthropic.*$/",
+    "syntax match LLMSection /^Mistral.*$/",
+    "syntax match LLMSection /^Gemini.*$/",
+    "syntax match LLMSection /^Groq.*$/",
+    "syntax match LLMSection /^Local Models.*$/",
+    "syntax match LLMSection /^Other.*$/",
     "syntax match LLMModelOpenAI /\\[ \\] OpenAI.*/",
-    "syntax match LLMModelAnthropic /^Anthropic.*$/",
     "syntax match LLMModelAnthropic /\\[ \\] Anthropic.*/",
-    "syntax match LLMModelMistral /^Mistral.*$/",
     "syntax match LLMModelMistral /\\[ \\] Mistral.*/",
-    "syntax match LLMModelGemini /^Gemini.*$/",
     "syntax match LLMModelGemini /\\[ \\] Gemini.*/",
-    "syntax match LLMModelGroq /^Groq.*$/",
     "syntax match LLMModelGroq /\\[ \\] Groq.*/",
-    "syntax match LLMModelLocal /^Local Models.*$/",
     "syntax match LLMModelLocal /\\[ \\] .*gguf.*/",
     "syntax match LLMModelLocal /\\[ \\] .*ollama.*/",
     "syntax match LLMModelDefault /\\[✓\\].*/",
-    "syntax match LLMModelAliasAction /^\\[+\\] Add custom alias$/",
+    "syntax match LLMCustom /^\\[+\\] Add custom alias$/",
+    "syntax match LLMKeybinding /\\[.\\]/",
+    "syntax match LLMDivider /^─\\+$/",
   }
 
   for _, cmd in ipairs(syntax_cmds) do

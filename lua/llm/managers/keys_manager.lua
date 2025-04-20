@@ -168,21 +168,8 @@ function M.manage_keys()
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
-  local opts = {
-    relative = 'editor',
-    width = width,
-    height = height,
-    row = row,
-    col = col,
-    style = 'minimal',
-    border = 'rounded',
-    title = ' LLM API Keys ',
-    title_pos = 'center',
-  }
-
-  local win = api.nvim_open_win(buf, true, opts)
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  -- Use the centralized window creation function
+  local win = utils.create_floating_window(buf, 'LLM API Keys Manager')
 
   -- Get list of stored keys
   local stored_keys = M.get_stored_keys()
@@ -191,7 +178,7 @@ function M.manage_keys()
   local lines = {
     "# LLM API Keys Manager",
     "",
-    "Press 's' to set a new key, 'r' to remove a key, 'q' to quit",
+    "Press [s]et new key, [r]emove key, [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",
     "## Available Providers:",
@@ -241,18 +228,18 @@ function M.manage_keys()
   -- Set up syntax highlighting
   utils.setup_buffer_highlighting(buf)
 
-  -- Add key-specific highlighting
-  vim.cmd([[
-    highlight default LLMKeyAvailable guifg=#98c379
-    highlight default LLMKeyMissing guifg=#e06c75
-    highlight default LLMKeyAction guifg=#61afef gui=bold
-  ]])
-
-  -- Apply syntax highlighting
+  -- Apply syntax highlighting using the styles module
+  local styles = require('llm.styles')
   local syntax_cmds = {
+    "syntax match LLMHeader /^# LLM API Keys Manager$/",
+    "syntax match LLMAction /Press.*$/",
+    "syntax match LLMSection /^## Available Providers:$/",
+    "syntax match LLMSection /^## Custom Key:$/",
     "syntax match LLMKeyAvailable /\\[✓\\].*/",
     "syntax match LLMKeyMissing /\\[ \\].*/",
-    "syntax match LLMKeyAction /^\\[+\\] Add custom key$/",
+    "syntax match LLMCustom /^\\[+\\] Add custom key$/",
+    "syntax match LLMKeybinding /\\[.\\]/",
+    "syntax match LLMDivider /^─\\+$/",
   }
 
   for _, cmd in ipairs(syntax_cmds) do
@@ -319,20 +306,8 @@ function M.manage_keys()
     local row = math.floor((vim.o.lines - height) / 2)
     local col = math.floor((vim.o.columns - width) / 2)
 
-    -- Create the floating window
-    local opts = {
-      relative = 'editor',
-      width = width,
-      height = height,
-      row = row,
-      col = col,
-      style = 'minimal',
-      border = 'rounded',
-      title = ' Set API Key ',
-      title_pos = 'center',
-    }
-
-    local win = api.nvim_open_win(buf, true, opts)
+    -- Use the centralized window creation function
+    local win = utils.create_floating_window(buf, 'LLM Set API Key')
 
     -- Set cursor position to the input line
     api.nvim_win_set_cursor(win, { 3, 0 })
