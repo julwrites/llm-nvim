@@ -30,19 +30,19 @@ function M.select_template()
   local templates = templates_loader.get_templates()
   local template_names = {}
   local template_descriptions = {}
-  
+
   for name, description in pairs(templates) do
     table.insert(template_names, name)
     template_descriptions[name] = description
   end
-  
+
   if #template_names == 0 then
     vim.notify("No templates found", vim.log.levels.INFO)
     return
   end
-  
+
   table.sort(template_names)
-  
+
   vim.ui.select(template_names, {
     prompt = "Select a template to run:",
     format_item = function(item)
@@ -50,7 +50,7 @@ function M.select_template()
     end
   }, function(choice)
     if not choice then return end
-    
+
     -- If we have a selection, use it directly
     if has_selection then
       -- Ask for parameters first
@@ -59,11 +59,11 @@ function M.select_template()
         vim.notify("Failed to get template details", vim.log.levels.ERROR)
         return
       end
-      
+
       -- Check if we need to collect parameters
       local params = {}
       local param_names = {}
-      
+
       -- Extract parameter names from prompt and system
       local function extract_params(text)
         if not text then return end
@@ -73,10 +73,10 @@ function M.select_template()
           end
         end
       end
-      
+
       extract_params(template.prompt)
       extract_params(template.system)
-      
+
       -- If we have parameters, collect them
       if #param_names > 0 then
         local function collect_next_param(index)
@@ -88,10 +88,10 @@ function M.select_template()
             end
             return
           end
-          
+
           local param = param_names[index]
           local default = template.defaults and template.defaults[param] or ""
-          
+
           vim.ui.input({
             prompt = "Enter value for parameter '" .. param .. "':",
             default = default
@@ -102,7 +102,7 @@ function M.select_template()
             end
           end)
         end
-        
+
         collect_next_param(1)
       else
         -- No parameters needed, run the template with selection
@@ -125,21 +125,21 @@ function M.run_template_with_params(template_name)
   local buf_name = api.nvim_buf_get_name(current_buf)
   local is_template_manager = buf_name:match("LLM Templates$")
   local current_win = api.nvim_get_current_win()
-  
+
   if is_template_manager then
     api.nvim_win_close(current_win, true)
   end
-  
+
   local template = templates_loader.get_template_details(template_name)
   if not template then
     vim.notify("Failed to get template details", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Check if we need to collect parameters
   local params = {}
   local param_names = {}
-  
+
   -- Extract parameter names from prompt and system
   local function extract_params(text)
     if not text then return end
@@ -149,10 +149,10 @@ function M.run_template_with_params(template_name)
       end
     end
   end
-  
+
   extract_params(template.prompt)
   extract_params(template.system)
-  
+
   -- If we have parameters, collect them
   if #param_names > 0 then
     local function collect_next_param(index)
@@ -161,10 +161,10 @@ function M.run_template_with_params(template_name)
         M.run_template_with_input(template_name, params)
         return
       end
-      
+
       local param = param_names[index]
       local default = template.defaults and template.defaults[param] or ""
-      
+
       vim.ui.input({
         prompt = "Enter value for parameter '" .. param .. "':",
         default = default
@@ -175,7 +175,7 @@ function M.run_template_with_params(template_name)
         end
       end)
     end
-    
+
     collect_next_param(1)
   else
     -- No parameters needed, run the template
@@ -193,14 +193,14 @@ function M.run_template_with_input(template_name, params)
     prompt = "Choose input source:"
   }, function(choice)
     if not choice then return end
-    
+
     if choice == "Current selection" then
       local selection = utils.get_visual_selection()
       if selection == "" then
         vim.notify("No text selected", vim.log.levels.ERROR)
         return
       end
-      
+
       local result = templates_loader.run_template(template_name, selection, params)
       if result then
         utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
@@ -208,7 +208,7 @@ function M.run_template_with_input(template_name, params)
     elseif choice == "Current buffer" then
       local lines = api.nvim_buf_get_lines(0, 0, -1, false)
       local content = table.concat(lines, "\n")
-      
+
       local result = templates_loader.run_template(template_name, content, params)
       if result then
         utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
@@ -218,7 +218,7 @@ function M.run_template_with_input(template_name, params)
         prompt = "Enter URL:"
       }, function(url)
         if not url or url == "" then return end
-        
+
         local result = templates_loader.run_template_with_url(template_name, url, params)
         if result then
           utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
@@ -233,13 +233,13 @@ function M.create_template()
   if not utils.check_llm_installed() then
     return
   end
-  
+
   -- Step 1: Get template name
   vim.ui.input({
     prompt = "Enter template name:"
   }, function(name)
     if not name or name == "" then return end
-    
+
     -- Step 2: Choose template type
     vim.ui.select({
       "Regular prompt",
@@ -249,7 +249,7 @@ function M.create_template()
       prompt = "Choose template type:"
     }, function(type_choice)
       if not type_choice then return end
-      
+
       local template = {
         name = name,
         prompt = "",
@@ -262,7 +262,7 @@ function M.create_template()
         extract = false,
         schema = nil
       }
-      
+
       -- Step 3: Set prompts based on type
       if type_choice == "Regular prompt" then
         vim.ui.input({
@@ -288,7 +288,7 @@ function M.create_template()
         }, function(system)
           if not system or system == "" then return end
           template.system = system
-          
+
           vim.ui.input({
             prompt = "Enter regular prompt (use $input for user input):",
             default = "$input"
@@ -313,10 +313,10 @@ function M.continue_template_creation(template)
     prompt = "Model selection:"
   }, function(model_choice)
     if not model_choice then return end
-    
+
     if model_choice == "Select specific model" then
       local models = models_manager.get_available_models()
-      
+
       vim.ui.select(models, {
         prompt = "Select model for this template:"
       }, function(model)
@@ -342,7 +342,7 @@ function M.continue_template_creation_fragments(template)
     prompt = "Do you want to add fragments?"
   }, function(fragment_choice)
     if not fragment_choice then return end
-    
+
     if fragment_choice == "Add fragments" then
       local function add_more_fragments()
         vim.ui.select({
@@ -353,7 +353,7 @@ function M.continue_template_creation_fragments(template)
           prompt = "Add fragment:"
         }, function(choice)
           if not choice then return end
-          
+
           if choice == "Select from file browser" then
             fragments_loader.select_file_as_fragment(function(fragment_path)
               if fragment_path then
@@ -375,7 +375,7 @@ function M.continue_template_creation_fragments(template)
           end
         end)
       end
-      
+
       add_more_fragments()
     elseif fragment_choice == "Add system fragments" then
       local function add_more_system_fragments()
@@ -387,7 +387,7 @@ function M.continue_template_creation_fragments(template)
           prompt = "Add system fragment:"
         }, function(choice)
           if not choice then return end
-          
+
           if choice == "Select from file browser" then
             fragments_loader.select_file_as_fragment(function(fragment_path)
               if fragment_path then
@@ -409,7 +409,7 @@ function M.continue_template_creation_fragments(template)
           end
         end)
       end
-      
+
       add_more_system_fragments()
     else
       M.continue_template_creation_options(template)
@@ -427,7 +427,7 @@ function M.continue_template_creation_options(template)
     prompt = "Do you want to add model options (like temperature)?"
   }, function(option_choice)
     if not option_choice then return end
-    
+
     if option_choice == "Add options" then
       local function add_option()
         vim.ui.input({
@@ -437,7 +437,7 @@ function M.continue_template_creation_options(template)
             M.continue_template_creation_params(template)
             return
           end
-          
+
           vim.ui.input({
             prompt = "Enter value for " .. name .. ":"
           }, function(value)
@@ -448,7 +448,7 @@ function M.continue_template_creation_options(template)
           end)
         end)
       end
-      
+
       add_option()
     else
       M.continue_template_creation_params(template)
@@ -460,7 +460,7 @@ end
 function M.continue_template_creation_params(template)
   -- Step 7: Extract parameters from prompt and system
   local params = {}
-  
+
   local function extract_params(text)
     if not text then return end
     for param in text:gmatch("%$([%w_]+)") do
@@ -469,22 +469,22 @@ function M.continue_template_creation_params(template)
       end
     end
   end
-  
+
   extract_params(template.prompt)
   extract_params(template.system)
-  
+
   -- If we have parameters, ask for defaults
   if #params > 0 then
     vim.notify("Found parameters: " .. table.concat(params, ", "), vim.log.levels.INFO)
-    
+
     local function set_param_default(index)
       if index > #params then
         M.continue_template_creation_extract(template)
         return
       end
-      
+
       local param = params[index]
-      
+
       vim.ui.input({
         prompt = "Default value for parameter '" .. param .. "' (leave empty for no default):"
       }, function(value)
@@ -494,7 +494,7 @@ function M.continue_template_creation_params(template)
         set_param_default(index + 1)
       end)
     end
-    
+
     set_param_default(1)
   else
     M.continue_template_creation_extract(template)
@@ -511,7 +511,7 @@ function M.continue_template_creation_extract(template)
     prompt = "Extract first code block from response?"
   }, function(extract_choice)
     if not extract_choice then return end
-    
+
     template.extract = (extract_choice == "Yes")
     M.continue_template_creation_schema(template)
   end)
@@ -527,23 +527,23 @@ function M.continue_template_creation_schema(template)
     prompt = "Do you want to add a schema?"
   }, function(schema_choice)
     if not schema_choice then return end
-    
+
     if schema_choice == "Select existing schema" then
       local schemas = schemas_loader.get_schemas()
       local schema_names = {}
-      
+
       for name, _ in pairs(schemas) do
         table.insert(schema_names, name)
       end
-      
+
       if #schema_names == 0 then
         vim.notify("No schemas found", vim.log.levels.INFO)
         M.finalize_template_creation(template)
         return
       end
-      
+
       table.sort(schema_names)
-      
+
       vim.ui.select(schema_names, {
         prompt = "Select schema:"
       }, function(schema_name)
@@ -562,7 +562,7 @@ end
 function M.finalize_template_creation(template)
   -- Step 10: Create the template
   vim.notify("Creating template '" .. template.name .. "'...", vim.log.levels.INFO)
-  
+
   local success = templates_loader.create_template(
     template.name,
     template.prompt,
@@ -575,10 +575,10 @@ function M.finalize_template_creation(template)
     template.extract,
     template.schema
   )
-  
+
   if success then
     vim.notify("Template '" .. template.name .. "' created successfully", vim.log.levels.INFO)
-    
+
     -- Wait a moment for the template to be available in the system
     vim.defer_fn(function()
       -- Verify the template was created by checking if it exists
@@ -588,17 +588,18 @@ function M.finalize_template_creation(template)
       else
         vim.notify("Template was created but is not showing in the template list.", vim.log.levels.WARN)
       end
-      
+
       -- Always reopen the template manager after creation/editing
       M.manage_templates()
     end, 500) -- 500ms delay to ensure the template is registered
   else
     vim.notify("Failed to create template '" .. template.name .. "'", vim.log.levels.ERROR)
-    
+
     -- Provide more detailed error information
     vim.notify("Please check if the llm CLI is properly installed and configured.", vim.log.levels.INFO)
-    vim.notify("You can try creating a template directly with: llm --system 'Test' --save " .. template.name, vim.log.levels.INFO)
-    
+    vim.notify("You can try creating a template directly with: llm --system 'Test' --save " .. template.name,
+      vim.log.levels.INFO)
+
     -- Reopen the template manager even on failure
     vim.defer_fn(function()
       M.manage_templates()
@@ -611,14 +612,14 @@ function M.manage_templates()
   if not utils.check_llm_installed() then
     return
   end
-  
+
   -- Create a buffer for template management
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_option(buf, "buftype", "nofile")
   api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   api.nvim_buf_set_option(buf, "swapfile", false)
   api.nvim_buf_set_name(buf, "LLM Templates")
-  
+
   -- Create a new floating window
   local width = math.floor(vim.o.columns * 0.8)
   local height = math.floor(vim.o.lines * 0.8)
@@ -627,18 +628,18 @@ function M.manage_templates()
 
   -- Use the centralized window creation function
   local win = utils.create_floating_window(buf, 'LLM Templates Manager')
-  
+
   -- Function to refresh the template list
   local function refresh_template_list()
     local templates = templates_loader.get_templates()
     local template_names = {}
-    
+
     for name, _ in pairs(templates) do
       table.insert(template_names, name)
     end
-    
+
     table.sort(template_names)
-    
+
     -- Add header
     local lines = {
       "# LLM Templates Manager",
@@ -647,32 +648,32 @@ function M.manage_templates()
       "──────────────────────────────────────────────────────────────",
       "",
     }
-    
+
     if #template_names == 0 then
       table.insert(lines, "No templates found. Press 'c' to create one.")
     else
       table.insert(lines, "Templates:")
       table.insert(lines, "----------")
-      
+
       -- Add templates with descriptions
       for i, name in ipairs(template_names) do
         -- Format template entry similar to fragments manager
         table.insert(lines, string.format("Template %d: %s", i, name))
         table.insert(lines, string.format("  Description: %s", templates[name]))
-        
+
         -- Add empty line between templates
         table.insert(lines, "")
       end
     end
-    
+
     api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    
+
     -- Set up highlighting
     require('llm').setup_buffer_highlighting(buf)
-    
+
     -- Apply syntax highlighting using the styles module
     local styles = require('llm.styles')
-    
+
     -- Apply specific syntax highlighting for templates manager
     local syntax_cmds = {
       "syntax match LLMHeader /^# LLM Templates Manager$/",
@@ -689,12 +690,12 @@ function M.manage_templates()
       end)
     end
   end
-  
+
   -- Set up keymaps
   local function set_keymap(mode, lhs, rhs)
     api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
   end
-  
+
   set_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap("n", "c", ":lua require('llm.managers.templates_manager').create_template_from_manager()<CR>")
@@ -702,20 +703,42 @@ function M.manage_templates()
   set_keymap("n", "e", ":lua require('llm.managers.templates_manager').edit_template_under_cursor()<CR>")
   set_keymap("n", "d", ":lua require('llm.managers.templates_manager').delete_template_under_cursor()<CR>")
   set_keymap("n", "v", ":lua require('llm.managers.templates_manager').view_template_details_under_cursor()<CR>")
+
+  -- Initial refresh with error handling
+  local status, err = pcall(function()
+    refresh_template_list()
+  end)
   
-  -- Initial refresh
-  refresh_template_list()
-  
+  if not status then
+    -- If refresh fails, show a basic error message in the buffer
+    local error_lines = {
+      "# LLM Templates Manager",
+      "",
+      "Error loading templates.",
+      "",
+      "Press [c]reate to create a new template, or [q]uit to exit.",
+      "",
+      "Error details: " .. tostring(err),
+      "",
+      "Make sure the llm CLI tool is installed and working correctly.",
+      "Try running 'llm --help' in your terminal to verify.",
+      "",
+    }
+    api.nvim_buf_set_lines(buf, 0, -1, false, error_lines)
+    
+    -- Set up basic highlighting
+    require('llm').setup_buffer_highlighting(buf)
+  end
+
   -- Store the refresh function in the buffer
   api.nvim_buf_set_var(buf, "refresh_function", refresh_template_list)
 end
-
 
 -- Run template under cursor
 function M.run_template_under_cursor()
   local line = api.nvim_get_current_line()
   local template_name = line:match("^Template %d+: (.+)$")
-  
+
   if template_name then
     M.run_template_with_params(template_name)
   else
@@ -727,15 +750,15 @@ end
 function M.edit_template_under_cursor()
   local line = api.nvim_get_current_line()
   local template_name = line:match("^Template %d+: (.+)$")
-  
+
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Close the template manager window
   api.nvim_win_close(0, true)
-  
+
   -- Edit the template
   M.edit_template(template_name)
 end
@@ -744,12 +767,12 @@ end
 function M.delete_template_under_cursor()
   local line = api.nvim_get_current_line()
   local template_name = line:match("^Template %d+: (.+)$")
-  
+
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  
+
   vim.ui.select({
     "Yes",
     "No"
@@ -758,7 +781,7 @@ function M.delete_template_under_cursor()
   }, function(choice)
     if choice == "Yes" then
       local success = templates_loader.delete_template(template_name)
-      
+
       if success then
         vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
         -- Close and reopen the template manager to refresh
@@ -788,37 +811,37 @@ end
 function M.view_template_details_under_cursor()
   local line = api.nvim_get_current_line()
   local template_name = line:match("^Template %d+: (.+)$")
-  
+
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Close the template manager window
   local current_win = api.nvim_get_current_win()
   api.nvim_win_close(current_win, true)
-  
+
   -- Check if template exists first
   local templates = templates_loader.get_templates()
   if not templates[template_name] then
     vim.notify("Template '" .. template_name .. "' not found", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Get template details
   local template = templates_loader.get_template_details(template_name)
   if not template then
     vim.notify("Failed to get template details for '" .. template_name .. "'", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Create a buffer for template details
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_option(buf, "buftype", "nofile")
   api.nvim_buf_set_option(buf, "bufhidden", "wipe")
   api.nvim_buf_set_option(buf, "swapfile", false)
   api.nvim_buf_set_name(buf, "Template Details: " .. template_name)
-  
+
   -- Create a new floating window
   local width = math.floor(vim.o.columns * 0.8)
   local height = math.floor(vim.o.lines * 0.8)
@@ -827,20 +850,20 @@ function M.view_template_details_under_cursor()
 
   -- Use the centralized window creation function
   local win = utils.create_floating_window(buf, 'LLM Template Details: ' .. template_name)
-  
+
   -- Format template details
   local lines = {
     "# Template: " .. template_name,
     "",
   }
-  
+
   if template.system and template.system ~= "" then
     table.insert(lines, "## System Prompt:")
     table.insert(lines, "")
     table.insert(lines, template.system)
     table.insert(lines, "")
   end
-  
+
   if template.prompt and template.prompt ~= "" then
     table.insert(lines, "## Prompt:")
     table.insert(lines, "")
@@ -848,47 +871,49 @@ function M.view_template_details_under_cursor()
     table.insert(lines, template.prompt)
     table.insert(lines, "")
   end
-  
+
   if template.model and template.model ~= "" then
     table.insert(lines, "## Model: " .. template.model)
     table.insert(lines, "")
   end
-  
+
   if template.extract then
     table.insert(lines, "## Extract first code block: Yes")
     table.insert(lines, "")
   end
-  
+
   if template.schema then
     table.insert(lines, "## Schema: " .. template.schema)
     table.insert(lines, "")
   end
-  
+
   -- Add footer with instructions
   table.insert(lines, "")
   table.insert(lines, "Press [q]uit, [e]dit template, [r]un template")
-  
+
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  
+
   -- Set up keymaps
   local function set_keymap(mode, lhs, rhs)
     api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
   end
-  
+
   set_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap("n", "e", ":lua require('llm.managers.templates_manager').edit_template_from_details('" .. template_name .. "')<CR>")
-  set_keymap("n", "r", ":lua require('llm.managers.templates_manager').run_template_with_params('" .. template_name .. "')<CR>")
-  
+  set_keymap("n", "e",
+    ":lua require('llm.managers.templates_manager').edit_template_from_details('" .. template_name .. "')<CR>")
+  set_keymap("n", "r",
+    ":lua require('llm.managers.templates_manager').run_template_with_params('" .. template_name .. "')<CR>")
+
   -- Set up highlighting
   require('llm').setup_buffer_highlighting(buf)
-  
+
   -- Use the styles module for highlighting
   local styles = require('llm.styles')
 
   -- Apply syntax highlighting using the styles module
   local styles = require('llm.styles')
-  
+
   -- Apply specific syntax highlighting for template details
   local syntax_cmds = {
     "syntax match LLMHeader /^# Template:/",
@@ -912,7 +937,7 @@ function M.edit_template(template_name)
     vim.notify("Failed to get template details for '" .. template_name .. "'", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Start the template creation workflow with pre-filled values
   M.edit_template_with_details(template)
 end
@@ -922,10 +947,10 @@ function M.edit_template_with_details(template)
   if not utils.check_llm_installed() then
     return
   end
-  
+
   -- Store the original name to reopen the template manager after editing
   local original_name = template.name
-  
+
   -- Step 2: Choose template type based on existing template
   local type_choice
   if template.system ~= "" and template.prompt ~= "" then
@@ -935,7 +960,7 @@ function M.edit_template_with_details(template)
   else
     type_choice = "Regular prompt"
   end
-  
+
   -- Step 3: Set prompts based on type
   if type_choice == "Regular prompt" then
     -- Don't escape the $input variable in the UI prompt
@@ -943,10 +968,10 @@ function M.edit_template_with_details(template)
       prompt = "Enter prompt (use $input for user input):",
       default = template.prompt
     }, function(prompt)
-      if not prompt or prompt == "" then 
+      if not prompt or prompt == "" then
         -- If canceled, reopen the template manager
         vim.defer_fn(function() M.manage_templates() end, 100)
-        return 
+        return
       end
       template.prompt = prompt
       M.continue_template_creation(template)
@@ -956,10 +981,10 @@ function M.edit_template_with_details(template)
       prompt = "Enter system prompt:",
       default = template.system
     }, function(system)
-      if not system or system == "" then 
+      if not system or system == "" then
         -- If canceled, reopen the template manager
         vim.defer_fn(function() M.manage_templates() end, 100)
-        return 
+        return
       end
       template.system = system
       M.continue_template_creation(template)
@@ -969,21 +994,21 @@ function M.edit_template_with_details(template)
       prompt = "Enter system prompt:",
       default = template.system
     }, function(system)
-      if not system or system == "" then 
+      if not system or system == "" then
         -- If canceled, reopen the template manager
         vim.defer_fn(function() M.manage_templates() end, 100)
-        return 
+        return
       end
       template.system = system
-      
+
       vim.ui.input({
         prompt = "Enter regular prompt (use $input for user input):",
         default = template.prompt
       }, function(prompt)
-        if not prompt or prompt == "" then 
+        if not prompt or prompt == "" then
           -- If canceled, reopen the template manager
           vim.defer_fn(function() M.manage_templates() end, 100)
-          return 
+          return
         end
         template.prompt = prompt
         M.continue_template_creation(template)
@@ -997,13 +1022,13 @@ function M.create_template_from_manager()
   -- Store current buffer and window to return to after template creation
   local current_buf = api.nvim_get_current_buf()
   local current_win = api.nvim_get_current_win()
-  
+
   -- Close the current window (template manager)
   api.nvim_win_close(current_win, true)
-  
+
   -- Create the template
   M.create_template()
-  
+
   -- Set up a callback to reopen the template manager after creation
   vim.defer_fn(function()
     -- Reopen the template manager
@@ -1015,10 +1040,10 @@ end
 function M.edit_template_from_details(template_name)
   -- Close the current window (template details)
   api.nvim_win_close(0, true)
-  
+
   -- Edit the template
   M.edit_template(template_name)
-  
+
   -- Set up a callback to reopen the template manager after editing
   vim.defer_fn(function()
     -- Reopen the template manager
@@ -1032,17 +1057,19 @@ function M.run_template_by_name(template_name)
     vim.notify("No template name provided", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Check if template exists
   local templates = templates_loader.get_templates()
   if not templates[template_name] then
     vim.notify("Template '" .. template_name .. "' not found", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Run the template with parameters
   M.run_template_with_params(template_name)
 end
+
+-- This function has been removed as it's no longer needed
 
 -- Re-export functions from templates_loader
 M.get_templates = templates_loader.get_templates

@@ -77,6 +77,8 @@ M.highlights = {
   SchemaFooter = { link = "LLMAction" },
   SchemaName = { fg = M.colors.yellow, style = "bold" },
   SchemaId = { fg = M.colors.blue, style = "bold" },
+  Success = { fg = M.colors.success, style = "bold" },
+  Error = { fg = M.colors.error, style = "bold" },
   
   -- Template-specific highlights (using common highlight groups)
   TemplateHeader = { link = "LLMHeader" },
