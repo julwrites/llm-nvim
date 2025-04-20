@@ -24,11 +24,6 @@ function M.manage_fragments(show_all)
     end
   end
   
-  if #fragments_with_aliases == 0 and #fragments_without_aliases == 0 then
-    vim.notify("No fragments found. Create fragments by using files with LLM first.", vim.log.levels.INFO)
-    return
-  end
-  
   -- Determine which fragments to show based on the toggle
   local fragments = show_all and all_fragments or fragments_with_aliases
   local show_mode = show_all and "all" or "with_aliases"
@@ -66,8 +61,8 @@ function M.manage_fragments(show_all)
   local lines = {
     "# LLM Fragments Manager",
     "",
-    "Press 'v' to view fragment, 'a' to set alias, 'r' to remove alias, 'q' to quit",
-    "Press 't' to toggle between showing all fragments or only fragments with aliases",
+    "Press 'v' to view fragment, 'a' to set alias, 'r' to remove alias",
+    "Press 'n' to add a new fragment, 't' to toggle view, 'q' to quit",
     "Press '?' to debug line-to-fragment mapping",
     "──────────────────────────────────────────────────────────────",
     ""
@@ -81,10 +76,14 @@ function M.manage_fragments(show_all)
   end
   table.insert(lines, "")
 
-  -- Add fragments to the buffer
-  for i, fragment in ipairs(fragments) do
-    local aliases = table.concat(fragment.aliases, ", ")
-    if aliases == "" then aliases = "none" end
+  -- Add fragments to the buffer or a message if none exist
+  if #fragments == 0 then
+    table.insert(lines, "No fragments found.")
+    table.insert(lines, "Use 'n' to add a new fragment from a file.")
+  else
+    for i, fragment in ipairs(fragments) do
+      local aliases = table.concat(fragment.aliases, ", ")
+      if aliases == "" then aliases = "none" end
 
     local source = fragment.source or "unknown"
     -- Get first line of content for preview
@@ -100,8 +99,9 @@ function M.manage_fragments(show_all)
     table.insert(lines, string.format("  Source: %s", source))
     table.insert(lines, string.format("  Aliases: %s", aliases))
     table.insert(lines, string.format("  Date: %s", fragment.datetime or "unknown"))
-    table.insert(lines, string.format("  Content: %s", content_preview))
-    table.insert(lines, "")
+      table.insert(lines, string.format("  Content: %s", content_preview))
+      table.insert(lines, "")
+    end
   end
 
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -169,6 +169,22 @@ function M.manage_fragments(show_all)
   
   -- Debug line-to-fragment mapping
   set_keymap('n', '?', [[<cmd>lua require('llm.managers.fragment_manager').debug_line_mapping()<CR>]])
+  
+  -- Define the refresh callback function
+  local function refresh_fragment_manager()
+    vim.api.nvim_win_close(0, true)
+    vim.schedule(function()
+      -- Use the global state to determine which view to show
+      require('llm.managers.fragments_manager').manage_fragments(_G.llm_fragments_show_all)
+    end)
+  end
+  -- Store the callback globally so the keymap command can find it
+  -- (Using a global is simpler than complex string escaping for the keymap)
+  _G.llm_refresh_fragment_manager_callback = refresh_fragment_manager
+  
+  -- Add new fragment (with refresh callback)
+  -- Pass true as the second argument to force manual input mode
+  set_keymap('n', 'n', [[<cmd>lua require('llm.loaders.fragments_loader').select_file_as_fragment(_G.llm_refresh_fragment_manager_callback, true)<CR>]])
 
   -- Close window
   set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])

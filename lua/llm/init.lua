@@ -130,9 +130,6 @@ function M.setup(opts)
   config = require('llm.config')
   config.setup(opts)
 
-  -- Load the fragments module
-  fragments = require('llm.fragments')
-
   -- Load the templates module
   templates = require('llm.managers.templates_manager')
 
@@ -143,15 +140,17 @@ end
 config = require('llm.config')
 config.setup()
 
+-- Initialize config path cache by making a call early
+vim.defer_fn(function()
+  require('llm.utils').get_config_path("")
+end, 100)  -- Small delay to avoid blocking startup
+
 -- Load the fragments modules
 local fragments_manager = require('llm.managers.fragments_manager')
 local fragments_loader = require('llm.loaders.fragments_loader')
 
 -- Load the templates module
 templates = require('llm.managers.templates_manager')
-
--- Load the schemas module
-schemas = require('llm.managers.schemas_manager')
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()
@@ -224,8 +223,8 @@ function M.run_template_by_name(template_name)
 end
 
 -- Manage schemas
-function M.manage_schemas()
-  schemas_manager.manage_schemas()
+function M.manage_schemas(show_named_only)
+  schemas_manager.manage_schemas(show_named_only)
 end
 
 -- Select and run a schema
@@ -233,30 +232,20 @@ function M.select_schema()
   schemas_manager.select_schema()
 end
 
+-- Create a new schema
+function M.create_schema()
+  schemas_manager.create_schema()
+end
+
+-- Run a schema with input
+function M.run_schema(schema_id, input, is_multi)
+  return schemas_manager.run_schema(schema_id, input, is_multi)
+end
+
 -- Manually refresh plugins
 function M.refresh_plugins()
   require('llm.loaders.plugins_loader').refresh_plugins_cache()
 end
-
--- Setup function for configuration
-function M.setup(opts)
-  -- Load the configuration module
-  config = require('llm.config')
-  config.setup(opts)
-  
-  -- Initialize plugin data
-  local plugins_loader = require('llm.loaders.plugins_loader')
-  -- Fetch plugins in the background to avoid blocking startup
-  vim.defer_fn(function()
-    plugins_loader.refresh_plugins_cache()
-  end, 1000)  -- 1 second delay
-
-  return M
-end
-
--- Initialize with default configuration
-config = require('llm.config')
-config.setup()
 
 -- Set up syntax highlighting for plugin/key manager buffers
 function M.setup_buffer_highlighting(buf)

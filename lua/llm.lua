@@ -280,6 +280,14 @@ if not llm.select_schema then
   llm.select_schema = require('llm.managers.schemas_manager').select_schema
 end
 
+if not llm.create_schema then
+  llm.create_schema = require('llm.managers.schemas_manager').create_schema
+end
+
+if not llm.run_schema then
+  llm.run_schema = require('llm.managers.schemas_manager').run_schema
+end
+
 -- Expose fragment functions to global scope for testing
 _G.get_fragments = function()
   return fragments_loader.get_fragments()

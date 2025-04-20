@@ -165,9 +165,10 @@ to explain the
     Manage API keys for different LLM providers.             
                                                              
 *:LLMFragments*                                              
-    Manage fragments (view, set aliases, remove aliases).
+    Manage fragments (view, set aliases, remove aliases, add new).
     Shows fragments with aliases by default, but will show all fragments
-    if none have aliases. Use 'v' to view, 'a' to set alias, 'r' to remove alias.
+    if none have aliases. Use 'v' to view, 'a' to set alias, 'r' to remove alias,
+    'n' to add a new fragment, 't' to toggle view.
     Press '?' to debug line-to-fragment mapping (only useful with debug=true).
                                                              
 *:LLMSelectFragment*                                         
@@ -190,6 +191,15 @@ to explain the
     Select and run a template. You'll be guided through      
     providing any required parameters.                       
                                                              
+*:LLMSchemas*                                                
+    Manage schemas (view, run, edit, set aliases, delete aliases).
+    Shows named schemas by default. Use 't' to toggle view between
+    named schemas and all schemas.
+                                                             
+*:LLMSchema*                                                 
+    Select and run a schema. You'll be guided through selecting
+    input source and schema type (regular or multi).
+                                                             
 =============================================================
 =================                                            
 5. MAPPINGS                                                  
@@ -211,7 +221,8 @@ Default mappings (can be disabled with g:llm_no_mappings =
 <leader>llwf    - In visual mode, send selection with fragments
 <leader>llt     - Manage templates                           
 <leader>llrt    - Select and run a template                  
-<leader>lls     - Manage schemas                             
+<leader>llcs    - Create a new schema
+<leader>lls     - Manage schemas
 <leader>llrs    - Select and run a schema                    
                                                              
 Custom mappings:                                             

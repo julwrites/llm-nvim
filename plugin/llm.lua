@@ -131,7 +131,8 @@ end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMSchema", function()
   llm.select_schema()
-end, { nargs = 0 })
+end, { nargs = 0, range = true })
+
 
 -- Define key mappings
 vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true })
@@ -168,4 +169,5 @@ if not config.get("no_mappings") then
   vim.keymap.set("n", "<leader>llrt", "<Plug>(llm-template)")
   vim.keymap.set("n", "<leader>lls", "<Plug>(llm-schemas)")
   vim.keymap.set("n", "<leader>llrs", "<Plug>(llm-schema)")
+  vim.keymap.set("n", "<leader>llcs", "<Plug>(llm-create-schema)")
 end

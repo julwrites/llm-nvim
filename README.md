@@ -9,8 +9,11 @@ A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://git
 - Explain code in the current buffer
 - Start interactive chat sessions with LLMs
 - Support for custom models and system prompts
+- Manage API keys for different LLM providers
 - Use fragments (files, URLs, GitHub repos) with prompts
 - Manage fragment aliases
+- Manage templates (create, run, edit, delete)
+- Manage schemas (create, run, view, edit, set/delete aliases)
 
 ## Requirements
 
@@ -82,6 +85,8 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `:LLMWithSelectionAndFragments` - Send selected text with fragments
 - `:LLMTemplates` - Manage templates
 - `:LLMTemplate` - Select and run a template
+- `:LLMSchemas` - Manage schemas (view, run, edit, set/delete aliases)
+- `:LLMSchema` - Select and run a schema with various input sources
 
 ### Default Mappings
 
@@ -98,6 +103,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-select-model)')
 - `<leader>llwf` - In visual mode, send selection with fragments
 - `<leader>llt` - Manage templates
 - `<leader>llrt` - Select and run a template
+- `<leader>llcs` - Create a new schema
 - `<leader>lls` - Manage schemas
 - `<leader>llrs` - Select and run a schema
 
