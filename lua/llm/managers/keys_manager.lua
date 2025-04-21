@@ -6,6 +6,7 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local utils = require('llm.utils')
+local styles = require('llm.styles') -- Added
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()
@@ -149,335 +150,214 @@ function M.remove_api_key(key_name)
   return true
 end
 
--- Manage API keys for different LLM providers
-function M.manage_keys()
-  if not utils.check_llm_installed() then
-    return
-  end
-
-  -- Create a new buffer for the key manager
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-  api.nvim_buf_set_option(buf, 'swapfile', false)
-  api.nvim_buf_set_name(buf, 'LLM API Keys')
-
-  -- Create a new window
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
-
-  -- Use the centralized window creation function
-  local win = utils.create_floating_window(buf, 'LLM API Keys Manager')
-
-  -- Get list of stored keys
+-- Populate the buffer with key management content
+function M.populate_keys_buffer(bufnr)
   local stored_keys = M.get_stored_keys()
+  local stored_keys_set = {}
+  for _, key in ipairs(stored_keys) do stored_keys_set[key] = true end
 
-  -- Set buffer content
   local lines = {
-    "# LLM API Keys Manager",
+    "# API Key Management",
     "",
-    "Press [s]et new key, [r]emove key, [q]uit",
+    "Navigate: [M]odels [P]lugins [F]ragments [T]emplates [S]chemas",
+    "Actions: [s]et key [r]emove key [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",
     "## Available Providers:",
     ""
   }
 
-  -- List of common API key providers
   local providers = {
-    "openai",
-    "anthropic",
-    "mistral",
-    "gemini",
-    "groq",
-    "perplexity",
-    "cohere",
-    "replicate",
-    "anyscale",
-    "together",
-    "deepseek",
-    "fireworks",
-    "aws",   -- for bedrock
-    "azure", -- for azure openai
+    "openai", "anthropic", "mistral", "gemini", "groq", "perplexity",
+    "cohere", "replicate", "anyscale", "together", "deepseek", "fireworks",
+    "aws", "azure",
   }
 
-  -- Add stored keys with status
-  local stored_keys_set = {}
-  for _, key in ipairs(stored_keys) do
-    stored_keys_set[key] = true
-  end
+  local key_data = {}
+  local line_to_provider = {}
+  local current_line = #lines + 1
 
-  -- Add providers to the buffer
   for _, provider in ipairs(providers) do
     local status = stored_keys_set[provider] and "✓" or " "
-    table.insert(lines, string.format("[%s] %s", status, provider))
+    local line = string.format("[%s] %s", status, provider)
+    table.insert(lines, line)
+    key_data[provider] = { line = current_line, is_set = stored_keys_set[provider] or false }
+    line_to_provider[current_line] = provider
+    current_line = current_line + 1
   end
 
-  -- Add custom key section
   table.insert(lines, "")
   table.insert(lines, "## Custom Key:")
   table.insert(lines, "[+] Add custom key")
+  local custom_key_line = current_line + 2
+  line_to_provider[custom_key_line] = "+" -- Special marker for custom key line
 
-  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  -- Set buffer options
-  api.nvim_buf_set_option(buf, 'modifiable', false)
+  -- Apply syntax highlighting
+  styles.setup_buffer_syntax(bufnr) -- Use styles module
 
-  -- Set up syntax highlighting
-  utils.setup_buffer_highlighting(buf)
+  -- Store lookup tables in buffer variables
+  vim.b[bufnr].line_to_provider = line_to_provider
+  vim.b[bufnr].key_data = key_data
+  vim.b[bufnr].stored_keys_set = stored_keys_set -- Store for checking in actions
 
-  -- Apply syntax highlighting using the styles module
-  local styles = require('llm.styles')
-  local syntax_cmds = {
-    "syntax match LLMHeader /^# LLM API Keys Manager$/",
-    "syntax match LLMAction /Press.*$/",
-    "syntax match LLMSection /^## Available Providers:$/",
-    "syntax match LLMSection /^## Custom Key:$/",
-    "syntax match LLMKeyAvailable /\\[✓\\].*/",
-    "syntax match LLMKeyMissing /\\[ \\].*/",
-    "syntax match LLMCustom /^\\[+\\] Add custom key$/",
-    "syntax match LLMKeybinding /\\[.\\]/",
-    "syntax match LLMDivider /^─\\+$/",
-  }
-
-  for _, cmd in ipairs(syntax_cmds) do
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(cmd)
-    end)
-  end
-
-  -- Map of line numbers to provider names
-  local line_to_provider = {}
-  local provider_start_line = 8 -- Line where providers start
-  for i, provider in ipairs(providers) do
-    line_to_provider[provider_start_line + i - 1] = provider
-  end
-
-  -- Create key manager module for the helper functions
-  local key_manager = {}
-
-  function key_manager.set_key_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local provider = line_to_provider[current_line]
-
-    -- Handle custom key
-    if current_line == provider_start_line + #providers + 2 then
-      -- Prompt for custom key name
-      vim.ui.input({
-        prompt = "Enter custom key name: "
-      }, function(custom_name)
-        if not custom_name or custom_name == "" then return end
-
-        -- Create a floating window for secure key input
-        key_manager.create_key_input_window(custom_name)
-      end)
-      return
-    end
-
-    if not provider then return end
-
-    -- Create a floating window for secure key input
-    key_manager.create_key_input_window(provider)
-  end
-
-  -- Create a floating window for secure key input
-  function key_manager.create_key_input_window(provider_name)
-    -- Create a new buffer for the key input
-    local buf = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-    api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-    api.nvim_buf_set_option(buf, 'swapfile', false)
-
-    -- Set buffer content with instructions
-    local lines = {
-      "Enter API key for '" .. provider_name .. "':",
-      "",
-      "", -- Empty line for input
-      "",
-      "Press <Enter> to save, <Esc> to cancel"
-    }
-    api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-
-    -- Calculate window size and position
-    local width = math.min(60, math.floor(vim.o.columns * 0.6))
-    local height = 7
-    local row = math.floor((vim.o.lines - height) / 2)
-    local col = math.floor((vim.o.columns - width) / 2)
-
-    -- Use the centralized window creation function
-    local win = utils.create_floating_window(buf, 'LLM Set API Key')
-
-    -- Set cursor position to the input line
-    api.nvim_win_set_cursor(win, { 3, 0 })
-
-    -- Enter insert mode
-    vim.cmd('startinsert')
-
-    -- Set buffer as modifiable
-    api.nvim_buf_set_option(buf, 'modifiable', true)
-
-    -- Set up syntax highlighting
-    utils.setup_buffer_highlighting(buf)
-
-    -- Add key-specific highlighting
-    vim.cmd([[
-      highlight default LLMKeyPrompt guifg=#61afef gui=bold
-      highlight default LLMKeyInstructions guifg=#98c379
-    ]])
-
-    -- Apply syntax highlighting
-    local syntax_cmds = {
-      "syntax match LLMKeyPrompt /^Enter API key for.*/",
-      "syntax match LLMKeyInstructions /^Press <Enter>.*/",
-    }
-
-    for _, cmd in ipairs(syntax_cmds) do
-      vim.api.nvim_buf_call(buf, function()
-        vim.cmd(cmd)
-      end)
-    end
-
-    -- Set keymaps
-    local function set_keymap(mode, lhs, rhs, opts)
-      api.nvim_buf_set_keymap(buf, mode, lhs, rhs, opts or { noremap = true, silent = true })
-    end
-
-    -- Save key on Enter
-    set_keymap('i', '<CR>', [[<Cmd>lua require('llm.managers.key_manager').save_key_from_input()<CR>]])
-    set_keymap('n', '<CR>', [[<Cmd>lua require('llm.managers.key_manager').save_key_from_input()<CR>]])
-
-    -- Cancel on Escape
-    set_keymap('i', '<Esc>', [[<Cmd>lua require('llm.managers.key_manager').cancel_key_input()<CR>]])
-    set_keymap('n', '<Esc>', [[<Cmd>lua require('llm.managers.key_manager').cancel_key_input()<CR>]])
-
-    -- Store the provider name for later use
-    vim.b[buf].provider_name = provider_name
-  end
-
-  -- Save the key from the input window
-  function key_manager.save_key_from_input()
-    local buf = api.nvim_get_current_buf()
-    local provider_name = vim.b[buf].provider_name
-
-    -- Get the key from the input line
-    local key_value = api.nvim_buf_get_lines(buf, 2, 3, false)[1]
-
-    -- Close the window
-    vim.api.nvim_win_close(0, true)
-
-    -- Close the key manager window too
-    for _, win in ipairs(api.nvim_list_wins()) do
-      local buf_name = api.nvim_buf_get_name(api.nvim_win_get_buf(win))
-      if buf_name:match("LLM API Keys") then
-        api.nvim_win_close(win, true)
-        break
-      end
-    end
-
-    -- Set the key
-    vim.schedule(function()
-      if key_value and key_value ~= "" then
-        -- Use the set_api_key function with the key value
-        if M.set_api_key(provider_name, key_value) then
-          vim.notify("Key for '" .. provider_name .. "' has been set", vim.log.levels.INFO)
-
-          -- Reopen the key manager window to show the updated status
-          vim.schedule(function()
-            M.manage_keys()
-          end)
-        else
-          vim.notify("Failed to set key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-
-          -- Reopen the key manager window
-          vim.schedule(function()
-            M.manage_keys()
-          end)
-        end
-      else
-        vim.notify("No key provided, operation cancelled", vim.log.levels.WARN)
-
-        -- Reopen the key manager window
-        vim.schedule(function()
-          M.manage_keys()
-        end)
-      end
-    end)
-  end
-
-  -- Cancel key input
-  function key_manager.cancel_key_input()
-    local buf = api.nvim_get_current_buf()
-    local provider_name = vim.b[buf].provider_name
-
-    -- Close the window
-    vim.api.nvim_win_close(0, true)
-
-    vim.notify("Key input for '" .. provider_name .. "' cancelled", vim.log.levels.INFO)
-
-    -- Reopen the key manager window
-    vim.schedule(function()
-      M.manage_keys()
-    end)
-  end
-
-  function key_manager.remove_key_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local provider = line_to_provider[current_line]
-
-    if not provider then return end
-
-    -- Check if the key exists
-    if not stored_keys_set[provider] then
-      vim.notify("No key found for '" .. provider .. "'", vim.log.levels.WARN)
-      return
-    end
-
-    -- Use vim.fn.confirm for a more compact dialog
-    local choice = vim.fn.confirm("Remove key for '" .. provider .. "'?", "&Yes\n&No", 2)
-    
-    if choice ~= 1 then return end
-    
-    -- Close the window and remove the key
-    vim.api.nvim_win_close(0, true)
-    
-    vim.schedule(function()
-      if M.remove_api_key(provider) then
-        vim.notify("Key for '" .. provider .. "' has been removed", vim.log.levels.INFO)
-        
-        -- Reopen the key manager window to show the updated status
-        vim.schedule(function()
-          M.manage_keys()
-        end)
-      else
-        vim.notify("Failed to remove key for '" .. provider .. "'", vim.log.levels.ERROR)
-        
-        -- Reopen the key manager window
-        vim.schedule(function()
-          M.manage_keys()
-        end)
-      end
-    end)
-  end
-
-  -- Set keymaps
-  local function set_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
-  end
-
-  -- Set a key for the provider under cursor
-  set_keymap('n', 's', [[<cmd>lua require('llm.managers.key_manager').set_key_under_cursor()<CR>]])
-
-  -- Remove a key for the provider under cursor
-  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.key_manager').remove_key_under_cursor()<CR>]])
-
-  -- Close window
-  set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-
-  -- Store the key manager module
-  package.loaded['llm.managers.key_manager'] = key_manager
+  return line_to_provider, key_data -- Return for direct use if needed
 end
+
+-- Setup keymaps for the key management buffer
+function M.setup_keys_keymaps(bufnr, manager_module)
+  manager_module = manager_module or M -- Allow passing self
+
+  local function set_keymap(mode, lhs, rhs)
+    api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
+  end
+
+  -- Helper to get provider info
+  local function get_provider_info_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local line_to_provider = vim.b[bufnr].line_to_provider
+    local key_data = vim.b[bufnr].key_data
+    local provider_name = line_to_provider and line_to_provider[current_line]
+    if provider_name and key_data and key_data[provider_name] then
+      return provider_name, key_data[provider_name]
+    elseif provider_name == "+" then -- Handle custom key line
+      return "+", nil
+    end
+    return nil, nil
+  end
+
+  -- Set key under cursor
+  set_keymap('n', 's', string.format([[<Cmd>lua require('%s').set_key_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.keys_manager', bufnr))
+
+  -- Remove key under cursor
+  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.keys_manager', bufnr))
+end
+
+-- Action functions called by keymaps (now accept bufnr)
+function M.set_key_under_cursor(bufnr)
+  local provider_name, _ = M.get_provider_info_under_cursor(bufnr)
+
+  if not provider_name then return end
+
+  if provider_name == "+" then
+    -- Handle custom key
+    vim.ui.input({ prompt = "Enter custom key name: " }, function(custom_name)
+      if not custom_name or custom_name == "" then return end
+      M.create_key_input_window(custom_name)
+    end)
+  else
+    -- Handle regular provider
+    M.create_key_input_window(provider_name)
+  end
+end
+
+function M.remove_key_under_cursor(bufnr)
+  local provider_name, key_info = M.get_provider_info_under_cursor(bufnr)
+  if not provider_name or provider_name == "+" then return end -- Cannot remove '+'
+
+  local stored_keys_set = vim.b[bufnr].stored_keys_set
+  if not stored_keys_set[provider_name] then
+    vim.notify("No key found for '" .. provider_name .. "'", vim.log.levels.WARN)
+    return
+  end
+
+  local choice = vim.fn.confirm("Remove key for '" .. provider_name .. "'?", "&Yes\n&No", 2)
+  if choice ~= 1 then return end
+
+  if M.remove_api_key(provider_name) then
+    vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+    require('llm.managers.unified_manager').switch_view("Keys")
+  else
+    vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+  end
+end
+
+-- Create a floating window for secure key input (modified to refresh unified view)
+function M.create_key_input_window(provider_name)
+  local input_buf = api.nvim_create_buf(false, true)
+  api.nvim_buf_set_option(input_buf, 'buftype', 'nofile')
+  api.nvim_buf_set_option(input_buf, 'bufhidden', 'wipe')
+  api.nvim_buf_set_option(input_buf, 'swapfile', false)
+
+  local lines = { "Enter API key for '" .. provider_name .. "':", "", "", "", "Press <Enter> to save, <Esc> to cancel" }
+  api.nvim_buf_set_lines(input_buf, 0, -1, false, lines)
+
+  local input_win = utils.create_floating_window(input_buf, 'LLM Set API Key')
+  api.nvim_win_set_cursor(input_win, { 3, 0 })
+  vim.cmd('startinsert')
+  api.nvim_buf_set_option(input_buf, 'modifiable', true)
+  styles.setup_buffer_styling(input_buf) -- Apply basic styling
+
+  -- Store provider name
+  vim.b[input_buf].provider_name = provider_name
+
+  -- Keymaps for the input window
+  local function set_input_keymap(mode, lhs, rhs) api.nvim_buf_set_keymap(input_buf, mode, lhs, rhs, { noremap = true, silent = true }) end
+  set_input_keymap('i', '<CR>', [[<Cmd>stopinsert<CR><Cmd>lua require('llm.managers.keys_manager').save_key_from_input()<CR>]])
+  set_input_keymap('n', '<CR>', [[<Cmd>lua require('llm.managers.keys_manager').save_key_from_input()<CR>]])
+  set_input_keymap('i', '<Esc>', [[<Cmd>stopinsert<CR><Cmd>lua require('llm.managers.keys_manager').cancel_key_input()<CR>]])
+  set_input_keymap('n', '<Esc>', [[<Cmd>lua require('llm.managers.keys_manager').cancel_key_input()<CR>]])
+end
+
+-- Save the key from the input window (modified to refresh unified view)
+function M.save_key_from_input()
+  local input_buf = api.nvim_get_current_buf()
+  local provider_name = vim.b[input_buf].provider_name
+  local key_value = api.nvim_buf_get_lines(input_buf, 2, 3, false)[1]
+
+  api.nvim_win_close(0, true) -- Close input window
+
+  if key_value and key_value ~= "" then
+    if M.set_api_key(provider_name, key_value) then
+      vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
+      require('llm.managers.unified_manager').switch_view("Keys") -- Refresh unified view
+    else
+      vim.notify("Failed to set key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+      -- Optionally reopen the Keys view even on failure
+      -- require('llm.managers.unified_manager').switch_view("Keys")
+    end
+  else
+    vim.notify("No key provided, operation cancelled", vim.log.levels.WARN)
+    -- Optionally reopen the Keys view on cancel
+    -- require('llm.managers.unified_manager').switch_view("Keys")
+  end
+end
+
+-- Cancel key input (modified to potentially refresh unified view)
+function M.cancel_key_input()
+  local input_buf = api.nvim_get_current_buf()
+  local provider_name = vim.b[input_buf].provider_name
+  api.nvim_win_close(0, true) -- Close input window
+  vim.notify("Key input for '" .. provider_name .. "' cancelled", vim.log.levels.INFO)
+  -- Optionally reopen the Keys view on cancel
+  -- require('llm.managers.unified_manager').switch_view("Keys")
+end
+
+-- Helper to get provider info from buffer variables
+function M.get_provider_info_under_cursor(bufnr)
+  local current_line = api.nvim_win_get_cursor(0)[1]
+  local line_to_provider = vim.b[bufnr].line_to_provider
+  local key_data = vim.b[bufnr].key_data
+  if not line_to_provider or not key_data then
+    vim.notify("Buffer data missing", vim.log.levels.ERROR)
+    return nil, nil
+  end
+  local provider_name = line_to_provider[current_line]
+  if provider_name == "+" then
+    return "+", nil -- Special case for custom key line
+  elseif provider_name and key_data[provider_name] then
+    return provider_name, key_data[provider_name]
+  end
+  return nil, nil
+end
+
+-- Main function to open the key manager (now delegates to unified manager)
+function M.manage_keys()
+  require('llm.managers.unified_manager').open_specific_manager("Keys")
+end
+
+-- Add module name for require path in keymaps
+M.__name = 'llm.managers.keys_manager'
 
 return M

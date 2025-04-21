@@ -7,6 +7,7 @@ local M = {}
 local api = vim.api
 local utils = require('llm.utils')
 local plugins_loader = require('llm.loaders.plugins_loader')
+local styles = require('llm.styles') -- Added for highlighting
 
 -- Get plugin descriptions
 function M.get_plugin_descriptions()
@@ -113,291 +114,207 @@ function M.uninstall_plugin(plugin_name)
   return result ~= nil
 end
 
--- Manage plugins (view, install, uninstall)
-function M.manage_plugins()
-  if not utils.check_llm_installed() then
-    return
-  end
-
+-- Populate the buffer with plugin management content
+function M.populate_plugins_buffer(bufnr)
   local available_plugins = M.get_available_plugins()
   if not available_plugins or #available_plugins == 0 then
-    vim.notify("No plugins found from loader. Using fallback list.", vim.log.levels.WARN)
-    available_plugins = {
-      "llm-gguf", "llm-mlx", "llm-ollama", "llm-llamafile", "llm-mlc",
-      "llm-gpt4all", "llm-mpt30b", "llm-mistral", "llm-gemini", "llm-anthropic"
-    }
+    api.nvim_buf_set_lines(bufnr, 0, -1, false, {
+      "# Plugin Management - Error",
+      "",
+      "No plugins found. Make sure llm is properly configured and plugin cache is up-to-date.",
+      "Try running :LLMRefreshPlugins",
+      "",
+      "Press [q]uit or use navigation keys ([M]odels, [K]eys, etc.)"
+    })
+    return {}, {} -- Return empty lookup tables
   end
 
-  -- Get installed plugins to mark them
   local installed_plugins = M.get_installed_plugins()
   local installed_set = {}
-  for _, plugin in ipairs(installed_plugins) do
-    installed_set[plugin] = true
-  end
-  
-  -- Get plugin descriptions
+  for _, plugin in ipairs(installed_plugins) do installed_set[plugin] = true end
+
   local plugin_descriptions = M.get_plugin_descriptions()
 
-  -- Create a new buffer for the plugin manager
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(buf, 'buftype', 'nofile')
-  api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
-  api.nvim_buf_set_option(buf, 'swapfile', false)
-  api.nvim_buf_set_name(buf, 'LLM Plugins')
-
-  -- Create a new window
-  local win = utils.create_floating_window(buf, ' LLM Plugins ')
-
-  -- Set buffer content
   local lines = {
-    "# LLM Plugins Manager",
+    "# Plugin Management",
     "",
-    "This shows all available and installed plugins for LLM.",
-    "Plugins are shown with their descriptions",
-    "- [✓] means the plugin is installed (green)",
-    "- [ ] means the plugin is available to install (red)",
-    "",
-    "Press [i]nstall plugin, [x] uninstall plugin, [r]efresh list, [q]uit",
+    "Navigate: [M]odels [K]eys [F]ragments [T]emplates [S]chemas",
+    "Actions: [i]nstall [x]uninstall [r]efresh [q]uit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
-
-  -- Get plugins by category from the loader
+  -- Get plugins by category and format for display
   local plugins_by_category = plugins_loader.get_plugins_by_category()
   local categories = {}
-  
-  -- Get all plugins with descriptions
-  local all_plugins = M.get_available_plugins_with_descriptions()
-  
-  -- Convert to the format expected by the UI
+  local all_plugins_data = M.get_available_plugins_with_descriptions()
+
   for category_name, plugin_names in pairs(plugins_by_category) do
     categories[category_name] = {}
-    
     for _, plugin_name in ipairs(plugin_names) do
-      local status = installed_set[plugin_name] and "✓" or " "
-      local plugin_data = all_plugins[plugin_name] or {}
-      local entry = {
+      local plugin_info = all_plugins_data[plugin_name] or {}
+      table.insert(categories[category_name], {
         name = plugin_name,
         installed = installed_set[plugin_name] or false,
-        description = plugin_data.description or ""
-      }
-      table.insert(categories[category_name], entry)
-    end
-  end
-  
-  -- Add any installed plugins that aren't in the documentation
-  local other_category = categories["Other"] or {}
-  categories["Other"] = other_category
-  
-  for plugin_name, _ in pairs(installed_set) do
-    local found = false
-    for _, category_plugins in pairs(categories) do
-      for _, entry in ipairs(category_plugins) do
-        if entry.name == plugin_name then
-          found = true
-          break
-        end
-      end
-      if found then break end
-    end
-    
-    if not found then
-      table.insert(other_category, {
-        name = plugin_name,
-        status = "✓",
-        installed = true,
-        description = "Installed plugin (no description available)"
+        description = plugin_info.description or ""
       })
     end
   end
 
-  -- Plugin data for lookup
+  -- Add installed plugins not found in categories
+  local other_category = categories["Other"] or {}
+  categories["Other"] = other_category
+  for plugin_name, _ in pairs(installed_set) do
+    local found = false
+    for _, cat_plugins in pairs(categories) do
+      for _, p in ipairs(cat_plugins) do if p.name == plugin_name then found = true; break end end
+      if found then break end
+    end
+    if not found then
+      table.insert(other_category, { name = plugin_name, installed = true, description = "Installed (no description)" })
+    end
+  end
+
   local plugin_data = {}
   local line_to_plugin = {}
   local current_line = #lines + 1
-
-  -- Add categories and plugins to the buffer
-  for category, plugins in pairs(categories) do
-    if #plugins > 0 then
+  -- Add content to buffer
+  for category, cat_plugins in pairs(categories) do
+    if #cat_plugins > 0 then
       table.insert(lines, category)
       table.insert(lines, string.rep("─", #category))
       current_line = current_line + 2
-
-      table.sort(plugins, function(a, b) return a.name < b.name end)
-
-      for _, plugin in ipairs(plugins) do
-        local description = plugin.description or plugin_descriptions[plugin.name] or ""
-        -- Truncate description if it's too long
-        if #description > 50 then
-          description = description:sub(1, 47) .. "..."
-        end
-        
-        -- Format: [✓] plugin-name - Description
-        local status_indicator = plugin.installed and "✓" or " "
-        
-        -- Truncate description if it's too long for display
-        if #description > 50 then
-          description = description:sub(1, 47) .. "..."
-        end
-        
-        local line = string.format("[%s] %-20s - %s", 
-                                  status_indicator, 
-                                  plugin.name, 
-                                  description)
+      table.sort(cat_plugins, function(a, b) return a.name < b.name end)
+      for _, plugin in ipairs(cat_plugins) do
+        local desc = plugin.description or ""
+        if #desc > 50 then desc = desc:sub(1, 47) .. "..." end
+        local status = plugin.installed and "✓" or " "
+        local line = string.format("[%s] %-20s - %s", status, plugin.name, desc)
         table.insert(lines, line)
-
-        -- Store plugin data for lookup
-        plugin_data[plugin.name] = {
-          line = current_line,
-          installed = plugin.installed
-        }
+        plugin_data[plugin.name] = { line = current_line, installed = plugin.installed }
         line_to_plugin[current_line] = plugin.name
         current_line = current_line + 1
       end
-
       table.insert(lines, "")
       current_line = current_line + 1
     end
   end
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  -- Apply syntax highlighting
+  styles.setup_buffer_syntax(bufnr) -- Use styles module
 
-  -- Set buffer options
-  api.nvim_buf_set_option(buf, 'modifiable', false)
+  -- Store lookup tables in buffer variables
+  vim.b[bufnr].line_to_plugin = line_to_plugin
+  vim.b[bufnr].plugin_data = plugin_data
 
-  -- Set up syntax highlighting using the styles module
-  utils.setup_buffer_highlighting(buf)
-  local styles = require('llm.styles')
-  
-  -- Apply specific syntax highlighting for plugins manager
-  local syntax_cmds = {
-    "syntax match LLMHeader /^# LLM Plugins Manager$/",
-    "syntax match LLMAction /Press.*$/",
-    "syntax match LLMInstalled /\\[✓\\].*/",
-    "syntax match LLMNotInstalled /\\[ \\].*/",
-    "syntax match LLMSection /^[A-Za-z][A-Za-z0-9 ]*$/",
-    "syntax match LLMKeybinding /\\[.\\]/",
-    "syntax match LLMDivider /^─\\+$/",
-  }
+  return line_to_plugin, plugin_data -- Return for direct use if needed
+end
 
-  for _, cmd in ipairs(syntax_cmds) do
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(cmd)
-    end)
-  end
+-- Setup keymaps for the plugin management buffer
+function M.setup_plugins_keymaps(bufnr, manager_module)
+  manager_module = manager_module or M -- Allow passing self
 
-  -- Create plugin manager module for the helper functions
-  local plugin_manager = {}
-
-  function plugin_manager.install_plugin_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local plugin_name = line_to_plugin[current_line]
-
-    if not plugin_name then return end
-    if plugin_data[plugin_name].installed then
-      vim.notify("Plugin " .. plugin_name .. " is already installed", vim.log.levels.INFO)
-      return
-    end
-
-    vim.notify("Installing plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
-
-    -- Run in background to avoid blocking UI
-    vim.schedule(function()
-      if M.install_plugin(plugin_name) then
-        vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
-        -- Close and reopen the plugin manager to refresh the list
-        vim.api.nvim_win_close(0, true)
-        vim.schedule(function()
-          M.manage_plugins()
-        end)
-      else
-        vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
-      end
-    end)
-  end
-
-  function plugin_manager.uninstall_plugin_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local plugin_name = line_to_plugin[current_line]
-
-    if not plugin_name then return end
-    if not plugin_data[plugin_name].installed then
-      vim.notify("Plugin " .. plugin_name .. " is not installed", vim.log.levels.INFO)
-      return
-    end
-
-    -- Confirm uninstallation
-    vim.ui.select({ "Yes", "No" }, {
-      prompt = "Uninstall " .. plugin_name .. "?"
-    }, function(choice)
-      if choice ~= "Yes" then return end
-
-      vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
-
-      -- Run in background to avoid blocking UI
-      vim.schedule(function()
-        if M.uninstall_plugin(plugin_name) then
-          vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
-          -- Close and reopen the plugin manager to refresh the list
-          vim.api.nvim_win_close(0, true)
-          vim.schedule(function()
-            M.manage_plugins()
-          end)
-        else
-          vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
-        end
-      end)
-    end)
-  end
-
-  function plugin_manager.refresh_plugin_list()
-    -- Force refresh the plugins cache
-    vim.notify("Refreshing plugin list from website...", vim.log.levels.INFO)
-    local plugins = plugins_loader.refresh_plugins_cache()
-    
-    -- Only close and reopen if we got plugins
-    if plugins and vim.tbl_count(plugins) > 0 then
-      vim.api.nvim_win_close(0, true)
-      vim.schedule(function()
-        M.manage_plugins()
-      end)
-    else
-      -- Just notify the user that refresh failed
-      vim.notify("Plugin refresh failed, keeping current view", vim.log.levels.WARN)
-    end
-  end
-
-  -- Set keymaps
   local function set_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
+    api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
+  end
+
+  -- Helper to get plugin info
+  local function get_plugin_info_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local line_to_plugin = vim.b[bufnr].line_to_plugin
+    local plugin_data = vim.b[bufnr].plugin_data
+    local plugin_name = line_to_plugin and line_to_plugin[current_line]
+    if plugin_name and plugin_data and plugin_data[plugin_name] then
+      return plugin_name, plugin_data[plugin_name]
+    end
+    return nil, nil
   end
 
   -- Install plugin under cursor
-  set_keymap('n', 'i', [[<cmd>lua require('llm.managers.plugins_manager').install_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'i', string.format([[<Cmd>lua require('%s').install_plugin_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
 
   -- Uninstall plugin under cursor
-  set_keymap('n', 'x', [[<cmd>lua require('llm.managers.plugins_manager').uninstall_plugin_under_cursor()<CR>]])
+  set_keymap('n', 'x', string.format([[<Cmd>lua require('%s').uninstall_plugin_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
 
   -- Refresh plugin list
-  set_keymap('n', 'r', [[<cmd>lua require('llm.managers.plugins_manager').refresh_plugin_list()<CR>]])
+  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').refresh_plugin_list(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
 
-  -- Debug functions
-  function plugin_manager.run_debug_functions()
-    vim.notify("Running plugin loader debug functions...", vim.log.levels.INFO)
-    plugins_loader.parse_debug_html()
-    plugins_loader.test_pattern_matching()
-    vim.notify("Debug complete. Check your config directory for analysis files.", vim.log.levels.INFO)
-  end
-  
-  -- Close window
-  set_keymap('n', 'q', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap('n', '<Esc>', [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  
-  -- Debug key
-  set_keymap('n', 'D', [[<cmd>lua require('llm.managers.plugins_manager').run_debug_functions()<CR>]])
-
-  -- Store the plugin manager module
-  package.loaded['llm.managers.plugins_manager'] = plugin_manager
+  -- Debug key (if needed)
+  -- set_keymap('n', 'D', string.format([[<Cmd>lua require('%s').run_debug_functions(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
 end
+
+-- Action functions called by keymaps (now accept bufnr)
+function M.install_plugin_under_cursor(bufnr)
+  local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
+  if not plugin_name then return end
+  if plugin_info.installed then
+    vim.notify("Plugin " .. plugin_name .. " is already installed", vim.log.levels.INFO)
+    return
+  end
+  vim.notify("Installing plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
+  vim.schedule(function()
+    if M.install_plugin(plugin_name) then
+      vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
+      require('llm.managers.unified_manager').switch_view("Plugins")
+    else
+      vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
+    end
+  end)
+end
+
+function M.uninstall_plugin_under_cursor(bufnr)
+  local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
+  if not plugin_name then return end
+  if not plugin_info.installed then
+    vim.notify("Plugin " .. plugin_name .. " is not installed", vim.log.levels.INFO)
+    return
+  end
+  vim.ui.select({ "Yes", "No" }, { prompt = "Uninstall " .. plugin_name .. "?" }, function(choice)
+    if choice ~= "Yes" then return end
+    vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
+    vim.schedule(function()
+      if M.uninstall_plugin(plugin_name) then
+        vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
+        require('llm.managers.unified_manager').switch_view("Plugins")
+      else
+        vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
+      end
+    end)
+  end)
+end
+
+function M.refresh_plugin_list(bufnr)
+  vim.notify("Refreshing plugin list from website...", vim.log.levels.INFO)
+  local plugins = plugins_loader.refresh_plugins_cache()
+  if plugins and vim.tbl_count(plugins) > 0 then
+     require('llm.managers.unified_manager').switch_view("Plugins")
+  else
+    vim.notify("Plugin refresh failed, keeping current view", vim.log.levels.WARN)
+  end
+end
+
+-- Helper to get plugin info from buffer variables
+function M.get_plugin_info_under_cursor(bufnr)
+  local current_line = api.nvim_win_get_cursor(0)[1]
+  local line_to_plugin = vim.b[bufnr].line_to_plugin
+  local plugin_data = vim.b[bufnr].plugin_data
+  if not line_to_plugin or not plugin_data then
+    vim.notify("Buffer data missing", vim.log.levels.ERROR)
+    return nil, nil
+  end
+  local plugin_name = line_to_plugin[current_line]
+  if plugin_name and plugin_data[plugin_name] then
+    return plugin_name, plugin_data[plugin_name]
+  end
+  return nil, nil
+end
+
+-- Main function to open the plugin manager (now delegates to unified manager)
+function M.manage_plugins()
+  require('llm.managers.unified_manager').open_specific_manager("Plugins")
+end
+
+-- Add module name for require path in keymaps
+M.__name = 'llm.managers.plugins_manager'
 
 return M

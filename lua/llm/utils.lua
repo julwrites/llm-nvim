@@ -183,7 +183,7 @@ function M.create_floating_window(buf, title)
     col = col,
     style = 'minimal',
     border = 'rounded',
-    title = ' ' .. (title or 'LLM') .. ' ',
+    title = ' ' .. (title or 'LLM') .. ' ', -- Initial title
     title_pos = 'center',
   }
 

@@ -154,51 +154,53 @@ terminal buffer.
 to explain the                                               
     code.                                                    
                                                              
+*:LLMToggle* [{view}]                                        
+    Open or close the unified manager window. This window    
+    allows managing Models, Plugins, API Keys, Fragments,    
+    Templates, and Schemas.                                  
+    Optionally specify an initial {view} to open:            
+    "Models", "Plugins", "Keys", "Fragments", "Templates",   
+    "Schemas".                                               
+    Inside the window, use [M], [P], [K], [F], [T], [S] to   
+    switch between views, and [q] or <Esc> to close.         
+                                                             
 *:LLMModels*                                                 
-    Manage models and aliases (set default, add/remove       
-    aliases).                                                
+    Open the unified manager window to the Models view.      
                                                              
 *:LLMPlugins*                                                
-    Manage LLM plugins (install/uninstall).                  
+    Open the unified manager window to the Plugins view.     
                                                              
 *:LLMKeys*                                                   
-    Manage API keys for different LLM providers.             
+    Open the unified manager window to the API Keys view.    
                                                              
 *:LLMFragments*                                              
-    Manage fragments (view, set aliases, remove aliases, add new).
-    Shows fragments with aliases by default, but will show all fragments
-    if none have aliases. Use 'v' to view, 'a' to set alias, 'r' to remove alias,
-    'n' to add a new fragment, 't' to toggle view.
-    Press '?' to debug line-to-fragment mapping (only useful with debug=true).
+    Open the unified manager window to the Fragments view.   
                                                              
 *:LLMSelectFragment*                                         
-    Select a file to use as a fragment.                      
+    Select a file to use as a fragment. (Does not use the    
+    unified manager).                                        
                                                              
 *:LLMWithFragments* [{prompt}]                               
-    Send a prompt with fragments. You'll be guided through   
-    selecting fragments before entering your prompt.         
+    Send a prompt with fragments. (Does not use the unified  
+    manager).                                                
                                                              
 *:LLMWithSelectionAndFragments* [{prompt}]                   
-    Send selected text with fragments. You'll be guided      
-    through selecting fragments before entering an optional  
-    prompt.                                                  
+    Send selected text with fragments. (Does not use the     
+    unified manager).                                        
                                                              
 *:LLMTemplates*                                              
-    Manage templates. View, run, edit, or delete existing    
-    templates.                                               
+    Open the unified manager window to the Templates view.   
                                                              
 *:LLMTemplate*                                               
-    Select and run a template. You'll be guided through      
-    providing any required parameters.                       
+    Select and run a template. (Does not use the unified     
+    manager).                                                
                                                              
 *:LLMSchemas*                                                
-    Manage schemas (view, run, edit, set aliases, delete aliases).
-    Shows named schemas by default. Use 't' to toggle view between
-    named schemas and all schemas.
+    Open the unified manager window to the Schemas view.     
                                                              
 *:LLMSchema*                                                 
-    Select and run a schema. You'll be guided through selecting
-    input source and schema type (regular or multi).
+    Select and run a schema. (Does not use the unified       
+    manager).                                                
                                                              
 =============================================================
 =================                                            
@@ -208,32 +210,37 @@ to explain the
 Default mappings (can be disabled with g:llm_no_mappings =   
 1):                                                          
                                                              
+<leader>ll      - Toggle the unified manager window          
 <leader>llp     - Prompt for input and send to LLM           
 <leader>lls     - In visual mode, send selection to LLM      
 <leader>lle     - Explain the current buffer                 
 <leader>llc     - Start a chat session                       
-<leader>llm     - Manage models and aliases                  
-<leader>llg     - Open the plugin manager                    
-<leader>llk     - Manage API keys                            
-<leader>llf     - Manage fragments                           
+<leader>llm     - Open the Models manager view               
+<leader>llg     - Open the Plugins manager view              
+<leader>llk     - Open the API Keys manager view             
+<leader>llf     - Open the Fragments manager view            
 <leader>llsf    - Select a file to use as a fragment         
 <leader>llwf    - Send a prompt with fragments               
 <leader>llwf    - In visual mode, send selection with fragments
-<leader>llt     - Manage templates                           
+<leader>llt     - Open the Templates manager view            
 <leader>llrt    - Select and run a template                  
-<leader>llcs    - Create a new schema
-<leader>lls     - Manage schemas
+<leader>llcs    - Create a new schema                        
+<leader>lls     - Open the Schemas manager view              
 <leader>llrs    - Select and run a schema                    
                                                              
 Custom mappings:                                             
 >                                                            
+    nmap <leader>ll <Plug>(llm-toggle)                       
     nmap <leader>lp <Plug>(llm-prompt)                       
     vmap <leader>ls <Plug>(llm-selection)                    
     nmap <leader>le <Plug>(llm-explain)                      
     nmap <leader>lc <Plug>(llm-chat)                         
-    nmap <leader>lm <Plug>(llm-select-model)                 
-    nmap <leader>lp <Plug>(llm-plugins)                      
+    nmap <leader>lm <Plug>(llm-models)                       
+    nmap <leader>lg <Plug>(llm-plugins)                      
     nmap <leader>lk <Plug>(llm-keys)                         
+    nmap <leader>lf <Plug>(llm-fragments)                    
+    nmap <leader>lt <Plug>(llm-templates)                    
+    nmap <leader>ls <Plug>(llm-schemas)                      
 <                                                            
                                                              
 =============================================================

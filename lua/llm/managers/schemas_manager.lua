@@ -7,6 +7,7 @@ local M = {}
 local api = vim.api
 local schemas_loader = require('llm.loaders.schemas_loader')
 local utils = require('llm.utils')
+local styles = require('llm.styles') -- Added
 
 -- Select and run a schema
 function M.select_schema()
@@ -586,877 +587,371 @@ function M.save_schema_from_temp_file(bufnr)
   if temp_file_path then os.remove(temp_file_path) end
 end
 
--- Manage schemas
-function M.manage_schemas(show_named_only)
-  if not utils.check_llm_installed() then
-    return
-  end
-  
-  -- Create a buffer for schema management
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(buf, "buftype", "nofile")
-  api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-  api.nvim_buf_set_option(buf, "swapfile", false)
-  api.nvim_buf_set_name(buf, "LLM Schemas")
-  
-  -- Create a new floating window
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
+-- Populate the buffer with schema management content
+function M.populate_schemas_buffer(bufnr)
+  -- Determine view mode from global state or default to showing named only
+  local show_named_only = _G.llm_schemas_named_only or true
 
-  -- Use the centralized window creation function
-  local win = utils.create_floating_window(buf, 'LLM Schemas Manager')
-  
-  -- Function to refresh the schema list
-  local function refresh_schema_list()
-    local all_schemas = schemas_loader.get_schemas()
-    local schema_ids = {}
-    local named_schemas = {}
-    local unnamed_schemas = {}
-    
-    -- Get schema config to identify named schemas
-    local _, schema_config_file = utils.get_config_path("schemas.json")
-    local schema_names_to_ids = {}
-    local schema_ids_to_names = {}
-    
-    if schema_config_file then
-      local config_file = io.open(schema_config_file, "r")
-      if config_file then
-        local content = config_file:read("*all")
-        config_file:close()
-        
-        if content and content ~= "" then
-          local success, parsed = pcall(vim.fn.json_decode, content)
-          if success and parsed then
-            schema_names_to_ids = parsed
-            -- Create reverse mapping
-            for name, id in pairs(parsed) do
-              schema_ids_to_names[id] = name
-            end
-          end
+  local all_schemas = schemas_loader.get_schemas()
+  local named_schemas = {}
+  local unnamed_schemas = {}
+
+  -- Get schema config to identify named schemas
+  local _, schema_config_file = utils.get_config_path("schemas.json")
+  local schema_ids_to_names = {}
+  if schema_config_file then
+    local config_file = io.open(schema_config_file, "r")
+    if config_file then
+      local content = config_file:read("*all"); config_file:close()
+      if content and content ~= "" then
+        local success, parsed = pcall(vim.fn.json_decode, content)
+        if success and parsed then
+          for name, id in pairs(parsed) do schema_ids_to_names[id] = name end
         end
       end
     end
-    
-    -- Separate named and unnamed schemas
-    for id, description in pairs(all_schemas) do
-      if schema_ids_to_names[id] then
-        table.insert(named_schemas, {id = id, name = schema_ids_to_names[id], description = description})
-      else
-        table.insert(unnamed_schemas, {id = id, description = description})
-      end
-    end
-    
-    -- Sort named schemas by name
-    table.sort(named_schemas, function(a, b) return a.name < b.name end)
-    
-    -- Sort unnamed schemas by ID
-    table.sort(unnamed_schemas, function(a, b) return a.id < b.id end)
-    
-    -- Determine which schemas to show
-    local schemas_to_show = show_named_only and named_schemas or named_schemas
-    if not show_named_only then
-      for _, schema in ipairs(unnamed_schemas) do
-        table.insert(schemas_to_show, schema)
-      end
-    end
-    
-    -- Add header
-    local lines = {
-      "# LLM Schemas Manager",
-      "",
-      "Press [c]reate, [r]un, [v]iew details, [e]dit, [a]dd alias, [d]elete alias, [t]oggle view, [q]uit",
-      "──────────────────────────────────────────────────────────────",
-      "",
-    }
-    
-    -- Add toggle status
-    if show_named_only then
-      table.insert(lines, "Currently showing: Only named schemas")
+  end
+
+  -- Separate named and unnamed schemas
+  for id, description in pairs(all_schemas) do
+    if schema_ids_to_names[id] then
+      table.insert(named_schemas, {id = id, name = schema_ids_to_names[id], description = description})
     else
-      table.insert(lines, "Currently showing: All schemas")
-    end
-    table.insert(lines, "")
-    
-    if #schemas_to_show == 0 then
-      table.insert(lines, "No schemas found. Press 'c' to create one.")
-    else
-      table.insert(lines, "Schemas:")
-      table.insert(lines, "----------")
-      
-      -- Add schemas with descriptions
-      for i, schema in ipairs(schemas_to_show) do
-        -- Replace newlines in descriptions with spaces to avoid nvim_buf_set_lines error
-        local description = schema.description:gsub("\n", " ")
-        
-        -- Check if schema is valid by trying to get its content
-        local schema_details = schemas_loader.get_schema(schema.id)
-        local is_valid = false
-        if schema_details and schema_details.content then
-          local success, _ = pcall(vim.fn.json_decode, schema_details.content)
-          is_valid = success
-        end
-        
-        -- Format schema entry similar to fragments manager
-        table.insert(lines, string.format("Schema %d: %s", i, schema.id))
-        
-        -- Add name if available
-        if schema.name then
-          table.insert(lines, string.format("  Name: %s", schema.name))
-        end
-        
-        -- Add validity status
-        if is_valid then
-          table.insert(lines, "  Status: Valid")
-        else
-          table.insert(lines, "  Status: Invalid - Schema may have formatting issues")
-        end
-        
-        -- Add description
-        table.insert(lines, string.format("  Description: %s", description))
-        
-        -- Add empty line between schemas
-        table.insert(lines, "")
-      end
-    end
-    
-    api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-    
-    -- Set up highlighting
-    require('llm').setup_buffer_highlighting(buf)
-    
-    -- Apply syntax highlighting using the styles module
-    local styles = require('llm.styles')
-    
-    -- Apply specific syntax highlighting for schemas manager
-    local syntax_cmds = {
-      "syntax match LLMHeader /^# LLM Schemas Manager$/",
-      "syntax match LLMAction /Press.*$/",
-      "syntax match LLMSection /^Currently showing:.*$/",
-      "syntax match LLMSection /^Schemas:$/",
-      "syntax match LLMSchemaId /^Schema \\d\\+: [0-9a-f]\\+$/",
-      "syntax match LLMSchemaName /^  Name: .*$/",
-      "syntax match LLMSuccess /^  Status: Valid$/",
-      "syntax match LLMError /^  Status: Invalid.*$/",
-      "syntax match LLMContent /^  Description: .*$/",
-      "syntax match LLMKeybinding /\\[.\\]/",
-    }
-
-    for _, cmd in ipairs(syntax_cmds) do
-      vim.api.nvim_buf_call(buf, function()
-        vim.cmd(cmd)
-      end)
+      table.insert(unnamed_schemas, {id = id, description = description})
     end
   end
-  
-  -- Set up keymaps
-  local function set_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
-  end
-  
-  set_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap("n", "c", ":lua require('llm.managers.schemas_manager').create_schema_from_manager()<CR>")
-  set_keymap("n", "r", ":lua require('llm.managers.schemas_manager').run_schema_under_cursor()<CR>")
-  set_keymap("n", "v", ":lua require('llm.managers.schemas_manager').view_schema_details_under_cursor()<CR>")
-  set_keymap("n", "e", ":lua require('llm.managers.schemas_manager').edit_schema_under_cursor()<CR>")
-  set_keymap("n", "a", ":lua require('llm.managers.schemas_manager').set_alias_for_schema_under_cursor()<CR>")
-  set_keymap("n", "d", ":lua require('llm.managers.schemas_manager').delete_alias_for_schema_under_cursor()<CR>")
-  set_keymap("n", "t", ":lua require('llm.managers.schemas_manager').toggle_schemas_view()<CR>")
-  
-  -- Initial refresh
-  refresh_schema_list()
-  
-  -- Store the refresh function in the buffer
-  api.nvim_buf_set_var(buf, "refresh_function", refresh_schema_list)
-  
-  -- Store the current view mode
-  _G.llm_schemas_named_only = show_named_only
-end -- Added missing end for M.manage_schemas
 
--- Run schema under cursor
-function M.run_schema_under_cursor()
-  local line = api.nvim_get_current_line()
-  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
-  
-  if schema_id and #schema_id > 0 then
-    if require('llm.config').get("debug") then
-      vim.notify("Found schema ID: " .. schema_id, vim.log.levels.DEBUG)
-    end
-    
-    -- Close the schema manager window
-    local current_win = api.nvim_get_current_win()
-    api.nvim_win_close(current_win, true)
-    
-    -- Run the schema
-    M.run_schema_with_input_source(schema_id)
-  else
-    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
-  end
-end
+  -- Sort schemas
+  table.sort(named_schemas, function(a, b) return a.name < b.name end)
+  table.sort(unnamed_schemas, function(a, b) return a.id < b.id end)
 
--- View schema details under cursor
-function M.view_schema_details_under_cursor()
-  local line = api.nvim_get_current_line()
-  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
-  
-  if not schema_id then
-    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Close the schema manager window
-  local current_win = api.nvim_get_current_win()
-  api.nvim_win_close(current_win, true)
-  
-  -- Get schema details
-  local schema = schemas_loader.get_schema(schema_id)
-  if not schema then
-    vim.notify("Failed to get schema details for '" .. schema_id .. "'", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Create a buffer for schema details
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(buf, "buftype", "nofile")
-  api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-  api.nvim_buf_set_option(buf, "swapfile", false)
-  api.nvim_buf_set_name(buf, "Schema Details: " .. schema_id)
-  
-  -- Create a new floating window
-  local width = math.floor(vim.o.columns * 0.8)
-  local height = math.floor(vim.o.lines * 0.8)
-  local row = math.floor((vim.o.lines - height) / 2)
-  local col = math.floor((vim.o.columns - width) / 2)
+  -- Determine which schemas to show
+  local schemas_to_show = show_named_only and named_schemas or vim.list_extend(vim.deepcopy(named_schemas), unnamed_schemas)
 
-  -- Use the centralized window creation function
-  local win = utils.create_floating_window(buf, 'LLM Schema Details: ' .. schema_id)
-  
-  -- Format schema details
   local lines = {
-    "# Schema: " .. schema_id,
+    "# Schema Management",
+    "",
+    "Navigate: [M]odels [P]lugins [K]eys [F]ragments [T]emplates",
+    "Actions: [c]reate [r]un [v]iew [e]dit [a]lias [d]elete alias [t]oggle view [q]uit",
+    "──────────────────────────────────────────────────────────────",
     ""
   }
-  
-  -- Add schema name if available
-  if schema.name then
-    table.insert(lines, "## Name: " .. schema.name)
-    table.insert(lines, "")
-  end
-  
-  table.insert(lines, "## Schema Definition:")
+  table.insert(lines, show_named_only and "Showing: Only named schemas" or "Showing: All schemas")
   table.insert(lines, "")
-  
-  -- Add schema content
-  if schema.content then
-    -- Format the JSON content for better readability
-    local success, parsed = pcall(vim.fn.json_decode, schema.content)
-    if success then
-      local formatted_json = vim.fn.json_encode(parsed)
-      -- Split the formatted JSON by lines and add each line
-      for line in formatted_json:gmatch("[^\r\n]+") do
-        table.insert(lines, line)
-      end
-    else
-      -- If not valid JSON, just add the raw content line by line
-      for line in schema.content:gmatch("[^\r\n]+") do
-        table.insert(lines, line)
-      end
-    end
+
+  local schema_data = {}
+  local line_to_schema = {}
+  local current_line = #lines + 1
+
+  if #schemas_to_show == 0 then
+    table.insert(lines, "No schemas found. Press 'c' to create one.")
   else
-    table.insert(lines, "No schema content available")
+    table.insert(lines, "Schemas:")
+    table.insert(lines, "----------")
+    for i, schema in ipairs(schemas_to_show) do
+      local description = schema.description:gsub("\n", " ") -- Avoid newline issues
+      local schema_details = schemas_loader.get_schema(schema.id)
+      local is_valid = schema_details and schema_details.content and pcall(vim.fn.json_decode, schema_details.content)
+
+      local entry_lines = {
+        string.format("Schema %d: %s", i, schema.id),
+        schema.name and string.format("  Name: %s", schema.name) or nil,
+        string.format("  Status: %s", is_valid and "Valid" or "Invalid"),
+        string.format("  Description: %s", description),
+        ""
+      }
+      -- Filter out nil lines (like missing name)
+      local filtered_lines = {}
+      for _, line in ipairs(entry_lines) do if line then table.insert(filtered_lines, line) end end
+      for _, line in ipairs(filtered_lines) do table.insert(lines, line) end
+
+      -- Store data for lookup
+      schema_data[schema.id] = {
+        index = i,
+        name = schema.name,
+        description = description,
+        is_valid = is_valid,
+        start_line = current_line,
+      }
+      for j = 0, #filtered_lines - 1 do line_to_schema[current_line + j] = schema.id end
+      current_line = current_line + #filtered_lines
+    end
   end
-  
-  -- Add footer with instructions
-  table.insert(lines, "")
-  table.insert(lines, "Press [q]uit, [r]un schema, [e]dit schema, [a]dd alias, [d]elete alias")
-  
-  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
-  
-  -- Set up keymaps
+
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+
+  -- Apply syntax highlighting
+  styles.setup_buffer_syntax(bufnr) -- Use styles module
+
+  -- Store lookup tables in buffer variables
+  vim.b[bufnr].line_to_schema = line_to_schema
+  vim.b[bufnr].schema_data = schema_data
+  vim.b[bufnr].schemas = schemas_to_show -- Store the displayed list
+
+  return line_to_schema, schema_data -- Return for direct use if needed
+end
+
+-- Setup keymaps for the schema management buffer
+function M.setup_schemas_keymaps(bufnr, manager_module)
+  manager_module = manager_module or M -- Allow passing self
+
   local function set_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(buf, mode, lhs, rhs, { noremap = true, silent = true })
+    api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
-  
-  set_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_keymap("n", "r", string.format([[<cmd>lua require('llm.managers.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
-  set_keymap("n", "e", string.format([[<cmd>lua require('llm.managers.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
-  set_keymap("n", "a", string.format([[<cmd>lua require('llm.managers.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
-  set_keymap("n", "d", string.format([[<cmd>lua require('llm.managers.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
-  
-  -- Set up highlighting
-  require('llm').setup_buffer_highlighting(buf)
-  
-  -- Apply syntax highlighting using the styles module
-  local styles = require('llm.styles')
-  
-  -- Apply specific syntax highlighting for schema details
-  local syntax_cmds = {
-    "syntax match LLMHeader /^# Schema:/",
-    "syntax match LLMSubHeader /^## .*$/",
-    "syntax match LLMAction /^Press.*$/",
-    "syntax match LLMKeybinding /\\[.\\]/",
-  }
 
-  for _, cmd in ipairs(syntax_cmds) do
-    vim.api.nvim_buf_call(buf, function()
-      vim.cmd(cmd)
-    end)
+  -- Helper to get schema info
+  local function get_schema_info_under_cursor()
+    local current_line = api.nvim_win_get_cursor(0)[1]
+    local line_to_schema = vim.b[bufnr].line_to_schema
+    local schema_data = vim.b[bufnr].schema_data
+    local schema_id = line_to_schema and line_to_schema[current_line]
+    if schema_id and schema_data and schema_data[schema_id] then
+      return schema_id, schema_data[schema_id]
+    end
+    return nil, nil
   end
+
+  -- Create schema
+  set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_schema_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- Run schema
+  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').run_schema_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- View details
+  set_keymap('n', 'v', string.format([[<Cmd>lua require('%s').view_schema_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- Edit schema
+  set_keymap('n', 'e', string.format([[<Cmd>lua require('%s').edit_schema_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- Add/Set alias
+  set_keymap('n', 'a', string.format([[<Cmd>lua require('%s').set_alias_for_schema_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- Delete alias
+  set_keymap('n', 'd', string.format([[<Cmd>lua require('%s').delete_alias_for_schema_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+
+  -- Toggle view
+  set_keymap('n', 't', string.format([[<Cmd>lua require('%s').toggle_schemas_view(%d)<CR>]], manager_module.__name or 'llm.managers.schemas_manager', bufnr))
 end
 
--- Set alias for schema under cursor
-function M.set_alias_for_schema_under_cursor()
-  local line = api.nvim_get_current_line()
-  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
-  
+-- Action functions called by keymaps (now accept bufnr)
+function M.run_schema_under_cursor(bufnr)
+  local schema_id, _ = M.get_schema_info_under_cursor(bufnr)
   if not schema_id then
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  
-  -- Check if schema already has an alias
-  local current_alias = nil
-  local _, schema_config_file = utils.get_config_path("schemas.json")
-  if schema_config_file then
-    local config_file = io.open(schema_config_file, "r")
-    if config_file then
-      local content = config_file:read("*all")
-      config_file:close()
-      
-      if content and content ~= "" then
-        local success, parsed = pcall(vim.fn.json_decode, content)
-        if success and parsed then
-          for name, id in pairs(parsed) do
-            if id == schema_id then
-              current_alias = name
-              break
-            end
-          end
-        end
-      end
-    end
-  end
-  
-  -- Prompt for new alias
-  local prompt_text = current_alias 
-    and "Enter new alias for schema (current: " .. current_alias .. "):" 
-    or "Enter alias for schema:"
-  
-  vim.ui.input({
-    prompt = prompt_text,
-    default = current_alias or "",
-  }, function(new_alias)
-    if not new_alias or new_alias == "" then return end
-    
-    -- Save the alias
-    local success = schemas_loader.set_schema_alias(schema_id, new_alias)
-    
-    if success then
-      vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
-      -- Close and reopen the schema manager to refresh
-      local win = api.nvim_get_current_win()
-      api.nvim_win_close(win, true)
-      vim.defer_fn(function()
-        -- Keep the same view mode when refreshing
-        M.manage_schemas(_G.llm_schemas_named_only)
-      end, 100)
-    else
-      vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
-    end
-  end)
-end
-
--- Create schema from manager
-function M.create_schema_from_manager()
-  -- Store the current view mode
-  local current_view_mode = _G.llm_schemas_named_only
-  
-  -- Close the current window (schema manager)
-  local current_win = api.nvim_get_current_win()
-  api.nvim_win_close(current_win, true)
-  
-  -- Create the schema without automatically reopening the manager
-  -- The save_schema_from_buffer function will handle reopening the manager
-  M.create_schema()
-  
-  -- Don't set up a callback to reopen the schema manager here
-  -- We'll let save_schema_from_buffer handle that after the schema is actually saved
-end
-
--- Run schema from details view
-function M.run_schema_from_details(schema_id)
-  -- Close the current window (schema details)
-  local current_win = api.nvim_get_current_win()
-  api.nvim_win_close(current_win, true)
-  
-  -- Run the schema
-  M.run_schema_with_input_source(schema_id)
-end
-
--- Set alias from details view
-function M.set_alias_from_details(schema_id)
-  -- Check if schema already has an alias
-  local current_alias = nil
-  local _, schema_config_file = utils.get_config_path("schemas.json")
-  if schema_config_file then
-    local config_file = io.open(schema_config_file, "r")
-    if config_file then
-      local content = config_file:read("*all")
-      config_file:close()
-      
-      if content and content ~= "" then
-        local success, parsed = pcall(vim.fn.json_decode, content)
-        if success and parsed then
-          for name, id in pairs(parsed) do
-            if id == schema_id then
-              current_alias = name
-              break
-            end
-          end
-        end
-      end
-    end
-  end
-  
-  -- Prompt for new alias
-  local prompt_text = current_alias 
-    and "Enter new alias for schema (current: " .. current_alias .. "):" 
-    or "Enter alias for schema:"
-  
-  vim.ui.input({
-    prompt = prompt_text,
-    default = current_alias or "",
-  }, function(new_alias)
-    if not new_alias or new_alias == "" then return end
-    
-    -- Save the alias
-    local success = schemas_loader.set_schema_alias(schema_id, new_alias)
-    
-    if success then
-      vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
-      -- Close the details window
-      local win = api.nvim_get_current_win()
-      api.nvim_win_close(win, true)
-      -- Reopen the schema manager
-      vim.defer_fn(function()
-        -- Keep the same view mode when refreshing
-        M.manage_schemas(_G.llm_schemas_named_only)
-      end, 100)
-    else
-      vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
-    end
-  end)
-end
-
--- Delete alias for schema under cursor
-function M.delete_alias_for_schema_under_cursor()
-  local line = api.nvim_get_current_line()
-  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
-  
-  if not schema_id then
-    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Get all aliases for this schema
-  local result = schemas_loader.remove_schema_alias(schema_id)
-  
-  -- If result is a boolean, it means there was only one alias and it was already removed
-  if type(result) == "boolean" then
-    if result then
-      vim.notify("Schema alias deleted", vim.log.levels.INFO)
-      -- Close and reopen the schema manager to refresh
-      local win = api.nvim_get_current_win()
-      api.nvim_win_close(win, true)
-      vim.defer_fn(function()
-        -- Keep the same view mode when refreshing
-        M.manage_schemas(_G.llm_schemas_named_only)
-      end, 100)
-    else
-      vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
-    end
-    return
-  end
-  
-  -- If result is a table, it contains multiple aliases to choose from
-  if type(result) == "table" and #result > 0 then
-    -- Let the user select which alias to delete
-    vim.ui.select(result, {
-      prompt = "Select alias to delete:"
-    }, function(choice)
-      if not choice then return end
-      
-      -- Confirm deletion
-      vim.ui.select({
-        "Yes",
-        "No"
-      }, {
-        prompt = "Are you sure you want to delete the alias '" .. choice .. "'?"
-      }, function(confirm)
-        if confirm ~= "Yes" then return end
-        
-        -- Delete the specific alias
-        local success = schemas_loader.remove_schema_alias(schema_id, choice)
-        
-        if success then
-          vim.notify("Schema alias '" .. choice .. "' deleted", vim.log.levels.INFO)
-          -- Close and reopen the schema manager to refresh
-          local win = api.nvim_get_current_win()
-          api.nvim_win_close(win, true)
-          vim.defer_fn(function()
-            -- Keep the same view mode when refreshing
-            M.manage_schemas(_G.llm_schemas_named_only)
-          end, 100)
-        else
-          vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
-        end
-      end)
-    end)
-  else
-    vim.notify("This schema does not have any aliases to delete", vim.log.levels.WARN)
-  end
-end
-
--- Edit schema under cursor
-function M.edit_schema_under_cursor()
-  local line = api.nvim_get_current_line()
-  local schema_id = line:match("^Schema %d+: ([0-9a-f]+)$")
-  
-  if not schema_id then
-    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Get schema details
-  local schema = schemas_loader.get_schema(schema_id)
-  if not schema then
-    vim.notify("Failed to get schema details for '" .. schema_id .. "'", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Close the schema manager window
-  local current_win = api.nvim_get_current_win()
-  api.nvim_win_close(current_win, true)
-  
-  -- Generate temporary file path
-  local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
-  os.execute("mkdir -p " .. temp_dir) -- Ensure temp dir exists
-  
-  -- Determine file extension and format
-  local format_choice = "JSON Schema" -- Default format
-  local file_ext = ".json"
-  
-  -- Sanitize name for filename
-  local safe_name = schema.name and schema.name:gsub("[^%w_-]", "_") or schema_id
-  local temp_file_path = string.format("%s/schema_edit_%s_%s%s", temp_dir, safe_name, os.time(), file_ext)
-  
-  -- Write schema content to temp file
-  local file = io.open(temp_file_path, "w")
-  if not file then
-    vim.notify("Failed to create temporary schema file: " .. temp_file_path, vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Format the JSON content for better readability
-  local content = schema.content
-  
-  -- Remove usage section completely
-  content = content:gsub(',%s*"usage":%s*[^}]*', '')
-  content = content:gsub('"usage":%s*[^,}]*,%s*', '')
-  content = content:gsub('usage: %|[^}]*', '')
-  
-  -- Parse and format the JSON
-  local success, parsed = pcall(vim.fn.json_decode, content)
-  if success then
-    -- Format the JSON with proper indentation
-    content = vim.fn.json_encode(parsed)
-    
-    -- Try to pretty-print the JSON if possible
-    local ok, formatted = pcall(function()
-      return vim.json.encode(parsed, { indent = 2 })
-    end)
-    if ok then
-      content = formatted
-    end
-  end
-  
-  file:write(content)
-  file:close()
-  
-  -- Open the temporary file in a new split
-  api.nvim_command("split " .. vim.fn.fnameescape(temp_file_path))
-  
-  -- Get the buffer number of the new buffer
-  local bufnr = api.nvim_get_current_buf()
-  
-  -- Set filetype for syntax highlighting
-  api.nvim_buf_set_option(bufnr, 'filetype', 'json')
-  
-  -- Store necessary info in buffer variables
-  api.nvim_buf_set_var(bufnr, "llm_schema_name", schema.name or "")
-  api.nvim_buf_set_var(bufnr, "llm_schema_id", schema_id)
-  api.nvim_buf_set_var(bufnr, "llm_schema_format", format_choice)
-  api.nvim_buf_set_var(bufnr, "llm_temp_schema_file_path", temp_file_path)
-  
-  -- Set up autocommand to trigger saving on write
-  local group = api.nvim_create_augroup("LLMSchemaSave", { clear = true })
-  api.nvim_create_autocmd("BufWritePost", {
-    group = group,
-    buffer = bufnr,
-    callback = function(args)
-      -- Check if buffer is still valid before proceeding
-      if api.nvim_buf_is_valid(args.buf) then
-        require('llm.managers.schemas_manager').save_edited_schema(args.buf)
-      end
-    end,
-  })
-  
-  -- Add a command to cancel and delete the buffer/file
-  api.nvim_buf_create_user_command(bufnr, "LlmCancel", function()
-    local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
-    -- Force delete the buffer
-    api.nvim_command(bufnr .. "bdelete!")
-    -- Remove the temp file
-    if temp_file then os.remove(temp_file) end
-    vim.notify("Schema editing cancelled.", vim.log.levels.INFO)
-  end, {})
-  
-  -- Instruct the user
-  vim.notify("Edit the schema in this buffer. Save (:w) to validate and update. Use :LlmCancel to abort.", vim.log.levels.INFO)
-end
-
--- Save edited schema (triggered by BufWritePost)
-function M.save_edited_schema(bufnr)
-  -- Check if buffer is valid
-  if not api.nvim_buf_is_valid(bufnr) then
-    if require('llm.config').get("debug") then
-      vim.notify("save_edited_schema called with invalid buffer: " .. bufnr, vim.log.levels.WARN)
-    end
-    return
-  end
-
-  -- Retrieve info from buffer variables
-  local name = api.nvim_buf_get_var(bufnr, "llm_schema_name")
-  local schema_id = api.nvim_buf_get_var(bufnr, "llm_schema_id")
-  local format_choice = api.nvim_buf_get_var(bufnr, "llm_schema_format")
-  local temp_file_path = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
-  
-  -- Get content from the buffer
-  local content_lines = api.nvim_buf_get_lines(bufnr, 0, -1, false)
-  local content = table.concat(content_lines, "\n")
-  content = content:gsub("^%s+", ""):gsub("%s+$", "") -- Trim whitespace
-
-  -- Validate the schema JSON
-  local is_valid, error_message = schemas_loader.validate_json_schema(content)
-  
-  -- If validation failed, notify user but keep the buffer open
-  if not is_valid then
-    vim.notify("Schema validation failed: " .. error_message, vim.log.levels.ERROR)
-    vim.notify("Schema not updated. Please fix the content and save again (:w), or use :LlmCancel to abort.", vim.log.levels.WARN)
-    return 
-  end
-
-  -- If validation succeeded, attempt to save
-  vim.notify("Schema validated. Updating schema...", vim.log.levels.INFO)
-  
-  -- Save the validated schema content
-  local success = schemas_loader.save_schema(name ~= "" and name or nil, content)
-  if success then
-    vim.notify("Schema updated successfully", vim.log.levels.INFO)
-    
-    -- Delete the temporary buffer
-    api.nvim_command(bufnr .. "bdelete!")
-    -- Remove the temp file from disk
-    if temp_file_path then os.remove(temp_file_path) end
-    
-    -- Reopen the schema manager after a delay to ensure the schema is fully saved
-    vim.defer_fn(function()
-      M.manage_schemas(_G.llm_schemas_named_only)
-    end, 1500)
-  else
-    vim.notify("Failed to update schema", vim.log.levels.ERROR)
-  end
-end
-
--- Edit schema from details view
-function M.edit_schema_from_details(schema_id)
-  -- Close the current window (schema details)
-  local current_win = api.nvim_get_current_win()
-  api.nvim_win_close(current_win, true)
-  
-  -- Get schema details
-  local schema = schemas_loader.get_schema(schema_id)
-  if not schema then
-    vim.notify("Failed to get schema details for '" .. schema_id .. "'", vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Generate temporary file path
-  local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
-  os.execute("mkdir -p " .. temp_dir) -- Ensure temp dir exists
-  
-  -- Determine file extension and format
-  local format_choice = "JSON Schema" -- Default format
-  local file_ext = ".json"
-  
-  -- Sanitize name for filename
-  local safe_name = schema.name and schema.name:gsub("[^%w_-]", "_") or schema_id
-  local temp_file_path = string.format("%s/schema_edit_%s_%s%s", temp_dir, safe_name, os.time(), file_ext)
-  
-  -- Write schema content to temp file
-  local file = io.open(temp_file_path, "w")
-  if not file then
-    vim.notify("Failed to create temporary schema file: " .. temp_file_path, vim.log.levels.ERROR)
-    return
-  end
-  
-  -- Format the JSON content for better readability
-  local content = schema.content
-  
-  -- Remove usage section completely
-  content = content:gsub(',%s*"usage":%s*[^}]*', '')
-  content = content:gsub('"usage":%s*[^,}]*,%s*', '')
-  content = content:gsub('usage: %|[^}]*', '')
-  
-  -- Parse and format the JSON
-  local success, parsed = pcall(vim.fn.json_decode, content)
-  if success then
-    -- Format the JSON with proper indentation
-    content = vim.fn.json_encode(parsed)
-    
-    -- Try to pretty-print the JSON if possible
-    local ok, formatted = pcall(function()
-      return vim.json.encode(parsed, { indent = 2 })
-    end)
-    if ok then
-      content = formatted
-    end
-  end
-  
-  file:write(content)
-  file:close()
-  
-  -- Open the temporary file in a new split
-  api.nvim_command("split " .. vim.fn.fnameescape(temp_file_path))
-  
-  -- Get the buffer number of the new buffer
-  local bufnr = api.nvim_get_current_buf()
-  
-  -- Set filetype for syntax highlighting
-  api.nvim_buf_set_option(bufnr, 'filetype', 'json')
-  
-  -- Store necessary info in buffer variables
-  api.nvim_buf_set_var(bufnr, "llm_schema_name", schema.name or "")
-  api.nvim_buf_set_var(bufnr, "llm_schema_id", schema_id)
-  api.nvim_buf_set_var(bufnr, "llm_schema_format", format_choice)
-  api.nvim_buf_set_var(bufnr, "llm_temp_schema_file_path", temp_file_path)
-  
-  -- Set up autocommand to trigger saving on write
-  local group = api.nvim_create_augroup("LLMSchemaSave", { clear = true })
-  api.nvim_create_autocmd("BufWritePost", {
-    group = group,
-    buffer = bufnr,
-    callback = function(args)
-      -- Check if buffer is still valid before proceeding
-      if api.nvim_buf_is_valid(args.buf) then
-        require('llm.managers.schemas_manager').save_edited_schema(args.buf)
-      end
-    end,
-  })
-  
-  -- Add a command to cancel and delete the buffer/file
-  api.nvim_buf_create_user_command(bufnr, "LlmSchemaCancel", function()
-    local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
-    -- Force delete the buffer
-    api.nvim_command(bufnr .. "bdelete!")
-    -- Remove the temp file
-    if temp_file then os.remove(temp_file) end
-    vim.notify("Schema editing cancelled.", vim.log.levels.INFO)
-  end, {})
-  
-  -- Instruct the user
-  vim.notify("Edit the schema in this buffer. Save (:w) to validate and update. Use :LlmSchemaCancel to abort.", vim.log.levels.INFO)
-end
-
--- Toggle between showing all schemas or only named schemas
-function M.toggle_schemas_view()
-  -- Store the current show_named_only state in a global variable
-  _G.llm_schemas_named_only = not (_G.llm_schemas_named_only or false)
-  
-  -- Close the current window and reopen with the new state
-  vim.api.nvim_win_close(0, true)
+  require('llm.managers.unified_manager').close() -- Close manager before running
   vim.schedule(function()
-    M.manage_schemas(_G.llm_schemas_named_only)
+    M.run_schema_with_input_source(schema_id)
   end)
 end
 
--- Delete alias from details view
-function M.delete_alias_from_details(schema_id)
-  -- Get all aliases for this schema
-  local result = schemas_loader.remove_schema_alias(schema_id)
-  
-  -- If result is a boolean, it means there was only one alias and it was already removed
-  if type(result) == "boolean" then
-    if result then
-      vim.notify("Schema alias deleted", vim.log.levels.INFO)
-      -- Close the details window
-      local win = api.nvim_get_current_win()
-      api.nvim_win_close(win, true)
-      -- Reopen the schema manager
-      vim.defer_fn(function()
-        -- Keep the same view mode when refreshing
-        M.manage_schemas(_G.llm_schemas_named_only)
-      end, 100)
+function M.view_schema_details_under_cursor(bufnr)
+  local schema_id, _ = M.get_schema_info_under_cursor(bufnr)
+  if not schema_id then
+    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
+    return
+  end
+
+  local schema = schemas_loader.get_schema(schema_id)
+  if not schema then
+    vim.notify("Failed to get schema details for '" .. schema_id .. "'", vim.log.levels.ERROR)
+    return
+  end
+
+  -- Close the unified manager before showing details
+  require('llm.managers.unified_manager').close()
+
+  vim.schedule(function()
+    -- Create a buffer for schema details
+    local detail_buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(detail_buf, "buftype", "nofile")
+    api.nvim_buf_set_option(detail_buf, "bufhidden", "wipe")
+    api.nvim_buf_set_option(detail_buf, "swapfile", false)
+    api.nvim_buf_set_name(detail_buf, "Schema Details: " .. schema_id)
+
+    -- Create a new floating window
+    local detail_win = utils.create_floating_window(detail_buf, 'LLM Schema Details: ' .. schema_id)
+
+    -- Format schema details
+    local lines = { "# Schema: " .. schema_id, "" }
+    if schema.name then table.insert(lines, "## Name: " .. schema.name); table.insert(lines, "") end
+    table.insert(lines, "## Schema Definition:"); table.insert(lines, "")
+    if schema.content then
+      local success, parsed = pcall(vim.fn.json_decode, schema.content)
+      if success then
+        local formatted_json = vim.json.encode(parsed, { indent = 2 })
+        for line in (formatted_json or schema.content):gmatch("[^\r\n]+") do table.insert(lines, line) end
+      else
+        for line in schema.content:gmatch("[^\r\n]+") do table.insert(lines, line) end
+      end
+    else table.insert(lines, "No schema content available") end
+    table.insert(lines, ""); table.insert(lines, "Press [q]uit, [r]un schema, [e]dit schema, [a]dd alias, [d]elete alias")
+    api.nvim_buf_set_lines(detail_buf, 0, -1, false, lines)
+
+    -- Set up keymaps for the detail view
+    local function set_detail_keymap(mode, lhs, rhs) api.nvim_buf_set_keymap(detail_buf, mode, lhs, rhs, { noremap = true, silent = true }) end
+    set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+    set_detail_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
+    set_detail_keymap("n", "r", string.format([[<Cmd>lua require('llm.managers.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
+    set_detail_keymap("n", "e", string.format([[<Cmd>lua require('llm.managers.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
+    set_detail_keymap("n", "a", string.format([[<Cmd>lua require('llm.managers.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
+    set_detail_keymap("n", "d", string.format([[<Cmd>lua require('llm.managers.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
+
+    -- Set up highlighting
+    styles.setup_buffer_styling(detail_buf)
+  end)
+end
+
+function M.set_alias_for_schema_under_cursor(bufnr)
+  local schema_id, schema_info = M.get_schema_info_under_cursor(bufnr)
+  if not schema_id then
+    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
+    return
+  end
+
+  local current_alias = schema_info.name
+  local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "):" or "Enter alias for schema:"
+
+  vim.ui.input({ prompt = prompt_text, default = current_alias or "" }, function(new_alias)
+    if not new_alias or new_alias == "" then return end
+    if schemas_loader.set_schema_alias(schema_id, new_alias) then
+      vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
+      require('llm.managers.unified_manager').switch_view("Schemas")
+    else
+      vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
+    end
+  end)
+end
+
+function M.create_schema_from_manager(bufnr)
+  require('llm.managers.unified_manager').close() -- Close manager before starting creation flow
+  vim.schedule(function()
+    M.create_schema() -- This function handles reopening the manager on completion/failure
+  end)
+end
+
+function M.run_schema_from_details(schema_id)
+  -- This function is called from the details view, which is separate from the unified manager
+  api.nvim_win_close(0, true) -- Close the details view
+  vim.schedule(function()
+    M.run_schema_with_input_source(schema_id)
+  end)
+end
+
+function M.set_alias_from_details(schema_id)
+  -- This function is called from the details view
+  local schema = schemas_loader.get_schema(schema_id)
+  local current_alias = schema and schema.name
+  local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "):" or "Enter alias for schema:"
+
+  vim.ui.input({ prompt = prompt_text, default = current_alias or "" }, function(new_alias)
+    if not new_alias or new_alias == "" then return end
+    if schemas_loader.set_schema_alias(schema_id, new_alias) then
+      vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
+      api.nvim_win_close(0, true) -- Close details view
+      -- Reopen the unified manager to the Schemas view
+      vim.schedule(function()
+        require('llm.managers.unified_manager').open_specific_manager("Schemas")
+      end)
+    else
+      vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
+    end
+  end)
+end
+
+function M.delete_alias_for_schema_under_cursor(bufnr)
+  local schema_id, schema_info = M.get_schema_info_under_cursor(bufnr)
+  if not schema_id then
+    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
+    return
+  end
+
+  local alias_to_remove = schema_info.name
+  if not alias_to_remove then
+    vim.notify("This schema does not have an alias to delete", vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.select({ "Yes", "No" }, { prompt = "Delete alias '" .. alias_to_remove .. "'?" }, function(confirm)
+    if confirm ~= "Yes" then return end
+    if schemas_loader.remove_schema_alias(schema_id, alias_to_remove) then
+      vim.notify("Schema alias '" .. alias_to_remove .. "' deleted", vim.log.levels.INFO)
+      require('llm.managers.unified_manager').switch_view("Schemas")
     else
       vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
     end
-    return
-  end
-  
-  -- If result is a table, it contains multiple aliases to choose from
-  if type(result) == "table" and #result > 0 then
-    -- Let the user select which alias to delete
-    vim.ui.select(result, {
-      prompt = "Select alias to delete:"
-    }, function(choice)
-      if not choice then return end
-      
-      -- Confirm deletion
-      vim.ui.select({
-        "Yes",
-        "No"
-      }, {
-        prompt = "Are you sure you want to delete the alias '" .. choice .. "'?"
-      }, function(confirm)
-        if confirm ~= "Yes" then return end
-        
-        -- Delete the specific alias
-        local success = schemas_loader.remove_schema_alias(schema_id, choice)
-        
-        if success then
-          vim.notify("Schema alias '" .. choice .. "' deleted", vim.log.levels.INFO)
-          -- Close the details window
-          local win = api.nvim_get_current_win()
-          api.nvim_win_close(win, true)
-          -- Reopen the schema manager
-          vim.defer_fn(function()
-            -- Keep the same view mode when refreshing
-            M.manage_schemas(_G.llm_schemas_named_only)
-          end, 100)
-        else
-          vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
-        end
-      end)
-    end)
-  else
-    vim.notify("This schema does not have any aliases to delete", vim.log.levels.WARN)
-  end
+  end)
 end
 
--- Re-export functions from schemas_loader
+function M.edit_schema_under_cursor(bufnr)
+  local schema_id, _ = M.get_schema_info_under_cursor(bufnr)
+  if not schema_id then
+    vim.notify("No schema found under cursor", vim.log.levels.ERROR)
+    return
+  end
+  require('llm.managers.unified_manager').close() -- Close manager before editing
+  vim.schedule(function()
+    M.edit_schema_from_details(schema_id) -- Use the existing edit flow
+  end)
+end
+
+function M.toggle_schemas_view(bufnr)
+  _G.llm_schemas_named_only = not (_G.llm_schemas_named_only or true) -- Toggle preference
+  require('llm.managers.unified_manager').switch_view("Schemas") -- Refresh view
+end
+
+function M.delete_alias_from_details(schema_id)
+  -- This function is called from the details view
+  local schema = schemas_loader.get_schema(schema_id)
+  local alias_to_remove = schema and schema.name
+  if not alias_to_remove then
+    vim.notify("This schema does not have an alias to delete", vim.log.levels.WARN)
+    return
+  end
+
+  vim.ui.select({ "Yes", "No" }, { prompt = "Delete alias '" .. alias_to_remove .. "'?" }, function(confirm)
+    if confirm ~= "Yes" then return end
+    if schemas_loader.remove_schema_alias(schema_id, alias_to_remove) then
+      vim.notify("Schema alias '" .. alias_to_remove .. "' deleted", vim.log.levels.INFO)
+      api.nvim_win_close(0, true) -- Close details view
+      -- Reopen the unified manager to the Schemas view
+      vim.schedule(function()
+        require('llm.managers.unified_manager').open_specific_manager("Schemas")
+      end)
+    else
+      vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
+    end
+  end)
+end
+
+-- Helper to get schema info from buffer variables
+function M.get_schema_info_under_cursor(bufnr)
+  local current_line = api.nvim_win_get_cursor(0)[1]
+  local line_to_schema = vim.b[bufnr].line_to_schema
+  local schema_data = vim.b[bufnr].schema_data
+  if not line_to_schema or not schema_data then
+    vim.notify("Buffer data missing", vim.log.levels.ERROR)
+    return nil, nil
+  end
+  local schema_id = line_to_schema[current_line]
+  if schema_id and schema_data[schema_id] then
+    return schema_id, schema_data[schema_id]
+  end
+  return nil, nil
+end
+
+-- Main function to open the schema manager (now delegates to unified manager)
+function M.manage_schemas(show_named_only)
+  -- Store the view mode preference globally for refresh/toggle
+  _G.llm_schemas_named_only = show_named_only or true -- Default to named only
+  require('llm.managers.unified_manager').open_specific_manager("Schemas")
+end
+
+-- Add module name for require path in keymaps
+M.__name = 'llm.managers.schemas_manager'
+
+-- Re-export functions from schemas_loader needed by other modules
 M.get_schemas = schemas_loader.get_schemas
 M.get_schema = schemas_loader.get_schema
 M.save_schema = schemas_loader.save_schema

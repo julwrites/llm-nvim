@@ -60,35 +60,39 @@ vim.api.nvim_create_user_command("LLMExplain", function()
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMModels", function()
-  if not llm.manage_models then
-    vim.notify("llm.manage_models function not found", vim.log.levels.ERROR)
+  -- Open the unified manager, defaulting to the Models view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
     return
   end
-  llm.manage_models()
+  llm.toggle_unified_manager("Models")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMPlugins", function()
-  if not llm.manage_plugins then
-    vim.notify("llm.manage_plugins function not found", vim.log.levels.ERROR)
+  -- Open the unified manager, defaulting to the Plugins view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
     return
   end
-  llm.manage_plugins()
+  llm.toggle_unified_manager("Plugins")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMKeys", function()
-  if not llm.manage_keys then
-    vim.notify("llm.manage_keys function not found", vim.log.levels.ERROR)
+  -- Open the unified manager, defaulting to the Keys view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
     return
   end
-  llm.manage_keys()
+  llm.toggle_unified_manager("Keys")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMFragments", function()
-  if not llm.manage_fragments then
-    vim.notify("llm.manage_fragments function not found", vim.log.levels.ERROR)
+  -- Open the unified manager, defaulting to the Fragments view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
     return
   end
-  llm.manage_fragments()
+  llm.toggle_unified_manager("Fragments")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMSelectFragment", function()
@@ -116,25 +120,47 @@ vim.api.nvim_create_user_command("LLMWithSelectionAndFragments", function(opts)
 end, { nargs = "?", range = true })
 
 vim.api.nvim_create_user_command("LLMTemplates", function()
-  llm.manage_templates()
+  -- Open the unified manager, defaulting to the Templates view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
+    return
+  end
+  llm.toggle_unified_manager("Templates")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMTemplate", function()
   llm.select_template()
 end, { nargs = 0, range = true })
 
-
-
 vim.api.nvim_create_user_command("LLMSchemas", function()
-  llm.manage_schemas()
+  -- Open the unified manager, defaulting to the Schemas view
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
+    return
+  end
+  llm.toggle_unified_manager("Schemas")
 end, { nargs = 0 })
 
 vim.api.nvim_create_user_command("LLMSchema", function()
   llm.select_schema()
 end, { nargs = 0, range = true })
 
+vim.api.nvim_create_user_command("LLMToggle", function(opts)
+  if not llm.toggle_unified_manager then
+    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
+    return
+  end
+  -- Allow specifying an initial view, e.g., :LLMToggle Plugins
+  llm.toggle_unified_manager(opts.args ~= "" and opts.args or nil)
+end, { nargs = "?", complete = function()
+    -- Provide completion for view names
+    return {"Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas"}
+  end
+})
+
 
 -- Define key mappings
+vim.keymap.set("n", "<Plug>(llm-toggle)", ":LLMToggle<CR>", { silent = true }) -- Added
 vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true })
 vim.keymap.set("v", "<Plug>(llm-selection)", ":LLMWithSelection ", { silent = true })
 vim.keymap.set("n", "<Plug>(llm-explain)", ":LLMExplain<CR>", { silent = true })
@@ -154,6 +180,7 @@ vim.keymap.set("n", "<Plug>(llm-schema)", ":LLMSchema<CR>", { silent = true })
 -- Default mappings (can be disabled with config option)
 local config = require("llm.config")
 if not config.get("no_mappings") then
+  vim.keymap.set("n", "<leader>ll", "<Plug>(llm-toggle)") -- Added toggle mapping
   vim.keymap.set("n", "<leader>llp", "<Plug>(llm-prompt)")
   vim.keymap.set("v", "<leader>lls", "<Plug>(llm-selection)")
   vim.keymap.set("n", "<leader>lle", "<Plug>(llm-explain)")

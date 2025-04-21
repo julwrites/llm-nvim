@@ -16,6 +16,7 @@ local keys_manager = require('llm.managers.keys_manager')
 local plugins_manager = require('llm.managers.plugins_manager')
 local templates_manager = require('llm.managers.templates_manager')
 local schemas_manager = require('llm.managers.schemas_manager')
+local unified_manager = require('llm.managers.unified_manager') -- Added
 
 -- Forward declaration of other modules
 local config
@@ -114,14 +115,14 @@ function M.manage_models()
   models_manager.manage_models()
 end
 
--- Manage API keys
+-- Manage API keys - Delegates to unified manager
 function M.manage_keys()
-  keys_manager.manage_keys()
+  unified_manager.open_specific_manager("Keys")
 end
 
--- Manage plugins (view, install, uninstall)
+-- Manage plugins (view, install, uninstall) - Delegates to unified manager
 function M.manage_plugins()
-  plugins_manager.manage_plugins()
+  unified_manager.open_specific_manager("Plugins")
 end
 
 -- Setup function for configuration
@@ -195,9 +196,9 @@ _G.remove_api_key = function(key_name)
   return M.remove_api_key(key_name)
 end
 
--- Manage fragments
+-- Manage fragments - Delegates to unified manager
 function M.manage_fragments(show_all)
-  require('llm.managers.fragments_manager').manage_fragments(show_all)
+  fragments_manager.manage_fragments(show_all) -- The manager itself handles delegation
 end
 
 -- Select a file to use as a fragment
@@ -205,9 +206,9 @@ function M.select_fragment()
   require('llm.loaders.fragments_loader').select_file_as_fragment()
 end
 
--- Manage templates
+-- Manage templates - Delegates to unified manager
 function M.manage_templates()
-  templates_manager.manage_templates()
+  templates_manager.manage_templates() -- The manager itself handles delegation
 end
 
 -- Select and run a template
@@ -225,9 +226,9 @@ function M.run_template_by_name(template_name)
   templates_manager.run_template_by_name(template_name)
 end
 
--- Manage schemas
+-- Manage schemas - Delegates to unified manager
 function M.manage_schemas(show_named_only)
-  schemas_manager.manage_schemas(show_named_only)
+  schemas_manager.manage_schemas(show_named_only) -- The manager itself handles delegation
 end
 
 -- Select and run a schema
@@ -253,6 +254,11 @@ end
 -- Set up syntax highlighting for plugin/key manager buffers
 function M.setup_buffer_highlighting(buf)
   utils.setup_buffer_highlighting(buf)
+end
+
+-- Toggle the unified manager window
+function M.toggle_unified_manager(initial_view)
+  unified_manager.toggle(initial_view)
 end
 
 return M

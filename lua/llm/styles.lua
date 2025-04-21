@@ -41,7 +41,8 @@ M.highlights = {
   Error = { fg = M.colors.error },
   Custom = { fg = M.colors.yellow, style = "bold" },
   Keybinding = { fg = M.colors.keybinding, style = "bold" },
-  
+  NavKeybinding = { fg = M.colors.cyan, style = "bold" }, -- Added for navigation keys
+
   -- Checkbox and status states
   CheckboxInstalled = { fg = M.colors.success, style = "bold" },
   CheckboxAvailable = { fg = M.colors.error },
@@ -150,8 +151,9 @@ M.syntax_patterns = {
   custom = "syntax match LLMCustom /\\[+\\].*/",
   
   -- Keybindings in brackets
-  keybinding = "syntax match LLMKeybinding /\\[.\\]/",
-  
+  keybinding = "syntax match LLMKeybinding /\\[[a-z?]\\]/", -- Match action keys
+  nav_keybinding = "syntax match LLMNavKeybinding /\\[[A-Z]\\]/", -- Match navigation keys (M, P, K, F, T, S)
+
   -- Section headers
   section = "syntax match LLMSection /^[A-Za-z][A-Za-z0-9 ]*:$/",
   

@@ -10,6 +10,38 @@ local fn = vim.fn
 -- Forward declarations
 local utils = require('llm.utils')
 local commands = require('llm.commands')
+local plugins_manager = require('llm.managers.plugins_manager') -- Added
+
+-- Check if llm-fragments-github plugin is installed and prompt to install if not
+local function check_and_install_github_plugin(callback)
+  if plugins_manager.is_plugin_installed("llm-fragments-github") then
+    callback()
+    return
+  end
+
+  vim.ui.select({
+    "Yes", "No"
+  }, {
+    prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
+  }, function(install_choice)
+    if install_choice == "Yes" then
+      vim.notify("Installing llm-fragments-github plugin...", vim.log.levels.INFO)
+      vim.schedule(function() -- Run install in background
+        if plugins_manager.install_plugin("llm-fragments-github") then
+          vim.notify("Installed llm-fragments-github plugin", vim.log.levels.INFO)
+          callback() -- Continue after successful install
+        else
+          vim.notify("Failed to install llm-fragments-github plugin", vim.log.levels.ERROR)
+          -- Do not call callback if install failed
+        end
+      end)
+    else
+      vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
+      -- Do not call callback if user declines install
+    end
+  end)
+end
+
 
 -- Get all fragments from llm CLI (including those without aliases)
 function M.get_all_fragments()
@@ -292,19 +324,16 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
             vim.notify("Failed to set fragment alias for " .. expanded_path, vim.log.levels.ERROR)
           end
         else
-           -- Even if no alias is set, we need to register the file with llm
-           -- We can do this by setting a temporary alias and removing it,
-           -- or by running a prompt with it (which might be slower).
-           -- Let's try the alias method.
-           local temp_alias = "llm_nvim_temp_" .. os.time()
-           if M.set_fragment_alias(expanded_path, temp_alias) then
-              M.remove_fragment_alias(temp_alias) -- Remove the temp alias immediately
-              vim.notify("File added as fragment: " .. expanded_path, vim.log.levels.INFO)
-              -- Call the success callback if provided
-              if on_success_callback then on_success_callback() end
-           else
-              vim.notify("Failed to register fragment file: " .. expanded_path, vim.log.levels.ERROR)
-           end
+          -- No alias provided, just register the fragment path
+          -- The 'llm fragments set' command handles registration even without an alias.
+          -- We use a placeholder alias that llm ignores but still registers the path.
+          if M.set_fragment_alias(expanded_path, "_") then
+             vim.notify("File added as fragment (no alias): " .. expanded_path, vim.log.levels.INFO)
+             -- Call the success callback if provided
+             if on_success_callback then on_success_callback() end
+          else
+             vim.notify("Failed to register fragment file: " .. expanded_path, vim.log.levels.ERROR)
+          end
         end
       end)
     end)
@@ -342,17 +371,51 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
           vim.notify("Failed to set fragment alias for " .. selected_file.path, vim.log.levels.ERROR)
         end
       else
-         -- Register fragment even without alias
-         local temp_alias = "llm_nvim_temp_" .. os.time()
-         if M.set_fragment_alias(selected_file.absolute_path, temp_alias) then
-            M.remove_fragment_alias(temp_alias)
-            vim.notify("File added as fragment: " .. selected_file.path, vim.log.levels.INFO)
-            -- Call the success callback if provided
-            if on_success_callback then on_success_callback() end
-         else
-            vim.notify("Failed to register fragment file: " .. selected_file.path, vim.log.levels.ERROR)
-         end
+        -- No alias provided, just register the fragment path
+        if M.set_fragment_alias(selected_file.absolute_path, "_") then
+           vim.notify("File added as fragment (no alias): " .. selected_file.path, vim.log.levels.INFO)
+           -- Call the success callback if provided
+           if on_success_callback then on_success_callback() end
+        else
+           vim.notify("Failed to register fragment file: " .. selected_file.path, vim.log.levels.ERROR)
+        end
       end
+    end)
+  end)
+end
+
+-- Add a GitHub repository as a fragment
+function M.add_github_fragment(on_success_callback)
+  check_and_install_github_plugin(function()
+    -- Prompt for GitHub repository
+    vim.ui.input({
+      prompt = "Enter GitHub repository (owner/repo): "
+    }, function(repo_input)
+      if not repo_input or repo_input == "" then return end
+
+      local fragment_path = "github:" .. repo_input
+
+      -- Ask for an optional alias
+      vim.ui.input({
+        prompt = "Set an alias for this GitHub fragment (optional): "
+      }, function(alias)
+        if alias and alias ~= "" then
+          if M.set_fragment_alias(fragment_path, alias) then
+            vim.notify("GitHub fragment alias set: " .. alias .. " -> " .. fragment_path, vim.log.levels.INFO)
+            if on_success_callback then on_success_callback() end
+          else
+            vim.notify("Failed to set GitHub fragment alias for " .. fragment_path, vim.log.levels.ERROR)
+          end
+        else
+          -- No alias provided, just register the fragment path
+          if M.set_fragment_alias(fragment_path, "_") then
+             vim.notify("GitHub repository added as fragment (no alias): " .. fragment_path, vim.log.levels.INFO)
+             if on_success_callback then on_success_callback() end
+          else
+             vim.notify("Failed to register GitHub fragment: " .. fragment_path, vim.log.levels.ERROR)
+          end
+        end
+      end)
     end)
   end)
 end
@@ -411,46 +474,8 @@ function M.prompt_with_fragments(prompt)
           add_more_fragments()
         end)
       elseif choice == "Use GitHub repository as fragments" then
-        vim.ui.input({
-          prompt = "Enter GitHub repository (owner/repo): "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          -- Check if the llm-fragments-github plugin is installed
-          local result = utils.safe_shell_command("llm plugins", "Failed to check installed plugins")
-          if not result or not result:match("llm%-fragments%-github") then
-            vim.ui.select({
-              "Yes", "No"
-            }, {
-              prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
-            }, function(install_choice)
-              if install_choice == "Yes" then
-                local install_result = utils.safe_shell_command(
-                  "llm install llm-fragments-github",
-                  "Failed to install llm-fragments-github plugin"
-                )
-
-                if install_result then
-                  vim.notify("Installed llm-fragments-github plugin", vim.log.levels.INFO)
-                else
-                  vim.notify("Failed to install llm-fragments-github plugin", vim.log.levels.ERROR)
-                  add_more_fragments()
-                  return
-                end
-              else
-                add_more_fragments()
-                return
-              end
-            end)
-          end
-
-          table.insert(fragments_list, "github:" .. input)
-          vim.notify("Added GitHub repository as fragments: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
+        -- Use the dedicated function, passing add_more_fragments as the callback
+        M.add_github_fragment(add_more_fragments)
       elseif choice == "Done - continue with prompt" then
         -- Now ask for the prompt
         vim.ui.input({
@@ -531,46 +556,8 @@ function M.prompt_with_selection_and_fragments(prompt)
           add_more_fragments()
         end)
       elseif choice == "Use GitHub repository as fragments" then
-        vim.ui.input({
-          prompt = "Enter GitHub repository (owner/repo): "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          -- Check if the llm-fragments-github plugin is installed
-          local result = utils.safe_shell_command("llm plugins", "Failed to check installed plugins")
-          if not result or not result:match("llm%-fragments%-github") then
-            vim.ui.select({
-              "Yes", "No"
-            }, {
-              prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
-            }, function(install_choice)
-              if install_choice == "Yes" then
-                local install_result = utils.safe_shell_command(
-                  "llm install llm-fragments-github",
-                  "Failed to install llm-fragments-github plugin"
-                )
-
-                if install_result then
-                  vim.notify("Installed llm-fragments-github plugin", vim.log.levels.INFO)
-                else
-                  vim.notify("Failed to install llm-fragments-github plugin", vim.log.levels.ERROR)
-                  add_more_fragments()
-                  return
-                end
-              else
-                add_more_fragments()
-                return
-              end
-            end)
-          end
-
-          table.insert(fragments_list, "github:" .. input)
-          vim.notify("Added GitHub repository as fragments: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
+        -- Use the dedicated function, passing add_more_fragments as the callback
+        M.add_github_fragment(add_more_fragments)
       elseif choice == "Done - continue with prompt" then
         -- Now ask for the prompt
         vim.ui.input({
