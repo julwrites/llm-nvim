@@ -2,13 +2,22 @@
 
 A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://github.com/simonw/llm).
 
-## Demos
+## Feature Demos
 
 ### Model, Plugin and Key Management
 https://github.com/user-attachments/assets/d8c9b2f8-4617-4534-9a64-05a2447d9380
 
+### Schema Management
+https://github.com/user-attachments/assets/b326370e-5752-46af-ba5c-6ae08d157f01
 
-## Features
+### Fragment Management
+https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
+
+### Template Management
+https://github.com/user-attachments/assets/2fc30538-6fd5-4cfa-9b7b-7fd7757f20c1
+
+
+## Feature List
 
 - Send prompts to LLMs directly from Neovim
 - Process selected text with LLMs
