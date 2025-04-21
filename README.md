@@ -101,7 +101,6 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 - `:LLMPlugins` - Open the unified manager to the Plugins view.
 - `:LLMKeys` - Open the unified manager to the API Keys view.
 - `:LLMFragments` - Open the unified manager to the Fragments view.
-- `:LLMSelectFragment` - Select a file to use as a fragment (does not use the unified manager).
 - `:LLMWithFragments` - Send a prompt with fragments (does not use the unified manager).
 - `:LLMWithSelectionAndFragments` - Send selected text with fragments (does not use the unified manager).
 - `:LLMTemplates` - Open the unified manager to the Templates view.

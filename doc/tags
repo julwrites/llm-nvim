@@ -5,7 +5,6 @@
 :LLMKeys	llm.txt	/*:LLMKeys*
 :LLMModels	llm.txt	/*:LLMModels*
 :LLMPlugins	llm.txt	/*:LLMPlugins*
-:LLMSelectFragment	llm.txt	/*:LLMSelectFragment*
 :LLMWithFragments	llm.txt	/*:LLMWithFragments*
 :LLMWithSelection	llm.txt	/*:LLMWithSelection*
 :LLMWithSelectionAndFragments	llm.txt	/*:LLMWithSelectionAndFragments*

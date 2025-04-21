@@ -5,7 +5,7 @@ local M = {}
 
 -- Default configuration
 M.defaults = {
-  model = "gpt-4o",
+  model = nil, -- Use llm CLI's default model if not set
   system_prompt = "You are a helpful assistant.",
   no_mappings = false,
   debug = false,  -- Debug mode disabled by default

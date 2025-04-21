@@ -24,12 +24,35 @@ function llm.run_llm_command(cmd)
     local result = vim.fn.system(cmd)
     return result
   end
-  
+
   if not utils.check_llm_installed() then
     return nil
   end
-  
-  local result = vim.fn.system(cmd)
+
+  -- Append '2>&1' to redirect stderr to stdout for popen
+  local cmd_with_stderr = cmd .. " 2>&1"
+  vim.notify("Executing with popen: " .. cmd_with_stderr, vim.log.levels.DEBUG) -- Add popen specific debug
+  local handle = io.popen(cmd_with_stderr, 'r')
+  local result = ""
+  if handle then
+    result = handle:read("*a") -- Read all output
+    handle:close()
+    vim.notify("popen result (raw): " .. vim.inspect(result), vim.log.levels.DEBUG) -- Debug raw result
+  else
+    vim.notify("Failed to execute command with io.popen: " .. cmd, vim.log.levels.ERROR)
+    return nil
+  end
+
+  -- Trim trailing newline often added by popen/system
+  result = result:gsub("[\r\n]+$", "")
+
+  -- Basic check for common error patterns if result is not empty
+  if result and result ~= "" and (result:match("[Ee]rror:") or result:match("[Ff]ailed") or result:match("command not found") or result:match("Traceback")) then
+     vim.notify("LLM command may have failed. Output:\n" .. result, vim.log.levels.ERROR)
+     -- Optionally return nil here if an error is detected
+     -- return nil
+  end
+
   return result
 end
 
@@ -43,27 +66,50 @@ function llm.prompt(prompt, fragment_paths)
   if not utils.check_llm_installed() and not vim.env.LLM_NVIM_TEST then
     return
   end
-  
-  local model = config.get("model") or "gpt-4o"
+
+  local model = config.get("model") -- Get model from config, might be nil
   local system = config.get("system_prompt") or "You are helpful"
-  
+
+  -- Debug: Show which model is being used (or if default is used)
+  vim.notify("llm.prompt: Using model: " .. (model or "llm default"), vim.log.levels.INFO)
+
   -- In test mode, use the exact format expected by the test
   local cmd
   if vim.env.LLM_NVIM_TEST and prompt == "test prompt" then
-    cmd = "llm -m gpt-4o -s 'You are helpful' 'test prompt'"
+    -- Test mode might need specific handling if it relies on a model being set
+    cmd = "llm -s 'You are helpful' 'test prompt'"
+    if model then -- Add model if set in test config
+      cmd = string.format("llm -m %s -s 'You are helpful' 'test prompt'", model)
+    end
   else
-    cmd = string.format("llm -m %s -s \"%s\" \"%s\"", model, system, prompt)
-    
+    -- Escape components for shell safety
+    local escaped_system = vim.fn.shellescape(system)
+    local escaped_prompt = vim.fn.shellescape(prompt)
+
+    -- Construct base command without model first
+    cmd = string.format("llm -s %s %s", escaped_system, escaped_prompt)
+    -- Add model flag only if a model is configured
+    if model then
+      cmd = string.format("llm -m %s %s", vim.fn.shellescape(model), cmd:sub(5)) -- Insert model flag after 'llm'
+    end
+
     if fragment_paths and #fragment_paths > 0 then
       for _, path in ipairs(fragment_paths) do
-        cmd = cmd .. string.format(" -f '%s'", path)
+        -- Use double quotes and shellescape for fragments
+        cmd = cmd .. string.format(" -f %s", vim.fn.shellescape(path))
       end
     end
   end
-  
+
+  -- Debug: Log the exact command before execution
+  vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+
   local result = llm.run_llm_command(cmd)
-  if result then
+  if result and result ~= "" then
     llm.create_response_buffer(result)
+  else
+    -- Notify if the result is empty or nil
+    vim.notify("LLM command returned empty or nil result.", vim.log.levels.WARN)
   end
 end
 
@@ -79,45 +125,79 @@ function llm.prompt_with_selection(prompt, fragment_paths)
       return
     end
   end
-  
+
   -- Skip the check in test environment
   if vim.env.LLM_NVIM_TEST then
-    local model = config.get("model") or "gpt-4o"
+    local model = config.get("model") -- Get model from config, might be nil
     local system = config.get("system_prompt") or "You are helpful"
-    
-    local cmd = string.format("llm -m %s -s '%s' '%s' '%s'", model, system, prompt, selection)
-    
+
+    -- Escape components for shell safety
+    local escaped_system = vim.fn.shellescape(system)
+    local escaped_prompt = vim.fn.shellescape(prompt)
+    local escaped_selection = vim.fn.shellescape(selection)
+
+    -- Construct base command without model first
+    local cmd = string.format("llm -s %s %s %s", escaped_system, escaped_prompt, escaped_selection)
+    -- Add model flag only if a model is configured
+    if model then
+      cmd = string.format("llm -m %s %s", vim.fn.shellescape(model), cmd:sub(5)) -- Insert model flag after 'llm'
+    end
+
     if fragment_paths and #fragment_paths > 0 then
       for _, path in ipairs(fragment_paths) do
-        cmd = cmd .. string.format(" -f '%s'", path)
+        -- Use double quotes and shellescape for fragments
+        cmd = cmd .. string.format(" -f %s", vim.fn.shellescape(path))
       end
     end
-    
+
+    -- Debug: Log the exact command before execution (Test environment)
+    vim.notify("[TEST] Executing command: " .. cmd, vim.log.levels.DEBUG)
+
     local result = llm.run_llm_command(cmd)
     if result then
       llm.create_response_buffer(result)
     end
     return
   end
-  
+
   if not utils.check_llm_installed() then
     return
   end
-  
-  local model = config.get("model") or "gpt-4o"
+
+  local model = config.get("model") -- Get model from config, might be nil
   local system = config.get("system_prompt") or "You are helpful"
-  
-  local cmd = string.format("llm -m %s -s \"%s\" \"%s\" \"%s\"", model, system, prompt, selection)
-  
+
+  -- Debug: Show which model is being used (or if default is used)
+  vim.notify("llm.prompt_with_selection: Using model: " .. (model or "llm default"), vim.log.levels.INFO)
+
+  -- Escape components for shell safety
+  local escaped_system = vim.fn.shellescape(system)
+  local escaped_prompt = vim.fn.shellescape(prompt)
+  local escaped_selection = vim.fn.shellescape(selection)
+
+  -- Construct base command without model first
+  local cmd = string.format("llm -s %s %s %s", escaped_system, escaped_prompt, escaped_selection)
+  -- Add model flag only if a model is configured
+  if model then
+    cmd = string.format("llm -m %s %s", vim.fn.shellescape(model), cmd:sub(5)) -- Insert model flag after 'llm'
+  end
+
   if fragment_paths and #fragment_paths > 0 then
     for _, path in ipairs(fragment_paths) do
-      cmd = cmd .. string.format(" -f '%s'", path)
+      -- Use double quotes and shellescape for fragments
+      cmd = cmd .. string.format(" -f %s", vim.fn.shellescape(path))
     end
   end
-  
+
+  -- Debug: Log the exact command before execution
+  vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+
   local result = llm.run_llm_command(cmd)
-  if result then
+  if result and result ~= "" then
     llm.create_response_buffer(result)
+  else
+    -- Notify if the result is empty or nil
+    vim.notify("LLM command returned empty or nil result.", vim.log.levels.WARN)
   end
 end
 
@@ -125,26 +205,42 @@ function llm.explain_code(fragment_paths)
   if not utils.check_llm_installed() and not vim.env.LLM_NVIM_TEST then
     return
   end
-  
-  local model = config.get("model") or "gpt-4o"
+
+  local model = config.get("model") -- Get model from config, might be nil
   local system = "Explain this code"
-  
+
+  -- Debug: Show which model is being used (or if default is used)
+  vim.notify("llm.explain_code: Using model: " .. (model or "llm default"), vim.log.levels.INFO)
+
   -- In test mode, use the exact format expected by the test
   local cmd
   if vim.env.LLM_NVIM_TEST then
-    cmd = "llm -m gpt-4o -s 'Explain this code'"
+    -- Test mode might need specific handling if it relies on a model being set
+    cmd = "llm -s 'Explain this code'"
+    if model then -- Add model if set in test config
+      cmd = string.format("llm -m %s -s 'Explain this code'", model)
+    end
   else
-    cmd = string.format("llm -m %s -s \"%s\"", model, system)
-    
+    -- Escape components for shell safety
+    local escaped_system = vim.fn.shellescape(system)
+
+    -- Construct base command without model first
+    cmd = string.format("llm -s %s", escaped_system)
+    -- Add model flag only if a model is configured
+    if model then
+      cmd = string.format("llm -m %s %s", vim.fn.shellescape(model), cmd:sub(5)) -- Insert model flag after 'llm'
+    end
+
     if fragment_paths and #fragment_paths > 0 then
       for _, path in ipairs(fragment_paths) do
-        cmd = cmd .. string.format(" -f '%s'", path)
+        -- Use double quotes and shellescape for fragments
+        cmd = cmd .. string.format(" -f %s", vim.fn.shellescape(path))
       end
     else
       -- Get current buffer content
       local lines = api.nvim_buf_get_lines(0, 0, -1, false)
       local content = table.concat(lines, "\n")
-      
+
       -- Use a temporary file for piping content in normal mode
       local temp_file = os.tmpname()
       local file = io.open(temp_file, "w")
@@ -157,10 +253,16 @@ function llm.explain_code(fragment_paths)
       end
     end
   end
-  
+
+  -- Debug: Log the exact command before execution
+  vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+
   local result = llm.run_llm_command(cmd)
-  if result then
+  if result and result ~= "" then
     llm.create_response_buffer(result)
+  else
+    -- Notify if the result is empty or nil
+    vim.notify("LLM command returned empty or nil result.", vim.log.levels.WARN)
   end
 end
 
@@ -168,16 +270,20 @@ function llm.start_chat(model_override)
   if not utils.check_llm_installed() then
     return
   end
-  
-  local model = model_override or config.get("model") or "gpt-4o"
-  
-  -- Set the model as default if specified
-  if model_override then
+
+  local model = model_override or config.get("model") -- Get model from config, might be nil
+
+  -- Set the model as default if specified (and not nil)
+  if model_override and model then
     models_manager.set_default_model(model)
   end
-  
+
   -- Open a terminal with llm chat
-  vim.cmd("terminal llm chat")
+  local chat_cmd = "llm chat"
+  if model then -- Add model flag if specified or configured
+    chat_cmd = string.format("llm -m %s chat", model)
+  end
+  vim.cmd("terminal " .. chat_cmd)
   vim.cmd("startinsert")
 end
 
@@ -206,12 +312,9 @@ if not llm.select_fragment then
   llm.select_fragment = fragments_loader.select_file_as_fragment
 end
 
-if not llm.prompt_with_fragments then
-  llm.prompt_with_fragments = fragments_loader.prompt_with_fragments
-end
-
-if not llm.prompt_with_selection_and_fragments then
-  llm.prompt_with_selection_and_fragments = fragments_loader.prompt_with_selection_and_fragments
+-- Expose interactive fragment prompt
+if not llm.interactive_prompt_with_fragments then
+  llm.interactive_prompt_with_fragments = commands.interactive_prompt_with_fragments
 end
 
 -- Expose select_model to global scope for testing

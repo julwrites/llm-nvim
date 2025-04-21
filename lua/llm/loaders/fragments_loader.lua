@@ -287,7 +287,8 @@ function M.get_files_from_nvimtree()
   return files
 end
 
--- Select a file to use as a fragment, optionally calling a callback on success
+-- Select a file to use as a fragment, calling a callback with the identifier on success
+-- on_success_callback: function(identifier) - receives path or alias
 -- force_manual_input: boolean, if true, bypasses NvimTree check
 function M.select_file_as_fragment(on_success_callback, force_manual_input)
   local files = {}
@@ -319,8 +320,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
         if alias and alias ~= "" then
           if M.set_fragment_alias(expanded_path, alias) then
             vim.notify("Fragment alias set: " .. alias .. " -> " .. expanded_path, vim.log.levels.INFO)
-            -- Call the success callback if provided
-            if on_success_callback then on_success_callback() end
+            if on_success_callback then on_success_callback(alias) end -- Pass alias
           else
             vim.notify("Failed to set fragment alias for " .. expanded_path, vim.log.levels.ERROR)
           end
@@ -328,10 +328,10 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
           -- No alias provided, just register the fragment path
           -- The 'llm fragments set' command handles registration even without an alias.
           -- We use a placeholder alias that llm ignores but still registers the path.
+          -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
           if M.set_fragment_alias(expanded_path, "_") then
              vim.notify("File added as fragment (no alias): " .. expanded_path, vim.log.levels.INFO)
-             -- Call the success callback if provided
-             if on_success_callback then on_success_callback() end
+             if on_success_callback then on_success_callback(expanded_path) end -- Pass path
           else
              vim.notify("Failed to register fragment file: " .. expanded_path, vim.log.levels.ERROR)
           end
@@ -366,17 +366,16 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
       if alias and alias ~= "" then
         if M.set_fragment_alias(selected_file.absolute_path, alias) then
           vim.notify("Fragment alias set: " .. alias .. " -> " .. selected_file.path, vim.log.levels.INFO)
-          -- Call the success callback if provided
-          if on_success_callback then on_success_callback() end
+          if on_success_callback then on_success_callback(alias) end -- Pass alias
         else
           vim.notify("Failed to set fragment alias for " .. selected_file.path, vim.log.levels.ERROR)
         end
       else
         -- No alias provided, just register the fragment path
+        -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
         if M.set_fragment_alias(selected_file.absolute_path, "_") then
            vim.notify("File added as fragment (no alias): " .. selected_file.path, vim.log.levels.INFO)
-           -- Call the success callback if provided
-           if on_success_callback then on_success_callback() end
+           if on_success_callback then on_success_callback(selected_file.absolute_path) end -- Pass path
         else
            vim.notify("Failed to register fragment file: " .. selected_file.path, vim.log.levels.ERROR)
         end
@@ -385,7 +384,8 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
   end)
 end
 
--- Add a GitHub repository as a fragment
+-- Add a GitHub repository as a fragment, calling callback with identifier on success
+-- on_success_callback: function(identifier) - receives alias or path
 function M.add_github_fragment(on_success_callback)
   check_and_install_github_plugin(function()
     -- Prompt for GitHub repository
@@ -403,15 +403,16 @@ function M.add_github_fragment(on_success_callback)
         if alias and alias ~= "" then
           if M.set_fragment_alias(fragment_path, alias) then
             vim.notify("GitHub fragment alias set: " .. alias .. " -> " .. fragment_path, vim.log.levels.INFO)
-            if on_success_callback then on_success_callback() end
+            if on_success_callback then on_success_callback(alias) end -- Pass alias
           else
             vim.notify("Failed to set GitHub fragment alias for " .. fragment_path, vim.log.levels.ERROR)
           end
         else
           -- No alias provided, just register the fragment path
+          -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
           if M.set_fragment_alias(fragment_path, "_") then
              vim.notify("GitHub repository added as fragment (no alias): " .. fragment_path, vim.log.levels.INFO)
-             if on_success_callback then on_success_callback() end
+             if on_success_callback then on_success_callback(fragment_path) end -- Pass path
           else
              vim.notify("Failed to register GitHub fragment: " .. fragment_path, vim.log.levels.ERROR)
           end
@@ -421,157 +422,5 @@ function M.add_github_fragment(on_success_callback)
   end)
 end
 
--- Prompt with fragments
-function M.prompt_with_fragments(prompt)
-  -- First, let the user select fragments
-  local fragments_list = {}
-
-  local function add_more_fragments()
-    vim.ui.select({
-      "Select file as fragment",
-      "Enter fragment path/URL/alias",
-      "Use GitHub repository as fragments",
-      "Done - continue with prompt"
-    }, {
-      prompt = "Add fragments to prompt:"
-    }, function(choice)
-      if not choice then return end
-
-      if choice == "Select file as fragment" then
-        -- Let the user select a file
-        M.select_file_as_fragment()
-
-        -- Ask for the file path
-        vim.ui.input({
-          prompt = "Enter file path to use as fragment: "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          -- Check if file exists
-          if fn.filereadable(input) == 0 then
-            vim.notify("File not found: " .. input, vim.log.levels.ERROR)
-            add_more_fragments()
-            return
-          end
-
-          table.insert(fragments_list, input)
-          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
-      elseif choice == "Enter fragment path/URL/alias" then
-        vim.ui.input({
-          prompt = "Enter fragment path/URL/alias: "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          table.insert(fragments_list, input)
-          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
-      elseif choice == "Use GitHub repository as fragments" then
-        -- Use the dedicated function, passing add_more_fragments as the callback
-        M.add_github_fragment(add_more_fragments)
-      elseif choice == "Done - continue with prompt" then
-        -- Now ask for the prompt
-        vim.ui.input({
-          prompt = "Enter prompt: "
-        }, function(input_prompt)
-          if not input_prompt or input_prompt == "" then
-            vim.notify("Prompt cannot be empty", vim.log.levels.ERROR)
-            return
-          end
-
-          -- Send the prompt with fragments
-          commands.prompt(input_prompt, fragments_list)
-        end)
-      end
-    end)
-  end
-
-  add_more_fragments()
-end
-
--- Prompt with selection and fragments
-function M.prompt_with_selection_and_fragments(prompt)
-  local selection = utils.get_visual_selection()
-  if selection == "" then
-    api.nvim_err_writeln("No text selected")
-    return
-  end
-
-  -- First, let the user select fragments
-  local fragments_list = {}
-
-  local function add_more_fragments()
-    vim.ui.select({
-      "Select file as fragment",
-      "Enter fragment path/URL/alias",
-      "Use GitHub repository as fragments",
-      "Done - continue with prompt"
-    }, {
-      prompt = "Add fragments to prompt:"
-    }, function(choice)
-      if not choice then return end
-
-      if choice == "Select file as fragment" then
-        -- Let the user select a file
-        M.select_file_as_fragment()
-
-        -- Ask for the file path
-        vim.ui.input({
-          prompt = "Enter file path to use as fragment: "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          -- Check if file exists
-          if fn.filereadable(input) == 0 then
-            vim.notify("File not found: " .. input, vim.log.levels.ERROR)
-            add_more_fragments()
-            return
-          end
-
-          table.insert(fragments_list, input)
-          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
-      elseif choice == "Enter fragment path/URL/alias" then
-        vim.ui.input({
-          prompt = "Enter fragment path/URL/alias: "
-        }, function(input)
-          if not input or input == "" then
-            add_more_fragments()
-            return
-          end
-
-          table.insert(fragments_list, input)
-          vim.notify("Added fragment: " .. input, vim.log.levels.INFO)
-          add_more_fragments()
-        end)
-      elseif choice == "Use GitHub repository as fragments" then
-        -- Use the dedicated function, passing add_more_fragments as the callback
-        M.add_github_fragment(add_more_fragments)
-      elseif choice == "Done - continue with prompt" then
-        -- Now ask for the prompt
-        vim.ui.input({
-          prompt = "Enter prompt (optional): "
-        }, function(input_prompt)
-          -- Send the selection with fragments and optional prompt
-          commands.prompt_with_selection(input_prompt or "", fragments_list)
-        end)
-      end
-    end)
-  end
-
-  add_more_fragments()
-end
 
 return M

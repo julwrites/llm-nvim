@@ -8,34 +8,38 @@ local api = vim.api
 local utils = require('llm.utils')
 local config = require('llm.config')
 
--- Get the model argument if specified
+-- Get the model argument if specified, properly escaped
 function M.get_model_arg()
   local model = config.get("model")
   if model and model ~= "" then
-    return "-m " .. model
+    -- Return as a table element for later concatenation
+    return {"-m", vim.fn.shellescape(model)}
   end
-  return ""
+  return {} -- Return empty table if no model
 end
 
--- Get the system prompt argument if specified
+-- Get the system prompt argument if specified, properly escaped
 function M.get_system_arg()
   local system = config.get("system_prompt")
   if system and system ~= "" then
-    return "-s \"" .. system .. "\""
+    -- Return as a table element for later concatenation
+    return {"-s", vim.fn.shellescape(system)}
   end
-  return ""
+  return {} -- Return empty table if no system prompt
 end
 
--- Get fragment arguments if specified
+-- Get fragment arguments if specified, properly escaped
 function M.get_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
-    return ""
+    return {} -- Return empty table if no fragments
   end
 
   local args = {}
   for _, fragment in ipairs(fragment_list) do
-    table.insert(args, "-f \"" .. fragment .. "\"")
-    
+    -- Add '-f' and the escaped fragment as separate elements
+    table.insert(args, "-f")
+    table.insert(args, vim.fn.shellescape(fragment))
+
     -- Debug output
     local config = require('llm.config')
     if config.get('debug') then
@@ -43,21 +47,23 @@ function M.get_fragment_args(fragment_list)
     end
   end
 
-  return table.concat(args, " ")
+  return args -- Return the table directly
 end
 
--- Get system fragment arguments if specified
+-- Get system fragment arguments if specified, properly escaped
 function M.get_system_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
-    return ""
+    return {} -- Return empty table if no fragments
   end
 
   local args = {}
   for _, fragment in ipairs(fragment_list) do
-    table.insert(args, "--system-fragment \"" .. fragment .. "\"")
+    -- Add '--system-fragment' and the escaped fragment as separate elements
+    table.insert(args, "--system-fragment")
+    table.insert(args, vim.fn.shellescape(fragment))
   end
 
-  return table.concat(args, " ")
+  return args -- Return the table directly
 end
 
 -- Run an llm command and return the result
@@ -96,12 +102,21 @@ end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths)
-  local model_arg = M.get_model_arg()
-  local system_arg = M.get_system_arg()
-  local fragment_args = M.get_fragment_args(fragment_paths)
+  local cmd_parts = {"llm"}
 
-  local cmd = string.format('llm %s %s %s "%s"', model_arg, system_arg, fragment_args, prompt)
-  
+  -- Add model args (returns a table)
+  vim.list_extend(cmd_parts, M.get_model_arg())
+  -- Add system args (returns a table)
+  vim.list_extend(cmd_parts, M.get_system_arg())
+  -- Add fragment args (returns a table)
+  vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+
+  -- Add the main prompt, escaped
+  table.insert(cmd_parts, vim.fn.shellescape(prompt))
+
+  -- Construct the final command string
+  local cmd = table.concat(cmd_parts, " ")
+
   -- Debug output
   local config = require('llm.config')
   if config.get('debug') then
@@ -136,12 +151,30 @@ function M.prompt_with_selection(prompt, fragment_paths)
   file:write(selection)
   file:close()
 
-  local model_arg = M.get_model_arg()
-  local system_arg = M.get_system_arg()
-  local fragment_args = M.get_fragment_args(fragment_paths)
-  local prompt_arg = prompt ~= "" and '"' .. prompt .. '"' or ""
+  local llm_cmd_parts = {"llm"}
+  -- Add model args
+  vim.list_extend(llm_cmd_parts, M.get_model_arg())
+  -- Add system args
+  vim.list_extend(llm_cmd_parts, M.get_system_arg())
+  -- Add fragment args
+  vim.list_extend(llm_cmd_parts, M.get_fragment_args(fragment_paths))
+  -- Add the optional prompt, escaped
+  if prompt and prompt ~= "" then
+    table.insert(llm_cmd_parts, vim.fn.shellescape(prompt))
+  end
 
-  local cmd = string.format('cat %s | llm %s %s %s %s', temp_file, model_arg, system_arg, fragment_args, prompt_arg)
+  -- Construct the llm part of the command
+  local llm_cmd = table.concat(llm_cmd_parts, " ")
+
+  -- Construct the full command with cat and pipe
+  local cmd = string.format("cat %s | %s", vim.fn.shellescape(temp_file), llm_cmd)
+
+  -- Debug output
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+  end
+
   local result = M.run_llm_command(cmd)
 
   -- Clean up temp file
@@ -169,10 +202,27 @@ function M.explain_code(fragment_paths)
   file:write(content)
   file:close()
 
-  local model_arg = M.get_model_arg()
-  local fragment_args = M.get_fragment_args(fragment_paths)
+  local llm_cmd_parts = {"llm"}
+  -- Add model args
+  vim.list_extend(llm_cmd_parts, M.get_model_arg())
+  -- Add system prompt specifically for explain
+  table.insert(llm_cmd_parts, "-s")
+  table.insert(llm_cmd_parts, vim.fn.shellescape("Explain this code"))
+  -- Add fragment args
+  vim.list_extend(llm_cmd_parts, M.get_fragment_args(fragment_paths))
 
-  local cmd = string.format('cat %s | llm %s -s "Explain this code" %s', temp_file, model_arg, fragment_args)
+  -- Construct the llm part of the command
+  local llm_cmd = table.concat(llm_cmd_parts, " ")
+
+  -- Construct the full command with cat and pipe
+  local cmd = string.format("cat %s | %s", vim.fn.shellescape(temp_file), llm_cmd)
+
+  -- Debug output
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+  end
+
   local result = M.run_llm_command(cmd)
 
   -- Clean up temp file
@@ -218,5 +268,157 @@ function M.start_chat(model_override)
   -- Start insert mode
   api.nvim_command('startinsert')
 end
+
+-- Helper function to select an existing fragment alias
+local function select_existing_fragment(callback)
+  local fragments_loader = require('llm.loaders.fragments_loader')
+  local existing_fragments = fragments_loader.get_fragments() -- Get fragments with aliases
+
+  if not existing_fragments or #existing_fragments == 0 then
+    vim.notify("No existing fragments with aliases found.", vim.log.levels.WARN)
+    callback(nil) -- Indicate no selection
+    return
+  end
+
+  local items = {}
+  local fragment_map = {}
+  for i, frag in ipairs(existing_fragments) do
+    local display_name = (#frag.aliases > 0 and frag.aliases[1] or frag.hash:sub(1, 8)) .. " (" .. (frag.source or "hash") .. ")"
+    table.insert(items, display_name)
+    fragment_map[i] = (#frag.aliases > 0 and frag.aliases[1] or frag.hash) -- Store identifier (prefer alias)
+  end
+
+  vim.ui.select(items, {
+    prompt = "Select an existing fragment:",
+    format_item = function(item) return item end
+  }, function(choice, idx)
+    if not choice then
+      callback(nil)
+      return
+    end
+    local identifier = fragment_map[idx]
+    callback(identifier)
+  end)
+end
+
+
+-- Interactive prompt allowing selection of multiple fragments
+function M.interactive_prompt_with_fragments(opts)
+  opts = opts or {}
+  local fragments_loader = require('llm.loaders.fragments_loader') -- Load here to avoid circular dependency issues at top level
+  local fragments_list = {}
+  local visual_selection_text = nil
+  local visual_selection_temp_file = nil
+
+  -- Check for visual selection
+  if opts.range and opts.range > 0 then
+    visual_selection_text = utils.get_visual_selection()
+    if visual_selection_text and visual_selection_text ~= "" then
+      -- Save selection to a temporary file to treat it like a fragment source
+      visual_selection_temp_file = os.tmpname()
+      local file = io.open(visual_selection_temp_file, "w")
+      if file then
+        file:write(visual_selection_text)
+        file:close()
+        table.insert(fragments_list, visual_selection_temp_file)
+        vim.notify("Added visual selection as fragment source.", vim.log.levels.INFO)
+      else
+        vim.notify("Failed to create temporary file for visual selection.", vim.log.levels.ERROR)
+        visual_selection_temp_file = nil -- Ensure it's nil if creation failed
+      end
+    else
+      visual_selection_text = nil -- Reset if selection was empty
+    end
+  end
+
+  local function add_more_fragments()
+    local options = {
+      "Select existing fragment (alias/hash)",
+      "Select file as fragment",
+      "Enter fragment path/URL",
+      "Use GitHub repository",
+      "Done - continue with prompt"
+    }
+
+    vim.ui.select(options, {
+      prompt = "Add fragments to prompt (" .. #fragments_list .. " added):"
+    }, function(choice)
+      if not choice then return end -- User cancelled selection loop
+
+      local function handle_fragment_added(identifier)
+        if identifier then
+          -- Avoid adding duplicates
+          local found = false
+          for _, existing in ipairs(fragments_list) do
+            if existing == identifier then
+              found = true
+              break
+            end
+          end
+          if not found then
+             table.insert(fragments_list, identifier)
+             vim.notify("Added fragment: " .. identifier, vim.log.levels.INFO)
+          else
+             vim.notify("Fragment already added: " .. identifier, vim.log.levels.WARN)
+          end
+        end
+        vim.schedule(add_more_fragments) -- Continue the loop
+      end
+
+      if choice == "Select existing fragment (alias/hash)" then
+        select_existing_fragment(handle_fragment_added)
+      elseif choice == "Select file as fragment" then
+        fragments_loader.select_file_as_fragment(handle_fragment_added, true) -- Force manual input for consistency
+      elseif choice == "Enter fragment path/URL" then
+        vim.ui.input({ prompt = "Enter fragment path/URL: " }, function(input)
+          if input and input ~= "" then
+            handle_fragment_added(input)
+          else
+            add_more_fragments() -- Re-prompt if input is empty
+          end
+        end)
+      elseif choice == "Use GitHub repository" then
+        fragments_loader.add_github_fragment(handle_fragment_added)
+      elseif choice == "Done - continue with prompt" then
+        if #fragments_list == 0 then
+          vim.notify("No fragments selected.", vim.log.levels.WARN)
+          return -- Exit if no fragments
+        end
+
+        -- Now ask for the prompt
+        vim.ui.input({
+          prompt = "Enter prompt: "
+        }, function(input_prompt)
+          if not input_prompt or input_prompt == "" then
+            vim.notify("Prompt cannot be empty.", vim.log.levels.ERROR)
+            -- Clean up temp file if prompt is cancelled
+            if visual_selection_temp_file then os.remove(visual_selection_temp_file) end
+            return
+          end
+
+          -- Decide which command to call based on whether visual selection was the *only* input
+          -- Note: We currently always use M.prompt and pass the temp file path if visual selection was used.
+          -- A potential enhancement is to detect if *only* the visual selection temp file is present
+          -- and call M.prompt_with_selection directly with the text, but this adds complexity.
+          -- For now, using the temp file path in M.prompt is simpler.
+
+          M.prompt(input_prompt, fragments_list)
+
+          -- Clean up temp file *after* the command runs (or is supposed to run)
+          -- Using defer_fn to ensure it runs after the current execution context
+          if visual_selection_temp_file then
+            vim.defer_fn(function() os.remove(visual_selection_temp_file) end, 100)
+          end
+        end)
+      else
+         add_more_fragments() -- Should not happen, but ensures loop continues
+      end
+    end)
+  end
+
+  -- Start the fragment selection loop
+  add_more_fragments()
+end
+
 
 return M

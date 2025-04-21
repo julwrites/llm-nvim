@@ -176,10 +176,6 @@ to explain the
 *:LLMFragments*                                              
     Open the unified manager window to the Fragments view.   
                                                              
-*:LLMSelectFragment*                                         
-    Select a file to use as a fragment. (Does not use the    
-    unified manager).                                        
-                                                             
 *:LLMWithFragments* [{prompt}]                               
     Send a prompt with fragments. (Does not use the unified  
     manager).                                                

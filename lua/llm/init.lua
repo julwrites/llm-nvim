@@ -42,16 +42,9 @@ function M.start_chat(model_override)
   commands.start_chat(model_override)
 end
 
--- Prompt with fragments
-function M.prompt_with_fragments(prompt)
-  -- This function is implemented in the fragments_loader module
-  require('llm.loaders.fragments_loader').prompt_with_fragments(prompt)
-end
-
--- Prompt with selection and fragments
-function M.prompt_with_selection_and_fragments(prompt)
-  -- This function is implemented in the fragments_loader module
-  require('llm.loaders.fragments_loader').prompt_with_selection_and_fragments(prompt)
+-- Interactive prompt with fragments (handles visual selection internally)
+function M.interactive_prompt_with_fragments(opts)
+  commands.interactive_prompt_with_fragments(opts)
 end
 
 -- Get available models from llm CLI

@@ -16,21 +16,22 @@ function M.safe_shell_command(cmd, error_msg)
   if debug_mode then
     vim.notify("safe_shell_command executing: " .. cmd, vim.log.levels.DEBUG)
   end
-  
-  local success, handle = pcall(io.popen, cmd)
-  if not success then
-    api.nvim_err_writeln(error_msg or "Failed to execute command: " .. cmd)
-    vim.notify("Command failed to execute: " .. cmd, vim.log.levels.ERROR)
-    return nil
+
+  -- Try using vim.fn.system again, now with improved escaping
+  -- Append '2>&1' to redirect stderr to stdout
+  local cmd_with_stderr = cmd .. " 2>&1"
+  if debug_mode then
+    vim.notify("Executing with system(): " .. cmd_with_stderr, vim.log.levels.DEBUG)
   end
-  
-  local result = handle:read("*a")
-  local close_success = handle:close()
-  
-  if not close_success then
-    api.nvim_err_writeln("Command execution failed: " .. cmd)
-    vim.notify("Command execution failed: " .. cmd, vim.log.levels.ERROR)
-    return nil
+  local result = vim.fn.system(cmd_with_stderr)
+
+  if result == nil then
+     vim.notify("vim.fn.system() returned nil for command: " .. cmd, vim.log.levels.ERROR)
+     return nil
+  end
+
+  if debug_mode then
+    vim.notify("system() result (raw): " .. vim.inspect(result), vim.log.levels.DEBUG) -- Debug raw result
   end
   
   -- Debug the result (truncated if too long) (only in debug mode)

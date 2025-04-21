@@ -339,9 +339,6 @@ function M.prompt_with_fragment_under_cursor(bufnr)
       return
     end
 
-    -- Debug output
-    vim.notify("Using fragment: " .. fragment_identifier, vim.log.levels.INFO)
-    
     -- Send the prompt with the fragment - use the main module
     require('llm').prompt(input_prompt, {fragment_identifier})
   end)
