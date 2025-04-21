@@ -2,6 +2,12 @@
 
 A Neovim plugin for integrating with [Simon Willison's llm CLI tool](https://github.com/simonw/llm).
 
+## Demos
+
+### Model, Plugin and Key Management
+https://github.com/user-attachments/assets/d8c9b2f8-4617-4534-9a64-05a2447d9380
+
+
 ## Features
 
 - Send prompts to LLMs directly from Neovim
