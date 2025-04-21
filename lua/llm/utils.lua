@@ -38,7 +38,31 @@ function M.safe_shell_command(cmd, error_msg)
     local truncated = #result > 200 and result:sub(1, 200) .. "..." or result
     vim.notify("Command result: " .. truncated, vim.log.levels.DEBUG)
   elseif debug_mode then
-    vim.notify("Command returned empty result", vim.log.levels.DEBUG)
+    vim.notify("Command returned empty result", vim.log.levels.WARN)
+    
+    -- Try to get more information about what went wrong
+    if cmd:match("llm") then
+      -- Check if the API key is set
+      local key_check_cmd = "llm keys"
+      local key_result = io.popen(key_check_cmd):read("*a")
+      if key_result and key_result ~= "" then
+        vim.notify("API keys are set. Check fragment identifier and network connection.", vim.log.levels.INFO)
+      else
+        vim.notify("No API keys found. Set an API key with 'llm keys set'", vim.log.levels.ERROR)
+      end
+      
+      -- Check if the fragment exists
+      if cmd:match("-f") then
+        local fragment_name = cmd:match('-f%s+"([^"]+)"')
+        if fragment_name then
+          local fragment_check_cmd = "llm fragments show " .. fragment_name .. " 2>&1"
+          local fragment_result = io.popen(fragment_check_cmd):read("*a")
+          if fragment_result and fragment_result:match("Error") then
+            vim.notify("Fragment not found: " .. fragment_name, vim.log.levels.ERROR)
+          end
+        end
+      end
+    end
   end
   
   return result

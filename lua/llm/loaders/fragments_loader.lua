@@ -127,7 +127,10 @@ function M.get_fragments()
     if line:match("^%s*-%s+hash:%s+") then
       -- Start of a new fragment
       if current_fragment then
-        table.insert(fragments, current_fragment)
+        -- Only add the fragment if it has at least one alias
+        if #current_fragment.aliases > 0 then
+          table.insert(fragments, current_fragment)
+        end
       end
 
       local hash = line:match("hash:%s+([0-9a-f]+)")
@@ -173,10 +176,8 @@ function M.get_fragments()
   end
 
   -- Add the last fragment if it has aliases
-  if current_fragment then
-    if #current_fragment.aliases > 0 then
-      table.insert(fragments, current_fragment)
-    end
+  if current_fragment and #current_fragment.aliases > 0 then
+    table.insert(fragments, current_fragment)
   end
 
   return fragments

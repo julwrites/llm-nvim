@@ -10,6 +10,47 @@ local utils = require('llm.utils')
 local config = require('llm.config')
 local styles = require('llm.styles') -- Added for highlighting
 
+-- Get available providers with valid API keys
+local function get_available_providers()
+  local keys_manager = require('llm.managers.keys_manager')
+  local plugins_manager = require('llm.managers.plugins_manager')
+  
+  return {
+    OpenAI = keys_manager.is_key_set("openai"),
+    Anthropic = keys_manager.is_key_set("anthropic"),
+    Mistral = keys_manager.is_key_set("mistral"),
+    Gemini = keys_manager.is_key_set("google"),
+    Groq = keys_manager.is_key_set("groq"),
+    Ollama = plugins_manager.is_plugin_installed("ollama"),
+    -- Local models are always available
+    Local = true
+  }
+end
+
+-- Check if a specific model is available (used when setting default)
+function M.is_model_available(model_line)
+  local providers = get_available_providers()
+  
+  if model_line:match("OpenAI") then
+    return providers.OpenAI
+  elseif model_line:match("Anthropic") then
+    return providers.Anthropic
+  elseif model_line:match("Mistral") then
+    return providers.Mistral
+  elseif model_line:match("Gemini") then
+    return providers.Gemini
+  elseif model_line:match("Groq") then
+    return providers.Groq
+  elseif model_line:match("ollama") then
+    return providers.Ollama
+  elseif model_line:match("gguf") or model_line:match("local") then
+    return providers.Local
+  end
+  
+  -- Default to true if we can't determine requirements
+  return true
+end
+
 -- Get available models from llm CLI
 function M.get_available_models()
   if not utils.check_llm_installed() then
@@ -223,9 +264,11 @@ function M.populate_models_buffer(bufnr)
   local models = M.get_available_models()
   if #models == 0 then
     api.nvim_buf_set_lines(bufnr, 0, -1, false, {
-      "# Model Management - Error",
+      "# Model Management - No Models Found",
       "",
-      "No models found. Make sure llm is properly configured.",
+      "No models found. Make sure llm CLI is properly installed and configured.",
+      "Use the [K]eys manager to set up API keys for your providers.",
+      "Or use the [P]lugins manager to install required plugins.",
       "",
       "Press [q]uit or use navigation keys ([P]lugins, [K]eys, etc.)"
     })
@@ -382,6 +425,22 @@ function M.set_model_under_cursor(bufnr)
     vim.notify("Model " .. model_name .. " is already the default", vim.log.levels.INFO)
     return
   end
+  
+  -- Check if the model is available before setting it as default
+  if not M.is_model_available(model_info.full_line) then
+    local provider = "unknown"
+    if model_info.full_line:match("OpenAI") then provider = "OpenAI"
+    elseif model_info.full_line:match("Anthropic") then provider = "Anthropic"
+    elseif model_info.full_line:match("Mistral") then provider = "Mistral"
+    elseif model_info.full_line:match("Gemini") then provider = "Gemini"
+    elseif model_info.full_line:match("Groq") then provider = "Groq"
+    elseif model_info.full_line:match("ollama") then provider = "Ollama"
+    end
+    
+    vim.notify("Cannot set as default: " .. provider .. " API key or plugin not configured", vim.log.levels.ERROR)
+    return
+  end
+  
   vim.notify("Setting default model to: " .. model_name, vim.log.levels.INFO)
   if M.set_default_model(model_name) then
     config.options.model = model_name
@@ -411,8 +470,24 @@ function M.set_alias_for_model_under_cursor(bufnr)
 end
 
 function M.chat_with_model_under_cursor(bufnr)
-  local model_name, _ = M.get_model_info_under_cursor(bufnr)
+  local model_name, model_info = M.get_model_info_under_cursor(bufnr)
   if not model_name then return end
+  
+  -- Check if the model is available before starting chat
+  if not M.is_model_available(model_info.full_line) then
+    local provider = "unknown"
+    if model_info.full_line:match("OpenAI") then provider = "OpenAI"
+    elseif model_info.full_line:match("Anthropic") then provider = "Anthropic"
+    elseif model_info.full_line:match("Mistral") then provider = "Mistral"
+    elseif model_info.full_line:match("Gemini") then provider = "Gemini"
+    elseif model_info.full_line:match("Groq") then provider = "Groq"
+    elseif model_info.full_line:match("ollama") then provider = "Ollama"
+    end
+    
+    vim.notify("Cannot chat with model: " .. provider .. " API key or plugin not configured", vim.log.levels.ERROR)
+    return
+  end
+  
   require('llm.managers.unified_manager').close() -- Close manager before starting chat
   vim.schedule(function()
     require('llm.commands').start_chat(model_name)

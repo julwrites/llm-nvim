@@ -32,12 +32,22 @@ function M.populate_fragments_buffer(bufnr)
   -- Determine which fragments to show based on the toggle
   local fragments = show_all and all_fragments or fragments_with_aliases
   local show_mode = show_all and "all" or "with_aliases"
+  
+  -- Double-check that fragments_with_aliases only contains fragments with aliases
+  if not show_all then
+    fragments = {}
+    for _, fragment in ipairs(fragments_with_aliases) do
+      if #fragment.aliases > 0 then
+        table.insert(fragments, fragment)
+      end
+    end
+  end
 
   local lines = {
     "# Fragment Management",
     "",
     "Navigate: [M]odels [P]lugins [K]eys [T]emplates [S]chemas",
-    "Actions: [v]iew [a]dd alias [r]emove alias [n]ew file [g]itHub [t]oggle view [q]uit",
+    "Actions: [v]iew [a]dd alias [r]emove alias [n]ew file [g]itHub [p]rompt [t]oggle view [q]uit",
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -154,6 +164,11 @@ function M.setup_fragments_keymaps(bufnr, manager_module)
   -- Add new GitHub repository fragment
   set_keymap('n', 'g',
     string.format([[<Cmd>lua require('%s').add_github_fragment_from_manager(%d)<CR>]],
+      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      
+  -- Prompt with fragment under cursor
+  set_keymap('n', 'p',
+    string.format([[<Cmd>lua require('%s').prompt_with_fragment_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.managers.fragments_manager', bufnr))
 
   -- Debug key (if needed)
@@ -296,6 +311,40 @@ function M.manage_fragments(show_all)
   -- Store the view mode preference globally for refresh/toggle
   _G.llm_fragments_show_all = show_all or false
   require('llm.managers.unified_manager').open_specific_manager("Fragments")
+end
+
+-- Prompt with the fragment under cursor
+function M.prompt_with_fragment_under_cursor(bufnr)
+  local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
+  if not fragment_hash then 
+    vim.notify("No fragment selected", vim.log.levels.WARN)
+    return 
+  end
+
+  -- Determine the fragment identifier to use (prefer alias if available)
+  local fragment_identifier = fragment_hash
+  if fragment_info.aliases and #fragment_info.aliases > 0 then
+    fragment_identifier = fragment_info.aliases[1]
+  end
+
+  -- Close the fragment manager window
+  vim.api.nvim_win_close(0, true)
+
+  -- Ask for the prompt
+  vim.ui.input({
+    prompt = "Enter prompt to use with fragment: "
+  }, function(input_prompt)
+    if not input_prompt or input_prompt == "" then
+      vim.notify("Prompt cannot be empty", vim.log.levels.ERROR)
+      return
+    end
+
+    -- Debug output
+    vim.notify("Using fragment: " .. fragment_identifier, vim.log.levels.INFO)
+    
+    -- Send the prompt with the fragment - use the main module
+    require('llm').prompt(input_prompt, {fragment_identifier})
+  end)
 end
 
 -- Add module name for require path in keymaps

@@ -35,6 +35,12 @@ function M.get_fragment_args(fragment_list)
   local args = {}
   for _, fragment in ipairs(fragment_list) do
     table.insert(args, "-f \"" .. fragment .. "\"")
+    
+    -- Debug output
+    local config = require('llm.config')
+    if config.get('debug') then
+      vim.notify("Adding fragment: " .. fragment, vim.log.levels.DEBUG)
+    end
   end
 
   return table.concat(args, " ")
@@ -95,10 +101,19 @@ function M.prompt(prompt, fragment_paths)
   local fragment_args = M.get_fragment_args(fragment_paths)
 
   local cmd = string.format('llm %s %s %s "%s"', model_arg, system_arg, fragment_args, prompt)
+  
+  -- Debug output
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+  end
+  
   local result = M.run_llm_command(cmd)
   
   if result then
     M.create_response_buffer(result)
+  else
+    vim.notify("No response received from LLM. Check your fragment identifier and API key.", vim.log.levels.ERROR)
   end
 end
 
