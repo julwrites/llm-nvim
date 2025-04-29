@@ -1,250 +1,55 @@
-*llms.txt*  Neovim plugin for simonw/llm                      
-                                                             
-=============================================================
-=================                                            
-CONTENTS                                                     
-*llm-contents*                                               
-                                                             
-    1. Introduction ...........................              
-|llm-introduction|                                           
-    2. Installation ...........................              
-|llm-installation|                                           
-    3. Configuration ..........................              
-|llm-configuration|                                          
-    4. Commands ...............................              
-|llm-commands|                                               
-    5. Mappings ...............................              
-|llm-mappings|                                               
-    6. License ................................ |llm-license|
-                                                             
-=============================================================
-=================                                            
-1. INTRODUCTION                                              
-*llm-introduction*                                           
-                                                             
-This plugin integrates Simon Willison's llm CLI tool with    
-Neovim, allowing you                                         
-to interact with large language models directly from your    
-editor.                                                      
-                                                             
-The llm CLI tool provides access to various LLMs including   
-OpenAI models and                                            
-local models through plugins.                                
-                                                             
-Visit https://github.com/simonw/llm for more information     
-about the llm CLI.                                           
-                                                             
-=============================================================
-=================                                            
-2. INSTALLATION                                              
-*llm-installation*                                           
-                                                             
-Prerequisites:                                               
-- Neovim 0.7.0 or later                                      
-- llm CLI tool installed (`pip install llm` or `brew install 
-llm`)                                                        
-                                                             
-Using vim-plug:                                              
->                                                            
-    Plug 'julwrites/llm-nvim'                                
-<                                                            
-                                                             
-Using packer.nvim:                                           
->                                                            
-    use 'julwrites/llm-nvim'                                 
-<                                                            
-                                                             
-Using lazy.nvim:                                             
->                                                            
-    {                                                        
-      'julwrites/llm-nvim',                                  
-      config = function()                                    
-        -- Configure the plugin                              
-        require('llm').setup({                               
-          model = 'gpt-4o',                                  
-          system_prompt = 'You are a helpful assistant.'     
-        })                                                   
-      end                                                    
-    }                                                        
-<                                                            
-                                                             
-After installing the plugin, make sure you have the llm CLI  
-tool configured:                                             
->                                                            
-    llm keys set openai                                      
-<                                                            
-                                                             
-Or install and configure a plugin for local models:          
->                                                            
-    llm install llm-gpt4all                                  
-<                                                            
-                                                             
-=============================================================
-=================                                            
-3. CONFIGURATION                                             
-*llm-configuration*                                          
-                                                             
-Using Lua (recommended):                                     
->                                                            
-    require('llm').setup({                                   
-      model = 'gpt-4o',                          -- Default  
-model to use                                                 
-      system_prompt = 'You are a helpful assistant.', --     
-Default system prompt                                        
-      no_mappings = false,                       -- Set to   
-true to disable default mappings                             
-    })                                                       
-<                                                            
-                                                             
-For backward compatibility, these global variables still     
-work:                                                        
-                                                             
-Default model (optional):                                    
->                                                            
-    let g:llm_model = 'gpt-4o'                               
-<                                                            
-or                                                           
->                                                            
-    let g:llm_model = 'mistral-7b-instruct-v0'               
-<                                                            
-                                                             
-Default system prompt (optional):                            
->                                                            
-    let g:llm_system_prompt = 'You are a helpful assistant.' 
-<                                                            
-                                                             
-Disable default mappings:                                    
->                                                            
-    let g:llm_no_mappings = 1                                
-<                                                            
-                                                             
-Custom mappings:                                             
->                                                            
-    vim.keymap.set('n', '<leader>lp', '<Plug>(llm-prompt)')  
-    vim.keymap.set('v', '<leader>ls',                        
-'<Plug>(llm-selection)')                                     
-    vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)') 
-    vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')    
-    vim.keymap.set('n', '<leader>lm',                        
-'<Plug>(llm-select-model)')                                  
-<                                                            
-                                                             
-=============================================================
-=================                                            
-4. COMMANDS                                                  
-*llm-commands*                                               
-                                                             
-*:LLM* {prompt}                                              
-    Send a prompt to the configured LLM and display the      
-response in a new                                            
-    buffer.                                                  
-                                                             
-*:LLMWithSelection* [{prompt}]                               
-    Send the currently selected text to the LLM, optionally  
-with an additional                                           
-    prompt.                                                  
-                                                             
-*:LLMChat* [{model}]                                         
-    Start an interactive chat session with the LLM in a      
-terminal buffer.                                             
-    Optionally specify a model to use for this chat.         
-                                                             
-*:LLMExplain*                                                
-    Send the current buffer to the LLM with a system prompt  
-to explain the                                               
-    code.                                                    
-                                                             
-*:LLMToggle* [{view}]                                        
-    Open or close the unified manager window. This window    
-    allows managing Models, Plugins, API Keys, Fragments,    
-    Templates, and Schemas.                                  
-    Optionally specify an initial {view} to open:            
-    "Models", "Plugins", "Keys", "Fragments", "Templates",   
-    "Schemas".                                               
-    Inside the window, use [M], [P], [K], [F], [T], [S] to   
-    switch between views, and [q] or <Esc> to close.         
-                                                             
-*:LLMModels*                                                 
-    Open the unified manager window to the Models view.      
-                                                             
-*:LLMPlugins*                                                
-    Open the unified manager window to the Plugins view.     
-                                                             
-*:LLMKeys*                                                   
-    Open the unified manager window to the API Keys view.    
-                                                             
-*:LLMFragments*                                              
-    Open the unified manager window to the Fragments view.   
-                                                             
-*:LLMWithFragments* [{prompt}]                               
-    Send a prompt with fragments. (Does not use the unified  
-    manager).                                                
-                                                             
-*:LLMWithSelectionAndFragments* [{prompt}]                   
-    Send selected text with fragments. (Does not use the     
-    unified manager).                                        
-                                                             
-*:LLMTemplates*                                              
-    Open the unified manager window to the Templates view.   
-                                                             
-*:LLMTemplate*                                               
-    Select and run a template. (Does not use the unified     
-    manager).                                                
-                                                             
-*:LLMSchemas*                                                
-    Open the unified manager window to the Schemas view.     
-                                                             
-*:LLMSchema*                                                 
-    Select and run a schema. (Does not use the unified       
-    manager).                                                
-                                                             
-=============================================================
-=================                                            
-5. MAPPINGS                                                  
-*llm-mappings*                                               
-                                                             
-Default mappings (can be disabled with g:llm_no_mappings =   
-1):                                                          
-                                                             
-<leader>ll      - Toggle the unified manager window          
-<leader>llp     - Prompt for input and send to LLM           
-<leader>lls     - In visual mode, send selection to LLM      
-<leader>lle     - Explain the current buffer                 
-<leader>llc     - Start a chat session                       
-<leader>llm     - Open the Models manager view               
-<leader>llg     - Open the Plugins manager view              
-<leader>llk     - Open the API Keys manager view             
-<leader>llf     - Open the Fragments manager view            
-<leader>llsf    - Select a file to use as a fragment         
-<leader>llwf    - Send a prompt with fragments               
-<leader>llwf    - In visual mode, send selection with fragments
-<leader>llt     - Open the Templates manager view            
-<leader>llrt    - Select and run a template                  
-<leader>llcs    - Create a new schema                        
-<leader>lls     - Open the Schemas manager view              
-<leader>llrs    - Select and run a schema                    
-                                                             
-Custom mappings:                                             
->                                                            
-    nmap <leader>ll <Plug>(llm-toggle)                       
-    nmap <leader>lp <Plug>(llm-prompt)                       
-    vmap <leader>ls <Plug>(llm-selection)                    
-    nmap <leader>le <Plug>(llm-explain)                      
-    nmap <leader>lc <Plug>(llm-chat)                         
-    nmap <leader>lm <Plug>(llm-models)                       
-    nmap <leader>lg <Plug>(llm-plugins)                      
-    nmap <leader>lk <Plug>(llm-keys)                         
-    nmap <leader>lf <Plug>(llm-fragments)                    
-    nmap <leader>lt <Plug>(llm-templates)                    
-    nmap <leader>ls <Plug>(llm-schemas)                      
-<                                                            
-                                                             
-=============================================================
-=================                                            
-6. LICENSE                                                   
-*llm-license*                                                
-                                                             
-This plugin is released under the Apache License, Version    
-2.0.                                                         
-                                                             
- vim:tw=78:ts=8:ft=help:norl:                                
+# llm-nvim: AI-Powered Coding Assistant for Neovim                                
+                                                                                  
+> Seamless integration between Neovim and Simon Willison's llm CLI for AI-assisted
+development workflows.                                                            
+                                                                                  
+## Key Features                                                                   
+                                                                                  
+- **Multi-Model Support**: GPT-4, Claude, Llama, and local models                 
+- **Code Intelligence**: Explain, refactor, and document code                     
+- **Unified Management**: Models, API keys, fragments, templates, schemas         
+- **Developer Optimized**: Fast, async operations with minimal overhead           
+                                                                                  
+## Core Capabilities                                                              
+                                                                                  
+### AI-Powered Development                                                        
+- Interactive chat sessions with LLMs                                             
+- Code explanation and documentation generation                                   
+- Smart refactoring suggestions                                                   
+- Template-based prompt engineering                                               
+                                                                                  
+### Technical Specifications                                                      
+- **Neovim Version**: 0.7.0+                                                      
+- **Supported Platforms**: Linux, macOS, Windows (WSL)                            
+- **License**: Apache 2.0 (Open Source)                                           
+- **Dependencies**: llm CLI tool                                                  
+                                                                                  
+## Installation Guide                                                             
+                                                                                  
+```lua                                                                            
+-- Using lazy.nvim (recommended)                                                  
+{                                                                                 
+  'julwrites/llm-nvim',                                                           
+  config = function()                                                             
+    require('llm').setup({                                                        
+      model = 'gpt-4o',                                                           
+      system_prompt = 'You are an expert coding assistant.'                       
+    })                                                                            
+  end                                                                             
+}                                                                                 
+```                                                                               
+                                                                                  
+## Getting Started                                                                
+                                                                                  
+1. Install the llm CLI: `pip install llm` or `brew install llm`                   
+2. Configure your API keys: `llm keys set openai`                                 
+3. Try these commands:                                                            
+   - `:LLMExplain` - Explain current code                                         
+   - `:LLMChat` - Start interactive session                                       
+   - `:LLMToggle` - Open management UI                                            
+                                                                                  
+## Keywords                                                                       
+                                                                                  
+Neovim AI plugin, LLM integration, code assistant, Simon Willison llm, AI pair    
+programming, GPT-4 Neovim, Claude Neovim, local LLMs, code explanation,           
+refactoring tool                                                                  
