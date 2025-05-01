@@ -22,7 +22,8 @@ jobs:
       run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim test/plenary.nvim
 
     - name: Run tests
-      run: nvim --headless -l test/run_tests.lua
+      # Use -c to set runtimepath and execute PlenaryBustedDirectory command
+      run: nvim --headless -c "set rtp+=$GITHUB_WORKSPACE/test/plenary.nvim" -c "set rtp+=$GITHUB_WORKSPACE" -c "PlenaryBustedDirectory test/spec { minimal_init = 'test/init.lua' }" -c "qa!"
 
     # Optional: Add a step to check if the plugin loads without errors
     # This step is less critical now as test/run_tests.lua loads the plugin,
