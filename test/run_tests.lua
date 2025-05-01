@@ -30,18 +30,20 @@ f:close()
 vim.opt.runtimepath:append(plenary_path)
 vim.opt.runtimepath:append('.')
 
--- Load the plugin
-vim.cmd('runtime plugin/llm.lua')
+-- Load the plugin is handled by minimal_init in test/init.lua
 
--- Run tests using plenary.nvim
+-- Run tests using plenary.nvim's PlenaryBustedDirectory command
 local status, err = pcall(function()
-  local busted = require('plenary.busted')
-  busted.run('./test/spec')
+  -- Use the PlenaryBustedDirectory command to run tests in the directory
+  -- minimal_init tells Busted to source test/init.lua before each test file
+  vim.cmd('PlenaryBustedDirectory test/spec { minimal_init = "test/init.lua" }')
 end)
 
 if not status then
   print("Test execution failed: " .. tostring(err))
   vim.cmd('cq 1')  -- Exit with error code
 else
+  -- PlenaryBustedDirectory sets the exit code based on test results,
+  -- so we can just exit normally if the command itself didn't error.
   vim.cmd('qa!')   -- Exit normally
 end
