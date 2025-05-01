@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Neovim
+      uses: MunifTanjim/setup-neovim-action@v1
+      with:
+        version: stable # Or specify a version like '0.9.5' or 'nightly'
+
+    - name: Install plenary.nvim for tests
+      run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim test/plenary.nvim
+
+    - name: Run tests
+      # Use -c to set runtimepath and execute PlenaryBustedDirectory command
+      run: nvim --headless -c "set rtp+=$GITHUB_WORKSPACE/test/plenary.nvim" -c "set rtp+=$GITHUB_WORKSPACE" -c "PlenaryBustedDirectory test/spec { minimal_init = 'test/init.lua' }" -c "qa!"
+
+    # Optional: Add a step to check if the plugin loads without errors
+    # This step is less critical now as test/run_tests.lua loads the plugin,
+    # but can be useful for a basic sanity check.
+    # - name: Check plugin loading
+    #   run: nvim --headless -c "lua require('llm').setup({}); quitall!"
