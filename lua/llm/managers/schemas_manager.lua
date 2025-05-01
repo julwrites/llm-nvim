@@ -28,19 +28,19 @@ function M.select_schema()
   local schemas = schemas_loader.get_schemas()
   local schema_ids = {}
   local schema_descriptions = {}
-  
+
   for id, description in pairs(schemas) do
     table.insert(schema_ids, id)
     schema_descriptions[id] = description
   end
-  
+
   if #schema_ids == 0 then
     vim.notify("No schemas found", vim.log.levels.INFO)
     return
   end
-  
+
   table.sort(schema_ids)
-  
+
   vim.ui.select(schema_ids, {
     prompt = "Select a schema to run:",
     format_item = function(item)
@@ -48,7 +48,7 @@ function M.select_schema()
     end
   }, function(choice)
     if not choice then return end
-    
+
     -- If we have a selection, use it directly
     if has_selection then
       -- Ask if this is a multi-schema
@@ -59,7 +59,7 @@ function M.select_schema()
         prompt = "Schema type:"
       }, function(schema_type)
         if not schema_type then return end
-        
+
         local is_multi = schema_type == "Multi schema (array of items)"
         local result = schemas_loader.run_schema(choice, selection, is_multi)
         if result then
@@ -75,6 +75,11 @@ end
 
 -- Run a schema with input from various sources
 function M.run_schema_with_input_source(schema_id)
+  if not schema_id or schema_id == "" then
+    vim.notify("Schema ID cannot be empty", vim.log.levels.ERROR)
+    return
+  end
+
   vim.ui.select({
     "Current buffer",
     "URL (will use curl)",
@@ -83,7 +88,7 @@ function M.run_schema_with_input_source(schema_id)
     prompt = "Choose input source:"
   }, function(choice)
     if not choice then return end
-    
+
     -- Ask if this is a multi-schema
     vim.ui.select({
       "Regular schema",
@@ -92,16 +97,16 @@ function M.run_schema_with_input_source(schema_id)
       prompt = "Schema type:"
     }, function(schema_type)
       if not schema_type then return end
-      
+
       local is_multi = schema_type == "Multi schema (array of items)"
-      
+
       if choice == "Current buffer" then
         local lines = api.nvim_buf_get_lines(0, 0, -1, false)
         local content = table.concat(lines, "\n")
-        
+
         -- Show a notification that we're processing
         vim.notify("Running schema on buffer content...", vim.log.levels.INFO)
-        
+
         local result = schemas_loader.run_schema(schema_id, content, is_multi)
         if result then
           utils.create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
@@ -112,11 +117,14 @@ function M.run_schema_with_input_source(schema_id)
         vim.ui.input({
           prompt = "Enter URL:"
         }, function(url)
-          if not url or url == "" then return end
-          
+          if not url or url == "" then
+            vim.notify("URL cannot be empty", vim.log.levels.WARN)
+            return
+          end
+
           -- Show a notification that we're processing
           vim.notify("Running schema on URL content...", vim.log.levels.INFO)
-          
+
           -- Use the module-level schemas_loader variable
           local result = schemas_loader.run_schema_with_url(schema_id, url, is_multi)
           if result then
@@ -130,14 +138,14 @@ function M.run_schema_with_input_source(schema_id)
         local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
         os.execute("mkdir -p " .. temp_dir) -- Ensure temp dir exists
         local temp_file_path = string.format("%s/schema_input_%s_%s.txt", temp_dir, schema_id:sub(1, 8), os.time())
-        
+
         -- Create a new buffer for the input
         local buf = api.nvim_create_buf(false, true)
         api.nvim_buf_set_option(buf, "buftype", "acwrite")
         api.nvim_buf_set_option(buf, "bufhidden", "wipe")
         api.nvim_buf_set_option(buf, "swapfile", false)
         api.nvim_buf_set_name(buf, temp_file_path)
-        
+
         -- Add instructions
         api.nvim_buf_set_lines(buf, 0, -1, false, {
           "# Enter text to process with schema " .. schema_id,
@@ -145,19 +153,19 @@ function M.run_schema_with_input_source(schema_id)
           "",
           ""
         })
-        
+
         -- Open the buffer in a split
         api.nvim_command("split")
         api.nvim_win_set_buf(0, buf)
-        
+
         -- Set cursor position after instructions
         api.nvim_win_set_cursor(0, {4, 0})
-        
+
         -- Store schema info in buffer variables
         api.nvim_buf_set_var(buf, "llm_schema_id", schema_id)
         api.nvim_buf_set_var(buf, "llm_schema_is_multi", is_multi)
         api.nvim_buf_set_var(buf, "llm_temp_file_path", temp_file_path)
-        
+
         -- Set up autocommand to trigger submission on write
         local group = api.nvim_create_augroup("LLMSchemaInput", { clear = true })
         api.nvim_create_autocmd("BufWriteCmd", {
@@ -174,7 +182,7 @@ function M.run_schema_with_input_source(schema_id)
             end
           end,
         })
-        
+
         -- Add a command to cancel
         api.nvim_buf_create_user_command(buf, "LlmSchemaCancel", function()
           local temp_file = api.nvim_buf_get_var(buf, "llm_temp_file_path")
@@ -186,19 +194,19 @@ function M.run_schema_with_input_source(schema_id)
           end
           vim.notify("Schema input cancelled.", vim.log.levels.INFO)
         end, {})
-        
+
         -- Set up keymaps
         local function set_keymap(mode, lhs, rhs, opts)
           opts = opts or { noremap = true, silent = true }
           api.nvim_buf_set_keymap(buf, mode, lhs, rhs, opts)
         end
-        
+
         -- Add Escape key mapping for quick cancel in normal mode
         set_keymap("n", "<Esc>", ":LlmSchemaCancel<CR>")
-        
+
         -- Instruct the user
         vim.notify("Enter text in this buffer. Save (:w) to submit or quit (:q!) to cancel.", vim.log.levels.INFO)
-        
+
         -- Start in insert mode
         api.nvim_command('startinsert')
       end
@@ -213,16 +221,16 @@ function M.submit_schema_input_from_buffer(buf)
     vim.notify("Invalid buffer for schema input", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Get schema info from buffer variables
   local schema_id = api.nvim_buf_get_var(buf, "llm_schema_id")
   local is_multi = api.nvim_buf_get_var(buf, "llm_schema_is_multi")
   local temp_file_path = api.nvim_buf_get_var(buf, "llm_temp_file_path")
-  
+
   -- Get the content from the buffer, skipping the instruction lines
   local lines = api.nvim_buf_get_lines(buf, 3, -1, false)
   local content = table.concat(lines, "\n")
-  
+
   -- Debug output
   if require('llm.config').get("debug") then
     vim.notify("Schema ID: " .. schema_id, vim.log.levels.DEBUG)
@@ -230,14 +238,14 @@ function M.submit_schema_input_from_buffer(buf)
     vim.notify("Input content length: " .. #content, vim.log.levels.DEBUG)
     vim.notify("Input content (first 100 chars): " .. content:sub(1, 100), vim.log.levels.DEBUG)
   end
-  
+
   -- Save the content to the temp file first to ensure it exists
   if temp_file_path then
     local file = io.open(temp_file_path, "w")
     if file then
       file:write(content)
       file:close()
-      
+
       if require('llm.config').get("debug") then
         vim.notify("Saved input to temp file: " .. temp_file_path, vim.log.levels.DEBUG)
         if vim.fn.filereadable(temp_file_path) == 1 then
@@ -252,69 +260,69 @@ function M.submit_schema_input_from_buffer(buf)
       vim.notify("Failed to write to temp file: " .. temp_file_path, vim.log.levels.ERROR)
     end
   end
-  
+
   -- Close the input buffer
   api.nvim_command(buf .. "bdelete!")
-  
+
   -- Show a notification that we're processing
   vim.notify("Running schema on input text...", vim.log.levels.INFO)
-  
+
   -- Verify the schema exists before running
   local schema_details = schemas_loader.get_schema(schema_id)
   if not schema_details then
     vim.notify("Schema not found. Please check the schema ID.", vim.log.levels.ERROR)
     return
   end
-  
+
   -- Debug output
   if require('llm.config').get("debug") then
     vim.notify("Using schema ID: " .. schema_id, vim.log.levels.DEBUG)
     vim.notify("Schema content length: " .. (schema_details.content and #schema_details.content or 0), vim.log.levels.DEBUG)
   end
-  
+
   -- Show a notification that we're processing
   vim.notify("Running schema on input text...", vim.log.levels.INFO)
-  
+
   -- Create a temporary file for the input
   local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
   os.execute("mkdir -p " .. temp_dir) -- Ensure temp dir exists
   local temp_file = temp_dir .. "/schema_input_" .. os.time() .. ".txt"
-  
+
   local file = io.open(temp_file, "w")
   if not file then
     vim.notify("Failed to create temporary file for schema input", vim.log.levels.ERROR)
     return
   end
-  
+
   file:write(content)
   file:close()
-  
+
   -- Run the schema using the llm CLI directly
-  local cmd = string.format("cat '%s' | llm %s %s", temp_file, 
-                           is_multi and "--schema-multi" or "--schema", 
+  local cmd = string.format("cat '%s' | llm %s %s", temp_file,
+                           is_multi and "--schema-multi" or "--schema",
                            schema_id)
-  
+
   if require('llm.config').get("debug") then
     vim.notify("Running schema command: " .. cmd, vim.log.levels.DEBUG)
   end
-  
+
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
-  
+  local shell_error = vim.v.shell_error
+
   -- Clean up the temporary file
   os.remove(temp_file)
-  
-  if not success then
+
+  if shell_error ~= 0 then
     vim.notify("Failed to run schema: " .. result, vim.log.levels.ERROR)
     return
   end
-  
+
   if result then
     if require('llm.config').get("debug") then
       vim.notify("Schema result received (length: " .. #result .. ")", vim.log.levels.DEBUG)
       vim.notify("Result (first 100 chars): " .. result:sub(1, 100), vim.log.levels.DEBUG)
     end
-    
+
     -- Try to parse the result as JSON to validate it
     local success, parsed = pcall(vim.fn.json_decode, result)
     if success then
@@ -323,7 +331,7 @@ function M.submit_schema_input_from_buffer(buf)
       pcall(function()
         formatted_json = vim.json.encode(parsed, { indent = 2 })
       end)
-      
+
       -- Use the formatted JSON if available, otherwise use the original result
       utils.create_buffer_with_content(formatted_json or result, "Schema Result: " .. schema_id, "json")
     else
@@ -333,7 +341,7 @@ function M.submit_schema_input_from_buffer(buf)
     end
   else
     vim.notify("Failed to run schema on input text. Try a different schema or input.", vim.log.levels.ERROR)
-    
+
     -- Create a buffer with the error message
     utils.create_buffer_with_content(
       "Failed to run schema " .. schema_id .. " on the provided input.\n\n" ..
@@ -353,24 +361,24 @@ function M.submit_schema_input(schema_id, is_multi, buf)
   -- Get the content from the buffer, skipping the instruction lines
   local lines = api.nvim_buf_get_lines(buf, 3, -1, false)
   local content = table.concat(lines, "\n")
-  
+
   -- Debug output
   if require('llm.config').get("debug") then
     vim.notify("Schema ID: " .. schema_id, vim.log.levels.DEBUG)
     vim.notify("Is multi: " .. is_multi, vim.log.levels.DEBUG)
     vim.notify("Input content: " .. content, vim.log.levels.DEBUG)
   end
-  
+
   -- Close the input window
   local win = api.nvim_get_current_win()
   api.nvim_win_close(win, true)
-  
+
   -- Show a notification that we're processing
   vim.notify("Running schema on input text...", vim.log.levels.INFO)
-  
+
   -- Run the schema
   local result = schemas_loader.run_schema(schema_id, content, is_multi == "true")
-  
+
   if result then
     if require('llm.config').get("debug") then
       vim.notify("Schema result: " .. result, vim.log.levels.DEBUG)
@@ -386,13 +394,20 @@ function M.create_schema()
   if not utils.check_llm_installed() then
     return
   end
-  
+
   -- Ask for schema name
   vim.ui.input({
     prompt = "Enter schema name:"
   }, function(name)
-    if not name or name == "" then return end
-    
+    if not name or name == "" then
+      vim.notify("Schema name cannot be empty", vim.log.levels.WARN)
+      return
+    end
+    if name:match("[/\\]") then
+      vim.notify("Schema name cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
+      return
+    end
+
     -- Ask for schema type
     vim.ui.select({
       "JSON Schema",
@@ -401,15 +416,15 @@ function M.create_schema()
       prompt = "Schema format:"
     }, function(format_choice)
       if not format_choice then return end
-      
+
       -- Generate temporary file path
       local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
       os.execute("mkdir -p " .. temp_dir) -- Ensure temp dir exists
       local file_ext = (format_choice == "JSON Schema") and ".json" or ".dsl"
       -- Sanitize name for filename
-      local safe_name = name:gsub("[^%w_-]", "_") 
+      local safe_name = name:gsub("[^%w_-]", "_")
       local temp_file_path = string.format("%s/schema_edit_%s_%s%s", temp_dir, safe_name, os.time(), file_ext)
-      
+
       -- Write boilerplate content
       local boilerplate = ""
       if format_choice == "JSON Schema" then
@@ -431,7 +446,7 @@ function M.create_schema()
           end
         end, 100)
       end
-      
+
       local file = io.open(temp_file_path, "w")
       if not file then
         vim.notify("Failed to create temporary schema file: " .. temp_file_path, vim.log.levels.ERROR)
@@ -439,18 +454,18 @@ function M.create_schema()
       end
       file:write(boilerplate)
       file:close()
-      
+
       -- Open the temporary file in a new split
       api.nvim_command("split " .. vim.fn.fnameescape(temp_file_path))
-      
+
       -- Get the buffer number of the new buffer
       local bufnr = api.nvim_get_current_buf()
-      
+
       -- Store necessary info in buffer variables
       api.nvim_buf_set_var(bufnr, "llm_schema_name", name)
       api.nvim_buf_set_var(bufnr, "llm_schema_format", format_choice)
       api.nvim_buf_set_var(bufnr, "llm_temp_schema_file_path", temp_file_path) -- Store path for potential cleanup
-      
+
       -- Set up autocommand to trigger saving on write
       local group = api.nvim_create_augroup("LLMSchemaSave", { clear = true })
       api.nvim_create_autocmd("BufWritePost", {
@@ -464,20 +479,22 @@ function M.create_schema()
           end
         end,
       })
-      
+
       -- Add a command to cancel and delete the buffer/file
       api.nvim_buf_create_user_command(bufnr, "LlmCancel", function()
         local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
         -- Force delete the buffer
         api.nvim_command(bufnr .. "bdelete!")
         -- Remove the temp file
-        if temp_file then os.remove(temp_file) end
+        if temp_file and vim.fn.filereadable(temp_file) == 1 then
+          os.remove(temp_file)
+        end
         vim.notify("Schema creation cancelled.", vim.log.levels.INFO)
       end, {})
-      
+
       -- Instruct the user
       vim.notify("Edit the schema in this buffer. Save (:w) to validate and finalize. Use :LlmCancel to abort.", vim.log.levels.INFO)
-      
+
     end) -- End vim.ui.select callback
   end) -- End vim.ui.input callback
 end
@@ -496,7 +513,7 @@ function M.save_schema_from_temp_file(bufnr)
   local name = api.nvim_buf_get_var(bufnr, "llm_schema_name")
   local format_choice = api.nvim_buf_get_var(bufnr, "llm_schema_format")
   local temp_file_path = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
-  
+
   if not name or not format_choice then
      vim.notify("Could not retrieve schema info from temporary buffer.", vim.log.levels.ERROR)
      -- Attempt to clean up buffer anyway
@@ -557,17 +574,17 @@ function M.save_schema_from_temp_file(bufnr)
     vim.notify("Schema validation failed: " .. error_message, vim.log.levels.ERROR)
     vim.notify("Schema not saved. Please fix the content and save again (:w), or use :LlmCancel to abort.", vim.log.levels.WARN)
     -- Do NOT delete the buffer or temp file here
-    return 
+    return
   end
 
   -- If validation succeeded, attempt to save
   vim.notify("Schema validated. Saving schema '" .. name .. "'...", vim.log.levels.INFO)
-  
+
   -- Save the validated schema content
   local success = schemas_loader.save_schema(name, validated_content)
   if success then
     vim.notify("Schema '" .. name .. "' saved successfully", vim.log.levels.INFO)
-    
+
     -- Reopen the schema manager after a longer delay to ensure the schema is fully saved
     vim.defer_fn(function()
       -- If we're creating a named schema, we might want to switch to named-only view
@@ -580,7 +597,7 @@ function M.save_schema_from_temp_file(bufnr)
   else
     vim.notify("Failed to save schema '" .. name .. "'", vim.log.levels.ERROR)
   end
-  
+
   -- Delete the temporary buffer only on successful save
   api.nvim_command(bufnr .. "bdelete!")
   -- Remove the temp file from disk only on successful save
@@ -814,7 +831,14 @@ function M.set_alias_for_schema_under_cursor(bufnr)
   local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "):" or "Enter alias for schema:"
 
   vim.ui.input({ prompt = prompt_text, default = current_alias or "" }, function(new_alias)
-    if not new_alias or new_alias == "" then return end
+    if not new_alias or new_alias == "" then
+      vim.notify("Alias cannot be empty", vim.log.levels.WARN)
+      return
+    end
+    if new_alias:match("[/\\]") then
+      vim.notify("Alias cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
+      return
+    end
     if schemas_loader.set_schema_alias(schema_id, new_alias) then
       vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
       require('llm.managers.unified_manager').switch_view("Schemas")
@@ -846,7 +870,14 @@ function M.set_alias_from_details(schema_id)
   local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "):" or "Enter alias for schema:"
 
   vim.ui.input({ prompt = prompt_text, default = current_alias or "" }, function(new_alias)
-    if not new_alias or new_alias == "" then return end
+    if not new_alias or new_alias == "" then
+      vim.notify("Alias cannot be empty", vim.log.levels.WARN)
+      return
+    end
+    if new_alias:match("[/\\]") then
+      vim.notify("Alias cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
+      return
+    end
     if schemas_loader.set_schema_alias(schema_id, new_alias) then
       vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
       api.nvim_win_close(0, true) -- Close details view

@@ -121,6 +121,11 @@ end
 
 -- Run a template with parameters
 function M.run_template_with_params(template_name)
+  if not template_name or template_name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return
+  end
+
   -- Check if we're in the template manager window and close it if so
   local current_buf = api.nvim_get_current_buf()
   local buf_name = api.nvim_buf_get_name(current_buf)
@@ -156,6 +161,8 @@ function M.run_template_with_params(template_name)
 
   -- If we have parameters, collect them
   if #param_names > 0 then
+    vim.notify("Found parameters: " .. table.concat(param_names, ", "), vim.log.levels.INFO)
+
     local function collect_next_param(index)
       if index > #param_names then
         -- All parameters collected, run the template
@@ -186,6 +193,11 @@ end
 
 -- Run a template with input (selection, buffer, or URL)
 function M.run_template_with_input(template_name, params)
+  if not template_name or template_name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return
+  end
+
   vim.ui.select({
     "Current selection",
     "Current buffer",
@@ -218,7 +230,10 @@ function M.run_template_with_input(template_name, params)
       vim.ui.input({
         prompt = "Enter URL:"
       }, function(url)
-        if not url or url == "" then return end
+        if not url or url == "" then
+          vim.notify("URL cannot be empty", vim.log.levels.WARN)
+          return
+        end
 
         local result = templates_loader.run_template_with_url(template_name, url, params)
         if result then
@@ -239,7 +254,14 @@ function M.create_template()
   vim.ui.input({
     prompt = "Enter template name:"
   }, function(name)
-    if not name or name == "" then return end
+    if not name or name == "" then
+      vim.notify("Template name cannot be empty", vim.log.levels.WARN)
+      return
+    end
+    if name:match("[/\\]") then
+      vim.notify("Template name cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
+      return
+    end
 
     -- Step 2: Choose template type
     vim.ui.select({
@@ -270,7 +292,10 @@ function M.create_template()
           prompt = "Enter prompt (use $input for user input):",
           default = "$input"
         }, function(prompt)
-          if not prompt or prompt == "" then return end
+          if not prompt or prompt == "" then
+            vim.notify("Prompt cannot be empty", vim.log.levels.WARN)
+            return
+          end
           -- Ensure $input is preserved
           template.prompt = prompt
           M.continue_template_creation(template)
@@ -279,7 +304,10 @@ function M.create_template()
         vim.ui.input({
           prompt = "Enter system prompt:"
         }, function(system)
-          if not system or system == "" then return end
+          if not system or system == "" then
+            vim.notify("System prompt cannot be empty", vim.log.levels.WARN)
+            return
+          end
           template.system = system
           M.continue_template_creation(template)
         end)
@@ -287,14 +315,20 @@ function M.create_template()
         vim.ui.input({
           prompt = "Enter system prompt:"
         }, function(system)
-          if not system or system == "" then return end
+          if not system or system == "" then
+            vim.notify("System prompt cannot be empty", vim.log.levels.WARN)
+            return
+          end
           template.system = system
 
           vim.ui.input({
             prompt = "Enter regular prompt (use $input for user input):",
             default = "$input"
           }, function(prompt)
-            if not prompt or prompt == "" then return end
+            if not prompt or prompt == "" then
+              vim.notify("Prompt cannot be empty", vim.log.levels.WARN)
+              return
+            end
             template.prompt = prompt
             M.continue_template_creation(template)
           end)
@@ -368,6 +402,8 @@ function M.continue_template_creation_fragments(template)
             }, function(path)
               if path and path ~= "" then
                 table.insert(template.fragments, path)
+              else
+                vim.notify("Fragment path/URL cannot be empty", vim.log.levels.WARN)
               end
               add_more_fragments()
             end)
@@ -402,6 +438,8 @@ function M.continue_template_creation_fragments(template)
             }, function(path)
               if path and path ~= "" then
                 table.insert(template.system_fragments, path)
+              else
+                vim.notify("Fragment path/URL cannot be empty", vim.log.levels.WARN)
               end
               add_more_system_fragments()
             end)
@@ -444,6 +482,8 @@ function M.continue_template_creation_options(template)
           }, function(value)
             if value and value ~= "" then
               template.options[name] = value
+            else
+              vim.notify("Option value cannot be empty", vim.log.levels.WARN)
             end
             add_option()
           end)

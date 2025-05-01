@@ -14,14 +14,14 @@ local styles = require('llm.styles') -- Added for highlighting
 local function get_available_providers()
   local keys_manager = require('llm.managers.keys_manager')
   local plugins_manager = require('llm.managers.plugins_manager')
-  
+
   return {
     OpenAI = keys_manager.is_key_set("openai"),
     Anthropic = keys_manager.is_key_set("anthropic"),
     Mistral = keys_manager.is_key_set("mistral"),
-    Gemini = keys_manager.is_key_set("google"),
+    Gemini = keys_manager.is_key_set("gemini"), -- Corrected key name from "google" to "gemini"
     Groq = keys_manager.is_key_set("groq"),
-    Ollama = plugins_manager.is_plugin_installed("ollama"),
+    Ollama = plugins_manager.is_plugin_installed("llm-ollama"), -- Corrected plugin name from "ollama" to "llm-ollama"
     -- Local models are always available
     Local = true
   }
@@ -30,7 +30,7 @@ end
 -- Check if a specific model is available (used when setting default)
 function M.is_model_available(model_line)
   local providers = get_available_providers()
-  
+
   if model_line:match("OpenAI") then
     return providers.OpenAI
   elseif model_line:match("Anthropic") then
@@ -46,7 +46,7 @@ function M.is_model_available(model_line)
   elseif model_line:match("gguf") or model_line:match("local") then
     return providers.Local
   end
-  
+
   -- Default to true if we can't determine requirements
   return true
 end
@@ -76,6 +76,13 @@ end
 
 -- Extract model name from the full model line
 function M.extract_model_name(model_line)
+  if not model_line or model_line == "" then
+    if config.get("debug") then
+      vim.notify("extract_model_name called with empty model_line", vim.log.levels.DEBUG)
+    end
+    return ""
+  end
+
   -- Extract the actual model name (after the provider type)
   local model_name = model_line:match(": ([^%(]+)")
   if model_name then
@@ -97,6 +104,11 @@ end
 
 -- Set the default model using llm CLI
 function M.set_default_model(model_name)
+  if not model_name or model_name == "" then
+    vim.notify("Model name cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
@@ -105,7 +117,7 @@ function M.set_default_model(model_name)
     string.format('llm models default %s', model_name),
     "Failed to set default model"
   )
-  
+
   return result ~= nil
 end
 
@@ -147,6 +159,15 @@ end
 
 -- Set a model alias using llm CLI
 function M.set_model_alias(alias, model)
+  if not alias or alias == "" then
+    vim.notify("Alias cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+  if not model or model == "" then
+    vim.notify("Model cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
@@ -155,12 +176,17 @@ function M.set_model_alias(alias, model)
     string.format('llm aliases set %s %s', alias, model),
     "Failed to set model alias"
   )
-  
+
   return result ~= nil
 end
 
 -- Remove a model alias by directly modifying the aliases.json file
 function M.remove_model_alias(alias)
+  if not alias or alias == "" then
+    vim.notify("Alias cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
@@ -168,16 +194,16 @@ function M.remove_model_alias(alias)
   -- Try CLI command first with better error handling
   local escaped_alias = alias:gsub("'", "'\\''")
   local cmd = string.format("llm aliases remove '%s'", escaped_alias)
-  
+
   local result = utils.safe_shell_command(cmd, nil)
-  
+
   if result then
     return true
   end
-  
+
   -- If CLI command fails, modify the aliases.json file directly
   local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
-  
+
   -- If aliases file doesn't exist, nothing to remove
   if not aliases_file then
     vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
@@ -187,11 +213,11 @@ function M.remove_model_alias(alias)
   -- Read existing aliases
   local aliases_data = {}
   local file = io.open(aliases_file, "r")
-  
+
   if file then
     local content = file:read("*a")
     file:close()
-    
+
     -- Parse JSON if file exists and has content
     if content and content ~= "" then
       local success, result
@@ -235,12 +261,12 @@ end
 -- Select a model to use (now primarily for direct selection, not management)
 function M.select_model()
   local models = M.get_available_models()
-  
+
   if #models == 0 then
     api.nvim_err_writeln("No models found. Make sure llm is properly configured.")
     return
   end
-  
+
   vim.ui.select(models, {
     prompt = "Select LLM model:",
     format_item = function(item)
@@ -248,13 +274,13 @@ function M.select_model()
     end
   }, function(choice)
     if not choice then return end
-    
+
     -- Extract model name from the full model line
     local model_name = M.extract_model_name(choice)
-    
+
     -- Set the model in config
     config.options.model = model_name
-    
+
     vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
   end)
 end
@@ -394,10 +420,26 @@ function M.setup_models_keymaps(bufnr, manager_module)
     local current_line = api.nvim_win_get_cursor(0)[1]
     local line_to_model = vim.b[bufnr].line_to_model
     local model_data = vim.b[bufnr].model_data
-    local model_name = line_to_model and line_to_model[current_line]
-    if model_name and model_data and model_data[model_name] then
+
+    if not line_to_model or not model_data then
+      if config.get("debug") then
+        vim.notify(string.format("Buffer data missing for bufnr %d", bufnr), vim.log.levels.DEBUG)
+      end
+      return nil, nil
+    end
+
+    local model_name = line_to_model[current_line]
+    if model_name and model_data[model_name] then
       return model_name, model_data[model_name]
     end
+
+    -- Add debug log if no model info is found for the line
+    if config.get("debug") then
+      local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
+      vim.notify(string.format("No model info found for line %d (content: '%s') in bufnr %d",
+                               current_line, line_content or "nil", bufnr), vim.log.levels.DEBUG)
+    end
+
     return nil, nil
   end
 
@@ -425,7 +467,7 @@ function M.set_model_under_cursor(bufnr)
     vim.notify("Model " .. model_name .. " is already the default", vim.log.levels.INFO)
     return
   end
-  
+
   -- Check if the model is available before setting it as default
   if not M.is_model_available(model_info.full_line) then
     local provider = "unknown"
@@ -436,11 +478,11 @@ function M.set_model_under_cursor(bufnr)
     elseif model_info.full_line:match("Groq") then provider = "Groq"
     elseif model_info.full_line:match("ollama") then provider = "Ollama"
     end
-    
+
     vim.notify("Cannot set as default: " .. provider .. " API key or plugin not configured", vim.log.levels.ERROR)
     return
   end
-  
+
   vim.notify("Setting default model to: " .. model_name, vim.log.levels.INFO)
   if M.set_default_model(model_name) then
     config.options.model = model_name
@@ -456,7 +498,10 @@ function M.set_alias_for_model_under_cursor(bufnr)
   local model_name, _ = M.get_model_info_under_cursor(bufnr)
   if not model_name then return end
   vim.ui.input({ prompt = "Enter alias for model " .. model_name .. ": " }, function(alias)
-    if not alias or alias == "" then return end
+    if not alias or alias == "" then
+      vim.notify("Alias cannot be empty", vim.log.levels.WARN)
+      return
+    end
     if M.set_model_alias(alias, model_name) then
       vim.cmd('echo ""')
       vim.defer_fn(function()
@@ -472,7 +517,7 @@ end
 function M.chat_with_model_under_cursor(bufnr)
   local model_name, model_info = M.get_model_info_under_cursor(bufnr)
   if not model_name then return end
-  
+
   -- Check if the model is available before starting chat
   if not M.is_model_available(model_info.full_line) then
     local provider = "unknown"
@@ -483,11 +528,11 @@ function M.chat_with_model_under_cursor(bufnr)
     elseif model_info.full_line:match("Groq") then provider = "Groq"
     elseif model_info.full_line:match("ollama") then provider = "Ollama"
     end
-    
+
     vim.notify("Cannot chat with model: " .. provider .. " API key or plugin not configured", vim.log.levels.ERROR)
     return
   end
-  
+
   require('llm.managers.unified_manager').close() -- Close manager before starting chat
   vim.schedule(function()
     require('llm.commands').start_chat(model_name)
@@ -499,9 +544,15 @@ function M.handle_action_under_cursor(bufnr)
   local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
   if line_content and line_content:match("%[+%].*Add custom alias") then
     vim.ui.input({ prompt = "Enter alias name: " }, function(alias)
-      if not alias or alias == "" then return end
+      if not alias or alias == "" then
+        vim.notify("Alias name cannot be empty", vim.log.levels.WARN)
+        return
+      end
       vim.ui.input({ prompt = "Enter model name: " }, function(model)
-        if not model or model == "" then return end
+        if not model or model == "" then
+          vim.notify("Model name cannot be empty", vim.log.levels.WARN)
+          return
+        end
         if M.set_model_alias(alias, model) then
           vim.cmd('echo ""')
           vim.defer_fn(function()
@@ -557,14 +608,26 @@ function M.get_model_info_under_cursor(bufnr)
   local current_line = api.nvim_win_get_cursor(0)[1]
   local line_to_model = vim.b[bufnr].line_to_model
   local model_data = vim.b[bufnr].model_data
+
   if not line_to_model or not model_data then
-    vim.notify("Buffer data missing", vim.log.levels.ERROR)
+    if config.get("debug") then
+      vim.notify(string.format("Buffer data missing for bufnr %d", bufnr), vim.log.levels.DEBUG)
+    end
     return nil, nil
   end
+
   local model_name = line_to_model[current_line]
   if model_name and model_data[model_name] then
     return model_name, model_data[model_name]
   end
+
+  -- Add debug log if no model info is found for the line
+  if config.get("debug") then
+    local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
+    vim.notify(string.format("No model info found for line %d (content: '%s') in bufnr %d",
+                             current_line, line_content or "nil", bufnr), vim.log.levels.DEBUG)
+  end
+
   return nil, nil
 end
 

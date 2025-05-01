@@ -22,12 +22,20 @@ function M.get_templates()
   end
 
   -- Use a simpler command that's more likely to work
-  local result = vim.fn.system("llm templates list")
-  local success = vim.v.shell_error == 0
+  local cmd = "llm templates list"
+  local result = vim.fn.system(cmd)
+  local shell_error = vim.v.shell_error
 
-  if not success or not result or result == "" then
+  if shell_error ~= 0 then
     if config.get("debug") then
-      vim.notify("No templates found or error listing templates", vim.log.levels.WARN)
+      vim.notify("Error executing '" .. cmd .. "': " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+    end
+    return {}
+  end
+
+  if not result or result == "" then
+    if config.get("debug") then
+      vim.notify("No templates found or empty output from '" .. cmd .. "'", vim.log.levels.WARN)
     end
     return {}
   end
@@ -46,6 +54,13 @@ end
 
 -- Get template details from llm CLI
 function M.get_template_details(template_name)
+  if not template_name or template_name == "" then
+    if config.get("debug") then
+      vim.notify("Template name cannot be empty", vim.log.levels.DEBUG)
+    end
+    return nil
+  end
+
   if not utils.check_llm_installed() then
     return nil
   end
@@ -53,16 +68,19 @@ function M.get_template_details(template_name)
   -- Use vim.fn.system to get the template details directly
   local cmd = string.format("llm templates show %s", template_name)
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
-  if not success then
+  if shell_error ~= 0 then
     if config.get("debug") then
-      vim.notify("Error getting template details: " .. result, vim.log.levels.ERROR)
+      vim.notify("Error getting template details: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
     end
     return nil
   end
 
   if not result or result == "" then
+    if config.get("debug") then
+      vim.notify("Empty output from '" .. cmd .. "'", vim.log.levels.WARN)
+    end
     return nil
   end
 
@@ -168,41 +186,44 @@ end
 
 -- Create a template using llm CLI
 function M.create_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
-  if not utils.check_llm_installed() then
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
     return false
   end
-
-  -- Validate template name to avoid directory issues
   if name:match("[/\\]") then
     vim.notify("Template name cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
     return false
   end
 
+  if not utils.check_llm_installed() then
+    return false
+  end
+
   -- Build the command - use the simplest possible approach
   local cmd = "llm --system \"" .. (system or "You are a helpful assistant") .. "\""
-  
+
   if model and model ~= "" then
     cmd = cmd .. " --model " .. model
   end
-  
+
   -- Add save command
   cmd = cmd .. " --save " .. name
-  
+
   if config.get("debug") then
     vim.notify("Template creation command: " .. cmd, vim.log.levels.DEBUG)
   end
 
   -- Execute the command
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
   if config.get("debug") then
     vim.notify("Template creation output: " .. result, vim.log.levels.DEBUG)
-    vim.notify("Template creation success: " .. tostring(success), vim.log.levels.DEBUG)
+    vim.notify("Template creation success: " .. tostring(shell_error == 0), vim.log.levels.DEBUG)
   end
 
   -- Check if the command was successful
-  if not success then
+  if shell_error ~= 0 then
     vim.notify("Template creation failed: " .. result, vim.log.levels.ERROR)
     return false
   end
@@ -212,23 +233,41 @@ end
 
 -- Delete a template using llm CLI
 function M.delete_template(name)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+  if name:match("[/\\]") then
+    vim.notify("Template name cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
 
   local cmd = string.format("llm templates delete %s", name)
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
-  if not success and config.get("debug") then
-    vim.notify("Error deleting template: " .. result, vim.log.levels.ERROR)
+  if shell_error ~= 0 and config.get("debug") then
+    vim.notify("Error deleting template: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
   end
 
-  return success
+  return shell_error == 0
 end
 
 -- Run a template with input
 function M.run_template(name, input, params)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return nil
+  end
+  if not input or input == "" then
+    vim.notify("Input content cannot be empty", vim.log.levels.ERROR)
+    return nil
+  end
+
   if not utils.check_llm_installed() then
     return nil
   end
@@ -249,20 +288,29 @@ function M.run_template(name, input, params)
 
   -- Use vim.fn.system for better compatibility
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
   -- Clean up the temporary file
   os.remove(temp_file)
 
-  if not success then
+  if shell_error ~= 0 then
     vim.notify("Error running template: " .. result, vim.log.levels.ERROR)
   end
 
-  return success and result or nil
+  return shell_error == 0 and result or nil
 end
 
 -- Run a template with a URL
 function M.run_template_with_url(name, url, params)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return nil
+  end
+  if not url or url == "" then
+    vim.notify("URL cannot be empty", vim.log.levels.ERROR)
+    return nil
+  end
+
   if not utils.check_llm_installed() then
     return nil
   end
@@ -278,34 +326,48 @@ function M.run_template_with_url(name, url, params)
 
   -- Use vim.fn.system for better compatibility
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
-  if not success and config.get("debug") then
-    vim.notify("Error running template with URL: " .. result, vim.log.levels.ERROR)
+  if shell_error ~= 0 and config.get("debug") then
+    vim.notify("Error running template with URL: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
   end
 
-  return success and result or nil
+  return shell_error == 0 and result or nil
 end
 
 -- Edit a template using the system editor
 function M.edit_template(name)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
 
   local cmd = string.format("llm templates edit %s", name)
   local result = vim.fn.system(cmd)
-  local success = vim.v.shell_error == 0
+  local shell_error = vim.v.shell_error
 
-  if not success and config.get("debug") then
-    vim.notify("Error editing template: " .. result, vim.log.levels.ERROR)
+  if shell_error ~= 0 and config.get("debug") then
+    vim.notify("Error editing template: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
   end
 
-  return success
+  return shell_error == 0
 end
 
 -- Export a template to a file
 function M.export_template(name, file_path)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+  if not file_path or file_path == "" then
+    vim.notify("File path cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
@@ -317,6 +379,15 @@ end
 
 -- Import a template from a file
 function M.import_template(name, file_path)
+  if not name or name == "" then
+    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+  if not file_path or file_path == "" then
+    vim.notify("File path cannot be empty", vim.log.levels.ERROR)
+    return false
+  end
+
   if not utils.check_llm_installed() then
     return false
   end
