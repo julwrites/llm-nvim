@@ -32,7 +32,7 @@ function M.populate_fragments_buffer(bufnr)
   -- Determine which fragments to show based on the toggle
   local fragments = show_all and all_fragments or fragments_with_aliases
   local show_mode = show_all and "all" or "with_aliases"
-  
+
   -- Double-check that fragments_with_aliases only contains fragments with aliases
   if not show_all then
     fragments = {}
@@ -165,7 +165,7 @@ function M.setup_fragments_keymaps(bufnr, manager_module)
   set_keymap('n', 'g',
     string.format([[<Cmd>lua require('%s').add_github_fragment_from_manager(%d)<CR>]],
       manager_module.__name or 'llm.managers.fragments_manager', bufnr))
-      
+
   -- Prompt with fragment under cursor
   set_keymap('n', 'p',
     string.format([[<Cmd>lua require('%s').prompt_with_fragment_under_cursor(%d)<CR>]],
@@ -316,9 +316,9 @@ end
 -- Prompt with the fragment under cursor
 function M.prompt_with_fragment_under_cursor(bufnr)
   local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
-  if not fragment_hash then 
+  if not fragment_hash then
     vim.notify("No fragment selected", vim.log.levels.WARN)
-    return 
+    return
   end
 
   -- Determine the fragment identifier to use (prefer alias if available)
@@ -340,7 +340,7 @@ function M.prompt_with_fragment_under_cursor(bufnr)
     end
 
     -- Send the prompt with the fragment - use the main module
-    require('llm').prompt(input_prompt, {fragment_identifier})
+    require('llm').prompt(input_prompt, { fragment_identifier })
   end)
 end
 

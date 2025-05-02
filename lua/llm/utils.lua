@@ -277,6 +277,56 @@ function M._close_floating_input()
   api.nvim_win_close(win, true)
 end
 
+-- Create a floating confirmation dialog using vim.ui.select
+function M.floating_confirm(opts, on_confirm)
+  local prompt = opts.prompt or "Are you sure?"
+  local options = opts.options or {"Yes", "No"}
+  local default = opts.default or nil
+
+  -- Create a floating window for the select UI
+  local buf = api.nvim_create_buf(false, true)
+  local width = math.min(math.floor(vim.o.columns * 0.4), 60)
+  local height = #options + 2
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local win_opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = ' '..prompt..' ',
+    title_pos = 'center'
+  }
+
+  -- Store original window before creating floating window
+  local original_win = api.nvim_get_current_win()
+  
+  -- Create and show the window
+  local win = api.nvim_open_win(buf, true, win_opts)
+  api.nvim_set_current_win(win)  -- Ensure focus is on the floating window
+  
+  -- Use vim.ui.select in the floating window
+  vim.ui.select(options, {
+    prompt = prompt,
+    format_item = function(item)
+      return item
+    end
+  }, function(choice, idx)
+    api.nvim_win_close(win, true)
+    -- Return focus to original window
+    if api.nvim_win_is_valid(original_win) then
+      api.nvim_set_current_win(original_win)
+    end
+    if choice then
+      on_confirm(choice)
+    end
+  end)
+end
+
 -- Get selected text in visual mode
 function M.get_visual_selection()
   local start_pos = fn.getpos("'<")
