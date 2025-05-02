@@ -288,7 +288,7 @@ function M.create_template()
 
       -- Step 3: Set prompts based on type
       if type_choice == "Regular prompt" then
-        vim.ui.input({
+        utils.floating_input({
           prompt = "Enter prompt (use $input for user input):",
           default = "$input"
         }, function(prompt)
@@ -301,7 +301,7 @@ function M.create_template()
           M.continue_template_creation(template)
         end)
       elseif type_choice == "System prompt only" then
-        vim.ui.input({
+        utils.floating_input({
           prompt = "Enter system prompt:"
         }, function(system)
           if not system or system == "" then
@@ -321,7 +321,7 @@ function M.create_template()
           end
           template.system = system
 
-          vim.ui.input({
+          utils.floating_input({
             prompt = "Enter regular prompt (use $input for user input):",
             default = "$input"
           }, function(prompt)
@@ -469,7 +469,7 @@ function M.continue_template_creation_options(template)
 
     if option_choice == "Add options" then
       local function add_option()
-        vim.ui.input({
+        utils.floating_input({
           prompt = "Enter option name (or leave empty to finish):"
         }, function(name)
           if not name or name == "" then
@@ -477,7 +477,7 @@ function M.continue_template_creation_options(template)
             return
           end
 
-          vim.ui.input({
+          utils.floating_input({
             prompt = "Enter value for " .. name .. ":"
           }, function(value)
             if value and value ~= "" then
@@ -526,7 +526,7 @@ function M.continue_template_creation_params(template)
 
       local param = params[index]
 
-      vim.ui.input({
+      utils.floating_input({
         prompt = "Default value for parameter '" .. param .. "' (leave empty for no default):"
       }, function(value)
         if value and value ~= "" then

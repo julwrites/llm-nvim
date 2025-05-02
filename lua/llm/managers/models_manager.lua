@@ -497,7 +497,7 @@ end
 function M.set_alias_for_model_under_cursor(bufnr)
   local model_name, _ = M.get_model_info_under_cursor(bufnr)
   if not model_name then return end
-  vim.ui.input({ prompt = "Enter alias for model " .. model_name .. ": " }, function(alias)
+  utils.floating_input({ prompt = "Enter alias for model " .. model_name .. ": " }, function(alias)
     if not alias or alias == "" then
       vim.notify("Alias cannot be empty", vim.log.levels.WARN)
       return

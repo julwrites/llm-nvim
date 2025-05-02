@@ -360,7 +360,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
     if not selected_file then return end
 
     -- Ask for an optional alias
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Set an alias for this fragment (optional): "
     }, function(alias)
       if alias and alias ~= "" then
