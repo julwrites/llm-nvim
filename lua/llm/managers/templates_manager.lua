@@ -93,7 +93,7 @@ function M.select_template()
           local param = param_names[index]
           local default = template.defaults and template.defaults[param] or ""
 
-          vim.ui.input({
+          utils.floating_input({
             prompt = "Enter value for parameter '" .. param .. "':",
             default = default
           }, function(value)
@@ -173,7 +173,7 @@ function M.run_template_with_params(template_name)
       local param = param_names[index]
       local default = template.defaults and template.defaults[param] or ""
 
-      vim.ui.input({
+      utils.floating_input({
         prompt = "Enter value for parameter '" .. param .. "':",
         default = default
       }, function(value)
@@ -227,7 +227,7 @@ function M.run_template_with_input(template_name, params)
         utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
       end
     elseif choice == "URL (will use curl)" then
-      vim.ui.input({
+      utils.floating_input({
         prompt = "Enter URL:"
       }, function(url)
         if not url or url == "" then
@@ -251,7 +251,7 @@ function M.create_template()
   end
 
   -- Step 1: Get template name
-  vim.ui.input({
+  utils.floating_input({
     prompt = "Enter template name:"
   }, function(name)
     if not name or name == "" then

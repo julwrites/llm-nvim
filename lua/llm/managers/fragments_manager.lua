@@ -228,7 +228,7 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
   local fragment_hash, _ = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
 
-  vim.ui.input({ prompt = "Enter alias for fragment: " }, function(alias)
+  utils.floating_input({ prompt = "Enter alias for fragment: " }, function(alias)
     if not alias or alias == "" then return end
     if fragments_loader.set_fragment_alias(fragment_hash, alias) then
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
@@ -331,7 +331,7 @@ function M.prompt_with_fragment_under_cursor(bufnr)
   vim.api.nvim_win_close(0, true)
 
   -- Ask for the prompt
-  vim.ui.input({
+  utils.floating_input({
     prompt = "Enter prompt to use with fragment: "
   }, function(input_prompt)
     if not input_prompt or input_prompt == "" then

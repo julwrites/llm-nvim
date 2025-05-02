@@ -114,7 +114,7 @@ function M.run_schema_with_input_source(schema_id)
           vim.notify("Failed to run schema on buffer content", vim.log.levels.ERROR)
         end
       elseif choice == "URL (will use curl)" then
-        vim.ui.input({
+        utils.floating_input({
           prompt = "Enter URL:"
         }, function(url)
           if not url or url == "" then
@@ -396,7 +396,7 @@ function M.create_schema()
   end
 
   -- Ask for schema name
-  vim.ui.input({
+  utils.floating_input({
     prompt = "Enter schema name:"
   }, function(name)
     if not name or name == "" then

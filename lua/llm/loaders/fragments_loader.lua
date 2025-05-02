@@ -298,7 +298,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
 
   if #files == 0 then -- Always true if force_manual_input is true
     -- If NvimTree is not available or has no files, use vim.ui.input
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Enter file path to use as fragment: "
     }, function(input)
       if not input or input == "" then return end
@@ -313,7 +313,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
       end
 
       -- Ask for an optional alias
-      vim.ui.input({
+      utils.floating_input({
         prompt = "Set an alias for this fragment (optional): "
       }, function(alias)
         -- Use the expanded path when setting the alias
@@ -389,7 +389,7 @@ end
 function M.add_github_fragment(on_success_callback)
   check_and_install_github_plugin(function()
     -- Prompt for GitHub repository
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Enter GitHub repository (owner/repo): "
     }, function(repo_input)
       if not repo_input or repo_input == "" then return end

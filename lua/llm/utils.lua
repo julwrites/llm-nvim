@@ -219,6 +219,64 @@ function M.create_floating_window(buf, title)
   return win
 end
 
+-- Create a floating input window
+function M.floating_input(opts, on_confirm)
+  local buf = api.nvim_create_buf(false, true)
+  local width = math.floor(vim.o.columns * 0.6)
+  local height = 1
+  local row = math.floor((vim.o.lines - height) / 2)
+  local col = math.floor((vim.o.columns - width) / 2)
+
+  local win_opts = {
+    relative = 'editor',
+    width = width,
+    height = height,
+    row = row,
+    col = col,
+    style = 'minimal',
+    border = 'rounded',
+    title = opts.prompt or 'Input',
+    title_pos = 'center'
+  }
+
+  local win = api.nvim_open_win(buf, true, win_opts)
+
+  -- Set keymaps
+  local function confirm()
+    local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+    local input = table.concat(lines, '\n')
+    api.nvim_win_close(win, true)
+    on_confirm(input)
+  end
+
+  api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
+  api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
+  api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>', {noremap = true, silent = true})
+
+  -- Store callback in buffer var
+  api.nvim_buf_set_var(buf, 'floating_input_callback', on_confirm)
+
+  -- Start in insert mode
+  api.nvim_command('startinsert')
+end
+
+-- Internal function to confirm floating input
+function M._confirm_floating_input()
+  local buf = api.nvim_get_current_buf()
+  local win = api.nvim_get_current_win()
+  local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+  local input = table.concat(lines, '\n')
+  local callback = api.nvim_buf_get_var(buf, 'floating_input_callback')
+  api.nvim_win_close(win, true)
+  callback(input)
+end
+
+-- Internal function to close floating input
+function M._close_floating_input()
+  local win = api.nvim_get_current_win()
+  api.nvim_win_close(win, true)
+end
+
 -- Get selected text in visual mode
 function M.get_visual_selection()
   local start_pos = fn.getpos("'<")
