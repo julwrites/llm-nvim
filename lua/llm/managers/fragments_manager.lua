@@ -233,6 +233,9 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
     if fragments_loader.set_fragment_alias(fragment_hash, alias) then
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
       require('llm.managers.unified_manager').switch_view("Fragments")
+      -- Return to normal mode after switching view
+      vim.cmd('stopinsert')
+      vim.cmd('normal! \27') -- Send ESC to ensure normal mode
     else
       vim.notify("Failed to set alias", vim.log.levels.ERROR)
     end
@@ -260,15 +263,18 @@ function M.remove_alias_from_fragment_under_cursor(bufnr)
 end
 
 function M.confirm_and_remove_alias(alias)
-  vim.ui.select({ "Yes", "No" }, { prompt = "Remove alias '" .. alias .. "'?" }, function(choice)
-    if choice ~= "Yes" then return end
-    if fragments_loader.remove_fragment_alias(alias) then
-      vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Fragments")
-    else
-      vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+  utils.floating_confirm({
+    prompt = "Remove alias '" .. alias .. "'?",
+    on_confirm = function(confirmed)
+      if not confirmed then return end
+      if fragments_loader.remove_fragment_alias(alias) then
+        vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+        require('llm.managers.unified_manager').switch_view("Fragments")
+      else
+        vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+      end
     end
-  end)
+  })
 end
 
 function M.toggle_fragments_view(bufnr)

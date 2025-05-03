@@ -19,12 +19,14 @@ local function check_and_install_github_plugin(callback)
     return
   end
 
-  vim.ui.select({
-    "Yes", "No"
-  }, {
-    prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
-  }, function(install_choice)
-    if install_choice == "Yes" then
+  utils.floating_confirm({
+    prompt = "llm-fragments-github plugin is required but not installed. Install it now?",
+    on_confirm = function(confirmed)
+      if not confirmed then 
+        vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
+        return 
+      end
+      
       vim.notify("Installing llm-fragments-github plugin...", vim.log.levels.INFO)
       vim.schedule(function() -- Run install in background
         if plugins_manager.install_plugin("llm-fragments-github") then
@@ -32,14 +34,10 @@ local function check_and_install_github_plugin(callback)
           callback() -- Continue after successful install
         else
           vim.notify("Failed to install llm-fragments-github plugin", vim.log.levels.ERROR)
-          -- Do not call callback if install failed
         end
       end)
-    else
-      vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
-      -- Do not call callback if user declines install
     end
-  end)
+  })
 end
 
 

@@ -241,20 +241,32 @@ function M.floating_input(opts, on_confirm)
 
   local win = api.nvim_open_win(buf, true, win_opts)
 
-  -- Set keymaps
+  -- Set default value if provided
+  if opts.default then
+    api.nvim_buf_set_lines(buf, 0, -1, false, {opts.default})
+  end
+
+  -- Local function to handle confirmation
   local function confirm()
     local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
     local input = table.concat(lines, '\n')
     api.nvim_win_close(win, true)
-    on_confirm(input)
+    if on_confirm then
+      on_confirm(input)
+    end
   end
 
+  -- Set keymaps using the local confirm function
   api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
   api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
   api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>', {noremap = true, silent = true})
 
   -- Store callback in buffer var
-  api.nvim_buf_set_var(buf, 'floating_input_callback', on_confirm)
+  api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
+    if on_confirm then
+      on_confirm(input)
+    end
+  end)
 
   -- Start in insert mode
   api.nvim_command('startinsert')
@@ -268,7 +280,9 @@ function M._confirm_floating_input()
   local input = table.concat(lines, '\n')
   local callback = api.nvim_buf_get_var(buf, 'floating_input_callback')
   api.nvim_win_close(win, true)
-  callback(input)
+  if callback then
+    callback(input)
+  end
 end
 
 -- Internal function to close floating input
