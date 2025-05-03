@@ -545,11 +545,9 @@ end
 -- Continue template creation with extract option
 function M.continue_template_creation_extract(template)
   -- Step 8: Extract code option
-  vim.ui.select({
-    "No",
-    "Yes"
-  }, {
-    prompt = "Extract first code block from response?"
+  utils.floating_confirm({
+    prompt = "Extract first code block from response?",
+    options = {"Yes", "No"}
   }, function(extract_choice)
     if not extract_choice then return end
 
@@ -781,15 +779,24 @@ function M.delete_template_under_cursor(bufnr)
     return
   end
 
-  vim.ui.select({ "Yes", "No" }, { prompt = "Delete template '" .. template_name .. "'?" }, function(choice)
-    if choice ~= "Yes" then return end
-    if templates_loader.delete_template(template_name) then
-      vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Templates")
-    else
-      vim.notify("Failed to delete template", vim.log.levels.ERROR)
+  -- Use floating confirm dialog
+  utils.floating_confirm({
+    prompt = "Delete template '" .. template_name .. "'?",
+    on_confirm = function(confirmed)
+      if not confirmed then return end
+      
+      -- Perform deletion in a scheduled callback to ensure UI updates properly
+      vim.schedule(function()
+        local success, err = templates_loader.delete_template(template_name)
+        if success then
+          vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
+          require('llm.managers.unified_manager').switch_view("Templates")
+        else
+          vim.notify("Failed to delete template: " .. (err or "unknown error"), vim.log.levels.ERROR)
+        end
+      end)
     end
-  end)
+  })
 end
 
 function M.view_template_details_under_cursor(bufnr)

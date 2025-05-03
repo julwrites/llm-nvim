@@ -231,30 +231,44 @@ function M.create_template(name, prompt, system, model, options, fragments, syst
   return true
 end
 
--- Delete a template using llm CLI
+-- Delete a template by removing its file from the templates directory
 function M.delete_template(name)
   if not name or name == "" then
-    vim.notify("Template name cannot be empty", vim.log.levels.ERROR)
-    return false
+    return false, "Template name cannot be empty"
   end
   if name:match("[/\\]") then
-    vim.notify("Template name cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
-    return false
+    return false, "Template name cannot contain path separators (/ or \\)"
   end
 
-  if not utils.check_llm_installed() then
-    return false
+  -- First check if template exists
+  local templates = M.get_templates()
+  if not templates[name] then
+    return false, "Template '"..name.."' does not exist"
   end
 
-  local cmd = string.format("llm templates delete %s", name)
-  local result = vim.fn.system(cmd)
-  local shell_error = vim.v.shell_error
-
-  if shell_error ~= 0 and config.get("debug") then
-    vim.notify("Error deleting template: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+  -- Get the full path to the template file
+  local config_dir, template_file = utils.get_config_path("templates/" .. name .. ".yaml")
+  if not config_dir or not template_file then
+    return false, "Could not determine LLM templates directory"
   end
 
-  return shell_error == 0
+  -- Check if file exists
+  if vim.fn.filereadable(template_file) ~= 1 then
+    return false, "Template file not found at: " .. template_file
+  end
+
+  -- Delete the file
+  local success, err = os.remove(template_file)
+  if not success then
+    return false, "Failed to delete template file: " .. (err or "unknown error")
+  end
+
+  -- Verify deletion
+  if vim.fn.filereadable(template_file) == 1 then
+    return false, "Template file still exists after deletion attempt"
+  end
+
+  return true, nil
 end
 
 -- Run a template with input
