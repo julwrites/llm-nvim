@@ -262,15 +262,19 @@ function M.remove_key_under_cursor(bufnr)
     return
   end
 
-  local choice = vim.fn.confirm("Remove key for '" .. provider_name .. "'?", "&Yes\n&No", 2)
-  if choice ~= 1 then return end
+  utils.floating_confirm({
+    prompt = "Remove key for '" .. provider_name .. "'?",
+    options = {"Yes", "No"}
+  }, function(choice)
+    if choice ~= "Yes" then return end
 
-  if M.remove_api_key(provider_name) then
-    vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-    require('llm.managers.unified_manager').switch_view("Keys")
-  else
-    vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-  end
+    if M.remove_api_key(provider_name) then
+      vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+      require('llm.managers.unified_manager').switch_view("Keys")
+    else
+      vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+    end
+  end)
 end
 
 -- Create a floating window for secure key input (modified to refresh unified view)

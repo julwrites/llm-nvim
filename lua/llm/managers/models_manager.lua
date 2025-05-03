@@ -383,6 +383,8 @@ function M.populate_models_buffer(bufnr)
       for _, model in ipairs(provider_models) do
         local status = model.is_default and "✓" or " "
         local alias_text = #model.aliases > 0 and " (aliases: " .. table.concat(model.aliases, ", ") .. ")" or ""
+        -- Remove any existing alias text from the full_line to avoid duplicates
+        model.full_line = model.full_line:gsub("%s*%(aliases: [^%)]+%)", "")
         local line = string.format("[%s] %s%s", status, model.full_line, alias_text)
         table.insert(lines, line)
         model_data[model.model_name] = { line = current_line, is_default = model.is_default, full_line = model.full_line, aliases = model.aliases }
@@ -497,19 +499,28 @@ end
 function M.set_alias_for_model_under_cursor(bufnr)
   local model_name, _ = M.get_model_info_under_cursor(bufnr)
   if not model_name then return end
-  vim.ui.input({ prompt = "Enter alias for model " .. model_name .. ": " }, function(alias)
+  
+  -- Store original window before showing floating input
+  local original_win = api.nvim_get_current_win()
+  
+  utils.floating_input({ prompt = "Enter alias for model " .. model_name .. ": " }, function(alias)
+    -- Return focus to original window first
+    if api.nvim_win_is_valid(original_win) then
+      api.nvim_set_current_win(original_win)
+    end
+    
     if not alias or alias == "" then
       vim.notify("Alias cannot be empty", vim.log.levels.WARN)
       return
     end
+    
     if M.set_model_alias(alias, model_name) then
-      vim.cmd('echo ""')
-      vim.defer_fn(function()
-        vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
-        require('llm.managers.unified_manager').switch_view("Models")
-      end, 100)
+      vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
+      vim.cmd('stopinsert') -- Force normal mode
+      require('llm.managers.unified_manager').switch_view("Models")
     else
       vim.notify("Failed to set alias", vim.log.levels.ERROR)
+      vim.cmd('stopinsert') -- Force normal mode even on error
     end
   end)
 end
@@ -543,24 +554,38 @@ function M.handle_action_under_cursor(bufnr)
   local current_line = api.nvim_win_get_cursor(0)[1]
   local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
   if line_content and line_content:match("%[+%].*Add custom alias") then
-    vim.ui.input({ prompt = "Enter alias name: " }, function(alias)
+    -- Store original window before showing floating inputs
+    local original_win = api.nvim_get_current_win()
+    
+    utils.floating_input({ prompt = "Enter alias name: " }, function(alias)
+      -- Return focus to original window between inputs
+      if api.nvim_win_is_valid(original_win) then
+        api.nvim_set_current_win(original_win)
+      end
+      
       if not alias or alias == "" then
         vim.notify("Alias name cannot be empty", vim.log.levels.WARN)
         return
       end
-      vim.ui.input({ prompt = "Enter model name: " }, function(model)
+      
+      utils.floating_input({ prompt = "Enter model name: " }, function(model)
+        -- Return focus to original window before processing
+        if api.nvim_win_is_valid(original_win) then
+          api.nvim_set_current_win(original_win)
+        end
+        
         if not model or model == "" then
           vim.notify("Model name cannot be empty", vim.log.levels.WARN)
           return
         end
+        
         if M.set_model_alias(alias, model) then
-          vim.cmd('echo ""')
-          vim.defer_fn(function()
-            vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
-            require('llm.managers.unified_manager').switch_view("Models")
-          end, 100)
+          vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
+          vim.cmd('stopinsert') -- Force normal mode
+          require('llm.managers.unified_manager').switch_view("Models")
         else
           vim.notify("Failed to set alias", vim.log.levels.ERROR)
+          vim.cmd('stopinsert') -- Force normal mode even on error
         end
       end)
     end)
@@ -574,32 +599,52 @@ function M.remove_alias_for_model_under_cursor(bufnr)
     vim.notify("No aliases found for this model", vim.log.levels.WARN)
     return
   end
-  vim.ui.select(model_info.aliases, { prompt = "Select alias to remove:" }, function(alias)
+
+  vim.ui.select(model_info.aliases, { 
+    prompt = "Select alias to remove:",
+    format_item = function(item) return item end
+  }, function(alias)
     if not alias then return end
+
     local _, aliases_file = utils.get_config_path("aliases.json")
     local is_system_alias = false
     if aliases_file then
       local file = io.open(aliases_file, "r")
       if file then
-        local content = file:read("*a"); file:close()
+        local content = file:read("*a")
+        file:close()
         local success, aliases_data = pcall(vim.fn.json_decode, content)
         if success and type(aliases_data) == "table" and aliases_data[alias] == nil then
           is_system_alias = true
         end
       end
     end
+
     if is_system_alias then
       vim.notify("Cannot remove system alias '" .. alias .. "'.", vim.log.levels.ERROR)
       return
     end
-    local confirm = vim.fn.confirm("Remove alias '" .. alias .. "'?", "&Yes\n&No", 2)
-    if confirm ~= 1 then return end
-    if M.remove_model_alias(alias) then
-      vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Models")
-    else
-      vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
+    
+    -- Additional check for alias existence
+    local current_aliases = M.get_model_aliases()
+    if not current_aliases[alias] then
+      vim.notify("Alias '" .. alias .. "' not found in current aliases", vim.log.levels.ERROR)
+      return
     end
+
+    utils.floating_confirm({
+      prompt = "Remove alias '" .. alias .. "'?",
+      options = {"Yes", "No"}
+    }, function(choice)
+      if choice == "Yes" then
+        if M.remove_model_alias(alias) then
+          vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+          require('llm.managers.unified_manager').switch_view("Models")
+        else
+          vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
+        end
+      end
+    end)
   end)
 end
 

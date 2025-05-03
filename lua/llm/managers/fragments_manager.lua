@@ -32,7 +32,7 @@ function M.populate_fragments_buffer(bufnr)
   -- Determine which fragments to show based on the toggle
   local fragments = show_all and all_fragments or fragments_with_aliases
   local show_mode = show_all and "all" or "with_aliases"
-  
+
   -- Double-check that fragments_with_aliases only contains fragments with aliases
   if not show_all then
     fragments = {}
@@ -165,7 +165,7 @@ function M.setup_fragments_keymaps(bufnr, manager_module)
   set_keymap('n', 'g',
     string.format([[<Cmd>lua require('%s').add_github_fragment_from_manager(%d)<CR>]],
       manager_module.__name or 'llm.managers.fragments_manager', bufnr))
-      
+
   -- Prompt with fragment under cursor
   set_keymap('n', 'p',
     string.format([[<Cmd>lua require('%s').prompt_with_fragment_under_cursor(%d)<CR>]],
@@ -228,11 +228,14 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
   local fragment_hash, _ = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
 
-  vim.ui.input({ prompt = "Enter alias for fragment: " }, function(alias)
+  utils.floating_input({ prompt = "Enter alias for fragment: " }, function(alias)
     if not alias or alias == "" then return end
     if fragments_loader.set_fragment_alias(fragment_hash, alias) then
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
       require('llm.managers.unified_manager').switch_view("Fragments")
+      -- Return to normal mode after switching view
+      vim.cmd('stopinsert')
+      vim.cmd('normal! \27') -- Send ESC to ensure normal mode
     else
       vim.notify("Failed to set alias", vim.log.levels.ERROR)
     end
@@ -260,15 +263,18 @@ function M.remove_alias_from_fragment_under_cursor(bufnr)
 end
 
 function M.confirm_and_remove_alias(alias)
-  vim.ui.select({ "Yes", "No" }, { prompt = "Remove alias '" .. alias .. "'?" }, function(choice)
-    if choice ~= "Yes" then return end
-    if fragments_loader.remove_fragment_alias(alias) then
-      vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Fragments")
-    else
-      vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+  utils.floating_confirm({
+    prompt = "Remove alias '" .. alias .. "'?",
+    on_confirm = function(confirmed)
+      if not confirmed then return end
+      if fragments_loader.remove_fragment_alias(alias) then
+        vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+        require('llm.managers.unified_manager').switch_view("Fragments")
+      else
+        vim.notify("Failed to remove alias", vim.log.levels.ERROR)
+      end
     end
-  end)
+  })
 end
 
 function M.toggle_fragments_view(bufnr)
@@ -316,9 +322,9 @@ end
 -- Prompt with the fragment under cursor
 function M.prompt_with_fragment_under_cursor(bufnr)
   local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
-  if not fragment_hash then 
+  if not fragment_hash then
     vim.notify("No fragment selected", vim.log.levels.WARN)
-    return 
+    return
   end
 
   -- Determine the fragment identifier to use (prefer alias if available)
@@ -331,7 +337,7 @@ function M.prompt_with_fragment_under_cursor(bufnr)
   vim.api.nvim_win_close(0, true)
 
   -- Ask for the prompt
-  vim.ui.input({
+  utils.floating_input({
     prompt = "Enter prompt to use with fragment: "
   }, function(input_prompt)
     if not input_prompt or input_prompt == "" then
@@ -340,7 +346,7 @@ function M.prompt_with_fragment_under_cursor(bufnr)
     end
 
     -- Send the prompt with the fragment - use the main module
-    require('llm').prompt(input_prompt, {fragment_identifier})
+    require('llm').prompt(input_prompt, { fragment_identifier })
   end)
 end
 

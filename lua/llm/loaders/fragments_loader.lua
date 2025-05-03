@@ -19,12 +19,14 @@ local function check_and_install_github_plugin(callback)
     return
   end
 
-  vim.ui.select({
-    "Yes", "No"
-  }, {
-    prompt = "llm-fragments-github plugin is required but not installed. Install it now?"
-  }, function(install_choice)
-    if install_choice == "Yes" then
+  utils.floating_confirm({
+    prompt = "llm-fragments-github plugin is required but not installed. Install it now?",
+    on_confirm = function(confirmed)
+      if not confirmed then 
+        vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
+        return 
+      end
+      
       vim.notify("Installing llm-fragments-github plugin...", vim.log.levels.INFO)
       vim.schedule(function() -- Run install in background
         if plugins_manager.install_plugin("llm-fragments-github") then
@@ -32,14 +34,10 @@ local function check_and_install_github_plugin(callback)
           callback() -- Continue after successful install
         else
           vim.notify("Failed to install llm-fragments-github plugin", vim.log.levels.ERROR)
-          -- Do not call callback if install failed
         end
       end)
-    else
-      vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
-      -- Do not call callback if user declines install
     end
-  end)
+  })
 end
 
 
@@ -298,7 +296,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
 
   if #files == 0 then -- Always true if force_manual_input is true
     -- If NvimTree is not available or has no files, use vim.ui.input
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Enter file path to use as fragment: "
     }, function(input)
       if not input or input == "" then return end
@@ -313,7 +311,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
       end
 
       -- Ask for an optional alias
-      vim.ui.input({
+      utils.floating_input({
         prompt = "Set an alias for this fragment (optional): "
       }, function(alias)
         -- Use the expanded path when setting the alias
@@ -360,7 +358,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
     if not selected_file then return end
 
     -- Ask for an optional alias
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Set an alias for this fragment (optional): "
     }, function(alias)
       if alias and alias ~= "" then
@@ -389,7 +387,7 @@ end
 function M.add_github_fragment(on_success_callback)
   check_and_install_github_plugin(function()
     -- Prompt for GitHub repository
-    vim.ui.input({
+    utils.floating_input({
       prompt = "Enter GitHub repository (owner/repo): "
     }, function(repo_input)
       if not repo_input or repo_input == "" then return end

@@ -269,7 +269,10 @@ function M.uninstall_plugin_under_cursor(bufnr)
     vim.notify("Plugin " .. plugin_name .. " is not installed", vim.log.levels.INFO)
     return
   end
-  vim.ui.select({ "Yes", "No" }, { prompt = "Uninstall " .. plugin_name .. "?" }, function(choice)
+  utils.floating_confirm({
+    prompt = "Uninstall " .. plugin_name .. "?",
+    options = {"Yes", "No"}
+  }, function(choice)
     if choice ~= "Yes" then return end
     vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
     vim.schedule(function()

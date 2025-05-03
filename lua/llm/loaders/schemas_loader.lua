@@ -775,17 +775,14 @@ function M.set_schema_alias(schema_id, alias)
     if name == alias and id ~= schema_id then
       vim.notify("Alias '" .. alias .. "' is already used for another schema", vim.log.levels.WARN)
       -- Ask if the user wants to overwrite
-      vim.ui.select({
-        "Yes",
-        "No"
-      }, {
-        prompt = "Overwrite existing alias?"
-      }, function(choice)
-        if choice == "Yes" then
-          -- Continue with setting the alias
-          M.set_schema_alias_internal(schema_id, alias, schema_config, schema)
+      utils.floating_confirm({
+        prompt = "Overwrite existing alias '" .. alias .. "'?",
+        on_confirm = function(confirmed)
+          if confirmed then
+            M.set_schema_alias_internal(schema_id, alias, schema_config, schema)
+          end
         end
-      end)
+      })
       return false
     end
   end
