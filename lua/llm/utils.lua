@@ -118,15 +118,34 @@ local config_dir_cache_initialized = false
 
 -- Get the configuration directory and file path for llm
 function M.get_config_path(filename)
+  local config = require('llm.config')
+  local debug_mode = config.get('debug')
+  
   -- Use cached config directory if available
   if config_dir_cache_initialized and config_dir_cache then
     -- Construct the full path to the file
     local config_file = config_dir_cache .. "/" .. filename
+    
+    if debug_mode then
+      vim.notify("Using cached config path: " .. config_file, vim.log.levels.DEBUG)
+    end
+    
     return config_dir_cache, config_file
   end
   
   -- Mark as initialized even if we fail, to avoid repeated attempts
   config_dir_cache_initialized = true
+  
+  -- We'll skip trying to get config path directly and always use logs path method
+  -- as per user's instruction: "The config path is the directory of the path returned by the `llm logs path` command."
+  if debug_mode then
+    vim.notify("Using logs path method to determine config directory", vim.log.levels.DEBUG)
+  end
+  
+  -- Use logs path method as the primary way to get config path
+  if debug_mode then
+    vim.notify("Getting config path from logs path", vim.log.levels.DEBUG)
+  end
   
   -- Step 1: Get the logs path
   local logs_path_cmd = "llm logs path"
@@ -139,6 +158,10 @@ function M.get_config_path(filename)
 
   -- Trim trailing newline/whitespace characters from the logs path
   logs_path = logs_path:gsub("[\r\n]+$", ""):gsub("%s+$", "")
+  
+  if debug_mode then
+    vim.notify("Found logs path: " .. logs_path, vim.log.levels.DEBUG)
+  end
 
   -- Step 2: Get the directory name from the logs path, quoting the path
   -- Use single quotes around the path to handle spaces and special characters
@@ -152,6 +175,10 @@ function M.get_config_path(filename)
   
   -- Trim trailing newline characters from the command output
   config_dir = config_dir:gsub("[\r\n]+$", "")
+  
+  if debug_mode then
+    vim.notify("Derived config directory: " .. config_dir, vim.log.levels.DEBUG)
+  end
 
   -- Ensure the directory exists before returning the path
   M.ensure_config_dir_exists(config_dir)
@@ -161,6 +188,19 @@ function M.get_config_path(filename)
   
   -- Construct the full path to the file
   local config_file = config_dir .. "/" .. filename
+  
+  if debug_mode then
+    vim.notify("Final config file path: " .. config_file, vim.log.levels.DEBUG)
+    
+    -- Check if the file exists
+    local file = io.open(config_file, "r")
+    if file then
+      file:close()
+      vim.notify("File exists: " .. config_file, vim.log.levels.DEBUG)
+    else
+      vim.notify("File does not exist: " .. config_file, vim.log.levels.DEBUG)
+    end
+  end
   
   -- Return the directory and the full file path
   return config_dir, config_file
@@ -412,6 +452,13 @@ function M.setup_buffer_highlighting(buf)
   -- Setup highlights and syntax patterns
   styles.setup_highlights()
   styles.setup_buffer_syntax(buf)
+end
+
+-- Escape special pattern characters in a string
+function M.escape_pattern(s)
+  -- Escape these special pattern characters: ^$()%.[]*+-?
+  local escaped = string.gsub(s, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
+  return escaped
 end
 
 -- Debug function to check fragment aliases
