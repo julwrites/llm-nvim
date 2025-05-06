@@ -1,4 +1,4 @@
--- llm/loaders/fragments_loader.lua - Fragment loading functionality for llm-nvim
+-- llm/fragments/fragments_loader.lua - Fragment loading functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -10,7 +10,7 @@ local fn = vim.fn
 -- Forward declarations
 local utils = require('llm.utils')
 local commands = require('llm.commands')
-local plugins_manager = require('llm.managers.plugins_manager') -- Added
+local plugins_manager = require('llm.plugins.plugins_manager') -- Added
 
 -- Check if llm-fragments-github plugin is installed and prompt to install if not
 local function check_and_install_github_plugin(callback)
@@ -22,11 +22,11 @@ local function check_and_install_github_plugin(callback)
   utils.floating_confirm({
     prompt = "llm-fragments-github plugin is required but not installed. Install it now?",
     on_confirm = function(confirmed)
-      if not confirmed then 
+      if not confirmed then
         vim.notify("llm-fragments-github plugin is required to add GitHub repositories.", vim.log.levels.WARN)
-        return 
+        return
       end
-      
+
       vim.notify("Installing llm-fragments-github plugin...", vim.log.levels.INFO)
       vim.schedule(function() -- Run install in background
         if plugins_manager.install_plugin("llm-fragments-github") then
@@ -47,7 +47,7 @@ function M.get_all_fragments()
   if not result then
     return {}
   end
-  
+
   local fragments = {}
   local current_fragment = nil
 
@@ -110,11 +110,12 @@ function M.get_fragments()
   if not result then
     return {}
   end
-  
+
   -- Debug the raw output from llm fragments (only in debug mode)
   local config = require('llm.config')
   if config.get('debug') then
-    vim.notify("Raw fragments output:\n" .. result:sub(1, 500) .. (result:len() > 500 and "..." or ""), vim.log.levels.DEBUG)
+    vim.notify("Raw fragments output:\n" .. result:sub(1, 500) .. (result:len() > 500 and "..." or ""),
+      vim.log.levels.DEBUG)
   end
 
   local fragments = {}
@@ -185,18 +186,18 @@ end
 function M.set_fragment_alias(path, alias)
   local config = require('llm.config')
   local debug_mode = config.get('debug')
-  
+
   -- Debug the command being executed
   local cmd = string.format('llm fragments set "%s" "%s"', alias, path)
   if debug_mode then
     vim.notify("Executing command: " .. cmd, vim.log.levels.INFO)
   end
-  
+
   local result = utils.safe_shell_command(
     cmd,
     "Failed to set fragment alias"
   )
-  
+
   -- Debug the result
   if debug_mode then
     if result then
@@ -204,7 +205,7 @@ function M.set_fragment_alias(path, alias)
     else
       vim.notify("Command failed with nil result", vim.log.levels.ERROR)
     end
-    
+
     -- Verify the alias was set by checking fragments
     vim.defer_fn(function()
       local verify_cmd = "llm fragments --aliases"
@@ -212,7 +213,7 @@ function M.set_fragment_alias(path, alias)
       if verify_result then
         vim.notify("Verification result:\n" .. verify_result, vim.log.levels.INFO)
       end
-    end, 500)  -- Check after a short delay
+    end, 500) -- Check after a short delay
   end
 
   return result ~= nil
@@ -227,7 +228,6 @@ function M.remove_fragment_alias(alias)
 
   return result ~= nil
 end
-
 
 -- Show a specific fragment
 function M.show_fragment(hash_or_alias)
@@ -300,7 +300,7 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
       prompt = "Enter file path to use as fragment: "
     }, function(input)
       if not input or input == "" then return end
-      
+
       -- Expand the input path (handles ~ and environment variables)
       local expanded_path = fn.expand(input)
 
@@ -328,10 +328,10 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
           -- We use a placeholder alias that llm ignores but still registers the path.
           -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
           if M.set_fragment_alias(expanded_path, "_") then
-             vim.notify("File added as fragment (no alias): " .. expanded_path, vim.log.levels.INFO)
-             if on_success_callback then on_success_callback(expanded_path) end -- Pass path
+            vim.notify("File added as fragment (no alias): " .. expanded_path, vim.log.levels.INFO)
+            if on_success_callback then on_success_callback(expanded_path) end  -- Pass path
           else
-             vim.notify("Failed to register fragment file: " .. expanded_path, vim.log.levels.ERROR)
+            vim.notify("Failed to register fragment file: " .. expanded_path, vim.log.levels.ERROR)
           end
         end
       end)
@@ -372,10 +372,10 @@ function M.select_file_as_fragment(on_success_callback, force_manual_input)
         -- No alias provided, just register the fragment path
         -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
         if M.set_fragment_alias(selected_file.absolute_path, "_") then
-           vim.notify("File added as fragment (no alias): " .. selected_file.path, vim.log.levels.INFO)
-           if on_success_callback then on_success_callback(selected_file.absolute_path) end -- Pass path
+          vim.notify("File added as fragment (no alias): " .. selected_file.path, vim.log.levels.INFO)
+          if on_success_callback then on_success_callback(selected_file.absolute_path) end  -- Pass path
         else
-           vim.notify("Failed to register fragment file: " .. selected_file.path, vim.log.levels.ERROR)
+          vim.notify("Failed to register fragment file: " .. selected_file.path, vim.log.levels.ERROR)
         end
       end
     end)
@@ -409,16 +409,15 @@ function M.add_github_fragment(on_success_callback)
           -- No alias provided, just register the fragment path
           -- Note: llm >= 0.14 might not need this workaround. Check llm docs.
           if M.set_fragment_alias(fragment_path, "_") then
-             vim.notify("GitHub repository added as fragment (no alias): " .. fragment_path, vim.log.levels.INFO)
-             if on_success_callback then on_success_callback(fragment_path) end -- Pass path
+            vim.notify("GitHub repository added as fragment (no alias): " .. fragment_path, vim.log.levels.INFO)
+            if on_success_callback then on_success_callback(fragment_path) end  -- Pass path
           else
-             vim.notify("Failed to register GitHub fragment: " .. fragment_path, vim.log.levels.ERROR)
+            vim.notify("Failed to register GitHub fragment: " .. fragment_path, vim.log.levels.ERROR)
           end
         end
       end)
     end)
   end)
 end
-
 
 return M

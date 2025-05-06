@@ -1,4 +1,4 @@
--- llm/managers/models_manager.lua - Model management functionality
+-- llm/models/models_manager.lua - Model management functionality
 -- License: Apache 2.0
 
 local M = {}
@@ -10,7 +10,7 @@ local utils = require('llm.utils')
 local config = require('llm.config')
 local styles = require('llm.styles') -- Added for highlighting
 
-local custom_openai = require('llm.managers.models.custom_openai')
+local custom_openai = require('llm.models.custom_openai')
 
 -- Add pattern escape function to vim namespace if it doesn't exist
 if not vim.pesc then
@@ -100,8 +100,8 @@ end
 
 -- Get available providers with valid API keys
 local function get_available_providers()
-  local keys_manager = require('llm.managers.keys_manager')
-  local plugins_manager = require('llm.managers.plugins_manager')
+  local keys_manager = require('llm.keys.keys_manager')
+  local plugins_manager = require('llm.plugins.plugins_manager')
 
   return {
     -- OpenAI only requires the API key, not a plugin
@@ -676,27 +676,27 @@ function M.setup_models_keymaps(bufnr, manager_module)
   -- Set model under cursor as default
   set_keymap('n', 's',
     string.format([[<Cmd>lua require('%s').set_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.models_manager', bufnr))
+      manager_module.__name or 'llm.models.models_manager', bufnr))
 
   -- Set alias for model under cursor
   set_keymap('n', 'a',
     string.format([[<Cmd>lua require('%s').set_alias_for_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.models_manager', bufnr))
+      manager_module.__name or 'llm.models.models_manager', bufnr))
 
   -- Remove alias for model under cursor
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').remove_alias_for_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.models_manager', bufnr))
+      manager_module.__name or 'llm.models.models_manager', bufnr))
 
   -- Chat with model under cursor
   set_keymap('n', 'c',
     string.format([[<Cmd>lua require('%s').chat_with_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.models_manager', bufnr))
+      manager_module.__name or 'llm.models.models_manager', bufnr))
 
   -- Add custom alias (when on the [+] line)
   set_keymap('n', '<CR>',
     string.format([[<Cmd>lua require('%s').handle_action_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.models_manager', bufnr))
+      manager_module.__name or 'llm.models.models_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -749,7 +749,7 @@ function M.set_model_under_cursor(bufnr)
     config.options.model = model_name
     vim.notify("Default model set to: " .. model_name, vim.log.levels.INFO)
     -- Refresh the current view in the unified manager
-    require('llm.managers.unified_manager').switch_view("Models")
+    require('llm.unified_manager').switch_view("Models")
   else
     vim.notify("Failed to set default model", vim.log.levels.ERROR)
   end
@@ -776,7 +776,7 @@ function M.set_alias_for_model_under_cursor(bufnr)
     if M.set_model_alias(alias, model_name) then
       vim.notify("Alias set: " .. alias .. " -> " .. model_name, vim.log.levels.INFO)
       vim.cmd('stopinsert') -- Force normal mode
-      require('llm.managers.unified_manager').switch_view("Models")
+      require('llm.unified_manager').switch_view("Models")
     else
       vim.notify("Failed to set alias", vim.log.levels.ERROR)
       vim.cmd('stopinsert') -- Force normal mode even on error
@@ -824,7 +824,7 @@ function M.chat_with_model_under_cursor(bufnr)
     return
   end
 
-  require('llm.managers.unified_manager').close() -- Close manager before starting chat
+  require('llm.unified_manager').close() -- Close manager before starting chat
   vim.schedule(function()
     require('llm.commands').start_chat(model_name)
   end)
@@ -862,7 +862,7 @@ function M.handle_action_under_cursor(bufnr)
         if M.set_model_alias(alias, model) then
           vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
           vim.cmd('stopinsert') -- Force normal mode
-          require('llm.managers.unified_manager').switch_view("Models")
+          require('llm.unified_manager').switch_view("Models")
         else
           vim.notify("Failed to set alias", vim.log.levels.ERROR)
           vim.cmd('stopinsert') -- Force normal mode even on error
@@ -919,7 +919,7 @@ function M.remove_alias_for_model_under_cursor(bufnr)
       if choice == "Yes" then
         if M.remove_model_alias(alias) then
           vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-          require('llm.managers.unified_manager').switch_view("Models")
+          require('llm.unified_manager').switch_view("Models")
         else
           vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
         end
@@ -958,7 +958,7 @@ end
 
 -- Main function to open the model manager (now delegates to unified manager)
 function M.manage_models()
-  require('llm.managers.unified_manager').open_specific_manager("Models")
+  require('llm.unified_manager').open_specific_manager("Models")
 end
 
 -- Get custom OpenAI models
@@ -988,6 +988,6 @@ function M.create_sample_yaml_file()
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.models_manager'
+M.__name = 'llm.models.models_manager'
 
 return M

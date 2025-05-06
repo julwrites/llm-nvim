@@ -1,10 +1,10 @@
--- llm/managers/models/custom_openai.lua - Custom OpenAI model management
+-- llm/models/custom_openai.lua - Custom OpenAI model management
 -- License: Apache 2.0
 
 local M = {}
 local utils = require('llm.utils')
 local config = require('llm.config')
-local keys_manager = require('llm.managers.keys_manager')
+local keys_manager = require('llm.keys.keys_manager')
 
 -- Cache for custom OpenAI models
 M.custom_openai_models = {}

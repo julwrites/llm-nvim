@@ -1,15 +1,15 @@
--- llm/managers/templates_manager.lua - Template management for llm-nvim
+-- llm/templates/templates_manager.lua - Template management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 -- Forward declarations
 local api = vim.api
-local templates_loader = require('llm.loaders.templates_loader')
+local templates_loader = require('llm.templates.templates_loader')
 local utils = require('llm.utils')
-local models_manager = require('llm.managers.models_manager')
-local fragments_loader = require('llm.loaders.fragments_loader')
-local schemas_loader = require('llm.loaders.schemas_loader')
+local models_manager = require('llm.models.models_manager')
+local fragments_loader = require('llm.fragments.fragments_loader')
+local schemas_loader = require('llm.schemas.schemas_loader')
 local styles = require('llm.styles') -- Added
 
 -- Select and run a template
@@ -547,7 +547,7 @@ function M.continue_template_creation_extract(template)
   -- Step 8: Extract code option
   utils.floating_confirm({
     prompt = "Extract first code block from response?",
-    options = {"Yes", "No"}
+    options = { "Yes", "No" }
   }, function(extract_choice)
     if not extract_choice then return end
 
@@ -699,7 +699,7 @@ function M.populate_templates_buffer(bufnr)
   -- Store lookup tables in buffer variables
   vim.b[bufnr].line_to_template = line_to_template
   vim.b[bufnr].template_data = template_data
-  vim.b[bufnr].templates = templates -- Store the displayed list
+  vim.b[bufnr].templates = templates     -- Store the displayed list
 
   return line_to_template, template_data -- Return for direct use if needed
 end
@@ -725,26 +725,36 @@ function M.setup_templates_keymaps(bufnr, manager_module)
   end
 
   -- Create template
-  set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'c',
+    string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]],
+      manager_module.__name or 'llm.templates.templates_manager', bufnr))
 
   -- Run template
-  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'r',
+    string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.templates.templates_manager', bufnr))
 
   -- Edit template
-  set_keymap('n', 'e', string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'e',
+    string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.templates.templates_manager', bufnr))
 
   -- Delete template
-  set_keymap('n', 'd', string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'd',
+    string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.templates.templates_manager', bufnr))
 
   -- View details
-  set_keymap('n', 'v', string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'v',
+    string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.templates.templates_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
 function M.create_template_from_manager(bufnr)
-  require('llm.managers.unified_manager').close() -- Close manager before starting creation flow
+  require('llm.unified_manager').close() -- Close manager before starting creation flow
   vim.schedule(function()
-    M.create_template() -- This function handles reopening the manager on completion/failure
+    M.create_template()                  -- This function handles reopening the manager on completion/failure
   end)
 end
 
@@ -754,7 +764,7 @@ function M.run_template_under_cursor(bufnr)
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.managers.unified_manager').close() -- Close manager before running
+  require('llm.unified_manager').close() -- Close manager before running
   vim.schedule(function()
     M.run_template_with_params(template_name)
   end)
@@ -766,9 +776,9 @@ function M.edit_template_under_cursor(bufnr)
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.managers.unified_manager').close() -- Close manager before editing
+  require('llm.unified_manager').close() -- Close manager before editing
   vim.schedule(function()
-    M.edit_template(template_name) -- This function handles reopening the manager
+    M.edit_template(template_name)       -- This function handles reopening the manager
   end)
 end
 
@@ -784,13 +794,13 @@ function M.delete_template_under_cursor(bufnr)
     prompt = "Delete template '" .. template_name .. "'?",
     on_confirm = function(confirmed)
       if not confirmed then return end
-      
+
       -- Perform deletion in a scheduled callback to ensure UI updates properly
       vim.schedule(function()
         local success, err = templates_loader.delete_template(template_name)
         if success then
           vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
-          require('llm.managers.unified_manager').switch_view("Templates")
+          require('llm.unified_manager').switch_view("Templates")
         else
           vim.notify("Failed to delete template: " .. (err or "unknown error"), vim.log.levels.ERROR)
         end
@@ -813,7 +823,7 @@ function M.view_template_details_under_cursor(bufnr)
   end
 
   -- Close the unified manager before showing details
-  require('llm.managers.unified_manager').close()
+  require('llm.unified_manager').close()
 
   vim.schedule(function()
     -- Create a buffer for template details
@@ -828,20 +838,39 @@ function M.view_template_details_under_cursor(bufnr)
 
     -- Format template details
     local lines = { "# Template: " .. template_name, "" }
-    if template.system and template.system ~= "" then table.insert(lines, "## System Prompt:"); table.insert(lines, ""); table.insert(lines, template.system); table.insert(lines, "") end
-    if template.prompt and template.prompt ~= "" then table.insert(lines, "## Prompt:"); table.insert(lines, ""); table.insert(lines, template.prompt); table.insert(lines, "") end
-    if template.model and template.model ~= "" then table.insert(lines, "## Model: " .. template.model); table.insert(lines, "") end
-    if template.extract then table.insert(lines, "## Extract first code block: Yes"); table.insert(lines, "") end
-    if template.schema then table.insert(lines, "## Schema: " .. template.schema); table.insert(lines, "") end
+    if template.system and template.system ~= "" then
+      table.insert(lines, "## System Prompt:"); table.insert(lines, ""); table.insert(lines, template.system); table
+          .insert(lines, "")
+    end
+    if template.prompt and template.prompt ~= "" then
+      table.insert(lines, "## Prompt:"); table.insert(lines, ""); table.insert(lines, template.prompt); table.insert(
+        lines, "")
+    end
+    if template.model and template.model ~= "" then
+      table.insert(lines, "## Model: " .. template.model); table.insert(lines, "")
+    end
+    if template.extract then
+      table.insert(lines, "## Extract first code block: Yes"); table.insert(lines, "")
+    end
+    if template.schema then
+      table.insert(lines, "## Schema: " .. template.schema); table.insert(lines, "")
+    end
     table.insert(lines, ""); table.insert(lines, "Press [q]uit, [e]dit template, [r]un template")
     api.nvim_buf_set_lines(detail_buf, 0, -1, false, lines)
 
     -- Set up keymaps for the detail view
-    local function set_detail_keymap(mode, lhs, rhs) api.nvim_buf_set_keymap(detail_buf, mode, lhs, rhs, { noremap = true, silent = true }) end
+    local function set_detail_keymap(mode, lhs, rhs)
+      api.nvim_buf_set_keymap(detail_buf, mode, lhs, rhs,
+        { noremap = true, silent = true })
+    end
     set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
     set_detail_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-    set_detail_keymap("n", "e", string.format([[<Cmd>lua require('llm.managers.templates_manager').edit_template_from_details('%s')<CR>]], template_name))
-    set_detail_keymap("n", "r", string.format([[<Cmd>lua require('llm.managers.templates_manager').run_template_with_params('%s')<CR>]], template_name))
+    set_detail_keymap("n", "e",
+      string.format([[<Cmd>lua require('llm.templates.templates_manager').edit_template_from_details('%s')<CR>]],
+        template_name))
+    set_detail_keymap("n", "r",
+      string.format([[<Cmd>lua require('llm.templates.templates_manager').run_template_with_params('%s')<CR>]],
+        template_name))
 
     -- Set up highlighting
     styles.setup_buffer_styling(detail_buf)
@@ -866,11 +895,11 @@ end
 
 -- Main function to open the template manager (now delegates to unified manager)
 function M.manage_templates()
-  require('llm.managers.unified_manager').open_specific_manager("Templates")
+  require('llm.unified_manager').open_specific_manager("Templates")
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.templates_manager'
+M.__name = 'llm.templates.templates_manager'
 
 -- Run template by name (ensure it closes manager first)
 function M.run_template_by_name(template_name)
@@ -883,7 +912,7 @@ function M.run_template_by_name(template_name)
     vim.notify("Template '" .. template_name .. "' not found", vim.log.levels.ERROR)
     return
   end
-  require('llm.managers.unified_manager').close() -- Close manager if open
+  require('llm.unified_manager').close() -- Close manager if open
   vim.schedule(function()
     M.run_template_with_params(template_name)
   end)

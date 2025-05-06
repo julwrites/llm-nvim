@@ -13,7 +13,7 @@ function M.get_model_arg()
   local model = config.get("model")
   if model and model ~= "" then
     -- Return as a table element for later concatenation
-    return {"-m", vim.fn.shellescape(model)}
+    return { "-m", vim.fn.shellescape(model) }
   end
   return {} -- Return empty table if no model
 end
@@ -23,7 +23,7 @@ function M.get_system_arg()
   local system = config.get("system_prompt")
   if system and system ~= "" then
     -- Return as a table element for later concatenation
-    return {"-s", vim.fn.shellescape(system)}
+    return { "-s", vim.fn.shellescape(system) }
   end
   return {} -- Return empty table if no system prompt
 end
@@ -102,7 +102,7 @@ end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths)
-  local cmd_parts = {"llm"}
+  local cmd_parts = { "llm" }
 
   -- Add model args (returns a table)
   vim.list_extend(cmd_parts, M.get_model_arg())
@@ -122,9 +122,9 @@ function M.prompt(prompt, fragment_paths)
   if config.get('debug') then
     vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
   end
-  
+
   local result = M.run_llm_command(cmd)
-  
+
   if result then
     M.create_response_buffer(result)
   else
@@ -147,11 +147,11 @@ function M.prompt_with_selection(prompt, fragment_paths)
     api.nvim_err_writeln("Failed to create temporary file")
     return
   end
-  
+
   file:write(selection)
   file:close()
 
-  local llm_cmd_parts = {"llm"}
+  local llm_cmd_parts = { "llm" }
   -- Add model args
   vim.list_extend(llm_cmd_parts, M.get_model_arg())
   -- Add system args
@@ -198,11 +198,11 @@ function M.explain_code(fragment_paths)
     api.nvim_err_writeln("Failed to create temporary file")
     return
   end
-  
+
   file:write(content)
   file:close()
 
-  local llm_cmd_parts = {"llm"}
+  local llm_cmd_parts = { "llm" }
   -- Add model args
   vim.list_extend(llm_cmd_parts, M.get_model_arg())
   -- Add system prompt specifically for explain
@@ -271,7 +271,7 @@ end
 
 -- Helper function to select an existing fragment alias
 local function select_existing_fragment(callback)
-  local fragments_loader = require('llm.loaders.fragments_loader')
+  local fragments_loader = require('llm.fragments.fragments_loader')
   local existing_fragments = fragments_loader.get_fragments() -- Get fragments with aliases
 
   if not existing_fragments or #existing_fragments == 0 then
@@ -283,7 +283,8 @@ local function select_existing_fragment(callback)
   local items = {}
   local fragment_map = {}
   for i, frag in ipairs(existing_fragments) do
-    local display_name = (#frag.aliases > 0 and frag.aliases[1] or frag.hash:sub(1, 8)) .. " (" .. (frag.source or "hash") .. ")"
+    local display_name = (#frag.aliases > 0 and frag.aliases[1] or frag.hash:sub(1, 8)) ..
+        " (" .. (frag.source or "hash") .. ")"
     table.insert(items, display_name)
     fragment_map[i] = (#frag.aliases > 0 and frag.aliases[1] or frag.hash) -- Store identifier (prefer alias)
   end
@@ -305,7 +306,7 @@ end
 -- Interactive prompt allowing selection of multiple fragments
 function M.interactive_prompt_with_fragments(opts)
   opts = opts or {}
-  local fragments_loader = require('llm.loaders.fragments_loader') -- Load here to avoid circular dependency issues at top level
+  local fragments_loader = require('llm.fragments.fragments_loader') -- Load here to avoid circular dependency issues at top level
   local fragments_list = {}
   local visual_selection_text = nil
   local visual_selection_temp_file = nil
@@ -356,10 +357,10 @@ function M.interactive_prompt_with_fragments(opts)
             end
           end
           if not found then
-             table.insert(fragments_list, identifier)
-             vim.notify("Added fragment: " .. identifier, vim.log.levels.INFO)
+            table.insert(fragments_list, identifier)
+            vim.notify("Added fragment: " .. identifier, vim.log.levels.INFO)
           else
-             vim.notify("Fragment already added: " .. identifier, vim.log.levels.WARN)
+            vim.notify("Fragment already added: " .. identifier, vim.log.levels.WARN)
           end
         end
         vim.schedule(add_more_fragments) -- Continue the loop
@@ -411,7 +412,7 @@ function M.interactive_prompt_with_fragments(opts)
           end
         end)
       else
-         add_more_fragments() -- Should not happen, but ensures loop continues
+        add_more_fragments() -- Should not happen, but ensures loop continues
       end
     end)
   end
@@ -419,6 +420,5 @@ function M.interactive_prompt_with_fragments(opts)
   -- Start the fragment selection loop
   add_more_fragments()
 end
-
 
 return M

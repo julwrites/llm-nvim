@@ -10,11 +10,11 @@ local api = vim.api
 local llm = require('llm.init')
 
 -- Import manager modules
-local models_manager = require('llm.managers.models_manager')
-local plugins_manager = require('llm.managers.plugins_manager')
-local keys_manager = require('llm.managers.keys_manager')
-local fragments_manager = require('llm.managers.fragments_manager')
-local fragments_loader = require('llm.loaders.fragments_loader')
+local models_manager = require('llm.models.models_manager')
+local plugins_manager = require('llm.plugins.plugins_manager')
+local keys_manager = require('llm.keys.keys_manager')
+local fragments_manager = require('llm.fragments.fragments_manager')
+local fragments_loader = require('llm.fragments.fragments_loader')
 local commands = require('llm.commands')
 
 -- Core functionality
@@ -35,7 +35,7 @@ function llm.run_llm_command(cmd)
   local handle = io.popen(cmd_with_stderr, 'r')
   local result = ""
   if handle then
-    result = handle:read("*a") -- Read all output
+    result = handle:read("*a")                                                      -- Read all output
     handle:close()
     vim.notify("popen result (raw): " .. vim.inspect(result), vim.log.levels.DEBUG) -- Debug raw result
   else
@@ -48,9 +48,9 @@ function llm.run_llm_command(cmd)
 
   -- Basic check for common error patterns if result is not empty
   if result and result ~= "" and (result:match("[Ee]rror:") or result:match("[Ff]ailed") or result:match("command not found") or result:match("Traceback")) then
-     vim.notify("LLM command may have failed. Output:\n" .. result, vim.log.levels.ERROR)
-     -- Optionally return nil here if an error is detected
-     -- return nil
+    vim.notify("LLM command may have failed. Output:\n" .. result, vim.log.levels.ERROR)
+    -- Optionally return nil here if an error is detected
+    -- return nil
   end
 
   return result
@@ -360,35 +360,35 @@ end
 
 -- Templates and schemas functionality
 if not llm.manage_templates then
-  llm.manage_templates = require('llm.managers.templates_manager').manage_templates
+  llm.manage_templates = require('llm.templates.templates_manager').manage_templates
 end
 
 if not llm.select_template then
-  llm.select_template = require('llm.managers.templates_manager').select_template
+  llm.select_template = require('llm.templates.templates_manager').select_template
 end
 
 if not llm.create_template then
-  llm.create_template = require('llm.managers.templates_manager').create_template
+  llm.create_template = require('llm.templates.templates_manager').create_template
 end
 
 if not llm.run_template_by_name then
-  llm.run_template_by_name = require('llm.managers.templates_manager').run_template_by_name
+  llm.run_template_by_name = require('llm.templates.templates_manager').run_template_by_name
 end
 
 if not llm.manage_schemas then
-  llm.manage_schemas = require('llm.managers.schemas_manager').manage_schemas
+  llm.manage_schemas = require('llm.schemas.schemas_manager').manage_schemas
 end
 
 if not llm.select_schema then
-  llm.select_schema = require('llm.managers.schemas_manager').select_schema
+  llm.select_schema = require('llm.schemas.schemas_manager').select_schema
 end
 
 if not llm.create_schema then
-  llm.create_schema = require('llm.managers.schemas_manager').create_schema
+  llm.create_schema = require('llm.schemas.schemas_manager').create_schema
 end
 
 if not llm.run_schema then
-  llm.run_schema = require('llm.managers.schemas_manager').run_schema
+  llm.run_schema = require('llm.schemas.schemas_manager').run_schema
 end
 
 -- Expose fragment functions to global scope for testing

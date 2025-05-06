@@ -1,11 +1,11 @@
--- llm/managers/schemas_manager.lua - Schema management for llm-nvim
+-- llm/schemas/schemas_manager.lua - Schema management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 -- Forward declarations
 local api = vim.api
-local schemas_loader = require('llm.loaders.schemas_loader')
+local schemas_loader = require('llm.schemas.schemas_loader')
 local utils = require('llm.utils')
 local styles = require('llm.styles') -- Added
 
@@ -178,7 +178,7 @@ function M.run_schema_with_input_source(schema_id)
               -- Mark the buffer as 'saved' to avoid "No write since last change" message
               api.nvim_buf_set_option(args.buf, "modified", false)
               -- Submit the schema input
-              require('llm.managers.schemas_manager').submit_schema_input_from_buffer(args.buf)
+              require('llm.schemas.schemas_manager').submit_schema_input_from_buffer(args.buf)
               return true -- Indicate the write was handled
             end
           end,
@@ -476,7 +476,7 @@ function M.create_schema()
             callback = function(args)
               -- Check if buffer is still valid before proceeding
               if api.nvim_buf_is_valid(args.buf) then
-                require('llm.managers.schemas_manager').save_schema_from_temp_file(args.buf)
+                require('llm.schemas.schemas_manager').save_schema_from_temp_file(args.buf)
               end
             end,
           })
@@ -739,37 +739,37 @@ function M.setup_schemas_keymaps(bufnr, manager_module)
   -- Create schema
   set_keymap('n', 'c',
     string.format([[<Cmd>lua require('%s').create_schema_from_manager(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- Run schema
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').run_schema_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- View details
   set_keymap('n', 'v',
     string.format([[<Cmd>lua require('%s').view_schema_details_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- Edit schema
   set_keymap('n', 'e',
     string.format([[<Cmd>lua require('%s').edit_schema_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- Add/Set alias
   set_keymap('n', 'a',
     string.format([[<Cmd>lua require('%s').set_alias_for_schema_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- Delete alias
   set_keymap('n', 'd',
     string.format([[<Cmd>lua require('%s').delete_alias_for_schema_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 
   -- Toggle view
   set_keymap('n', 't',
     string.format([[<Cmd>lua require('%s').toggle_schemas_view(%d)<CR>]],
-      manager_module.__name or 'llm.managers.schemas_manager', bufnr))
+      manager_module.__name or 'llm.schemas.schemas_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -779,7 +779,7 @@ function M.run_schema_under_cursor(bufnr)
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.managers.unified_manager').close() -- Close manager before running
+  require('llm.unified_manager').close() -- Close manager before running
   vim.schedule(function()
     M.run_schema_with_input_source(schema_id)
   end)
@@ -799,7 +799,7 @@ function M.view_schema_details_under_cursor(bufnr)
   end
 
   -- Close the unified manager before showing details
-  require('llm.managers.unified_manager').close()
+  require('llm.unified_manager').close()
 
   vim.schedule(function()
     -- Create a buffer for schema details
@@ -858,13 +858,13 @@ function M.view_schema_details_under_cursor(bufnr)
     set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
     set_detail_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
     set_detail_keymap("n", "r",
-      string.format([[<Cmd>lua require('llm.managers.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
+      string.format([[<Cmd>lua require('llm.schemas.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
     set_detail_keymap("n", "e",
-      string.format([[<Cmd>lua require('llm.managers.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
+      string.format([[<Cmd>lua require('llm.schemas.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
     set_detail_keymap("n", "a",
-      string.format([[<Cmd>lua require('llm.managers.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
+      string.format([[<Cmd>lua require('llm.schemas.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
     set_detail_keymap("n", "d",
-      string.format([[<Cmd>lua require('llm.managers.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
+      string.format([[<Cmd>lua require('llm.schemas.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
 
     -- Set up highlighting
     styles.setup_buffer_styling(detail_buf)
@@ -880,7 +880,7 @@ function M.set_alias_for_schema_under_cursor(bufnr)
 
   local current_alias = schema_info.name
   local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "): " or
-  "Enter alias for schema: "
+      "Enter alias for schema: "
 
   -- Store the callback directly in the buffer
   local on_confirm = function(new_alias)
@@ -894,7 +894,7 @@ function M.set_alias_for_schema_under_cursor(bufnr)
     end
     if schemas_loader.set_schema_alias(schema_id, new_alias) then
       vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Schemas")
+      require('llm.unified_manager').switch_view("Schemas")
     else
       vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
     end
@@ -958,9 +958,9 @@ function M.set_alias_for_schema_under_cursor(bufnr)
 end
 
 function M.create_schema_from_manager(bufnr)
-  require('llm.managers.unified_manager').close() -- Close manager before starting creation flow
+  require('llm.unified_manager').close() -- Close manager before starting creation flow
   vim.schedule(function()
-    M.create_schema()                             -- This function handles reopening the manager on completion/failure
+    M.create_schema()                    -- This function handles reopening the manager on completion/failure
   end)
 end
 
@@ -996,7 +996,7 @@ function M.set_alias_from_details(schema_id)
         api.nvim_win_close(0, true) -- Close details view
         -- Reopen the unified manager to the Schemas view
         vim.schedule(function()
-          require('llm.managers.unified_manager').open_specific_manager("Schemas")
+          require('llm.unified_manager').open_specific_manager("Schemas")
         end)
       else
         vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
@@ -1024,7 +1024,7 @@ function M.delete_alias_for_schema_under_cursor(bufnr)
       if not confirmed then return end
       if schemas_loader.remove_schema_alias(schema_id, alias_to_remove) then
         vim.notify("Schema alias '" .. alias_to_remove .. "' deleted", vim.log.levels.INFO)
-        require('llm.managers.unified_manager').switch_view("Schemas")
+        require('llm.unified_manager').switch_view("Schemas")
       else
         vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
       end
@@ -1038,9 +1038,9 @@ function M.edit_schema_under_cursor(bufnr)
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.managers.unified_manager').close() -- Close manager before editing
+  require('llm.unified_manager').close()  -- Close manager before editing
   vim.schedule(function()
-    M.edit_schema_from_details(schema_id)         -- Use the existing edit flow
+    M.edit_schema_from_details(schema_id) -- Use the existing edit flow
   end)
 end
 
@@ -1054,9 +1054,9 @@ function M.toggle_schemas_view(bufnr)
   _G.llm_schemas_named_only = not _G.llm_schemas_named_only
 
   -- Close and reopen the manager to force a full refresh
-  require('llm.managers.unified_manager').close()
+  require('llm.unified_manager').close()
   vim.schedule(function()
-    require('llm.managers.unified_manager').open_specific_manager("Schemas")
+    require('llm.unified_manager').open_specific_manager("Schemas")
   end)
 end
 
@@ -1078,7 +1078,7 @@ function M.delete_alias_from_details(schema_id)
         api.nvim_win_close(0, true) -- Close details view
         -- Reopen the unified manager to the Schemas view
         vim.schedule(function()
-          require('llm.managers.unified_manager').open_specific_manager("Schemas")
+          require('llm.unified_manager').open_specific_manager("Schemas")
         end)
       else
         vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
@@ -1107,11 +1107,11 @@ end
 function M.manage_schemas(show_named_only)
   -- Store the view mode preference globally for refresh/toggle
   _G.llm_schemas_named_only = show_named_only or true -- Default to named only
-  require('llm.managers.unified_manager').open_specific_manager("Schemas")
+  require('llm.unified_manager').open_specific_manager("Schemas")
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.schemas_manager'
+M.__name = 'llm.schemas.schemas_manager'
 
 -- Re-export functions from schemas_loader needed by other modules
 M.get_schemas = schemas_loader.get_schemas

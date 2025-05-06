@@ -1,4 +1,4 @@
--- llm/managers/plugins_manager.lua - Plugin management for llm-nvim
+-- llm/plugins/plugins_manager.lua - Plugin management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -6,18 +6,18 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local utils = require('llm.utils')
-local plugins_loader = require('llm.loaders.plugins_loader')
+local plugins_loader = require('llm.plugins.plugins_loader')
 local styles = require('llm.styles') -- Added for highlighting
 
 -- Get plugin descriptions
 function M.get_plugin_descriptions()
   local plugins_data = plugins_loader.get_plugins_with_descriptions()
   local descriptions = {}
-  
+
   for name, plugin in pairs(plugins_data) do
     descriptions[name] = plugin.description
   end
-  
+
   return descriptions
 end
 
@@ -36,7 +36,7 @@ function M.get_available_plugins_with_descriptions()
   if not utils.check_llm_installed() then
     return {}
   end
-  
+
   return plugins_loader.get_plugins_with_descriptions()
 end
 
@@ -96,7 +96,7 @@ function M.install_plugin(plugin_name)
     string.format('llm install %s', plugin_name),
     "Failed to install plugin: " .. plugin_name
   )
-  
+
   return result ~= nil
 end
 
@@ -110,7 +110,7 @@ function M.uninstall_plugin(plugin_name)
     string.format('llm uninstall %s -y', plugin_name),
     "Failed to uninstall plugin: " .. plugin_name
   )
-  
+
   return result ~= nil
 end
 
@@ -166,7 +166,11 @@ function M.populate_plugins_buffer(bufnr)
   for plugin_name, _ in pairs(installed_set) do
     local found = false
     for _, cat_plugins in pairs(categories) do
-      for _, p in ipairs(cat_plugins) do if p.name == plugin_name then found = true; break end end
+      for _, p in ipairs(cat_plugins) do
+        if p.name == plugin_name then
+          found = true; break
+        end
+      end
       if found then break end
     end
     if not found then
@@ -231,16 +235,22 @@ function M.setup_plugins_keymaps(bufnr, manager_module)
   end
 
   -- Install plugin under cursor
-  set_keymap('n', 'i', string.format([[<Cmd>lua require('%s').install_plugin_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
+  set_keymap('n', 'i',
+    string.format([[<Cmd>lua require('%s').install_plugin_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
 
   -- Uninstall plugin under cursor
-  set_keymap('n', 'x', string.format([[<Cmd>lua require('%s').uninstall_plugin_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
+  set_keymap('n', 'x',
+    string.format([[<Cmd>lua require('%s').uninstall_plugin_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
 
   -- Refresh plugin list
-  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').refresh_plugin_list(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
+  set_keymap('n', 'r',
+    string.format([[<Cmd>lua require('%s').refresh_plugin_list(%d)<CR>]],
+      manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
 
   -- Debug key (if needed)
-  -- set_keymap('n', 'D', string.format([[<Cmd>lua require('%s').run_debug_functions(%d)<CR>]], manager_module.__name or 'llm.managers.plugins_manager', bufnr))
+  -- set_keymap('n', 'D', string.format([[<Cmd>lua require('%s').run_debug_functions(%d)<CR>]], manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -255,7 +265,7 @@ function M.install_plugin_under_cursor(bufnr)
   vim.schedule(function()
     if M.install_plugin(plugin_name) then
       vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Plugins")
+      require('llm.unified_manager').switch_view("Plugins")
     else
       vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
     end
@@ -271,14 +281,14 @@ function M.uninstall_plugin_under_cursor(bufnr)
   end
   utils.floating_confirm({
     prompt = "Uninstall " .. plugin_name .. "?",
-    options = {"Yes", "No"}
+    options = { "Yes", "No" }
   }, function(choice)
     if choice ~= "Yes" then return end
     vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
     vim.schedule(function()
       if M.uninstall_plugin(plugin_name) then
         vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
-        require('llm.managers.unified_manager').switch_view("Plugins")
+        require('llm.unified_manager').switch_view("Plugins")
       else
         vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
       end
@@ -290,7 +300,7 @@ function M.refresh_plugin_list(bufnr)
   vim.notify("Refreshing plugin list from website...", vim.log.levels.INFO)
   local plugins = plugins_loader.refresh_plugins_cache()
   if plugins and vim.tbl_count(plugins) > 0 then
-     require('llm.managers.unified_manager').switch_view("Plugins")
+    require('llm.unified_manager').switch_view("Plugins")
   else
     vim.notify("Plugin refresh failed, keeping current view", vim.log.levels.WARN)
   end
@@ -314,10 +324,10 @@ end
 
 -- Main function to open the plugin manager (now delegates to unified manager)
 function M.manage_plugins()
-  require('llm.managers.unified_manager').open_specific_manager("Plugins")
+  require('llm.unified_manager').open_specific_manager("Plugins")
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.plugins_manager'
+M.__name = 'llm.plugins.plugins_manager'
 
 return M

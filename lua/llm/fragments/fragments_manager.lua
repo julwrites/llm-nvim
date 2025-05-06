@@ -1,4 +1,4 @@
--- llm/managers/fragments_manager.lua - Fragment management functionality for llm-nvim
+-- llm/fragments/fragments_manager.lua - Fragment management functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -9,8 +9,8 @@ local fn = vim.fn
 
 -- Forward declarations
 local utils = require('llm.utils')
-local fragments_loader = require('llm.loaders.fragments_loader')
-local plugins_manager = require('llm.managers.plugins_manager')
+local fragments_loader = require('llm.fragments.fragments_loader')
+local plugins_manager = require('llm.plugins.plugins_manager')
 local styles = require('llm.styles') -- Added
 
 -- Populate the buffer with fragment management content
@@ -139,40 +139,40 @@ function M.setup_fragments_keymaps(bufnr, manager_module)
   -- View fragment content
   set_keymap('n', 'v',
     string.format([[<Cmd>lua require('%s').view_fragment_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Set alias for fragment
   set_keymap('n', 'a',
     string.format([[<Cmd>lua require('%s').set_alias_for_fragment_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Remove alias from fragment
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').remove_alias_from_fragment_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Toggle view
   set_keymap('n', 't',
     string.format([[<Cmd>lua require('%s').toggle_fragments_view(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Add new file fragment
   set_keymap('n', 'n',
     string.format([[<Cmd>lua require('%s').add_file_fragment(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Add new GitHub repository fragment
   set_keymap('n', 'g',
     string.format([[<Cmd>lua require('%s').add_github_fragment_from_manager(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Prompt with fragment under cursor
   set_keymap('n', 'p',
     string.format([[<Cmd>lua require('%s').prompt_with_fragment_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+      manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 
   -- Debug key (if needed)
-  -- set_keymap('n', '?', string.format([[<Cmd>lua require('%s').debug_line_mapping(%d)<CR>]], manager_module.__name or 'llm.managers.fragments_manager', bufnr))
+  -- set_keymap('n', '?', string.format([[<Cmd>lua require('%s').debug_line_mapping(%d)<CR>]], manager_module.__name or 'llm.fragments.fragments_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -232,7 +232,7 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
     if not alias or alias == "" then return end
     if fragments_loader.set_fragment_alias(fragment_hash, alias) then
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Fragments")
+      require('llm.unified_manager').switch_view("Fragments")
       -- Return to normal mode after switching view
       vim.cmd('stopinsert')
       vim.cmd('normal! \27') -- Send ESC to ensure normal mode
@@ -269,7 +269,7 @@ function M.confirm_and_remove_alias(alias)
       if not confirmed then return end
       if fragments_loader.remove_fragment_alias(alias) then
         vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-        require('llm.managers.unified_manager').switch_view("Fragments")
+        require('llm.unified_manager').switch_view("Fragments")
       else
         vim.notify("Failed to remove alias", vim.log.levels.ERROR)
       end
@@ -279,20 +279,20 @@ end
 
 function M.toggle_fragments_view(bufnr)
   _G.llm_fragments_show_all = not (_G.llm_fragments_show_all or false)
-  require('llm.managers.unified_manager').switch_view("Fragments")
+  require('llm.unified_manager').switch_view("Fragments")
 end
 
 function M.add_file_fragment(bufnr)
   -- Use the loader function, providing a callback to refresh the view
   fragments_loader.select_file_as_fragment(function()
-    require('llm.managers.unified_manager').switch_view("Fragments")
+    require('llm.unified_manager').switch_view("Fragments")
   end, true) -- Force manual input
 end
 
 function M.add_github_fragment_from_manager(bufnr)
   -- Use the loader function, providing a callback to refresh the view
   fragments_loader.add_github_fragment(function()
-    require('llm.managers.unified_manager').switch_view("Fragments")
+    require('llm.unified_manager').switch_view("Fragments")
   end)
 end
 
@@ -316,7 +316,7 @@ end
 function M.manage_fragments(show_all)
   -- Store the view mode preference globally for refresh/toggle
   _G.llm_fragments_show_all = show_all or false
-  require('llm.managers.unified_manager').open_specific_manager("Fragments")
+  require('llm.unified_manager').open_specific_manager("Fragments")
 end
 
 -- Prompt with the fragment under cursor
@@ -351,6 +351,6 @@ function M.prompt_with_fragment_under_cursor(bufnr)
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.fragments_manager'
+M.__name = 'llm.fragments.fragments_manager'
 
 return M
