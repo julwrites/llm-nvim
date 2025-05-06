@@ -1,4 +1,4 @@
--- llm/loaders/schemas_loader.lua - Schema loading functionality for llm-nvim
+-- llm/schemas/schemas_loader.lua - Schema loading functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -339,13 +339,13 @@ function M.get_schema(schema_id_or_name)
     elseif in_target_schema_section then
       -- Check if we've reached the usage section or another schema
       if line:match(usage_pattern) or line:match(id_pattern) then
-        if config.get("debug") then 
-          vim.notify("End of schema section detected: " .. line, vim.log.levels.DEBUG) 
+        if config.get("debug") then
+          vim.notify("End of schema section detected: " .. line, vim.log.levels.DEBUG)
         end
         in_target_schema_section = false
         break -- We have collected the schema, break the loop
       end
-      
+
       -- Collect indented lines belonging to the schema
       if line:match("^%s+") then
         -- This line is part of the schema content
@@ -407,48 +407,48 @@ function M.get_schema(schema_id_or_name)
   -- After the loop, check if we successfully extracted text
   if schema_text ~= "" then
     if config.get("debug") then vim.notify("Successfully parsed schema text for " .. schema_id, vim.log.levels.DEBUG) end
-    
+
     -- Try more aggressive JSON fixing
     local fixed_text = schema_text
-    
+
     -- First attempt: Try to fix truncated JSON by adding missing closing braces/brackets
     local open_braces = select(2, schema_text:gsub("{", ""))
     local close_braces = select(2, schema_text:gsub("}", ""))
     local open_brackets = select(2, schema_text:gsub("%[", ""))
     local close_brackets = select(2, schema_text:gsub("%]", ""))
-    
+
     -- Add missing closing braces
     for i = 1, (open_braces - close_braces) do
       fixed_text = fixed_text .. "}"
     end
-    
+
     -- Add missing closing brackets
     for i = 1, (open_brackets - close_brackets) do
       fixed_text = fixed_text .. "]"
     end
-    
+
     -- Second attempt: Try to fix common JSON syntax errors
     -- Fix missing quotes around property names
     fixed_text = fixed_text:gsub("([{,]%s*)([%w_-]+)(%s*:)", '%1"%2"%3')
-    
+
     -- Fix missing commas between properties
     fixed_text = fixed_text:gsub('(["]}])%s*\n%s*(["{[])', '%1,%2')
-    
+
     -- Fix trailing commas
     fixed_text = fixed_text:gsub(',(%s*[}%]])', '%1')
-    
+
     -- Try parsing the fixed text
     local is_valid_json, parsed_content = pcall(vim.fn.json_decode, fixed_text)
     if is_valid_json then
       if config.get("debug") then
         vim.notify("Successfully fixed JSON schema", vim.log.levels.INFO)
       end
-      
+
       -- Format the fixed JSON
       local formatted_success, formatted = pcall(function()
         return vim.json.encode(parsed_content, { indent = 2 })
       end)
-      
+
       if formatted_success and formatted then
         schema_content = formatted
       else
@@ -459,7 +459,7 @@ function M.get_schema(schema_id_or_name)
       if config.get("debug") then
         vim.notify("Could not parse JSON, creating minimal valid schema", vim.log.levels.WARN)
       end
-      
+
       -- Create a minimal valid schema
       schema_content = [[{
   "type": "object",
@@ -1326,19 +1326,19 @@ function M.run_schema_with_file(schema_id_or_name, file_path, is_multi)
   if schemas[schema_id] then
     schema_exists = true
   end
-  
+
   if not schema_exists then
     vim.notify("Schema ID not found: " .. schema_id, vim.log.levels.ERROR)
     return nil
   end
-  
+
   -- Get the schema details to ensure it's valid
   local schema_details = M.get_schema(schema_id)
   if not schema_details or not schema_details.content then
     vim.notify("Schema content could not be retrieved: " .. schema_id, vim.log.levels.ERROR)
     return nil
   end
-  
+
   -- Validate the schema content
   local is_valid_json, _ = pcall(vim.fn.json_decode, schema_details.content)
   if not is_valid_json and config.get("debug") then

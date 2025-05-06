@@ -1,4 +1,4 @@
--- llm/managers/keys_manager.lua - API key management for llm-nvim
+-- llm/keys/keys_manager.lua - API key management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -48,7 +48,7 @@ function M.set_api_key(key_name, key_value)
 
   -- Find the keys.json file in the standard locations
   local keys_dir, keys_file = utils.get_config_path("keys.json")
-  
+
   -- If keys file doesn't exist, create it in the default location
   if not keys_file then
     local home = os.getenv("HOME")
@@ -56,10 +56,10 @@ function M.set_api_key(key_name, key_value)
       vim.notify("Could not determine home directory", vim.log.levels.ERROR)
       return false
     end
-    
+
     keys_dir = home .. "/.config/io.datasette.llm"
     keys_file = keys_dir .. "/keys.json"
-    
+
     -- Create directory if it doesn't exist
     os.execute("mkdir -p " .. keys_dir)
   end
@@ -67,11 +67,11 @@ function M.set_api_key(key_name, key_value)
   -- Read existing keys or create empty table
   local keys_data = {}
   local file = io.open(keys_file, "r")
-  
+
   if file then
     local content = file:read("*a")
     file:close()
-    
+
     -- Parse JSON if file exists and has content
     if content and content ~= "" then
       local success
@@ -202,7 +202,7 @@ function M.populate_keys_buffer(bufnr)
   vim.b[bufnr].key_data = key_data
   vim.b[bufnr].stored_keys_set = stored_keys_set -- Store for checking in actions
 
-  return line_to_provider, key_data -- Return for direct use if needed
+  return line_to_provider, key_data              -- Return for direct use if needed
 end
 
 -- Setup keymaps for the key management buffer
@@ -228,10 +228,14 @@ function M.setup_keys_keymaps(bufnr, manager_module)
   end
 
   -- Set key under cursor
-  set_keymap('n', 's', string.format([[<Cmd>lua require('%s').set_key_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.keys_manager', bufnr))
+  set_keymap('n', 's',
+    string.format([[<Cmd>lua require('%s').set_key_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.keys.keys_manager', bufnr))
 
   -- Remove key under cursor
-  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.keys_manager', bufnr))
+  set_keymap('n', 'r',
+    string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.keys.keys_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -264,13 +268,13 @@ function M.remove_key_under_cursor(bufnr)
 
   utils.floating_confirm({
     prompt = "Remove key for '" .. provider_name .. "'?",
-    options = {"Yes", "No"}
+    options = { "Yes", "No" }
   }, function(choice)
     if choice ~= "Yes" then return end
 
     if M.remove_api_key(provider_name) then
       vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Keys")
+      require('llm.unified_manager').switch_view("Keys")
     else
       vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
     end
@@ -297,11 +301,16 @@ function M.create_key_input_window(provider_name)
   vim.b[input_buf].provider_name = provider_name
 
   -- Keymaps for the input window
-  local function set_input_keymap(mode, lhs, rhs) api.nvim_buf_set_keymap(input_buf, mode, lhs, rhs, { noremap = true, silent = true }) end
-  set_input_keymap('i', '<CR>', [[<Cmd>stopinsert<CR><Cmd>lua require('llm.managers.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('n', '<CR>', [[<Cmd>lua require('llm.managers.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('i', '<Esc>', [[<Cmd>stopinsert<CR><Cmd>lua require('llm.managers.keys_manager').cancel_key_input()<CR>]])
-  set_input_keymap('n', '<Esc>', [[<Cmd>lua require('llm.managers.keys_manager').cancel_key_input()<CR>]])
+  local function set_input_keymap(mode, lhs, rhs)
+    api.nvim_buf_set_keymap(input_buf, mode, lhs, rhs,
+      { noremap = true, silent = true })
+  end
+  set_input_keymap('i', '<CR>',
+    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
+  set_input_keymap('n', '<CR>', [[<Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
+  set_input_keymap('i', '<Esc>',
+    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
+  set_input_keymap('n', '<Esc>', [[<Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
 end
 
 -- Save the key from the input window (modified to refresh unified view)
@@ -315,16 +324,16 @@ function M.save_key_from_input()
   if key_value and key_value ~= "" then
     if M.set_api_key(provider_name, key_value) then
       vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
-      require('llm.managers.unified_manager').switch_view("Keys") -- Refresh unified view
+      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
     else
       vim.notify("Failed to set key for '" .. provider_name .. "'", vim.log.levels.ERROR)
       -- Optionally reopen the Keys view even on failure
-      -- require('llm.managers.unified_manager').switch_view("Keys")
+      -- require('llm.unified_manager').switch_view("Keys")
     end
   else
     vim.notify("No key provided, operation cancelled", vim.log.levels.WARN)
     -- Optionally reopen the Keys view on cancel
-    -- require('llm.managers.unified_manager').switch_view("Keys")
+    -- require('llm.unified_manager').switch_view("Keys")
   end
 end
 
@@ -335,7 +344,7 @@ function M.cancel_key_input()
   api.nvim_win_close(0, true) -- Close input window
   vim.notify("Key input for '" .. provider_name .. "' cancelled", vim.log.levels.INFO)
   -- Optionally reopen the Keys view on cancel
-  -- require('llm.managers.unified_manager').switch_view("Keys")
+  -- require('llm.unified_manager').switch_view("Keys")
 end
 
 -- Helper to get provider info from buffer variables
@@ -358,10 +367,10 @@ end
 
 -- Main function to open the key manager (now delegates to unified manager)
 function M.manage_keys()
-  require('llm.managers.unified_manager').open_specific_manager("Keys")
+  require('llm.unified_manager').open_specific_manager("Keys")
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.managers.keys_manager'
+M.__name = 'llm.keys.keys_manager'
 
 return M

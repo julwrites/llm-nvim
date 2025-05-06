@@ -1,4 +1,4 @@
--- llm/managers/unified_manager.lua - Unified management window for llm-nvim
+-- llm/unified_manager.lua - Unified management window for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -8,12 +8,12 @@ local utils = require('llm.utils')
 local styles = require('llm.styles')
 
 -- Manager modules
-local models_manager = require('llm.managers.models_manager')
-local plugins_manager = require('llm.managers.plugins_manager')
-local keys_manager = require('llm.managers.keys_manager')
-local fragments_manager = require('llm.managers.fragments_manager')
-local templates_manager = require('llm.managers.templates_manager')
-local schemas_manager = require('llm.managers.schemas_manager')
+local models_manager = require('llm.models.models_manager')
+local plugins_manager = require('llm.plugins.plugins_manager')
+local keys_manager = require('llm.keys.keys_manager')
+local fragments_manager = require('llm.fragments.fragments_manager')
+local templates_manager = require('llm.templates.templates_manager')
+local schemas_manager = require('llm.schemas.schemas_manager')
 
 -- State for the unified window
 local state = {
@@ -70,10 +70,10 @@ local function close_window()
   if state.bufnr and api.nvim_buf_is_valid(state.bufnr) then
     -- Check if buffer is listed before trying to delete
     if vim.fn.bufexists(state.bufnr) == 1 and vim.fn.buflisted(state.bufnr) == 1 then
-       pcall(api.nvim_buf_delete, state.bufnr, { force = true })
+      pcall(api.nvim_buf_delete, state.bufnr, { force = true })
     elseif vim.fn.bufexists(state.bufnr) == 1 then
-       -- If buffer exists but is not listed (e.g., nofile), try deleting directly
-       pcall(api.nvim_buf_delete, state.bufnr, { force = true })
+      -- If buffer exists but is not listed (e.g., nofile), try deleting directly
+      pcall(api.nvim_buf_delete, state.bufnr, { force = true })
     end
   end
   state.winid = nil
@@ -87,16 +87,16 @@ local function setup_common_keymaps(bufnr)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  set_keymap('n', 'q', '<Cmd>lua require("llm.managers.unified_manager").close()<CR>')
-  set_keymap('n', '<Esc>', '<Cmd>lua require("llm.managers.unified_manager").close()<CR>')
+  set_keymap('n', 'q', '<Cmd>lua require("llm.unified_manager").close()<CR>')
+  set_keymap('n', '<Esc>', '<Cmd>lua require("llm.unified_manager").close()<CR>')
 
   -- Keymaps to switch views
-  set_keymap('n', 'M', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Models")<CR>')
-  set_keymap('n', 'P', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Plugins")<CR>')
-  set_keymap('n', 'K', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Keys")<CR>')
-  set_keymap('n', 'F', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Fragments")<CR>')
-  set_keymap('n', 'T', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Templates")<CR>')
-  set_keymap('n', 'S', '<Cmd>lua require("llm.managers.unified_manager").switch_view("Schemas")<CR>')
+  set_keymap('n', 'M', '<Cmd>lua require("llm.unified_manager").switch_view("Models")<CR>')
+  set_keymap('n', 'P', '<Cmd>lua require("llm.unified_manager").switch_view("Plugins")<CR>')
+  set_keymap('n', 'K', '<Cmd>lua require("llm.unified_manager").switch_view("Keys")<CR>')
+  set_keymap('n', 'F', '<Cmd>lua require("llm.unified_manager").switch_view("Fragments")<CR>')
+  set_keymap('n', 'T', '<Cmd>lua require("llm.unified_manager").switch_view("Templates")<CR>')
+  set_keymap('n', 'S', '<Cmd>lua require("llm.unified_manager").switch_view("Schemas")<CR>')
 end
 
 -- Switch the view within the unified window
@@ -121,15 +121,15 @@ function M.switch_view(view_name)
   -- Populate buffer with new view content
   local success, err = pcall(view_config.populate, state.bufnr)
   if not success then
-     vim.notify("Error populating " .. view_name .. " view: " .. tostring(err), vim.log.levels.ERROR)
-     -- Add error message to buffer
-     api.nvim_buf_set_lines(state.bufnr, 0, -1, false, {
-       "# Error loading " .. view_name .. " Manager",
-       "",
-       "Details: " .. tostring(err),
-       "",
-       "Press [q]uit or use navigation keys ([M]odels, [P]lugins, etc.)"
-     })
+    vim.notify("Error populating " .. view_name .. " view: " .. tostring(err), vim.log.levels.ERROR)
+    -- Add error message to buffer
+    api.nvim_buf_set_lines(state.bufnr, 0, -1, false, {
+      "# Error loading " .. view_name .. " Manager",
+      "",
+      "Details: " .. tostring(err),
+      "",
+      "Press [q]uit or use navigation keys ([M]odels, [P]lugins, etc.)"
+    })
   end
 
   -- Set buffer options
@@ -197,8 +197,7 @@ end
 
 -- Function for individual managers to call when opened directly
 function M.open_specific_manager(view_name)
-   M.open(view_name)
+  M.open(view_name)
 end
-
 
 return M

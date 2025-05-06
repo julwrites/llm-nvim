@@ -1,4 +1,4 @@
--- llm/loaders/templates_loader.lua - Template loading functionality for llm-nvim
+-- llm/templates/templates_loader.lua - Template loading functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -28,7 +28,8 @@ function M.get_templates()
 
   if shell_error ~= 0 then
     if config.get("debug") then
-      vim.notify("Error executing '" .. cmd .. "': " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+      vim.notify("Error executing '" .. cmd .. "': " .. result .. " (Exit code: " .. tostring(shell_error) .. ")",
+        vim.log.levels.ERROR)
     end
     return {}
   end
@@ -72,7 +73,8 @@ function M.get_template_details(template_name)
 
   if shell_error ~= 0 then
     if config.get("debug") then
-      vim.notify("Error getting template details: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+      vim.notify("Error getting template details: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")",
+        vim.log.levels.ERROR)
     end
     return nil
   end
@@ -243,7 +245,7 @@ function M.delete_template(name)
   -- First check if template exists
   local templates = M.get_templates()
   if not templates[name] then
-    return false, "Template '"..name.."' does not exist"
+    return false, "Template '" .. name .. "' does not exist"
   end
 
   -- Get the full path to the template file
@@ -343,7 +345,8 @@ function M.run_template_with_url(name, url, params)
   local shell_error = vim.v.shell_error
 
   if shell_error ~= 0 and config.get("debug") then
-    vim.notify("Error running template with URL: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+    vim.notify("Error running template with URL: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")",
+      vim.log.levels.ERROR)
   end
 
   return shell_error == 0 and result or nil
@@ -365,7 +368,8 @@ function M.edit_template(name)
   local shell_error = vim.v.shell_error
 
   if shell_error ~= 0 and config.get("debug") then
-    vim.notify("Error editing template: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")", vim.log.levels.ERROR)
+    vim.notify("Error editing template: " .. result .. " (Exit code: " .. tostring(shell_error) .. ")",
+      vim.log.levels.ERROR)
   end
 
   return shell_error == 0

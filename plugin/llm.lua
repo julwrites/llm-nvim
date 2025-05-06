@@ -9,185 +9,164 @@ if vim.g.loaded_llm == 1 then
 end
 vim.g.loaded_llm = 1
 
--- Ensure select_model is available in global scope for tests
-_G.select_model = function()
-  return require('llm.managers.models_manager').select_model()
-end
-
--- Also expose it directly for tests
-if not _G.select_model then
-  _G.select_model = require('llm.managers.models_manager').select_model
-end
-
--- Load the main module
+-- Load the main module from lua/llm/init.lua
+-- This is the primary entry point for the plugin's Lua code.
+-- Plugin managers ensure the 'lua/' directory is in runtimepath before this.
 local ok, llm = pcall(require, "llm")
 if not ok then
+  -- If the main module fails to load, notify the user and stop.
+  -- The error message from the require will provide details.
   vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
   return
 end
+local config = require("llm.config") -- Load config module
 
--- Define commands
+-- Define commands using the functions from the loaded 'llm' module
 vim.api.nvim_create_user_command("LLM", function(opts)
-  if not llm.prompt then
-    vim.notify("llm.prompt function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.prompt(opts.args)
-end, { nargs = 1 })
+end, { nargs = 1, desc = "Send a prompt to llm" })
 
 vim.api.nvim_create_user_command("LLMWithSelection", function(opts)
-  if not llm.prompt_with_selection then
-    vim.notify("llm.prompt_with_selection function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.prompt_with_selection(opts.args)
-end, { nargs = "?", range = true })
+end, { nargs = "?", range = true, desc = "Send visual selection with a prompt to llm" })
 
 vim.api.nvim_create_user_command("LLMChat", function(opts)
-  if not llm.start_chat then
-    vim.notify("llm.start_chat function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.start_chat(opts.args)
-end, { nargs = "?" })
+end, { nargs = "?", desc = "Start an llm chat session (optional model)" })
 
 vim.api.nvim_create_user_command("LLMExplain", function()
-  if not llm.explain_code then
-    vim.notify("llm.explain_code function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.explain_code()
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Explain the current buffer or visual selection" })
 
+-- Commands to open specific views in the unified manager
 vim.api.nvim_create_user_command("LLMModels", function()
-  -- Open the unified manager, defaulting to the Models view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Models")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM Models Manager" })
 
 vim.api.nvim_create_user_command("LLMPlugins", function()
-  -- Open the unified manager, defaulting to the Plugins view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Plugins")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM Plugins Manager" })
 
 vim.api.nvim_create_user_command("LLMKeys", function()
-  -- Open the unified manager, defaulting to the Keys view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Keys")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM API Keys Manager" })
 
 vim.api.nvim_create_user_command("LLMFragments", function()
-  -- Open the unified manager, defaulting to the Fragments view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Fragments")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM Fragments Manager" })
 
--- Changed: This command now calls the interactive fragment selection function.
+-- Command for interactive fragment selection (handles visual selection internally)
 vim.api.nvim_create_user_command("LLMWithFragments", function(opts)
-  if not llm.interactive_prompt_with_fragments then
-    vim.notify("llm.interactive_prompt_with_fragments function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.interactive_prompt_with_fragments(opts)
-end, { nargs = 0 }) -- nargs=0 because we handle visual mode via opts.range
+end, { nargs = 0, desc = "Interactive prompt with fragments" })
 
--- Re-added: Command for visual selection + interactive fragments.
+-- Command for visual selection + interactive fragments (alias for LLMWithFragments with range=true)
 vim.api.nvim_create_user_command("LLMWithSelectionAndFragments", function(opts)
-  if not llm.interactive_prompt_with_fragments then
-    vim.notify("llm.interactive_prompt_with_fragments function not found", vim.log.levels.ERROR)
-    return
-  end
-  -- Pass opts which contains range info for visual mode detection
   llm.interactive_prompt_with_fragments(opts)
-end, { nargs = 0, range = true }) -- range=true enables opts.range
+end, { nargs = 0, range = true, desc = "Interactive prompt with visual selection and fragments" })
 
+-- Commands for Templates
 vim.api.nvim_create_user_command("LLMTemplates", function()
-  -- Open the unified manager, defaulting to the Templates view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Templates")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM Templates Manager" })
 
 vim.api.nvim_create_user_command("LLMTemplate", function()
   llm.select_template()
-end, { nargs = 0, range = true })
+end, { nargs = 0, range = true, desc = "Select and run an LLM template" })
 
+-- Commands for Schemas
 vim.api.nvim_create_user_command("LLMSchemas", function()
-  -- Open the unified manager, defaulting to the Schemas view
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
   llm.toggle_unified_manager("Schemas")
-end, { nargs = 0 })
+end, { nargs = 0, desc = "Open LLM Schemas Manager" })
 
 vim.api.nvim_create_user_command("LLMSchema", function()
   llm.select_schema()
-end, { nargs = 0, range = true })
+end, { nargs = 0, range = true, desc = "Select and run an LLM schema" })
 
+-- Command to toggle the unified manager with an optional initial view
 vim.api.nvim_create_user_command("LLMToggle", function(opts)
-  if not llm.toggle_unified_manager then
-    vim.notify("llm.toggle_unified_manager function not found", vim.log.levels.ERROR)
-    return
-  end
-  -- Allow specifying an initial view, e.g., :LLMToggle Plugins
   llm.toggle_unified_manager(opts.args ~= "" and opts.args or nil)
-end, { nargs = "?", complete = function()
+end, {
+  nargs = "?",
+  complete = function()
     -- Provide completion for view names
     return {"Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas"}
-  end
+  end,
+  desc = "Toggle LLM Unified Manager (optional initial view)"
 })
 
+-- Define key mappings using the commands or direct lua calls
+-- Using commands is simpler for basic calls, direct lua is better for complex ones or when avoiding command-line buffer is desired.
+-- Let's update to use direct lua calls for the toggle and managers for better performance and consistency.
 
--- Define key mappings
-vim.keymap.set("n", "<Plug>(llm-toggle)", ":LLMToggle<CR>", { silent = true }) -- Added
-vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true })
-vim.keymap.set("v", "<Plug>(llm-selection)", ":LLMWithSelection ", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-explain)", ":LLMExplain<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-chat)", ":LLMChat<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-models)", ":LLMModels<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-plugins)", ":LLMPlugins<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-keys)", ":LLMKeys<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-fragments)", ":LLMFragments<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-with-fragments)", ":LLMWithFragments<CR>", { silent = true }) -- Calls interactive fn
-vim.keymap.set("v", "<Plug>(llm-selection-with-fragments)", ":LLMWithSelectionAndFragments<CR>", { silent = true }) -- Re-added
-vim.keymap.set("n", "<Plug>(llm-templates)", ":LLMTemplates<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-template)", ":LLMTemplate<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-schemas)", ":LLMSchemas<CR>", { silent = true })
-vim.keymap.set("n", "<Plug>(llm-schema)", ":LLMSchema<CR>", { silent = true })
+vim.keymap.set("n", "<Plug>(llm-toggle)", "<Cmd>lua require('llm').toggle_unified_manager()<CR>", { silent = true, desc = "Toggle LLM Unified Manager" })
+vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true, desc = "Prompt LLM" })
+vim.keymap.set("v", "<Plug>(llm-selection)", ":LLMWithSelection ", { silent = true, desc = "Prompt LLM with selection" })
+vim.keymap.set("n", "<Plug>(llm-explain)", "<Cmd>LLMExplain<CR>", { silent = true, desc = "Explain code" })
+vim.keymap.set("n", "<Plug>(llm-chat)", "<Cmd>LLMChat<CR>", { silent = true, desc = "Start LLM chat" })
+
+-- Use direct lua calls for manager keymaps
+vim.keymap.set("n", "<Plug>(llm-models)", "<Cmd>lua require('llm').toggle_unified_manager('Models')<CR>", { silent = true, desc = "Open LLM Models Manager" })
+vim.keymap.set("n", "<Plug>(llm-plugins)", "<Cmd>lua require('llm').toggle_unified_manager('Plugins')<CR>", { silent = true, desc = "Open LLM Plugins Manager" })
+vim.keymap.set("n", "<Plug>(llm-keys)", "<Cmd>lua require('llm').toggle_unified_manager('Keys')<CR>", { silent = true, desc = "Open LLM Keys Manager" })
+vim.keymap.set("n", "<Plug>(llm-fragments)", "<Cmd>lua require('llm').toggle_unified_manager('Fragments')<CR>", { silent = true, desc = "Open LLM Fragments Manager" })
+
+vim.keymap.set("n", "<Plug>(llm-with-fragments)", "<Cmd>LLMWithFragments<CR>", { silent = true, desc = "Interactive prompt with fragments" }) -- Calls interactive command
+vim.keymap.set("v", "<Plug>(llm-selection-with-fragments)", "<Cmd>LLMWithSelectionAndFragments<CR>", { silent = true, desc = "Interactive prompt with selection and fragments" }) -- Calls interactive command
+
+-- Use direct lua calls for template/schema managers
+vim.keymap.set("n", "<Plug>(llm-templates)", "<Cmd>lua require('llm').toggle_unified_manager('Templates')<CR>", { silent = true, desc = "Open LLM Templates Manager" })
+vim.keymap.set("n", "<Plug>(llm-template)", "<Cmd>LLMTemplate<CR>", { silent = true, desc = "Select and run LLM template" }) -- Calls command
+
+vim.keymap.set("n", "<Plug>(llm-schemas)", "<Cmd>lua require('llm').toggle_unified_manager('Schemas')<CR>", { silent = true, desc = "Open LLM Schemas Manager" })
+vim.keymap.set("n", "<Plug>(llm-schema)", "<Cmd>LLMSchema<CR>", { silent = true, desc = "Select and run LLM schema" }) -- Calls command
 
 -- Default mappings (can be disabled with config option)
-local config = require("llm.config")
+-- Access config via the config module
 if not config.get("no_mappings") then
-  vim.keymap.set("n", "<leader>ll", "<Plug>(llm-toggle)") -- Added toggle mapping
-  vim.keymap.set("n", "<leader>llp", "<Plug>(llm-prompt)")
-  vim.keymap.set("v", "<leader>lls", "<Plug>(llm-selection)")
-  vim.keymap.set("n", "<leader>lle", "<Plug>(llm-explain)")
-  vim.keymap.set("n", "<leader>llc", "<Plug>(llm-chat)")
-  vim.keymap.set("n", "<leader>llm", "<Plug>(llm-models)")
-  vim.keymap.set("n", "<leader>llg", "<Plug>(llm-plugins)")
-  vim.keymap.set("n", "<leader>llk", "<Plug>(llm-keys)")
-  vim.keymap.set("n", "<leader>llf", "<Plug>(llm-fragments)")
-  vim.keymap.set("n", "<leader>llwf", "<Plug>(llm-with-fragments)") -- Calls interactive fn
-  vim.keymap.set("v", "<leader>llwf", "<Plug>(llm-selection-with-fragments)") -- Re-added visual mode keymap
-  vim.keymap.set("n", "<leader>llt", "<Plug>(llm-templates)")
-  vim.keymap.set("n", "<leader>llrt", "<Plug>(llm-template)")
-  vim.keymap.set("n", "<leader>lls", "<Plug>(llm-schemas)")
-  vim.keymap.set("n", "<leader>llrs", "<Plug>(llm-schema)")
-  vim.keymap.set("n", "<leader>llcs", "<Plug>(llm-create-schema)")
+  vim.keymap.set("n", "<leader>ll", "<Plug>(llm-toggle)", { desc = "LLM: Toggle Manager" }) -- Added toggle mapping
+  vim.keymap.set("n", "<leader>lp", "<Plug>(llm-prompt)", { desc = "LLM: Prompt" }) -- Changed leader key for prompt
+  vim.keymap.set("v", "<leader>ls", "<Plug>(llm-selection)", { desc = "LLM: Prompt Selection" }) -- Changed leader key for selection
+  vim.keymap.set("n", "<leader>le", "<Plug>(llm-explain)", { desc = "LLM: Explain Code" }) -- Changed leader key for explain
+  vim.keymap.set("n", "<leader>lc", "<Plug>(llm-chat)", { desc = "LLM: Chat" }) -- Changed leader key for chat
+  vim.keymap.set("n", "<leader>lm", "<Plug>(llm-models)", { desc = "LLM: Models Manager" }) -- Changed leader key for models
+  vim.keymap.set("n", "<leader>lg", "<Plug>(llm-plugins)", { desc = "LLM: Plugins Manager" }) -- Changed leader key for plugins
+  vim.keymap.set("n", "<leader>lk", "<Plug>(llm-keys)", { desc = "LLM: Keys Manager" }) -- Changed leader key for keys
+  vim.keymap.set("n", "<leader>lf", "<Plug>(llm-fragments)", { desc = "LLM: Fragments Manager" }) -- Changed leader key for fragments
+  vim.keymap.set("n", "<leader>lwf", "<Plug>(llm-with-fragments)", { desc = "LLM: Prompt with Fragments" }) -- Changed leader key for interactive fragments
+  vim.keymap.set("v", "<leader>lwf", "<Plug>(llm-selection-with-fragments)", { desc = "LLM: Prompt Selection with Fragments" }) -- Changed leader key for interactive fragments (visual)
+  vim.keymap.set("n", "<leader>lt", "<Plug>(llm-templates)", { desc = "LLM: Templates Manager" }) -- Changed leader key for templates
+  vim.keymap.set("n", "<leader>lrt", "<Plug>(llm-template)", { desc = "LLM: Run Template" }) -- Changed leader key for run template
+  vim.keymap.set("n", "<leader>lsc", "<Plug>(llm-schemas)", { desc = "LLM: Schemas Manager" }) -- Changed leader key for schemas (was ls, conflicting with selection)
+  vim.keymap.set("n", "<leader>lrs", "<Plug>(llm-schema)", { desc = "LLM: Run Schema" }) -- Changed leader key for run schema
+  -- Removed <leader>llcs as there's no direct command for it, use manager
+end
+
+-- Expose functions to global scope for testing purposes only
+-- These should ideally be conditional on a test environment flag
+if vim.env.LLM_NVIM_TEST then
+  _G.select_model = llm.select_model
+  _G.get_available_models = llm.get_available_models
+  _G.extract_model_name = llm.extract_model_name
+  _G.set_default_model = llm.set_default_model
+  _G.get_available_plugins = llm.get_available_plugins
+  _G.get_installed_plugins = llm.get_installed_plugins
+  _G.is_plugin_installed = llm.is_plugin_installed
+  _G.install_plugin = llm.install_plugin
+  _G.uninstall_plugin = llm.uninstall_plugin
+  _G.get_fragments = llm.get_fragments
+  _G.set_fragment_alias = llm.set_fragment_alias
+  _G.remove_fragment_alias = llm.remove_fragment_alias
+  _G.get_stored_keys = llm.get_stored_keys
+  _G.is_key_set = llm.is_key_set
+  _G.set_api_key = llm.set_api_key
+  _G.remove_api_key = llm.remove_api_key
+  _G.get_schemas = llm.get_schemas
+  _G.get_schema = llm.get_schema
+  _G.save_schema = llm.save_schema
+  _G.run_schema = llm.run_schema
+  _G.get_templates = llm.get_templates
+  _G.get_template_details = llm.get_template_details
+  _G.delete_template = llm.delete_template
+  _G.run_template = llm.run_template
 end
