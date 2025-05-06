@@ -19,6 +19,7 @@ if not ok then
   vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
   return
 end
+local config = require("llm.config") -- Load config module
 
 -- Define commands using the functions from the loaded 'llm' module
 vim.api.nvim_create_user_command("LLM", function(opts)
@@ -121,8 +122,8 @@ vim.keymap.set("n", "<Plug>(llm-schemas)", "<Cmd>lua require('llm').toggle_unifi
 vim.keymap.set("n", "<Plug>(llm-schema)", "<Cmd>LLMSchema<CR>", { silent = true, desc = "Select and run LLM schema" }) -- Calls command
 
 -- Default mappings (can be disabled with config option)
--- Access config via the loaded llm module
-if not llm.get_config("no_mappings") then
+-- Access config via the config module
+if not config.get("no_mappings") then
   vim.keymap.set("n", "<leader>ll", "<Plug>(llm-toggle)", { desc = "LLM: Toggle Manager" }) -- Added toggle mapping
   vim.keymap.set("n", "<leader>lp", "<Plug>(llm-prompt)", { desc = "LLM: Prompt" }) -- Changed leader key for prompt
   vim.keymap.set("v", "<leader>ls", "<Plug>(llm-selection)", { desc = "LLM: Prompt Selection" }) -- Changed leader key for selection
@@ -136,7 +137,7 @@ if not llm.get_config("no_mappings") then
   vim.keymap.set("v", "<leader>lwf", "<Plug>(llm-selection-with-fragments)", { desc = "LLM: Prompt Selection with Fragments" }) -- Changed leader key for interactive fragments (visual)
   vim.keymap.set("n", "<leader>lt", "<Plug>(llm-templates)", { desc = "LLM: Templates Manager" }) -- Changed leader key for templates
   vim.keymap.set("n", "<leader>lrt", "<Plug>(llm-template)", { desc = "LLM: Run Template" }) -- Changed leader key for run template
-  vim.keymap.set("n", "<leader>ls", "<Plug>(llm-schemas)", { desc = "LLM: Schemas Manager" }) -- Changed leader key for schemas
+  vim.keymap.set("n", "<leader>lsc", "<Plug>(llm-schemas)", { desc = "LLM: Schemas Manager" }) -- Changed leader key for schemas (was ls, conflicting with selection)
   vim.keymap.set("n", "<leader>lrs", "<Plug>(llm-schema)", { desc = "LLM: Run Schema" }) -- Changed leader key for run schema
   -- Removed <leader>llcs as there's no direct command for it, use manager
 end

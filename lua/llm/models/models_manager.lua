@@ -138,7 +138,7 @@ function M.is_model_available(model_line)
   elseif model_line:match("OpenAI") then
     -- Check if this is actually a custom model that wasn't marked as such
     -- First check by model_name with more flexible matching
-    for name, model_info in pairs(custom_openai_models) do
+    for name, model_info in pairs(custom_openai.custom_openai_models) do
       local model_id = model_info.model_id or name
       local info_model_name = model_info.model_name or name
 
@@ -181,7 +181,7 @@ function M.get_available_models()
   end
 
   -- Load custom OpenAI models first
-  load_custom_openai_models()
+  custom_openai.load_custom_openai_models()
 
   local result = utils.safe_shell_command("llm models", "Failed to get available models")
   if not result then
@@ -206,12 +206,12 @@ function M.get_available_models()
   end
 
   -- Ensure custom models are loaded
-  if vim.tbl_isempty(custom_openai_models) then
-    load_custom_openai_models()
+  if vim.tbl_isempty(custom_openai.custom_openai_models) then
+    custom_openai.load_custom_openai_models()
   end
 
   if config.get("debug") then
-    vim.notify("Adding " .. vim.tbl_count(custom_openai_models) .. " custom OpenAI models to available models list",
+    vim.notify("Adding " .. vim.tbl_count(custom_openai.custom_openai_models) .. " custom OpenAI models to available models list",
       vim.log.levels.INFO)
   end
 
@@ -219,7 +219,7 @@ function M.get_available_models()
   local custom_model_identifiers = {}
 
   -- Add all custom OpenAI models to the list
-  for name, model_info in pairs(custom_openai_models) do
+  for name, model_info in pairs(custom_openai.custom_openai_models) do
     local model_id = model_info.model_id or name
     local model_name = model_info.model_name or name
 
@@ -525,8 +525,8 @@ function M.populate_models_buffer(bufnr)
   }
 
   -- Pre-load custom OpenAI models if not already loaded
-  if vim.tbl_isempty(custom_openai_models) then
-    load_custom_openai_models()
+  if vim.tbl_isempty(custom_openai.custom_openai_models) then
+    custom_openai.load_custom_openai_models()
   end
   local model_to_aliases = {}
   for alias, model in pairs(aliases) do
@@ -552,7 +552,7 @@ function M.populate_models_buffer(bufnr)
     elseif model_line:match("OpenAI") then
       -- Extract model name to check if it's in our custom models list
       local model_name = M.extract_model_name(model_line)
-      if custom_openai_models[model_name] then
+      if custom_openai.custom_openai_models[model_name] then
         provider_key = "Custom OpenAI"
         vim.notify("Identified existing custom model: " .. model_name, vim.log.levels.DEBUG)
       else
@@ -963,18 +963,18 @@ end
 
 -- Get custom OpenAI models
 function M.get_custom_openai_models()
-  if vim.tbl_isempty(custom_openai_models) then
-    load_custom_openai_models()
+  if vim.tbl_isempty(custom_openai.custom_openai_models) then
+    custom_openai.load_custom_openai_models()
   end
-  return custom_openai_models
+  return custom_openai.custom_openai_models
 end
 
 -- Force reload custom OpenAI models
 function M.reload_custom_openai_models()
   -- Clear the cache and reload
-  custom_openai_models = {}
-  load_custom_openai_models()
-  return custom_openai_models
+  custom_openai.custom_openai_models = {}
+  custom_openai.load_custom_openai_models()
+  return custom_openai.custom_openai_models
 end
 
 -- Debug function for custom models (delegates to custom_openai module)
