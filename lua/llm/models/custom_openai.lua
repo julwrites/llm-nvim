@@ -33,185 +33,107 @@ function M.load_custom_openai_models()
     return {}
   end
 
-  local content = file:read("*a")
-  file:close()
+  -- Use the new YAML parser from utils
+  local parsed_data = utils.parse_simple_yaml(yaml_path)
 
-  -- Process the YAML content line by line
-  local lines = {}
-  for line in content:gmatch("[^\r\n]+") do
-    table.insert(lines, line)
+  if not parsed_data then
+    if config.get("debug") then
+      vim.notify("Failed to parse YAML file or file is empty: " .. yaml_path, vim.log.levels.WARN)
+    end
+    return {}
   end
 
-  -- Parse YAML to extract model definitions
-  local models = {}
-  local current_model = nil
-  local in_list_item = false
-  local list_indent = 0
-  local current_section = nil
+  -- Process the parsed data
+  -- Assuming the parser returns a list of tables for the user's format
+  if type(parsed_data) ~= 'table' then
+     if config.get("debug") then
+        vim.notify("Parsed YAML data is not a table: " .. vim.inspect(parsed_data), vim.log.levels.WARN)
+     end
+     return {}
+  end
 
-  for i, line in ipairs(lines) do
-    -- Skip comment lines and empty lines
-    if not line:match("^%s*#") and line:match("%S") then
-      -- Check for model section start (no indentation, ends with colon)
-      if line:match("^[^%s#][^:]*:") then
-        current_model = line:match("^([^:]+)"):gsub("%s+$", "")
-        in_list_item = false
-        current_section = current_model
+  -- Iterate through the list of model definitions
+  for i, model_def in ipairs(parsed_data) do
+    if type(model_def) == 'table' then
+      -- Extract data, providing defaults
+      local model_data = {
+        yaml_key = "list_item_" .. i, -- Store original index/key if needed
+        model_id = model_def.model_id,
+        model_name = model_def.model_name,
+        api_base = model_def.api_base,
+        api_key_name = model_def.api_key_name,
+        has_api_base = model_def.api_base ~= nil and model_def.api_base ~= "",
+        is_valid = false -- Will be set during validation
+      }
 
-        -- Initialize model data
-        models[current_model] = {
-          name = current_model,
-          model_id = current_model,
-          model_name = current_model,
-          has_api_base = false,
-          api_base = nil,
-          api_key_name = nil,
-          is_valid = false,
-        }
-      elseif line:match("^%s*-%s") then
-        -- Handle list items
-        in_list_item = true
-        list_indent = line:match("^(%s*)"):len()
-        local list_item_content = line:match("^%s*-%s*(.+)")
-        if list_item_content then
-          local prop, value = list_item_content:match("([^:]+):%s*(.+)")
-          if prop and value then
-            value = value:gsub("^%s*(.-)%s*$", "%1"):gsub("%s*#.*$", "")
-            if prop:match("model_id") then
-              models[current_model].model_id = value
-            elseif prop:match("model_name") then
-              models[current_model].model_name = value
-            elseif prop:match("api_base") then
-              models[current_model].has_api_base = true
-              models[current_model].api_base = value
-            elseif prop:match("api_key_name") then
-              models[current_model].api_key_name = value
-            end
-          else
-            local list_model_name = list_item_content:match("^%s*(.-)%s*$") or ("model_" .. i)
-            current_model = list_model_name
-            models[current_model] = {
-              name = current_model,
-              model_id = current_model,
-              model_name = current_model,
-              has_api_base = false,
-              api_base = nil,
-              api_key_name = nil,
-              is_valid = false,
-            }
-          end
+      -- Determine the primary identifier (key for the cache)
+      local primary_id = model_data.model_id
+      if not primary_id or primary_id == "" then
+         if config.get("debug") then
+            vim.notify("Skipping model definition at index " .. i .. " due to missing 'model_id'", vim.log.levels.WARN)
+         end
+         goto next_model -- Skip this entry if model_id is missing
+      end
+
+      -- Default model_name if not provided
+      if not model_data.model_name or model_data.model_name == "" then
+        model_data.model_name = primary_id
+      end
+
+      -- Validate based on API key presence
+      if model_data.has_api_base and model_data.api_key_name then
+        local key_is_set = keys_manager.is_key_set(model_data.api_key_name)
+        model_data.is_valid = key_is_set
+
+        if not key_is_set and config.get("debug") then
+          vim.notify("API key '" .. model_data.api_key_name .. "' not set for custom model: " .. primary_id,
+            vim.log.levels.DEBUG)
         end
-      elseif current_model and line:match("^%s+") then
-        -- Handle nested properties
-        if in_list_item then
-          local indent = line:match("^(%s*)"):len()
-          if indent <= list_indent and not line:match("^%s*-%s") then
-            in_list_item = false
-            goto continue
-          end
-        end
-
-        if not current_model then goto continue end
-
-        -- Handle regular properties
-        if line:match("api_base%s*:") then
-          local api_base = line:match("api_base%s*:%s*(.+)")
-          if api_base then
-            models[current_model].has_api_base = true
-            models[current_model].api_base = api_base:gsub("^%s*(.-)%s*$", "%1"):gsub("%s*#.*$", "")
-          end
-        elseif line:match("api_key_name%s*:") then
-          local key_name = line:match("api_key_name%s*:%s*(.+)")
-          if key_name then
-            models[current_model].api_key_name = key_name:gsub("^%s*(.-)%s*$", "%1"):gsub("%s*#.*$", "")
-          end
-        elseif line:match("model_id%s*:") then
-          local model_id = line:match("model_id%s*:%s*(.+)")
-          if model_id then
-            models[current_model].model_id = model_id:gsub("^%s*(.-)%s*$", "%1"):gsub("%s*#.*$", "")
-          end
-        elseif line:match("model_name%s*:") then
-          local model_name = line:match("model_name%s*:%s*(.+)")
-          if model_name then
-            models[current_model].model_name = model_name:gsub("^%s*(.-)%s*$", "%1"):gsub("%s*#.*$", "")
-          end
+      else
+        -- If api_base or api_key_name is missing, it's invalid
+        model_data.is_valid = false
+        if config.get("debug") then
+          vim.notify("Custom model '" .. primary_id .. "' is missing api_base or api_key_name.", vim.log.levels.DEBUG)
         end
       end
-    end
-    ::continue::
-  end
 
-  -- Clean up invalid models
-  local models_to_remove = {}
-  for name, model in pairs(models) do
-    if not model.model_id and not model.model_name then
-      table.insert(models_to_remove, name)
-    end
-  end
-  for _, name in ipairs(models_to_remove) do
-    models[name] = nil
-  end
+      -- Add the validated model data to the cache using the primary_id
+      M.custom_openai_models[primary_id] = model_data
 
-  -- Validate models and add to cache
-  for name, model in pairs(models) do
-    M.custom_openai_models[name] = model
-
-    if model.has_api_base and model.api_key_name then
-      local key_is_set = keys_manager.is_key_set(model.api_key_name)
-      model.is_valid = key_is_set
-
-      if not key_is_set then
-        vim.notify("To use model '" .. name .. "', set the API key with: llm keys set " ..
-          model.api_key_name .. " YOUR_API_KEY", vim.log.levels.WARN)
+      if config.get("debug") then
+        vim.notify(string.format("Loaded custom model: ID=%s, Name=%s, Valid=%s",
+          primary_id, model_data.model_name, tostring(model_data.is_valid)), vim.log.levels.DEBUG)
       end
     else
-      model.is_valid = false
+       if config.get("debug") then
+          vim.notify("Skipping non-table entry in parsed YAML data at index " .. i, vim.log.levels.WARN)
+       end
     end
-
-    if not model.model_name or model.model_name == "" then
-      model.model_name = model.model_id or name
-    end
+    ::next_model:: -- Label for goto statement
   end
 
   return M.custom_openai_models
 end
 
--- Check if a custom OpenAI model is valid
-function M.is_custom_openai_model_valid(model_line)
-  local model_name
-  if model_line:match("^Custom OpenAI:") then
-    model_name = model_line:match("^Custom OpenAI:%s*(.+)")
-  elseif model_line:match("^Azure OpenAI:") then
-    model_name = model_line:match("^Azure OpenAI:%s*([^%(]+)")
-  else
-    model_name = model_line:match(": ([^%(]+)")
-  end
-
-  if not model_name then return false end
-  model_name = model_name:match("^%s*(.-)%s*$")
+-- Check if a custom OpenAI model identifier corresponds to a valid configuration
+function M.is_custom_openai_model_valid(model_identifier)
+  if not model_identifier or model_identifier == "" then return false end
 
   -- Ensure models are loaded
   if vim.tbl_isempty(M.custom_openai_models) then
     M.load_custom_openai_models()
   end
 
-  -- Check for matches
-  for name, model_info in pairs(M.custom_openai_models) do
-    local model_id = model_info.model_id or name
-    local info_model_name = model_info.model_name or name
-
-    if model_name == model_id or model_name == info_model_name or
-        model_name:lower() == model_id:lower() or model_name:lower() == info_model_name:lower() or
-        model_name:lower():find(model_id:lower(), 1, true) or
-        model_id:lower():find(model_name:lower(), 1, true) or
-        model_name:lower():find(info_model_name:lower(), 1, true) or
-        info_model_name:lower():find(model_name:lower(), 1, true) then
-      return model_info.is_valid
-    end
+  -- Check if the identifier directly matches a model_id (primary key in the cache)
+  local model_info = M.custom_openai_models[model_identifier]
+  if model_info then
+    return model_info.is_valid
   end
 
+  -- No fallback checks are performed. Only model_id is used.
   return false
 end
+
 
 -- Debug function for custom models
 function M.debug_custom_openai_models()
