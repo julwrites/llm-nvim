@@ -65,6 +65,11 @@ vim.api.nvim_create_user_command("LLMWithSelectionAndFragments", function(opts)
   llm.interactive_prompt_with_fragments(opts)
 end, { nargs = 0, range = true, desc = "Interactive prompt with visual selection and fragments" })
 
+-- Commands for Plugins
+vim.api.nvim_create_user_command("LLMRefreshPlugins", function()
+  require('llm.plugins.plugins_loader').refresh_plugins_cache()
+end, { nargs = 0, desc = "Refresh LLM plugins cache" })
+
 -- Commands for Templates
 vim.api.nvim_create_user_command("LLMTemplates", function()
   llm.toggle_unified_manager("Templates")

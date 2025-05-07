@@ -134,6 +134,13 @@ function M.setup(opts)
   -- Initialize styles (already required at top)
   styles.setup_highlights()
 
+  -- Refresh plugins cache on startup if enabled
+  if not config.get("no_auto_refresh_plugins") then
+    vim.defer_fn(function()
+      require('llm.plugins.plugins_loader').refresh_plugins_cache()
+    end, 1000) -- Longer delay to avoid startup impact
+  end
+
   return M
 end
 
@@ -144,6 +151,10 @@ config.setup()
 -- This helps ensure the config directory is known before managers need it
 vim.defer_fn(function()
   utils.get_config_path("")
+  -- Refresh plugins cache in background after a short delay
+  vim.defer_fn(function()
+    require('llm.plugins.plugins_loader').refresh_plugins_cache()
+  end, 500) -- Longer delay to avoid startup impact
 end, 100) -- Small delay to avoid blocking startup
 
 -- Get stored API keys from llm CLI

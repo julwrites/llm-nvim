@@ -669,25 +669,47 @@ function M.populate_templates_buffer(bufnr)
   if #template_names == 0 then
     table.insert(lines, "No templates found. Press 'c' to create one.")
   else
-    table.insert(lines, "Templates:")
-    table.insert(lines, "----------")
+    -- Show all templates in a single list
     for i, name in ipairs(template_names) do
+      local is_loader = name:match("^loader:")
+      local prefix = is_loader and name:match("^loader:(.+)$")
       local description = templates[name] or ""
-      local entry_lines = {
-        string.format("Template %d: %s", i, name),
-        string.format("  Description: %s", description),
-        ""
-      }
-      for _, line in ipairs(entry_lines) do table.insert(lines, line) end
+      
+      local entry_lines = {}
+      if is_loader then
+        table.insert(entry_lines, string.format("Loader %d: %s", i, prefix))
+        table.insert(entry_lines, string.format("  Description: %s", description))
+        table.insert(entry_lines, string.format("  Usage: llm -t %s:owner/repo/template", prefix))
+      else
+        table.insert(entry_lines, string.format("Template %d: %s", i, name))
+        table.insert(entry_lines, string.format("  Description: %s", description))
+      end
+      table.insert(entry_lines, "")
 
-      -- Store data for lookup
+      -- Store the line numbers that belong to this template
+      local start_line = current_line
+      local end_line = current_line + #entry_lines - 1
+      
+      -- Add all lines from start to end to the mapping
+      for line_num = start_line, end_line do
+        line_to_template[line_num] = name
+      end
+
       template_data[name] = {
         index = i,
         description = description,
-        start_line = current_line,
+        start_line = start_line,
+        end_line = end_line,
+        is_loader = is_loader,
+        prefix = prefix
       }
-      for j = 0, 2 do line_to_template[current_line + j] = name end
-      current_line = current_line + 3
+
+      -- Add the entry lines to the buffer
+      for _, line in ipairs(entry_lines) do 
+        table.insert(lines, line) 
+      end
+      
+      current_line = current_line + #entry_lines
     end
   end
 
@@ -759,15 +781,86 @@ function M.create_template_from_manager(bufnr)
 end
 
 function M.run_template_under_cursor(bufnr)
-  local template_name, _ = M.get_template_info_under_cursor(bufnr)
+  local template_name, template_info = M.get_template_info_under_cursor(bufnr)
   if not template_name then
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close() -- Close manager before running
-  vim.schedule(function()
-    M.run_template_with_params(template_name)
-  end)
+
+  if template_info and template_info.is_loader then
+    -- For template loaders, prompt for the full template path
+    utils.floating_input({
+      prompt = string.format("Enter template path for %s (e.g. owner/repo/template):", template_info.prefix),
+    }, function(path)
+      if not path or path == "" then return end
+      
+      -- Construct full template name with prefix
+      local full_template = template_info.prefix .. ":" .. path
+      
+      -- Verify the template exists by trying to get its details
+      local template_details = templates_loader.get_template_details(full_template)
+      if not template_details then
+        vim.notify(string.format("Template '%s' not found", full_template), vim.log.levels.ERROR)
+        return
+      end
+
+      -- Close manager and proceed with regular template flow
+      require('llm.unified_manager').close()
+      vim.schedule(function()
+        -- First check if we need parameters
+        local params = {}
+        local param_names = {}
+
+        -- Extract parameter names from prompt and system
+        local function extract_params(text)
+          if not text then return end
+          for param in text:gmatch("%$([%w_]+)") do
+            if param ~= "input" and not vim.tbl_contains(param_names, param) then
+              table.insert(param_names, param)
+            end
+          end
+        end
+
+        extract_params(template_details.prompt)
+        extract_params(template_details.system)
+
+        -- If we have parameters, collect them
+        if #param_names > 0 then
+          local function collect_next_param(index)
+            if index > #param_names then
+              -- All parameters collected, ask for input source
+              M.run_template_with_input(full_template, params)
+              return
+            end
+
+            local param = param_names[index]
+            local default = template_details.defaults and template_details.defaults[param] or ""
+
+            utils.floating_input({
+              prompt = "Enter value for parameter '" .. param .. "':",
+              default = default
+            }, function(value)
+              if value then
+                params[param] = value
+                collect_next_param(index + 1)
+              end
+            end)
+          end
+
+          collect_next_param(1)
+        else
+          -- No parameters needed, ask for input source directly
+          M.run_template_with_input(full_template, params)
+        end
+      end)
+    end)
+  else
+    -- Regular template
+    require('llm.unified_manager').close()
+    vim.schedule(function()
+      M.run_template_with_params(template_name)
+    end)
+  end
 end
 
 function M.edit_template_under_cursor(bufnr)
@@ -886,10 +979,14 @@ function M.get_template_info_under_cursor(bufnr)
     vim.notify("Buffer data missing", vim.log.levels.ERROR)
     return nil, nil
   end
-  local template_name = line_to_template[current_line]
-  if template_name and template_data[template_name] then
-    return template_name, template_data[template_name]
+
+  -- Find the template that includes the current line
+  for template_name, data in pairs(template_data) do
+    if current_line >= data.start_line and current_line <= data.end_line then
+      return template_name, data
+    end
   end
+
   return nil, nil
 end
 
