@@ -304,10 +304,13 @@ function M.execute_prompt_async(source, prompt, filepath, fragment_paths, cleanu
   else
     local msg = M.get_pre_response_message(source, prompt, fragment_paths)
     local buf = M.create_response_buffer(msg)
-    M.execute_prompt_with_file(buf, prompt, filepath, fragment_paths)
-    if cleanup_callback then
-      cleanup_callback()
-    end
+    -- Scheduling so that the response buffer gets to be created before the buffer-control gets starved
+    vim.schedule(function()
+      M.execute_prompt_with_file(buf, prompt, filepath, fragment_paths)
+      if cleanup_callback then
+        cleanup_callback()
+      end
+    end)
   end
 end
 
