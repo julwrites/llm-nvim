@@ -126,9 +126,6 @@ function M.floating_input(opts, on_confirm)
       on_confirm(input)
     end
   end)
-
-  -- Start in insert mode
-  api.nvim_command('startinsert')
 end
 
 -- Create a floating confirmation dialog with styling
