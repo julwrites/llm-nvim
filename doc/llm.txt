@@ -124,7 +124,6 @@ Custom mappings:
     vim.keymap.set('v', '<leader>ls',                        
 '<Plug>(llm-selection)')                                     
     vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)') 
-    vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')    
     vim.keymap.set('n', '<leader>lm',                        
 '<Plug>(llm-select-model)')                                  
 <                                                            
@@ -134,69 +133,34 @@ Custom mappings:
 4. COMMANDS                                                  
 *llm-commands*                                               
                                                              
-*:LLM* {prompt}                                              
-    Send a prompt to the configured LLM and display the      
-response in a new                                            
-    buffer.                                                  
+*:LLM* [{subcommand}] {args}                                 
+    Unified command for all LLM operations.                  
+    Available subcommands:                                   
                                                              
-*:LLMWithSelection* [{prompt}]                               
-    Send the currently selected text to the LLM, optionally  
-with an additional                                           
-    prompt.                                                  
+    *:LLM* {prompt}                                          
+        Send a prompt to the configured LLM                  
                                                              
-*:LLMChat* [{model}]                                         
-    Start an interactive chat session with the LLM in a      
-terminal buffer.                                             
-    Optionally specify a model to use for this chat.         
                                                              
-*:LLMExplain*                                                
-    Send the current buffer to the LLM with a system prompt  
-to explain the                                               
-    code.                                                    
+    *:LLM file* [{prompt}]                                   
+        Send current file's content with optional prompt     
                                                              
 *:LLMToggle* [{view}]                                        
     Open or close the unified manager window. This window    
     allows managing Models, Plugins, API Keys, Fragments,    
     Templates, and Schemas.                                  
     Optionally specify an initial {view} to open:            
-    "Models", "Plugins", "Keys", "Fragments", "Templates",   
-    "Schemas".                                               
+    "models", "plugins", "keys", "fragments", "templates",   
+    "schemas".                                               
     Inside the window, use [M], [P], [K], [F], [T], [S] to   
     switch between views, and [q] or <Esc> to close.         
                                                              
-*:LLMModels*                                                 
-    Open the unified manager window to the Models view.      
-                                                             
-*:LLMPlugins*                                                
-    Open the unified manager window to the Plugins view.     
-                                                             
-*:LLMKeys*                                                   
-    Open the unified manager window to the API Keys view.    
-                                                             
-*:LLMFragments*                                              
-    Open the unified manager window to the Fragments view.   
-                                                             
-*:LLMWithFragments* [{prompt}]                               
-    Send a prompt with fragments. (Does not use the unified  
-    manager).                                                
-                                                             
-*:LLMWithSelectionAndFragments* [{prompt}]                   
-    Send selected text with fragments. (Does not use the     
-    unified manager).                                        
-                                                             
-*:LLMTemplates*                                              
-    Open the unified manager window to the Templates view.   
-                                                             
-*:LLMTemplate*                                               
-    Select and run a template. (Does not use the unified     
-    manager).                                                
-                                                             
-*:LLMSchemas*                                                
-    Open the unified manager window to the Schemas view.     
-                                                             
-*:LLMSchema*                                                 
-    Select and run a schema. (Does not use the unified       
-    manager).                                                
+    Alternatively use subcommands to open specific views:     
+    *:LLMToggle models*                                      
+    *:LLMToggle plugins*                                     
+    *:LLMToggle keys*                                        
+    *:LLMToggle fragments*                                   
+    *:LLMToggle templates*                                   
+    *:LLMToggle schemas*                                     
                                                              
 =============================================================
 =================                                            
@@ -210,7 +174,6 @@ Default mappings (can be disabled with g:llm_no_mappings =
 <leader>llp     - Prompt for input and send to LLM           
 <leader>lls     - In visual mode, send selection to LLM      
 <leader>lle     - Explain the current buffer                 
-<leader>llc     - Start a chat session                       
 <leader>llm     - Open the Models manager view               
 <leader>llg     - Open the Plugins manager view              
 <leader>llk     - Open the API Keys manager view             
@@ -230,7 +193,6 @@ Custom mappings:
     nmap <leader>lp <Plug>(llm-prompt)                       
     vmap <leader>ls <Plug>(llm-selection)                    
     nmap <leader>le <Plug>(llm-explain)                      
-    nmap <leader>lc <Plug>(llm-chat)                         
     nmap <leader>lm <Plug>(llm-models)                       
     nmap <leader>lg <Plug>(llm-plugins)                      
     nmap <leader>lk <Plug>(llm-keys)                         

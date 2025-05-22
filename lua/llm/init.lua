@@ -11,11 +11,18 @@ local fn = vim.fn
 -- Load core utility modules (needed early or by multiple managers)
 local utils = require('llm.utils')
 local commands = require('llm.commands')
+
+-- Expose commands functions
 local config = require('llm.config')
 local fragments_loader = require('llm.fragments.fragments_loader')
 local styles = require('llm.styles')
 
 -- Manager modules will be required lazily when their functions are called
+
+-- Unified LLM command handler
+function M.command(subcmd, ...)
+  commands.dispatch_command(subcmd, ...)
+end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths)
@@ -27,19 +34,9 @@ function M.prompt_with_selection(prompt, fragment_paths)
   commands.prompt_with_selection(prompt, fragment_paths)
 end
 
--- Explain the current buffer or selection
-function M.explain_code(fragment_paths)
-  commands.explain_code(fragment_paths)
-end
-
--- Start a chat session with llm
-function M.start_chat(model_override)
-  commands.start_chat(model_override)
-end
-
--- Interactive prompt with fragments (handles visual selection internally)
-function M.interactive_prompt_with_fragments(opts)
-  commands.interactive_prompt_with_fragments(opts)
+-- Send current file's content with a prompt to llm
+function M.prompt_with_current_file(prompt)
+  commands.prompt_with_current_file(prompt)
 end
 
 -- Get available models from llm CLI
@@ -155,7 +152,7 @@ vim.defer_fn(function()
   vim.defer_fn(function()
     require('llm.plugins.plugins_loader').refresh_plugins_cache()
   end, 500) -- Longer delay to avoid startup impact
-end, 100) -- Small delay to avoid blocking startup
+end, 100)   -- Small delay to avoid blocking startup
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()

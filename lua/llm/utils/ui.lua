@@ -2,10 +2,16 @@ local M = {}
 
 local api = vim.api
 
+function M.create_split_buffer()
+  -- Create a new split
+  local buf = api.nvim_create_buf()
+  api.nvim_open_win(buf, true)
+  return buf
+end
+
 -- Create a new buffer with content
 function M.create_buffer_with_content(content, buffer_name, filetype)
-  -- Create a new split
-  api.nvim_command('new')
+  M.create_split_buffer() -- This will also swap to the buffer
   local buf = api.nvim_get_current_buf()
 
   -- Set buffer options
@@ -13,6 +19,30 @@ function M.create_buffer_with_content(content, buffer_name, filetype)
   api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
   api.nvim_buf_set_option(buf, 'swapfile', false)
   api.nvim_buf_set_name(buf, buffer_name or 'LLM Output')
+
+  -- Set the content
+  local lines = {}
+  for line in content:gmatch("[^\r\n]+") do
+    table.insert(lines, line)
+  end
+  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+
+  -- Set filetype for syntax highlighting
+  if filetype then
+    api.nvim_buf_set_option(buf, 'filetype', filetype)
+  end
+
+  return buf
+end
+
+-- Replace an existing buffer with new content
+function M.replace_buffer_with_content(content, buffer, filetype)
+  local buf = buffer
+
+  -- Set buffer options
+  api.nvim_buf_set_option(buf, 'buftype', 'nofile')
+  api.nvim_buf_set_option(buf, 'bufhidden', 'wipe')
+  api.nvim_buf_set_option(buf, 'swapfile', false)
 
   -- Set the content
   local lines = {}
@@ -51,7 +81,7 @@ function M.create_floating_window(buf, title)
   local win = api.nvim_open_win(buf, true, opts)
   api.nvim_win_set_option(win, 'cursorline', true)
   api.nvim_win_set_option(win, 'winblend', 0)
-  
+
   return win
 end
 
@@ -79,23 +109,16 @@ function M.floating_input(opts, on_confirm)
 
   -- Set default value if provided
   if opts.default then
-    api.nvim_buf_set_lines(buf, 0, -1, false, {opts.default})
-  end
-
-  -- Local function to handle confirmation
-  local function confirm()
-    local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
-    local input = table.concat(lines, '\n')
-    api.nvim_win_close(win, true)
-    if on_confirm then
-      on_confirm(input)
-    end
+    api.nvim_buf_set_lines(buf, 0, -1, false, { opts.default })
   end
 
   -- Set keymaps using the local confirm function
-  api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
-  api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
-  api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>', {noremap = true, silent = true})
+  api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>',
+    { noremap = true, silent = true })
+  api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>',
+    { noremap = true, silent = true })
+  api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>',
+    { noremap = true, silent = true })
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
@@ -115,7 +138,7 @@ function M.floating_confirm(opts)
 
   -- Calculate window dimensions
   local width = math.min(math.floor(vim.o.columns * 0.4), 60)
-  local height = 5  -- Increased height for better spacing
+  local height = 5 -- Increased height for better spacing
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
@@ -129,7 +152,7 @@ function M.floating_confirm(opts)
     col = col,
     style = 'minimal',
     border = 'rounded',
-    title = ' '..prompt..' ',
+    title = ' ' .. prompt .. ' ',
     title_pos = 'center',
     focusable = true,
     noautocmd = true,
@@ -146,7 +169,8 @@ function M.floating_confirm(opts)
   local win = api.nvim_open_win(buf, true, win_opts)
 
   -- Set window highlights
-  api.nvim_win_set_option(win, 'winhl', 'Normal:LlmConfirmText,NormalFloat:LlmConfirmText,FloatBorder:LlmConfirmBorder,Title:LlmConfirmTitle')
+  api.nvim_win_set_option(win, 'winhl',
+    'Normal:LlmConfirmText,NormalFloat:LlmConfirmText,FloatBorder:LlmConfirmBorder,Title:LlmConfirmTitle')
 
   -- Add compact styled content that fits in 5 lines
   local lines = {
@@ -159,20 +183,20 @@ function M.floating_confirm(opts)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
   -- Add highlights for the buttons
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)  -- Yes
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13)  -- No
+  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)         -- Yes
+  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13) -- No
 
   -- Set keymaps with better visual feedback
-  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>', 
-    {noremap = true, silent = true, desc = "Confirm action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>', 
-    {noremap = true, silent = true, desc = "Confirm action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
-  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
+  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+    { noremap = true, silent = true, desc = "Confirm action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+    { noremap = true, silent = true, desc = "Confirm action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
+  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)

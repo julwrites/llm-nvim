@@ -207,7 +207,7 @@ function llm.explain_code(fragment_paths)
   end
 
   local model = config.get("model") -- Get model from config, might be nil
-  local system = "Explain this code"
+  local system = "Explain this"
 
   -- Debug: Show which model is being used (or if default is used)
   vim.notify("llm.explain_code: Using model: " .. (model or "llm default"), vim.log.levels.INFO)
@@ -264,27 +264,6 @@ function llm.explain_code(fragment_paths)
     -- Notify if the result is empty or nil
     vim.notify("LLM command returned empty or nil result.", vim.log.levels.WARN)
   end
-end
-
-function llm.start_chat(model_override)
-  if not utils.check_llm_installed() then
-    return
-  end
-
-  local model = model_override or config.get("model") -- Get model from config, might be nil
-
-  -- Set the model as default if specified (and not nil)
-  if model_override and model then
-    models_manager.set_default_model(model)
-  end
-
-  -- Open a terminal with llm chat
-  local chat_cmd = "llm chat"
-  if model then -- Add model flag if specified or configured
-    chat_cmd = string.format("llm -m %s chat", model)
-  end
-  vim.cmd("terminal " .. chat_cmd)
-  vim.cmd("startinsert")
 end
 
 -- Make sure all functions are properly exposed

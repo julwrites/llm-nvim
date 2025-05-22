@@ -22,7 +22,6 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 - Send prompts to LLMs directly from Neovim
 - Process selected text with LLMs
 - Explain code in the current buffer
-- Start interactive chat sessions with LLMs
 - Support for custom models and system prompts
 - Manage API keys for different LLM providers
 - Use fragments (files, URLs, GitHub repos) with prompts
@@ -99,7 +98,6 @@ require('llm').setup({
 vim.keymap.set('n', '<leader>lp', '<Plug>(llm-prompt)')
 vim.keymap.set('v', '<leader>ls', '<Plug>(llm-selection)')
 vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)')
-vim.keymap.set('n', '<leader>lc', '<Plug>(llm-chat)')
 vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-select-model) is deprecated
 ```
 
@@ -107,21 +105,18 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 
 ### Commands
 
+#### Unified LLM Command
 - `:LLM {prompt}` - Send a prompt to the LLM
-- `:LLMWithSelection {prompt}` - Send selected text with an optional prompt
-- `:LLMChat {model}` - Start an interactive chat session (optional model)
-- `:LLMExplain` - Explain the code in the current buffer
-- `:LLMToggle [view]` - Open or close the unified manager window. Optionally specify an initial view (Models, Plugins, Keys, Fragments, Templates, Schemas).
-- `:LLMModels` - Open the unified manager to the Models view.
-- `:LLMPlugins` - Open the unified manager to the Plugins view.
-- `:LLMKeys` - Open the unified manager to the API Keys view.
-- `:LLMFragments` - Open the unified manager to the Fragments view.
-- `:LLMWithFragments` - Send a prompt with fragments (does not use the unified manager).
-- `:LLMWithSelectionAndFragments` - Send selected text with fragments (does not use the unified manager).
-- `:LLMTemplates` - Open the unified manager to the Templates view.
-- `:LLMTemplate` - Select and run a template (does not use the unified manager).
-- `:LLMSchemas` - Open the unified manager to the Schemas view.
-- `:LLMSchema` - Select and run a schema with various input sources (does not use the unified manager).
+- `:LLM file {prompt}` - Send current file's content with optional prompt
+
+#### Unified Manager
+- `:LLMToggle [view]` - Open/close unified manager window (optionally specify initial view)
+- `:LLMToggle models` - Open unified manager to Models view
+- `:LLMToggle plugins` - Open unified manager to Plugins view
+- `:LLMToggle keys` - Open unified manager to API Keys view
+- `:LLMToggle fragments` - Open unified manager to Fragments view
+- `:LLMToggle templates` - Open unified manager to Templates view
+- `:LLMToggle schemas` - Open unified manager to Schemas view
 
 ### Basic Prompting
 
@@ -140,12 +135,6 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 2.  Type `:LLMExplain` and press Enter.
 3.  The LLM will explain the code in the current buffer.
 
-### Chatting
-
-1.  Type `:LLMChat` to start a chat session with the default model.
-2.  Type `:LLMChat llama3` to start a chat specifically with the `llama3` model.
-3.  The chat happens in a terminal buffer within Neovim.
-
 ### Using the Unified Manager
 
 1.  Type `:LLMToggle` or press `<leader>ll` (default mapping).
@@ -160,9 +149,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 
 - `<leader>ll` - Toggle the unified manager window
 - `<leader>llp` - Prompt for input and send to LLM
-- `<leader>lls` - In visual mode, send selection to LLM
 - `<leader>lle` - Explain the current buffer
-- `<leader>llc` - Start a chat session
 - `<leader>llm` - Open the Models manager view
 - `<leader>llg` - Open the Plugins manager view
 - `<leader>llk` - Open the API Keys manager view
@@ -191,7 +178,7 @@ nvim --headless -l test/run_tests.lua
 ```
 
 Tests cover:
-- Core functionality (prompts, chat, code explanation)
+- Core functionality (prompts, code explanation)
 - Model management
 - Plugin management
 - API key management

@@ -1,13 +1,6 @@
 :LLM	llm.txt	/*:LLM*
-:LLMChat	llm.txt	/*:LLMChat*
-:LLMExplain	llm.txt	/*:LLMExplain*
-:LLMFragments	llm.txt	/*:LLMFragments*
-:LLMKeys	llm.txt	/*:LLMKeys*
-:LLMModels	llm.txt	/*:LLMModels*
-:LLMPlugins	llm.txt	/*:LLMPlugins*
-:LLMWithFragments	llm.txt	/*:LLMWithFragments*
-:LLMWithSelection	llm.txt	/*:LLMWithSelection*
-:LLMWithSelectionAndFragments	llm.txt	/*:LLMWithSelectionAndFragments*
+:LLM	llm.txt	/*:LLM*
+:LLMToggle	llm.txt	/*:LLMToggle*
 llm-commands	llm.txt	/*llm-commands*
 llm-configuration	llm.txt	/*llm-configuration*
 llm-contents	llm.txt	/*llm-contents*

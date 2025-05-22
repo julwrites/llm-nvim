@@ -23,6 +23,7 @@ M.get_config_path = file_utils.get_config_path
 
 -- Expose UI utilities
 M.create_buffer_with_content = ui_utils.create_buffer_with_content
+M.replace_buffer_with_content = ui_utils.replace_buffer_with_content
 M.create_floating_window = ui_utils.create_floating_window
 M.floating_input = ui_utils.floating_input
 M.floating_confirm = ui_utils.floating_confirm
@@ -39,7 +40,7 @@ function M.ensure_config_dir_exists(config_dir)
   if not config_dir or config_dir == "" then
     return false
   end
-  
+
   -- Check if directory exists (simple check using io.open)
   -- Note: This isn't foolproof but avoids complex platform-specific checks
   local test_file = config_dir .. "/.llm_nvim_write_test"
@@ -59,7 +60,8 @@ function M.ensure_config_dir_exists(config_dir)
       end
       return true
     else
-      vim.notify("Failed to create config directory: " .. config_dir .. " (Error: " .. tostring(err) .. ")", vim.log.levels.ERROR)
+      vim.notify("Failed to create config directory: " .. config_dir .. " (Error: " .. tostring(err) .. ")",
+        vim.log.levels.ERROR)
       return false
     end
   end
@@ -73,33 +75,33 @@ local config_dir_cache_initialized = false
 function M.get_config_path(filename)
   local config = require('llm.config')
   local debug_mode = config.get('debug')
-  
+
   -- Use cached config directory if available
   if config_dir_cache_initialized and config_dir_cache then
     -- Construct the full path to the file
     local config_file = config_dir_cache .. "/" .. filename
-    
+
     if debug_mode then
       vim.notify("Using cached config path: " .. config_file, vim.log.levels.DEBUG)
     end
-    
+
     return config_dir_cache, config_file
   end
-  
+
   -- Mark as initialized even if we fail, to avoid repeated attempts
   config_dir_cache_initialized = true
-  
+
   -- We'll skip trying to get config path directly and always use logs path method
   -- as per user's instruction: "The config path is the directory of the path returned by the `llm logs path` command."
   if debug_mode then
     vim.notify("Using logs path method to determine config directory", vim.log.levels.DEBUG)
   end
-  
+
   -- Use logs path method as the primary way to get config path
   if debug_mode then
     vim.notify("Getting config path from logs path", vim.log.levels.DEBUG)
   end
-  
+
   -- Step 1: Get the logs path
   local logs_path_cmd = "llm logs path"
   local logs_path = M.safe_shell_command(logs_path_cmd, "Failed to get LLM logs path")
@@ -111,7 +113,7 @@ function M.get_config_path(filename)
 
   -- Trim trailing newline/whitespace characters from the logs path
   logs_path = logs_path:gsub("[\r\n]+$", ""):gsub("%s+$", "")
-  
+
   if debug_mode then
     vim.notify("Found logs path: " .. logs_path, vim.log.levels.DEBUG)
   end
@@ -125,26 +127,26 @@ function M.get_config_path(filename)
     vim.notify("Could not determine LLM config directory using '" .. config_dir_cmd .. "'", vim.log.levels.ERROR)
     return nil, nil
   end
-  
+
   -- Trim trailing newline characters from the command output
   config_dir = config_dir:gsub("[\r\n]+$", "")
-  
+
   if debug_mode then
     vim.notify("Derived config directory: " .. config_dir, vim.log.levels.DEBUG)
   end
 
   -- Ensure the directory exists before returning the path
   M.ensure_config_dir_exists(config_dir)
-  
+
   -- Cache the config directory for future calls
   config_dir_cache = config_dir
-  
+
   -- Construct the full path to the file
   local config_file = config_dir .. "/" .. filename
-  
+
   if debug_mode then
     vim.notify("Final config file path: " .. config_file, vim.log.levels.DEBUG)
-    
+
     -- Check if the file exists
     local file = io.open(config_file, "r")
     if file then
@@ -154,7 +156,7 @@ function M.get_config_path(filename)
       vim.notify("File does not exist: " .. config_file, vim.log.levels.DEBUG)
     end
   end
-  
+
   -- Return the directory and the full file path
   return config_dir, config_file
 end
@@ -208,7 +210,7 @@ function M.create_floating_window(buf, title)
   local win = api.nvim_open_win(buf, true, opts)
   api.nvim_win_set_option(win, 'cursorline', true)
   api.nvim_win_set_option(win, 'winblend', 0)
-  
+
   return win
 end
 
@@ -236,7 +238,7 @@ function M.floating_input(opts, on_confirm)
 
   -- Set default value if provided
   if opts.default then
-    api.nvim_buf_set_lines(buf, 0, -1, false, {opts.default})
+    api.nvim_buf_set_lines(buf, 0, -1, false, { opts.default })
   end
 
   -- Local function to handle confirmation
@@ -250,9 +252,12 @@ function M.floating_input(opts, on_confirm)
   end
 
   -- Set keymaps using the local confirm function
-  api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
-  api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>', {noremap = true, silent = true})
-  api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>', {noremap = true, silent = true})
+  api.nvim_buf_set_keymap(buf, 'i', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>',
+    { noremap = true, silent = true })
+  api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>',
+    { noremap = true, silent = true })
+  api.nvim_buf_set_keymap(buf, '', '<Esc>', '<cmd>lua require("llm.utils")._close_floating_input()<CR>',
+    { noremap = true, silent = true })
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
@@ -291,7 +296,7 @@ function M.floating_confirm(opts)
 
   -- Calculate window dimensions
   local width = math.min(math.floor(vim.o.columns * 0.4), 60)
-  local height = 5  -- Increased height for better spacing
+  local height = 5 -- Increased height for better spacing
   local row = math.floor((vim.o.lines - height) / 2)
   local col = math.floor((vim.o.columns - width) / 2)
 
@@ -305,7 +310,7 @@ function M.floating_confirm(opts)
     col = col,
     style = 'minimal',
     border = 'rounded',
-    title = ' '..prompt..' ',
+    title = ' ' .. prompt .. ' ',
     title_pos = 'center',
     focusable = true,
     noautocmd = true,
@@ -322,7 +327,8 @@ function M.floating_confirm(opts)
   local win = api.nvim_open_win(buf, true, win_opts)
 
   -- Set window highlights
-  api.nvim_win_set_option(win, 'winhl', 'Normal:LlmConfirmText,NormalFloat:LlmConfirmText,FloatBorder:LlmConfirmBorder,Title:LlmConfirmTitle')
+  api.nvim_win_set_option(win, 'winhl',
+    'Normal:LlmConfirmText,NormalFloat:LlmConfirmText,FloatBorder:LlmConfirmBorder,Title:LlmConfirmTitle')
 
   -- Add compact styled content that fits in 5 lines
   local lines = {
@@ -335,20 +341,20 @@ function M.floating_confirm(opts)
   api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
   -- Add highlights for the buttons
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)  -- Yes
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13)  -- No
+  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)         -- Yes
+  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13) -- No
 
   -- Set keymaps with better visual feedback
-  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>', 
-    {noremap = true, silent = true, desc = "Confirm action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>', 
-    {noremap = true, silent = true, desc = "Confirm action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
-  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
-  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>', 
-    {noremap = true, silent = true, desc = "Cancel action"})
+  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+    { noremap = true, silent = true, desc = "Confirm action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+    { noremap = true, silent = true, desc = "Confirm action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
+  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
+  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+    { noremap = true, silent = true, desc = "Cancel action" })
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)
@@ -401,7 +407,7 @@ end
 function M.setup_buffer_highlighting(buf)
   -- Use the centralized styles module for consistent styling
   local styles = require('llm.styles')
-  
+
   -- Setup highlights and syntax patterns
   styles.setup_highlights()
   styles.setup_buffer_syntax(buf)
@@ -418,35 +424,35 @@ end
 function M.debug_fragment_aliases()
   local config = require('llm.config')
   local debug_mode = config.get('debug')
-  
+
   if not debug_mode then
     vim.notify("Debug mode is disabled. Enable it with require('llm').setup({debug = true})", vim.log.levels.INFO)
     return
   end
-  
+
   local result = M.safe_shell_command("llm fragments --aliases", "Failed to get fragments with aliases")
   if result then
     vim.notify("Current fragments with aliases:\n" .. result, vim.log.levels.INFO)
   else
     vim.notify("Failed to get fragments with aliases", vim.log.levels.ERROR)
   end
-  
+
   -- Also run a direct test of the parsing logic
   local test_result = M.safe_shell_command("llm fragments", "Failed to get fragments")
   if test_result then
     vim.notify("Testing fragment parsing with raw output", vim.log.levels.INFO)
-    
+
     -- Parse the fragments manually to debug
     local fragments = {}
     local current_fragment = nil
-    
+
     for line in test_result:gmatch("[^\r\n]+") do
       if line:match("^%s*-%s+hash:%s+") then
         -- Start of a new fragment
         if current_fragment then
           table.insert(fragments, current_fragment)
         end
-        
+
         local hash = line:match("hash:%s+([0-9a-f]+)")
         current_fragment = {
           hash = hash,
@@ -471,7 +477,7 @@ function M.debug_fragment_aliases()
         current_fragment.in_aliases_section = nil
       end
     end
-    
+
     -- Show the parsed fragments
     for i, fragment in ipairs(fragments) do
       local aliases = table.concat(fragment.aliases, ", ")
@@ -551,23 +557,26 @@ function M.parse_simple_yaml(filepath)
 
       -- Ensure the parent is a list
       if not current_level or current_level.type ~= 'list' then
-         -- If data is nil, start a new list at the root
-         if data == nil then
-            data = {}
-            current_data = data
-            table.insert(stack, { indent = indent, data = current_data, type = 'list' })
-            current_level = stack[#stack]
-         -- If parent exists but isn't a list, this might be an error or requires context
-         -- For simplicity, we'll assume list items imply a list context
-         elseif current_level and current_level.type == 'map' then
-             -- This scenario is complex (list inside map without key).
-             -- A simple parser might error or make assumptions.
-             -- Let's assume the list starts here if the parent is a map.
-             -- We need a key for the map though. This logic needs refinement for robust parsing.
-             -- For now, let's focus on lists starting at root or nested under keys.
-             if debug_mode then vim.notify("YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN) end
-             goto continue -- Skip this line for now
-         end
+        -- If data is nil, start a new list at the root
+        if data == nil then
+          data = {}
+          current_data = data
+          table.insert(stack, { indent = indent, data = current_data, type = 'list' })
+          current_level = stack[#stack]
+          -- If parent exists but isn't a list, this might be an error or requires context
+          -- For simplicity, we'll assume list items imply a list context
+        elseif current_level and current_level.type == 'map' then
+          -- This scenario is complex (list inside map without key).
+          -- A simple parser might error or make assumptions.
+          -- Let's assume the list starts here if the parent is a map.
+          -- We need a key for the map though. This logic needs refinement for robust parsing.
+          -- For now, let's focus on lists starting at root or nested under keys.
+          if debug_mode then
+            vim.notify(
+              "YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN)
+          end
+          goto continue -- Skip this line for now
+        end
       end
 
       -- Check for key-value pair within the list item
@@ -585,7 +594,7 @@ function M.parse_simple_yaml(filepath)
         -- Don't push simple values onto the stack
       end
 
-    -- Detect key-value pair
+      -- Detect key-value pair
     elseif content:match("^([^:]+):") then
       local key, value = content:match("^([^:]+):%s*(.*)")
       key = trim(key)
@@ -593,20 +602,20 @@ function M.parse_simple_yaml(filepath)
 
       -- Ensure the parent is a map (or create root map)
       if not current_level or current_level.type ~= 'map' then
-         if data == nil then
-            data = {}
-            current_data = data
-            table.insert(stack, { indent = indent, data = current_data, type = 'map' })
-            current_level = stack[#stack]
-         -- If parent is a list, create a new map for the list item
-         elseif current_level and current_level.type == 'list' then
-             local new_map = {}
-             table.insert(current_data, new_map) -- Add map to the list
-             current_data = new_map -- Work within the new map
-             -- Replace the list entry on stack with this map? No, push map onto stack.
-             table.insert(stack, { indent = indent, data = current_data, type = 'map' })
-             current_level = stack[#stack]
-         end
+        if data == nil then
+          data = {}
+          current_data = data
+          table.insert(stack, { indent = indent, data = current_data, type = 'map' })
+          current_level = stack[#stack]
+          -- If parent is a list, create a new map for the list item
+        elseif current_level and current_level.type == 'list' then
+          local new_map = {}
+          table.insert(current_data, new_map) -- Add map to the list
+          current_data = new_map              -- Work within the new map
+          -- Replace the list entry on stack with this map? No, push map onto stack.
+          table.insert(stack, { indent = indent, data = current_data, type = 'map' })
+          current_level = stack[#stack]
+        end
       end
 
       -- If value is present on the same line
@@ -619,38 +628,42 @@ function M.parse_simple_yaml(filepath)
         -- Push this key's context onto the stack, expecting nested data
         table.insert(stack, { indent = indent, data = current_data, type = 'map', pending_key = key })
       end
-    -- Handle properties indented under a list item's map or a key expecting nested data
+      -- Handle properties indented under a list item's map or a key expecting nested data
     elseif current_level and indent > current_level.indent then
-       if current_level.type == 'map' then
-          -- Check if it's nested under a key that expects data
-          if current_level.pending_key then
-             local parent_map = current_level.data
-             local pending_key = current_level.pending_key
-             -- Determine if nested item is list or map start
-             if content:match("^- ") then -- Nested list starts
-                parent_map[pending_key] = {}
-                current_level.data = parent_map[pending_key] -- Update stack entry's data target
-                current_level.type = 'list' -- Change type on stack
-                current_level.pending_key = nil -- Key resolved
-                -- Re-process the line now that the list is created
-                goto reprocess_line -- Need to handle the list item itself
-             elseif content:match("^([^:]+):") then -- Nested map starts
-                parent_map[pending_key] = {}
-                current_level.data = parent_map[pending_key] -- Update stack entry's data target
-                current_level.type = 'map' -- Still a map
-                current_level.pending_key = nil -- Key resolved
-                -- Re-process the line now that the map is created
-                goto reprocess_line
-             else
-                if debug_mode then vim.notify("YAML Parse Warning: Unexpected content under key '" .. pending_key .. "' at line " .. i, vim.log.levels.WARN) end
-                -- Maybe treat as string continuation? Simple parser won't handle this well.
-             end
-          -- Handle property indented under a map (e.g., properties of a map within a list)
-          elseif content:match("^([^:]+):") then
-             local key, value = content:match("^([^:]+):%s*(.*)")
-             current_data[trim(key)] = parse_value(value)
+      if current_level.type == 'map' then
+        -- Check if it's nested under a key that expects data
+        if current_level.pending_key then
+          local parent_map = current_level.data
+          local pending_key = current_level.pending_key
+          -- Determine if nested item is list or map start
+          if content:match("^- ") then                   -- Nested list starts
+            parent_map[pending_key] = {}
+            current_level.data = parent_map[pending_key] -- Update stack entry's data target
+            current_level.type = 'list'                  -- Change type on stack
+            current_level.pending_key = nil              -- Key resolved
+            -- Re-process the line now that the list is created
+            goto reprocess_line                          -- Need to handle the list item itself
+          elseif content:match("^([^:]+):") then         -- Nested map starts
+            parent_map[pending_key] = {}
+            current_level.data = parent_map[pending_key] -- Update stack entry's data target
+            current_level.type = 'map'                   -- Still a map
+            current_level.pending_key = nil              -- Key resolved
+            -- Re-process the line now that the map is created
+            goto reprocess_line
+          else
+            if debug_mode then
+              vim.notify(
+                "YAML Parse Warning: Unexpected content under key '" .. pending_key .. "' at line " .. i,
+                vim.log.levels.WARN)
+            end
+            -- Maybe treat as string continuation? Simple parser won't handle this well.
           end
-       end
+          -- Handle property indented under a map (e.g., properties of a map within a list)
+        elseif content:match("^([^:]+):") then
+          local key, value = content:match("^([^:]+):%s*(.*)")
+          current_data[trim(key)] = parse_value(value)
+        end
+      end
     end
 
     ::reprocess_line::
@@ -663,6 +676,5 @@ function M.parse_simple_yaml(filepath)
 
   return data
 end
-
 
 return M

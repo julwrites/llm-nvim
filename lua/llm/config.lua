@@ -8,7 +8,7 @@ M.defaults = {
   model = nil, -- Use llm CLI's default model if not set
   system_prompt = "You are a helpful assistant.",
   no_mappings = false,
-  debug = false,  -- Debug mode disabled by default
+  debug = true,  -- Enable debug logging while we troubleshoot
 }
 
 -- User configuration

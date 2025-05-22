@@ -1,77 +1,68 @@
+-- llm/utils/shell.lua - Shell command utilities
+-- License: Apache 2.0
+
 local M = {}
+local config = require('llm.config')
 
--- Error handling wrapper for shell commands
+-- Private helper to log debug messages
+local function debug_log(message, level)
+  if config.get('debug') then
+    vim.notify(message, level or vim.log.levels.DEBUG)
+  end
+end
+
+-- Execute shell command safely with error handling
 function M.safe_shell_command(cmd, error_msg)
-  local config = require('llm.config')
-  local debug_mode = config.get('debug')
+  debug_log("Executing command: " .. cmd)
   
-  -- Debug the command being executed (only in debug mode)
-  if debug_mode then
-    vim.notify("safe_shell_command executing: " .. cmd, vim.log.levels.DEBUG)
-  end
-
-  -- Try using vim.fn.system again, now with improved escaping
-  -- Append '2>&1' to redirect stderr to stdout
   local cmd_with_stderr = cmd .. " 2>&1"
-  if debug_mode then
-    vim.notify("Executing with system(): " .. cmd_with_stderr, vim.log.levels.DEBUG)
-  end
   local result = vim.fn.system(cmd_with_stderr)
 
   if result == nil then
-     vim.notify("vim.fn.system() returned nil for command: " .. cmd, vim.log.levels.ERROR)
-     return nil
+    debug_log("Command returned nil: " .. cmd, vim.log.levels.ERROR)
+    return nil
   end
 
-  if debug_mode then
-    vim.notify("system() result (raw): " .. vim.inspect(result), vim.log.levels.DEBUG) -- Debug raw result
-  end
-  
-  -- Debug the result (truncated if too long) (only in debug mode)
-  if debug_mode and result and #result > 0 then
-    local truncated = #result > 200 and result:sub(1, 200) .. "..." or result
-    vim.notify("Command result: " .. truncated, vim.log.levels.DEBUG)
-  elseif debug_mode then
-    vim.notify("Command returned empty result", vim.log.levels.WARN)
-    
-    -- Try to get more information about what went wrong
-    if cmd:match("llm") then
-      -- Check if the API key is set
-      local key_check_cmd = "llm keys"
-      local key_result = io.popen(key_check_cmd):read("*a")
-      if key_result and key_result ~= "" then
-        vim.notify("API keys are set. Check fragment identifier and network connection.", vim.log.levels.INFO)
-      else
-        vim.notify("No API keys found. Set an API key with 'llm keys set'", vim.log.levels.ERROR)
-      end
-      
-      -- Check if the fragment exists
-      if cmd:match("-f") then
-        local fragment_name = cmd:match('-f%s+"([^"]+)"')
-        if fragment_name then
-          local fragment_check_cmd = "llm fragments show " .. fragment_name .. " 2>&1"
-          local fragment_result = io.popen(fragment_check_cmd):read("*a")
-          if fragment_result and fragment_result:match("Error") then
-            vim.notify("Fragment not found: " .. fragment_name, vim.log.levels.ERROR)
-          end
-        end
-      end
+  -- Trim whitespace from result
+  result = result:gsub("^%s*(.-)%s*$", "%1")
+
+  if result == "" then
+    debug_log("Command returned empty result", vim.log.levels.WARN)
+    if error_msg then
+      vim.notify(error_msg, vim.log.levels.ERROR)
     end
+  else
+    debug_log("Command result: " .. (result:len() > 200 and result:sub(1, 200) .. "..." or result))
   end
-  
+
   return result
 end
 
--- Check if llm is installed
+-- Check if command exists in PATH
+function M.command_exists(cmd)
+  local check_cmd = string.format("command -v %s >/dev/null 2>&1", cmd)
+  return os.execute(check_cmd) == 0
+end
+
+-- Check if llm is installed and available
 function M.check_llm_installed()
-  local result = M.safe_shell_command("which llm 2>/dev/null", 
-    "Failed to check if llm is installed")
-  
-  if not result or result == "" then
-    vim.api.nvim_err_writeln("llm CLI tool not found. Please install it with 'pip install llm' or 'brew install llm'")
+  if not M.command_exists("llm") then
+    vim.notify("llm CLI not found. Install with: pip install llm or brew install llm", 
+      vim.log.levels.ERROR)
     return false
   end
   return true
+end
+
+-- Execute command and return status, stdout, stderr
+function M.execute(cmd)
+  local handle = io.popen(cmd .. " 2>&1", "r")
+  if not handle then return nil, "Failed to execute command" end
+  
+  local output = handle:read("*a")
+  local success, _, exit_code = handle:close()
+  
+  return success and exit_code == 0, output, exit_code
 end
 
 return M
