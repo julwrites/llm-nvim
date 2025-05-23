@@ -138,11 +138,25 @@ Custom mappings:
     Available subcommands:                                   
                                                              
     *:LLM* {prompt}                                          
-        Send a prompt to the configured LLM                  
-                                                             
+        Send prompt to configured LLM                        
                                                              
     *:LLM file* [{prompt}]                                   
         Send current file's content with optional prompt     
+                                                             
+    *:LLM selection* [{prompt}]                              
+        Send visual selection with optional prompt           
+                                                             
+    *:LLM explain*                                           
+        Explain code in current buffer                       
+                                                             
+    *:LLM fragments*                                         
+        Interactive prompt with fragment selection           
+                                                             
+    *:LLM schema*                                            
+        Select and run schema                                
+                                                             
+    *:LLM template*                                          
+        Select and run template                              
                                                              
 *:LLMToggle* [{view}]                                        
     Open or close the unified manager window. This window    

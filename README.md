@@ -19,16 +19,24 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 
 ## Feature List
 
-- Send prompts to LLMs directly from Neovim
-- Process selected text with LLMs
-- Explain code in the current buffer
+- Unified LLM command interface (`:LLM`)
+- Interactive prompting with fragments support
+- Process selected text or entire files with LLMs 
+- Explain code in current buffer
 - Support for custom models and system prompts
-- Manage API keys for different LLM providers
-- Use fragments (files, URLs, GitHub repos) with prompts
-- Manage fragment aliases
-- Manage templates (create, run, edit, delete)
-- Manage schemas (create, run, view, edit, set/delete aliases)
-- Unified manager window (`:LLMToggle`) to access Models, Plugins, Keys, Fragments, Templates, and Schemas management.
+- API key management for multiple providers
+- Fragment management (files, URLs, GitHub repos)
+- Template creation and execution
+- Schema management and execution
+- Unified manager window (`:LLMToggle`) with views for:
+  - Models
+  - Plugins  
+  - API Keys
+  - Fragments
+  - Templates
+  - Schemas
+- Markdown-formatted responses with syntax highlighting
+- Asynchronous command execution
 
 ## Requirements
 
@@ -106,17 +114,23 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 ### Commands
 
 #### Unified LLM Command
-- `:LLM {prompt}` - Send a prompt to the LLM
-- `:LLM file {prompt}` - Send current file's content with optional prompt
+- `:LLM {prompt}` - Send prompt to LLM
+- `:LLM file [{prompt}]` - Send current file's content with optional prompt  
+- `:LLM selection [{prompt}]` - Send visual selection with optional prompt
+- `:LLM explain` - Explain current buffer's code
+- `:LLM fragments` - Interactive prompt with fragment selection
+- `:LLM schema` - Select and run schema
+- `:LLM template` - Select and run template
 
 #### Unified Manager
-- `:LLMToggle [view]` - Open/close unified manager window (optionally specify initial view)
-- `:LLMToggle models` - Open unified manager to Models view
-- `:LLMToggle plugins` - Open unified manager to Plugins view
-- `:LLMToggle keys` - Open unified manager to API Keys view
-- `:LLMToggle fragments` - Open unified manager to Fragments view
-- `:LLMToggle templates` - Open unified manager to Templates view
-- `:LLMToggle schemas` - Open unified manager to Schemas view
+- `:LLMToggle [view]` - Toggle unified manager window
+  - Optional views: `models`, `plugins`, `keys`, `fragments`, `templates`, `schemas`
+- `:LLMToggle models` - Open Models view
+- `:LLMToggle plugins` - Open Plugins view  
+- `:LLMToggle keys` - Open API Keys view
+- `:LLMToggle fragments` - Open Fragments view
+- `:LLMToggle templates` - Open Templates view
+- `:LLMToggle schemas` - Open Schemas view
 
 ### Basic Prompting
 
