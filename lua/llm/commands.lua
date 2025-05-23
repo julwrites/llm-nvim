@@ -91,11 +91,12 @@ function M.get_pre_response_message(source, prompt, fragment_paths)
   if fragment_paths and #fragment_paths > 0 then
     table.insert(message_parts, "Fragments: " .. fragment_paths)
   end
-  table.insert(message_parts, "Processing, please wait...")
   table.insert(message_parts, " ")
   table.insert(message_parts, "---")
   table.insert(message_parts, " ")
-  table.insert(message_parts, "Note that results will be written to this buffer")
+  table.insert(message_parts, "Processing, please wait...")
+  table.insert(message_parts, " ")
+  table.insert(message_parts, "(Note that results will be written to this buffer)")
 
   return table.concat(message_parts, "\n")
 end

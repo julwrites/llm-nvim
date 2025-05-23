@@ -14,7 +14,7 @@ end
 -- Execute shell command safely with error handling
 function M.safe_shell_command(cmd, error_msg)
   debug_log("Executing command: " .. cmd)
-  
+
   local cmd_with_stderr = cmd .. " 2>&1"
   local result = vim.fn.system(cmd_with_stderr)
 
@@ -47,7 +47,7 @@ end
 -- Check if llm is installed and available
 function M.check_llm_installed()
   if not M.command_exists("llm") then
-    vim.notify("llm CLI not found. Install with: pip install llm or brew install llm", 
+    vim.notify("llm CLI not found. Install with: pip install llm or brew install llm",
       vim.log.levels.ERROR)
     return false
   end
@@ -58,10 +58,10 @@ end
 function M.execute(cmd)
   local handle = io.popen(cmd .. " 2>&1", "r")
   if not handle then return nil, "Failed to execute command" end
-  
+
   local output = handle:read("*a")
   local success, _, exit_code = handle:close()
-  
+
   return success and exit_code == 0, output, exit_code
 end
 

@@ -99,23 +99,24 @@ function M.parse_simple_yaml(filepath)
 
       -- Ensure the parent is a list
       if not current_level or current_level.type ~= 'list' then
-         -- If data is nil, start a new list at the root
-         if data == nil then
-            data = {}
-            current_data = data
-            table.insert(stack, { indent = indent, data = current_data, type = 'list' })
-            current_level = stack[#stack]
-         -- If parent exists but isn't a list, this might be an error or requires context
-         -- For simplicity, we'll assume list items imply a list context
-         elseif current_level and current_level.type == 'map' then
-             -- This scenario is complex (list inside map without key).
-             -- A simple parser might error or make assumptions.
-             -- Let's assume the list starts here if the parent is a map.
-             -- We need a key for the map though. This logic needs refinement for robust parsing.
-             -- For now, let's focus on lists starting at root or nested under keys.
-             if debug_mode then vim.notify("YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN) end
-             goto continue -- Skip this line for now
-         end
+        -- If data is nil, start a new list at the root
+        if data == nil then
+          data = {}
+          current_data = data
+          table.insert(stack, { indent = indent, data = current_data, type = 'list' })
+          current_level = stack[#stack]
+          -- If parent exists but isn't a list, this might be an error or requires context
+          -- For simplicity, we'll assume list items imply a list context
+        elseif current_level and current_level.type == 'map' then
+          -- This scenario is complex (list inside map without key).
+          -- A simple parser might error or make assumptions.
+          -- Let's assume the list starts here if the parent is a map.
+          -- We need a key for the map though. This logic needs refinement for robust parsing.
+          -- For now, let's focus on lists starting at root or nested under keys.
+          if debug_mode then vim.notify(
+            "YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN) end
+          goto continue    -- Skip this line for now
+        end
       end
 
       -- Check for key-value pair within the list item
@@ -133,7 +134,7 @@ function M.parse_simple_yaml(filepath)
         -- Don't push simple values onto the stack
       end
 
-    -- Detect key-value pair
+      -- Detect key-value pair
     elseif content:match("^([^:]+):") then
       local key, value = content:match("^([^:]+):%s*(.*)")
       key = trim(key)
@@ -141,20 +142,20 @@ function M.parse_simple_yaml(filepath)
 
       -- Ensure the parent is a map (or create root map)
       if not current_level or current_level.type ~= 'map' then
-         if data == nil then
-            data = {}
-            current_data = data
-            table.insert(stack, { indent = indent, data = current_data, type = 'map' })
-            current_level = stack[#stack]
-         -- If parent is a list, create a new map for the list item
-         elseif current_level and current_level.type == 'list' then
-             local new_map = {}
-             table.insert(current_data, new_map) -- Add map to the list
-             current_data = new_map -- Work within the new map
-             -- Replace the list entry on stack with this map? No, push map onto stack.
-             table.insert(stack, { indent = indent, data = current_data, type = 'map' })
-             current_level = stack[#stack]
-         end
+        if data == nil then
+          data = {}
+          current_data = data
+          table.insert(stack, { indent = indent, data = current_data, type = 'map' })
+          current_level = stack[#stack]
+          -- If parent is a list, create a new map for the list item
+        elseif current_level and current_level.type == 'list' then
+          local new_map = {}
+          table.insert(current_data, new_map)    -- Add map to the list
+          current_data = new_map                 -- Work within the new map
+          -- Replace the list entry on stack with this map? No, push map onto stack.
+          table.insert(stack, { indent = indent, data = current_data, type = 'map' })
+          current_level = stack[#stack]
+        end
       end
 
       -- If value is present on the same line
@@ -167,38 +168,40 @@ function M.parse_simple_yaml(filepath)
         -- Push this key's context onto the stack, expecting nested data
         table.insert(stack, { indent = indent, data = current_data, type = 'map', pending_key = key })
       end
-    -- Handle properties indented under a list item's map or a key expecting nested data
+      -- Handle properties indented under a list item's map or a key expecting nested data
     elseif current_level and indent > current_level.indent then
-       if current_level.type == 'map' then
-          -- Check if it's nested under a key that expects data
-          if current_level.pending_key then
-             local parent_map = current_level.data
-             local pending_key = current_level.pending_key
-             -- Determine if nested item is list or map start
-             if content:match("^- ") then -- Nested list starts
-                parent_map[pending_key] = {}
-                current_level.data = parent_map[pending_key] -- Update stack entry's data target
-                current_level.type = 'list' -- Change type on stack
-                current_level.pending_key = nil -- Key resolved
-                -- Re-process the line now that the list is created
-                goto reprocess_line -- Need to handle the list item itself
-             elseif content:match("^([^:]+):") then -- Nested map starts
-                parent_map[pending_key] = {}
-                current_level.data = parent_map[pending_key] -- Update stack entry's data target
-                current_level.type = 'map' -- Still a map
-                current_level.pending_key = nil -- Key resolved
-                -- Re-process the line now that the map is created
-                goto reprocess_line
-             else
-                if debug_mode then vim.notify("YAML Parse Warning: Unexpected content under key '" .. pending_key .. "' at line " .. i, vim.log.levels.WARN) end
-                -- Maybe treat as string continuation? Simple parser won't handle this well.
-             end
-          -- Handle property indented under a map (e.g., properties of a map within a list)
-          elseif content:match("^([^:]+):") then
-             local key, value = content:match("^([^:]+):%s*(.*)")
-             current_data[trim(key)] = parse_value(value)
+      if current_level.type == 'map' then
+        -- Check if it's nested under a key that expects data
+        if current_level.pending_key then
+          local parent_map = current_level.data
+          local pending_key = current_level.pending_key
+          -- Determine if nested item is list or map start
+          if content:match("^- ") then                       -- Nested list starts
+            parent_map[pending_key] = {}
+            current_level.data = parent_map[pending_key]     -- Update stack entry's data target
+            current_level.type = 'list'                      -- Change type on stack
+            current_level.pending_key = nil                  -- Key resolved
+            -- Re-process the line now that the list is created
+            goto reprocess_line                              -- Need to handle the list item itself
+          elseif content:match("^([^:]+):") then             -- Nested map starts
+            parent_map[pending_key] = {}
+            current_level.data = parent_map[pending_key]     -- Update stack entry's data target
+            current_level.type = 'map'                       -- Still a map
+            current_level.pending_key = nil                  -- Key resolved
+            -- Re-process the line now that the map is created
+            goto reprocess_line
+          else
+            if debug_mode then vim.notify(
+              "YAML Parse Warning: Unexpected content under key '" .. pending_key .. "' at line " .. i,
+                vim.log.levels.WARN) end
+            -- Maybe treat as string continuation? Simple parser won't handle this well.
           end
-       end
+          -- Handle property indented under a map (e.g., properties of a map within a list)
+        elseif content:match("^([^:]+):") then
+          local key, value = content:match("^([^:]+):%s*(.*)")
+          current_data[trim(key)] = parse_value(value)
+        end
+      end
     end
 
     ::reprocess_line::

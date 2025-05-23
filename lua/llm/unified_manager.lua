@@ -23,6 +23,11 @@ local state = {
   last_view = "Models", -- Default to Models view first time
 }
 
+-- Get the last viewed manager
+function M.get_last_view()
+  return state.last_view or "Models"
+end
+
 -- Available views and their corresponding manager functions
 local views = {
   Models = {
@@ -65,6 +70,11 @@ local views = {
 
 -- Close the unified window
 local function close_window()
+  -- Save current view as last_view before closing
+  if state.current_view then
+    state.last_view = state.current_view
+  end
+  
   if state.winid and api.nvim_win_is_valid(state.winid) then
     api.nvim_win_close(state.winid, true)
   end
@@ -107,10 +117,6 @@ function M.switch_view(view_name)
     return
   end
   
-  -- Update last_view before switching
-  if state.current_view then
-    state.last_view = state.current_view
-  end
 
   if not views[view_name] then
     vim.notify("Invalid view: " .. view_name, vim.log.levels.ERROR)
@@ -196,6 +202,11 @@ function M.toggle(initial_view)
     local view_to_open = initial_view or state.last_view or "Models"
     M.open(view_to_open)
   end
+end
+
+-- Get the last viewed manager
+function M.get_last_view()
+  return state.last_view or "Models"
 end
 
 -- Close the unified window (public function)

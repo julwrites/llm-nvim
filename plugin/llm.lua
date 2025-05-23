@@ -16,7 +16,17 @@ local ok, llm = pcall(require, "llm")
 if not ok then
   -- If the main module fails to load, notify the user and stop.
   -- The error message from the require will provide details.
-  vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
+  local shell = require('llm.utils.shell')
+  if not shell.check_llm_installed() then
+    vim.notify(
+      "llm CLI not found.\n" ..
+      "Install with: pip install llm or brew install llm\n" ..
+      "If already installed, ensure it's in your PATH or set g:llm_executable_path",
+      vim.log.levels.ERROR
+    )
+  else
+    vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
+  end
   return
 end
 local config = require("llm.config") -- Load config module
@@ -70,21 +80,45 @@ end, {
 
 -- Command to toggle the unified manager with an optional initial view
 vim.api.nvim_create_user_command("LLMToggle", function(opts)
-  llm.toggle_unified_manager(opts.args ~= "" and opts.args or nil)
+  local view = opts.args ~= "" and opts.args or nil
+  if view then
+    -- Convert to proper case (first letter capitalized)
+    view = view:sub(1,1):upper() .. view:sub(2):lower()
+    -- Validate view name
+    local valid_views = {
+      Models = true,
+      Plugins = true,
+      Keys = true,
+      Fragments = true,
+      Templates = true,
+      Schemas = true
+    }
+    if not valid_views[view] then
+      vim.notify("Invalid view: " .. view .. "\nValid views: Models, Plugins, Keys, Fragments, Templates, Schemas", vim.log.levels.ERROR)
+      return
+    end
+  end
+  llm.toggle_unified_manager(view)
 end, {
   nargs = "?",
-  complete = function()
-    -- Provide completion for view names
-    return { "Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas" }
+  complete = function(ArgLead, CmdLine, CursorPos)
+    local views = {"models", "plugins", "keys", "fragments", "templates", "schemas"}
+    local matches = {}
+    for _, view in ipairs(views) do
+      if view:find(ArgLead, 1, true) == 1 then
+        table.insert(matches, view)
+      end
+    end
+    return matches
   end,
-  desc = "Toggle LLM Unified Manager (optional initial view)"
+  desc = "Toggle LLM Unified Manager (optional view: models|plugins|keys|fragments|templates|schemas)"
 })
 
 -- Define key mappings using the commands or direct lua calls
 -- Using commands is simpler for basic calls, direct lua is better for complex ones or when avoiding command-line buffer is desired.
 -- Let's update to use direct lua calls for the toggle and managers for better performance and consistency.
 
-vim.keymap.set("n", "<Plug>(llm-toggle)", "<Cmd>lua require('llm').toggle_unified_manager()<CR>",
+vim.keymap.set("n", "<Plug>(llm-toggle)", "<Cmd>LLMToggle<CR>",
   { silent = true, desc = "Toggle LLM Unified Manager" })
 vim.keymap.set("n", "<Plug>(llm-prompt)", ":LLM ", { silent = true, desc = "Prompt LLM" })
 vim.keymap.set("n", "<Plug>(llm-explain)", "<Cmd>LLMExplain<CR>", { silent = true, desc = "Explain code" })
