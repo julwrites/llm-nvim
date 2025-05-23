@@ -27,11 +27,12 @@ julwrites/llm-nvim is a Neovim plugin designed to seamlessly integrate with the 
 - Chat mode: Start a session with `:LLMChat {model}` for interactive conversations.
 - Unified manager: Toggle with `:LLMToggle` or `<leader>ll` to manage models, keys, and more.
 
-## Default Key Mappings
-- `<leader>ll`: Toggle the unified manager window.
-- `<leader>llp`: Send a prompt to the LLM.
-- `<leader>lls`: Send selected text to the LLM (visual mode).
-- `<leader>lle`: Explain the current buffer's code.
+## Suggested Key Mappings
+The plugin doesn't set default key mappings. Users can create their own, such as:
+- `<leader>ll`: Toggle unified manager (`<Cmd>LLMToggle<CR>`)
+- `<leader>lp`: Send prompt (`<Cmd>LLM<Space>`)
+- `<leader>ls`: Send selection (visual mode, `<Cmd>LLM selection<CR>`)
+- `<leader>le`: Explain buffer (`<Cmd>LLM explain<CR>`)
 
 ## Configuration
 - Set a default model (e.g., 'gpt-4o') and system prompt via `require('llm').setup()`.

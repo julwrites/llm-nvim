@@ -159,23 +159,26 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 6.  Follow the instructions in the header for actions (e.g., press `s` in the Models view to set a default model).
 7.  Press `q` or `<Esc>` to close the manager.
 
-### Default Mappings
+## Suggested Mappings
 
-- `<leader>ll` - Toggle the unified manager window
-- `<leader>llp` - Prompt for input and send to LLM
-- `<leader>lle` - Explain the current buffer
-- `<leader>llm` - Open the Models manager view
-- `<leader>llg` - Open the Plugins manager view
-- `<leader>llk` - Open the API Keys manager view
-- `<leader>llf` - Open the Fragments manager view
-- `<leader>llsf` - Select a file to use as a fragment
-- `<leader>llwf` - Send a prompt with fragments
-- `<leader>llwf` - In visual mode, send selection with fragments
-- `<leader>llt` - Open the Templates manager view
-- `<leader>llrt` - Select and run a template
-- `<leader>llcs` - Create a new schema
-- `<leader>lls` - Open the Schemas manager view
-- `<leader>llrs` - Select and run a schema
+The plugin doesn't set any default key mappings. Here are some suggested mappings you might want to set up:
+
+```lua
+-- Toggle unified manager
+vim.keymap.set('n', '<leader>ll', '<Cmd>LLMToggle<CR>', { desc = "Toggle LLM Manager" })
+
+-- Basic prompt
+vim.keymap.set('n', '<leader>lp', '<Cmd>LLM<Space>', { desc = "LLM Prompt" })
+
+-- Explain current buffer
+vim.keymap.set('n', '<leader>le', '<Cmd>LLM explain<CR>', { desc = "Explain Code" })
+
+-- Prompt with visual selection
+vim.keymap.set('v', '<leader>ls', '<Cmd>LLM selection<CR>', { desc = "LLM Selection" })
+
+-- Interactive fragments
+vim.keymap.set('n', '<leader>lf', '<Cmd>LLM fragments<CR>', { desc = "LLM with Fragments" })
+```
 
 ## Development
 
