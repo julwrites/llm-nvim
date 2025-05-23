@@ -15,39 +15,56 @@ function M.ensure_templates_dir()
   return utils.check_llm_installed()
 end
 
--- Get all templates from llm CLI
+-- Get all templates from llm CLI including plugin templates
 function M.get_templates()
   if not utils.check_llm_installed() then
     return {}
   end
 
-  -- Use a simpler command that's more likely to work
+  local templates = {}
+
+  -- First get regular templates
   local cmd = "llm templates list"
   local result = vim.fn.system(cmd)
   local shell_error = vim.v.shell_error
 
-  if shell_error ~= 0 then
-    if config.get("debug") then
-      vim.notify("Error executing '" .. cmd .. "': " .. result .. " (Exit code: " .. tostring(shell_error) .. ")",
-        vim.log.levels.ERROR)
+  if shell_error == 0 and result and result ~= "" then
+    for line in result:gmatch("[^\r\n]+") do
+      -- Parse template name and description
+      local name, description = line:match("^([^%s:]+)%s*:%s*(.+)$")
+      if name and description then
+        templates[name] = description
+      end
     end
-    return {}
+  elseif config.get("debug") then
+    vim.notify("Error getting regular templates: " .. (result or "") .. " (Exit code: " .. tostring(shell_error) .. ")",
+      vim.log.levels.WARN)
   end
 
-  if not result or result == "" then
-    if config.get("debug") then
-      vim.notify("No templates found or empty output from '" .. cmd .. "'", vim.log.levels.WARN)
-    end
-    return {}
-  end
+  -- Get template loaders information
+  local loaders_cmd = "llm templates loaders"
+  local loaders_result = vim.fn.system(loaders_cmd)
+  local loaders_shell_error = vim.v.shell_error
 
-  local templates = {}
-  for line in result:gmatch("[^\r\n]+") do
-    -- Parse template name and description
-    local name, description = line:match("^([^%s:]+)%s*:%s*(.+)$")
-    if name and description then
-      templates[name] = description
+  if loaders_shell_error == 0 and loaders_result and loaders_result ~= "" then
+    -- Store template loaders separately
+    local template_loaders = {}
+    
+    for line in loaders_result:gmatch("[^\r\n]+") do
+      -- Parse loader prefix and description
+      local prefix, description = line:match("^([%w_]+):%s*(.*)$")
+      if prefix and description then
+        template_loaders[prefix] = description
+        -- Add a special entry to indicate this is a loader
+        templates["loader:"..prefix] = "Template loader - "..description
+      end
     end
+
+    -- Store loaders in buffer var for later use
+    vim.b.template_loaders = template_loaders
+  elseif config.get("debug") then
+    vim.notify("Error getting template loaders: " .. (loaders_result or "") .. 
+      " (Exit code: " .. tostring(loaders_shell_error) .. ")", vim.log.levels.WARN)
   end
 
   return templates

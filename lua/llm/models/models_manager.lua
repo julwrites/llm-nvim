@@ -9,6 +9,7 @@ local fn = vim.fn
 local utils = require('llm.utils')
 local config = require('llm.config')
 local styles = require('llm.styles') -- Added for highlighting
+local commands = require('llm.commands')
 
 local custom_openai = require('llm.models.custom_openai')
 
@@ -28,7 +29,6 @@ end
 function M.reload_custom_openai_models()
   return custom_openai.load_custom_openai_models()
 end
-
 
 -- Get available providers with valid API keys
 local function get_available_providers()
@@ -70,10 +70,10 @@ function M.is_model_available(model_line)
   elseif model_line:match("OpenAI") then
     -- Check if this standard-looking OpenAI model is actually a custom one
     if custom_openai.is_custom_openai_model_valid(model_name) then
-       if config.get("debug") then
-         vim.notify("Identified standard OpenAI line as custom model: " .. model_name, vim.log.levels.INFO)
-       end
-       return true -- Validity is checked by is_custom_openai_model_valid
+      if config.get("debug") then
+        vim.notify("Identified standard OpenAI line as custom model: " .. model_name, vim.log.levels.INFO)
+      end
+      return true -- Validity is checked by is_custom_openai_model_valid
     end
     -- Regular OpenAI only requires the API key
     return providers.OpenAI
@@ -132,7 +132,8 @@ function M.get_available_models()
   end
 
   if config.get("debug") then
-    vim.notify("Adding " .. vim.tbl_count(custom_openai.custom_openai_models) .. " custom OpenAI models to available models list",
+    vim.notify(
+      "Adding " .. vim.tbl_count(custom_openai.custom_openai_models) .. " custom OpenAI models to available models list",
       vim.log.levels.INFO)
   end
 
@@ -163,7 +164,8 @@ function M.get_available_models()
     if extracted_name and not custom_model_ids[extracted_name:lower()] then
       table.insert(models, line)
     elseif config.get("debug") and extracted_name then
-      vim.notify("Skipping standard OpenAI model due to conflict with custom ID: " .. extracted_name, vim.log.levels.DEBUG)
+      vim.notify("Skipping standard OpenAI model due to conflict with custom ID: " .. extracted_name,
+        vim.log.levels.DEBUG)
     end
   end
 
@@ -458,8 +460,8 @@ function M.populate_models_buffer(bufnr)
 
   for _, model_line in ipairs(models) do
     local extracted_name = M.extract_model_name(model_line) -- This is the name/id part of the line
-    local model_id = extracted_name -- Default model_id to extracted name
-    local model_name = extracted_name -- Default model_name to extracted name
+    local model_id = extracted_name                         -- Default model_id to extracted name
+    local model_name = extracted_name                       -- Default model_name to extracted name
     local is_custom = false
     local custom_model_info = nil
 
@@ -471,42 +473,42 @@ function M.populate_models_buffer(bufnr)
       -- Find the corresponding custom model data using the extracted name/id
       -- Prioritize matching the extracted name directly to a model_id first
       if custom_openai.custom_openai_models[extracted_name] then
-         custom_model_info = custom_openai.custom_openai_models[extracted_name]
-         model_id = custom_model_info.model_id
-         model_name = custom_model_info.model_name
+        custom_model_info = custom_openai.custom_openai_models[extracted_name]
+        model_id = custom_model_info.model_id
+        model_name = custom_model_info.model_name
       else
-         -- Fallback: Iterate to find match by model_name if ID didn't match
-         for id, info in pairs(custom_openai.custom_openai_models) do
-           if info.model_name == extracted_name then
-             custom_model_info = info
-             model_id = info.model_id -- Use the correct model_id from the found info
-             model_name = info.model_name
-             break
-           end
-         end
+        -- Fallback: Iterate to find match by model_name if ID didn't match
+        for id, info in pairs(custom_openai.custom_openai_models) do
+          if info.model_name == extracted_name then
+            custom_model_info = info
+            model_id = info.model_id -- Use the correct model_id from the found info
+            model_name = info.model_name
+            break
+          end
+        end
       end
       -- If still no match, something is wrong, but proceed with extracted values
       if not custom_model_info then
-         if config.get("debug") then
-            vim.notify("Could not find custom model info for: " .. extracted_name, vim.log.levels.WARN)
-         end
-         -- Keep model_id and model_name as extracted_name
+        if config.get("debug") then
+          vim.notify("Could not find custom model info for: " .. extracted_name, vim.log.levels.WARN)
+        end
+        -- Keep model_id and model_name as extracted_name
       end
-
     elseif model_line:match("OpenAI") then
-       -- Check if this standard-looking line corresponds to a loaded custom model ID
-       custom_model_info = custom_openai.custom_openai_models[extracted_name]
-       if custom_model_info then
-         provider_key = "Custom OpenAI"
-         is_custom = true
-         model_id = custom_model_info.model_id
-         model_name = custom_model_info.model_name
-         if config.get("debug") then
-            vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")", vim.log.levels.DEBUG)
-         end
-       else
-         provider_key = "OpenAI"
-       end
+      -- Check if this standard-looking line corresponds to a loaded custom model ID
+      custom_model_info = custom_openai.custom_openai_models[extracted_name]
+      if custom_model_info then
+        provider_key = "Custom OpenAI"
+        is_custom = true
+        model_id = custom_model_info.model_id
+        model_name = custom_model_info.model_name
+        if config.get("debug") then
+          vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
+            vim.log.levels.DEBUG)
+        end
+      else
+        provider_key = "OpenAI"
+      end
     elseif model_line:match("Anthropic") then
       provider_key = "Anthropic"
     elseif model_line:match("Mistral") then
@@ -542,7 +544,7 @@ function M.populate_models_buffer(bufnr)
         if config.get("debug") then
           vim.notify("Skipping duplicate custom model entry for ID: " .. model_id, vim.log.levels.DEBUG)
         end
-        goto next_model_line -- Skip adding this duplicate entry
+        goto next_model_line                        -- Skip adding this duplicate entry
       else
         processed_custom_model_ids[model_id] = true -- Mark this ID as processed
       end
@@ -553,7 +555,7 @@ function M.populate_models_buffer(bufnr)
     ::next_model_line::
   end
 
-  local model_data = {} -- Stores detailed info keyed by model_id
+  local model_data = {}       -- Stores detailed info keyed by model_id
   local line_to_model_id = {} -- Maps buffer line number to model_id
   local current_line = #lines + 1
   -- Flexible default model matching (if exact match wasn't found)
@@ -583,11 +585,15 @@ function M.populate_models_buffer(bufnr)
 
       for _, model_entry in ipairs(provider_models) do
         local status = model_entry.is_default and "✓" or " "
-        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or ""
+        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
+            ""
         -- Display model_name in the list
-        local display_line_part = model_entry.full_line:match(":(.*)") or model_entry.model_name -- Extract name part or use model_name
+        local display_line_part = model_entry.full_line:match(":(.*)") or
+            model_entry
+            .model_name                                             -- Extract name part or use model_name
         display_line_part = display_line_part:match("^%s*(.-)%s*$") -- Trim whitespace
-        local provider_prefix = model_entry.full_line:match("^[^:]+:") or "" -- Extract provider prefix
+        local provider_prefix = model_entry.full_line:match("^[^:]+:") or
+            ""                                                      -- Extract provider prefix
         local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 
         table.insert(lines, line)
@@ -596,7 +602,7 @@ function M.populate_models_buffer(bufnr)
           line = current_line,
           is_default = model_entry.is_default,
           is_custom = model_entry.is_custom,
-          full_line = model_entry.full_line, -- Store original line for context if needed
+          full_line = model_entry.full_line,   -- Store original line for context if needed
           model_name = model_entry.model_name, -- Store model name
           aliases = model_entry.aliases
         }
@@ -675,11 +681,6 @@ function M.setup_models_keymaps(bufnr, manager_module)
     string.format([[<Cmd>lua require('%s').remove_alias_for_model_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
 
-  -- Chat with model under cursor
-  set_keymap('n', 'c',
-    string.format([[<Cmd>lua require('%s').chat_with_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
-
   -- Add custom alias (when on the [+] line)
   set_keymap('n', '<CR>',
     string.format([[<Cmd>lua require('%s').handle_action_under_cursor(%d)<CR>]],
@@ -691,7 +692,7 @@ end
 -- Sets the model under the cursor as the default LLM model.
 function M.set_model_under_cursor(bufnr)
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
-  if not model_id or not model_info then return end -- Exit if no model info found
+  if not model_id or not model_info then return end      -- Exit if no model info found
 
   local display_name = model_info.model_name or model_id -- Use model_name for messages if available
 
@@ -703,24 +704,31 @@ function M.set_model_under_cursor(bufnr)
   -- Check availability using the model_id for custom models or full_line for others
   local check_identifier = model_info.is_custom and model_id or model_info.full_line
   if not M.is_model_available(check_identifier) then
-     local provider = "unknown"
-     if model_info.is_custom then
-       provider = "Custom OpenAI/Azure"
-     elseif model_info.full_line:match("OpenAI") then provider = "OpenAI"
-     elseif model_info.full_line:match("Anthropic") then provider = "Anthropic"
-     elseif model_info.full_line:match("Mistral") then provider = "Mistral"
-     elseif model_info.full_line:match("Gemini") then provider = "Gemini"
-     elseif model_info.full_line:match("Groq") then provider = "Groq"
-     elseif model_info.full_line:match("ollama") then provider = "Ollama"
-     end
-     vim.notify("Cannot set as default: " .. provider .. " requirements not met (API key/plugin/config)", vim.log.levels.ERROR)
-     return
+    local provider = "unknown"
+    if model_info.is_custom then
+      provider = "Custom OpenAI/Azure"
+    elseif model_info.full_line:match("OpenAI") then
+      provider = "OpenAI"
+    elseif model_info.full_line:match("Anthropic") then
+      provider = "Anthropic"
+    elseif model_info.full_line:match("Mistral") then
+      provider = "Mistral"
+    elseif model_info.full_line:match("Gemini") then
+      provider = "Gemini"
+    elseif model_info.full_line:match("Groq") then
+      provider = "Groq"
+    elseif model_info.full_line:match("ollama") then
+      provider = "Ollama"
+    end
+    vim.notify("Cannot set as default: " .. provider .. " requirements not met (API key/plugin/config)",
+      vim.log.levels.ERROR)
+    return
   end
 
   -- Use model_id when setting the default via CLI
   vim.notify("Setting default model to: " .. display_name .. " (ID: " .. model_id .. ")", vim.log.levels.INFO)
   if M.set_default_model(model_id) then
-    config.options.model = model_id -- Update runtime config as well
+    config.options.model = model_id                      -- Update runtime config as well
     vim.notify("Default model set to: " .. display_name, vim.log.levels.INFO)
     require('llm.unified_manager').switch_view("Models") -- Refresh view
   else
@@ -752,37 +760,6 @@ function M.set_alias_for_model_under_cursor(bufnr)
       vim.notify("Failed to set alias via llm CLI", vim.log.levels.ERROR)
       vim.cmd('stopinsert')
     end
-  end)
-end
-
--- Starts a chat session with the model under the cursor.
-function M.chat_with_model_under_cursor(bufnr)
-  local model_id, model_info = M.get_model_info_under_cursor(bufnr)
-  if not model_id or not model_info then return end
-
-  local display_name = model_info.model_name or model_id
-
-  -- Check availability using the model_id for custom models or full_line for others
-  local check_identifier = model_info.is_custom and model_id or model_info.full_line
-  if not M.is_model_available(check_identifier) then
-     local provider = "unknown"
-     if model_info.is_custom then
-       provider = "Custom OpenAI/Azure"
-     elseif model_info.full_line:match("OpenAI") then provider = "OpenAI"
-     elseif model_info.full_line:match("Anthropic") then provider = "Anthropic"
-     elseif model_info.full_line:match("Mistral") then provider = "Mistral"
-     elseif model_info.full_line:match("Gemini") then provider = "Gemini"
-     elseif model_info.full_line:match("Groq") then provider = "Groq"
-     elseif model_info.full_line:match("ollama") then provider = "Ollama"
-     end
-     vim.notify("Cannot chat: " .. provider .. " requirements not met (API key/plugin/config)", vim.log.levels.ERROR)
-     return
-  end
-
-  require('llm.unified_manager').close() -- Close manager before starting chat
-  vim.schedule(function()
-    -- Use model_id to start the chat
-    require('llm.commands').start_chat(model_id)
   end)
 end
 

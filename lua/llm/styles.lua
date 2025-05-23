@@ -93,6 +93,8 @@ M.highlights = {
   TemplateSection = { fg = M.colors.section, style = "bold" },
   TemplateContent = { fg = M.colors.content },
   TemplateFooter = { fg = M.colors.action, style = "bold" },
+  LoaderTitle = { fg = M.colors.purple, style = "bold" },
+  LoaderUsage = { fg = M.colors.cyan },
 }
 
 -- Setup function to create all highlight groups
@@ -192,6 +194,8 @@ M.syntax_patterns = {
   template_footer = "syntax match LLMAction /^Press.*$/",
   template_name = "syntax match LLMTemplateName /^Template \\d\\+: .*$/",
   template_description = "syntax match LLMContent /^  Description: .*$/",
+  loader_title = "syntax match LLMLoaderTitle /^Loader \\d\\+: .*$/",
+  loader_usage = "syntax match LLMLoaderUsage /^  Usage: .*$/",
 }
 
 -- Setup syntax highlighting for a buffer

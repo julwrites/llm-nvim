@@ -3,13 +3,12 @@
 # GitHub: https://github.com/julwrites/llm-nvim
 
 ## Overview
-julwrites/llm-nvim is a Neovim plugin designed to seamlessly integrate with the llm CLI tool by Simon Willison. It enables users to interact with large language models (LLMs) directly from Neovim, offering features like prompting, code explanation, interactive chat, and management of models, API keys, fragments, templates, and schemas.
+julwrites/llm-nvim is a Neovim plugin designed to seamlessly integrate with the llm CLI tool by Simon Willison. It enables users to interact with large language models (LLMs) directly from Neovim, offering features like prompting, code explanation, and management of models, API keys, fragments, templates, and schemas.
 
 ## Key Features
 - Send prompts to LLMs directly from Neovim for quick responses.
 - Process selected text or code with LLMs for refactoring or analysis.
 - Explain code in the current buffer with detailed insights from LLMs.
-- Start interactive chat sessions with customizable model selection.
 - Manage API keys, custom models, and system prompts for various LLM providers.
 - Use fragments (files, URLs, GitHub repos) to enrich prompts.
 - Create and manage templates and schemas for structured interactions.
@@ -33,7 +32,6 @@ julwrites/llm-nvim is a Neovim plugin designed to seamlessly integrate with the 
 - `<leader>llp`: Send a prompt to the LLM.
 - `<leader>lls`: Send selected text to the LLM (visual mode).
 - `<leader>lle`: Explain the current buffer's code.
-- `<leader>llc`: Start an interactive chat session.
 
 ## Configuration
 - Set a default model (e.g., 'gpt-4o') and system prompt via `require('llm').setup()`.

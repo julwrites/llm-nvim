@@ -103,15 +103,22 @@ end
 -- Uninstall a plugin using llm CLI
 function M.uninstall_plugin(plugin_name)
   if not utils.check_llm_installed() then
-    return false
+    return false, "llm CLI not installed"
   end
 
-  local result = utils.safe_shell_command(
-    string.format('llm uninstall %s -y', plugin_name),
-    "Failed to uninstall plugin: " .. plugin_name
-  )
+  local cmd = string.format('llm uninstall %s -y', plugin_name)
+  local result = utils.safe_shell_command(cmd, "Failed to uninstall plugin: " .. plugin_name)
 
-  return result ~= nil
+  if not result then
+    return false, "command failed"
+  end
+
+  -- Check for common error patterns in output
+  if result:match("Error") or result:match("not found") then
+    return false, result
+  end
+
+  return true
 end
 
 -- Populate the buffer with plugin management content
@@ -274,26 +281,33 @@ end
 
 function M.uninstall_plugin_under_cursor(bufnr)
   local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
-  if not plugin_name then return end
+  if not plugin_name then 
+    vim.notify("No plugin selected", vim.log.levels.WARN)
+    return 
+  end
   if not plugin_info.installed then
     vim.notify("Plugin " .. plugin_name .. " is not installed", vim.log.levels.INFO)
     return
   end
+
   utils.floating_confirm({
     prompt = "Uninstall " .. plugin_name .. "?",
-    options = { "Yes", "No" }
-  }, function(choice)
-    if choice ~= "Yes" then return end
-    vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
-    vim.schedule(function()
-      if M.uninstall_plugin(plugin_name) then
-        vim.notify("Plugin uninstalled: " .. plugin_name, vim.log.levels.INFO)
-        require('llm.unified_manager').switch_view("Plugins")
-      else
-        vim.notify("Failed to uninstall plugin: " .. plugin_name, vim.log.levels.ERROR)
-      end
-    end)
-  end)
+    on_confirm = function(confirmed)
+      if not confirmed then return end
+      vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
+      
+      -- Run in schedule to avoid blocking UI
+      vim.schedule(function()
+        local success, err = M.uninstall_plugin(plugin_name)
+        if success then
+          vim.notify("Successfully uninstalled: " .. plugin_name, vim.log.levels.INFO)
+          require('llm.unified_manager').switch_view("Plugins")
+        else
+          vim.notify("Failed to uninstall " .. plugin_name .. ": " .. (err or "unknown error"), vim.log.levels.ERROR)
+        end
+      end)
+    end
+  })
 end
 
 function M.refresh_plugin_list(bufnr)
