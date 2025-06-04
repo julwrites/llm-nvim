@@ -1,8 +1,14 @@
 -- llm/utils/shell.lua - Shell command utilities
+local config = require('llm.config')
 -- License: Apache 2.0
 
 local M = {}
-local config = require('llm.config')
+local DEBUG = false
+
+-- Simple error notification wrapper
+local function notify_error(msg, level)
+  vim.notify(msg, level or vim.log.levels.ERROR)
+end
 
 -- Private helper to log debug messages
 local function debug_log(message, level)
@@ -19,8 +25,8 @@ function M.safe_shell_command(cmd, error_msg)
   local result = vim.fn.system(cmd_with_stderr)
 
   if result == nil then
-    debug_log("Command returned nil: " .. cmd, vim.log.levels.ERROR)
-    return nil
+    notify_error("Command returned nil: " .. cmd)
+    return nil, "Command returned nil"
   end
 
   -- Trim whitespace from result
@@ -29,13 +35,14 @@ function M.safe_shell_command(cmd, error_msg)
   if result == "" then
     debug_log("Command returned empty result", vim.log.levels.WARN)
     if error_msg then
-      vim.notify(error_msg, vim.log.levels.ERROR)
+      notify_error(error_msg, vim.log.levels.WARN)
+      return nil, error_msg
     end
   else
     debug_log("Command result: " .. (result:len() > 200 and result:sub(1, 200) .. "..." or result))
   end
 
-  return result
+  return result, nil
 end
 
 -- Check if command exists in PATH
@@ -47,8 +54,7 @@ end
 -- Check if llm is installed and available
 function M.check_llm_installed()
   if not M.command_exists("llm") then
-    vim.notify("llm CLI not found. Install with: pip install llm or brew install llm",
-      vim.log.levels.ERROR)
+    notify_error("llm CLI not found. Install with: pip install llm or brew install llm")
     return false
   end
   return true
@@ -57,12 +63,20 @@ end
 -- Execute command and return status, stdout, stderr
 function M.execute(cmd)
   local handle = io.popen(cmd .. " 2>&1", "r")
-  if not handle then return nil, "Failed to execute command" end
+  if not handle then 
+    notify_error("Failed to execute command: " .. cmd)
+    return nil, "Failed to execute command"
+  end
 
   local output = handle:read("*a")
   local success, _, exit_code = handle:close()
 
-  return success and exit_code == 0, output, exit_code
+  if not success or exit_code ~= 0 then
+    notify_error("Command failed with exit code " .. exit_code .. ": " .. cmd)
+    return nil, "Command failed"
+  end
+
+  return output, nil
 end
 
 return M

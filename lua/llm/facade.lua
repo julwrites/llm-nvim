@@ -16,15 +16,21 @@ local dependencies = {
 
 -- Initialize all managers with dependencies
 function M.init()
+  -- Load managers in strict dependency order
+  -- 1. Basic managers with no cross-dependencies
   managers.models = require('llm.models.models_manager')
-  managers.plugins = require('llm.plugins.plugins_manager')
   managers.keys = require('llm.keys.keys_manager')
   managers.fragments = require('llm.fragments.fragments_manager')
   managers.templates = require('llm.templates.templates_manager')
   managers.schemas = require('llm.schemas.schemas_manager')
+  
+  -- 2. Unified manager depends on basic managers
   managers.unified = require('llm.unified_manager')
   
-  -- Inject dependencies into each manager
+  -- 3. Plugins manager depends on unified manager
+  managers.plugins = require('llm.plugins.plugins_manager')
+  
+  -- Inject dependencies into all managers
   for _, manager in pairs(managers) do
     if manager.setup then
       manager.setup(dependencies)
@@ -175,6 +181,12 @@ function M.manage_plugins()
 end
 
 function M.toggle_unified_manager(initial_view)
+  if not managers.unified then
+    M.init()
+    if not managers.unified then
+      error("Failed to initialize unified manager")
+    end
+  end
   return managers.unified.toggle(initial_view)
 end
 

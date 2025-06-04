@@ -1,6 +1,7 @@
 -- llm/models/models_manager.lua - Model management functionality
 -- License: Apache 2.0
 
+local errors = require('llm.errors')
 local M = {}
 
 -- Forward declarations
@@ -104,8 +105,14 @@ function M.get_available_models()
   -- Load custom OpenAI models first
   custom_openai.load_custom_openai_models()
 
-  local result = utils.safe_shell_command("llm models", "Failed to get available models")
-  if not result then
+  local result, err = utils.safe_shell_command("llm models")
+  if err then
+    errors.handle(
+      errors.categories.MODEL,
+      "Failed to get available models",
+      {error = err},
+      errors.levels.ERROR
+    )
     return {}
   end
 
@@ -223,7 +230,12 @@ end
 -- Set the default model using llm CLI
 function M.set_default_model(model_name)
   if not model_name or model_name == "" then
-    vim.notify("Model name cannot be empty", vim.log.levels.ERROR)
+    errors.handle(
+      errors.categories.MODEL,
+      "Model name cannot be empty",
+      nil,
+      errors.levels.ERROR
+    )
     return false
   end
 
@@ -231,11 +243,19 @@ function M.set_default_model(model_name)
     return false
   end
 
-  local result = utils.safe_shell_command(
-    string.format('llm models default %s', model_name),
-    "Failed to set default model"
+  local result, err = utils.safe_shell_command(
+    string.format('llm models default %s', model_name)
   )
-
+  
+  if err then
+    errors.handle(
+      errors.categories.MODEL,
+      "Failed to set default model",
+      {model = model_name, error = err},
+      errors.levels.ERROR
+    )
+  end
+  
   return result ~= nil
 end
 
@@ -245,8 +265,14 @@ function M.get_model_aliases()
     return {}
   end
 
-  local result = utils.safe_shell_command("llm aliases --json", "Failed to get model aliases")
-  if not result then
+  local result, err = utils.safe_shell_command("llm aliases --json")
+  if err then
+    errors.handle(
+      errors.categories.MODEL,
+      "Failed to get model aliases",
+      {error = err},
+      errors.levels.ERROR
+    )
     return {}
   end
 
@@ -278,11 +304,21 @@ end
 -- Set a model alias using llm CLI
 function M.set_model_alias(alias, model)
   if not alias or alias == "" then
-    vim.notify("Alias cannot be empty", vim.log.levels.ERROR)
+    errors.handle(
+      errors.categories.MODEL,
+      "Alias cannot be empty",
+      nil,
+      errors.levels.ERROR
+    )
     return false
   end
   if not model or model == "" then
-    vim.notify("Model cannot be empty", vim.log.levels.ERROR)
+    errors.handle(
+      errors.categories.MODEL,
+      "Model cannot be empty",
+      nil,
+      errors.levels.ERROR
+    )
     return false
   end
 
@@ -290,18 +326,31 @@ function M.set_model_alias(alias, model)
     return false
   end
 
-  local result = utils.safe_shell_command(
-    string.format('llm aliases set %s %s', alias, model),
-    "Failed to set model alias"
+  local result, err = utils.safe_shell_command(
+    string.format('llm aliases set %s %s', alias, model)
   )
-
+  
+  if err then
+    errors.handle(
+      errors.categories.MODEL,
+      "Failed to set model alias",
+      {alias = alias, model = model, error = err},
+      errors.levels.ERROR
+    )
+  end
+  
   return result ~= nil
 end
 
 -- Remove a model alias by directly modifying the aliases.json file
 function M.remove_model_alias(alias)
   if not alias or alias == "" then
-    vim.notify("Alias cannot be empty", vim.log.levels.ERROR)
+    errors.handle(
+      errors.categories.MODEL,
+      "Alias cannot be empty",
+      nil,
+      errors.levels.ERROR
+    )
     return false
   end
 
