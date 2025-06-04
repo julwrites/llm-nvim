@@ -2,6 +2,7 @@
 -- License: Apache 2.0
 
 local M = {}
+local api = require('llm.api')
 local facade = require('llm.facade')
 
 -- Setup function for configuration
