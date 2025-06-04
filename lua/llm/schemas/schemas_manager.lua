@@ -233,7 +233,7 @@ function M.submit_schema_input_from_buffer(buf)
   local content = table.concat(lines, "\n")
 
   -- Debug output
-  if require('llm.config').get("debug") then
+  if self.config.get("debug") then
     vim.notify("Schema ID: " .. schema_id, vim.log.levels.DEBUG)
     vim.notify("Is multi: " .. tostring(is_multi), vim.log.levels.DEBUG)
     vim.notify("Input content length: " .. #content, vim.log.levels.DEBUG)
@@ -247,7 +247,7 @@ function M.submit_schema_input_from_buffer(buf)
       file:write(content)
       file:close()
 
-      if require('llm.config').get("debug") then
+      if self.config.get("debug") then
         vim.notify("Saved input to temp file: " .. temp_file_path, vim.log.levels.DEBUG)
         if vim.fn.filereadable(temp_file_path) == 1 then
           vim.notify("Temp file exists and is readable", vim.log.levels.DEBUG)
@@ -276,7 +276,7 @@ function M.submit_schema_input_from_buffer(buf)
   end
 
   -- Debug output
-  if require('llm.config').get("debug") then
+  if self.config.get("debug") then
     vim.notify("Using schema ID: " .. schema_id, vim.log.levels.DEBUG)
     vim.notify("Schema content length: " .. (schema_details.content and #schema_details.content or 0),
       vim.log.levels.DEBUG)
@@ -304,7 +304,7 @@ function M.submit_schema_input_from_buffer(buf)
     is_multi and "--schema-multi" or "--schema",
     schema_id)
 
-  if require('llm.config').get("debug") then
+  if self.config.get("debug") then
     vim.notify("Running schema command: " .. cmd, vim.log.levels.DEBUG)
   end
 
@@ -320,7 +320,7 @@ function M.submit_schema_input_from_buffer(buf)
   end
 
   if result then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Schema result received (length: " .. #result .. ")", vim.log.levels.DEBUG)
       vim.notify("Result (first 100 chars): " .. result:sub(1, 100), vim.log.levels.DEBUG)
     end
@@ -365,7 +365,7 @@ function M.submit_schema_input(schema_id, is_multi, buf)
   local content = table.concat(lines, "\n")
 
   -- Debug output
-  if require('llm.config').get("debug") then
+  if self.config.get("debug") then
     vim.notify("Schema ID: " .. schema_id, vim.log.levels.DEBUG)
     vim.notify("Is multi: " .. is_multi, vim.log.levels.DEBUG)
     vim.notify("Input content: " .. content, vim.log.levels.DEBUG)
@@ -382,7 +382,7 @@ function M.submit_schema_input(schema_id, is_multi, buf)
   local result = schemas_loader.run_schema(schema_id, content, is_multi == "true")
 
   if result then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Schema result: " .. result, vim.log.levels.DEBUG)
     end
     utils.create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
@@ -506,7 +506,7 @@ end
 function M.save_schema_from_temp_file(bufnr)
   -- Check if buffer is valid
   if not api.nvim_buf_is_valid(bufnr) then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("save_schema_from_temp_file called with invalid buffer: " .. bufnr, vim.log.levels.WARN)
     end
     return
@@ -543,7 +543,7 @@ function M.save_schema_from_temp_file(bufnr)
     elseif json_schema then
       validated_content = json_schema
       -- Debug: Show content being passed to validator
-      if require('llm.config').get("debug") then
+      if self.config.get("debug") then
         vim.notify("Validating generated JSON: " .. vim.inspect(validated_content), vim.log.levels.DEBUG)
       end
       -- Validate the generated JSON schema
@@ -563,7 +563,7 @@ function M.save_schema_from_temp_file(bufnr)
       error_message = "Invalid JSON: " .. tostring(decode_err):sub(1, 100)
     else
       -- Debug: Show content being passed to validator
-      if require('llm.config').get("debug") then
+      if self.config.get("debug") then
         vim.notify("Validating direct JSON: " .. vim.inspect(content), vim.log.levels.DEBUG)
       end
       -- Validate the JSON schema structure

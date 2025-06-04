@@ -177,7 +177,7 @@ end
 -- Get schema ID by name
 function M.get_schema_id_by_name(name)
   if not name or name == "" or name == "nil" then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Invalid schema name: " .. tostring(name), vim.log.levels.DEBUG)
     end
     return nil
@@ -191,7 +191,7 @@ function M.get_schema_id_by_name(name)
   -- Load schema configuration
   local _, schema_config_file = utils.get_config_path("schemas.json") -- Capture the second return value
   if not schema_config_file then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Could not get schema config file path", vim.log.levels.DEBUG)
     end
     return nil
@@ -199,7 +199,7 @@ function M.get_schema_id_by_name(name)
 
   local config_file = io.open(schema_config_file, "r")
   if not config_file then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Could not open schema config file: " .. schema_config_file, vim.log.levels.DEBUG)
     end
     return nil
@@ -209,7 +209,7 @@ function M.get_schema_id_by_name(name)
   config_file:close()
 
   if not content or content == "" then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Schema config file is empty", vim.log.levels.DEBUG)
     end
     return nil
@@ -217,7 +217,7 @@ function M.get_schema_id_by_name(name)
 
   local success, parsed = pcall(vim.fn.json_decode, content)
   if not success or not parsed then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("Failed to parse schema config JSON", vim.log.levels.DEBUG)
     end
     return nil
@@ -227,7 +227,7 @@ function M.get_schema_id_by_name(name)
   local schema_id = parsed[name]
 
   if not schema_id then
-    if require('llm.config').get("debug") then
+    if self.config.get("debug") then
       vim.notify("No schema ID found for name: " .. name, vim.log.levels.DEBUG)
     end
   end
@@ -687,7 +687,7 @@ function M.save_schema(name, schema_text)
       config_file:write(vim.fn.json_encode(schema_config))
       config_file:close()
 
-      if require('llm.config').get("debug") then
+      if self.config.get("debug") then
         vim.notify("Saved schema alias '" .. name .. "' for ID: " .. newest_schema_id, vim.log.levels.DEBUG)
       end
 
@@ -715,7 +715,7 @@ function M.save_schema(name, schema_text)
         if content and content ~= "" then
           local success, parsed = pcall(vim.fn.json_decode, content)
           if success and parsed and parsed[name] == newest_schema_id then
-            if require('llm.config').get("debug") then
+            if self.config.get("debug") then
               vim.notify("Schema alias verified in config file", vim.log.levels.DEBUG)
             end
           else
@@ -1639,7 +1639,7 @@ function M.validate_json_schema(schema_json_string)
 
     for key, value in pairs(props) do
       -- More detailed debug output
-      if require('llm.config').get("debug") then
+      if self.config.get("debug") then
         vim.notify(string.format("Validating key: %s (type: %s, len: %d) at path: %s",
             vim.inspect(key), type(key), type(key) == "string" and #key or -1, path),
           vim.log.levels.DEBUG)
@@ -1647,7 +1647,7 @@ function M.validate_json_schema(schema_json_string)
 
       -- Ensure key is a string before proceeding
       if type(key) ~= "string" then
-        if require('llm.config').get("debug") then
+        if self.config.get("debug") then
           vim.notify("Validation FAILED: Key is not a string: " .. vim.inspect(key), vim.log.levels.DEBUG)
         end
         return false, string.format("Invalid property key (not a string): %s at path '%s'.", vim.inspect(key), path)
@@ -1680,7 +1680,7 @@ function M.validate_json_schema(schema_json_string)
       end
 
       if not key_valid then
-        if require('llm.config').get("debug") then
+        if self.config.get("debug") then
           vim.notify(
             string.format("Manual Validation FAILED for key: %s (stripped: %s, len: %d)", vim.inspect(key),
               vim.inspect(stripped_key), key_len), vim.log.levels.DEBUG)

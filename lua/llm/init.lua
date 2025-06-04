@@ -7,8 +7,8 @@ local facade = require('llm.facade')
 
 -- Setup function for configuration
 function M.setup(opts)
-  -- Load the configuration module
-  require('llm.config').setup(opts)
+  -- Initialize config first
+  M.config = require('llm.config').setup(opts or {})
 
   -- Initialize styles
   require('llm.styles').setup_highlights()
@@ -17,7 +17,7 @@ function M.setup(opts)
   facade.init()
 
   -- Refresh plugins cache on startup if enabled
-  if not require('llm.config').get("no_auto_refresh_plugins") then
+  if not M.config.get("no_auto_refresh_plugins") then
     vim.defer_fn(function()
       require('llm.plugins.plugins_loader').refresh_plugins_cache()
     end, 1000) -- Longer delay to avoid startup impact
@@ -26,8 +26,18 @@ function M.setup(opts)
   return M
 end
 
--- Initialize with default configuration
-require('llm.config').setup()
+-- Initialize config after module definition
+local function initialize_config()
+  M.config = require('llm.config').setup()
+  if not M.config then
+    M.config = { get = function() return {} end }
+    require('llm.errors').handle('config', 
+      "Failed to initialize config, using empty fallback", nil, 'warning')
+  end
+end
+
+-- Initialize config immediately after module definition
+initialize_config()
 
 -- Initialize config path cache by making a call early
 -- This helps ensure the config directory is known before managers need it

@@ -209,7 +209,7 @@ function M.setup_buffer_syntax(buf)
       end)
     end)
     
-    if not success and require('llm.config').get('debug') then
+    if not success and self.config.get('debug') then
       vim.notify("Syntax pattern error for " .. name .. ": " .. tostring(err), vim.log.levels.WARN)
     end
   end

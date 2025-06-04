@@ -33,7 +33,14 @@ function M.init()
   -- Inject dependencies into all managers
   for _, manager in pairs(managers) do
     if manager.setup then
-      manager.setup(dependencies)
+      -- Inject config with change listener support
+      local config = {
+        get = function(key)
+          return dependencies.config.get(key)
+        end,
+        on_change = dependencies.config.on_change
+      }
+      manager.setup(vim.tbl_extend("keep", dependencies, {config = config}))
     end
   end
 end
