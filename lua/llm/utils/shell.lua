@@ -123,6 +123,12 @@ function M.update_llm_cli()
 
   local update_methods = {
     {
+      cmd_name = "uv",
+      check_exists = true,
+      command = "uv tool upgrade llm",
+      success_msg = "llm CLI updated successfully via uv."
+    },
+    {
       cmd_name = "pipx",
       check_exists = true,
       command = "pipx upgrade llm",
