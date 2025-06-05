@@ -80,6 +80,14 @@ return {
 
         -- Enable debug logging (optional)
         -- debug = true,
+
+        -- Enable or disable automatic updates for the underlying `llm` CLI tool.
+        -- Defaults to `false`.
+        -- auto_update_cli = false,
+
+        -- Set the interval in days for checking for `llm` CLI updates.
+        -- Defaults to `7`.
+        -- auto_update_interval_days = 7,
       })
 
       -- Example custom key mappings (if no_mappings = true or for overrides)
@@ -100,6 +108,8 @@ require('llm').setup({
   system_prompt = 'You are a helpful assistant.', -- Default system prompt
   no_mappings = false,                       -- Set to true to disable default mappings
   debug = false,                             -- Set to true to enable debug output
+  auto_update_cli = false,                   -- Enable/disable CLI auto-updates (default: false)
+  auto_update_interval_days = 7,             -- Interval in days for CLI update checks (default: 7)
 })
 
 -- Custom mappings
@@ -108,6 +118,17 @@ vim.keymap.set('v', '<leader>ls', '<Plug>(llm-selection)')
 vim.keymap.set('n', '<leader>le', '<Plug>(llm-explain)')
 vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-select-model) is deprecated
 ```
+
+### Automatic CLI Updates
+
+The plugin includes a feature to automatically check for updates to the `llm` command-line tool upon startup.
+
+- When enabled via the `auto_update_cli = true` setting, the plugin will check if the configured `auto_update_interval_days` has passed since the last check.
+- If an update check is due, it will attempt to update the `llm` CLI tool using `pip install --upgrade llm` or, if that fails or pip is not available, `brew upgrade llm`.
+- This check runs asynchronously in the background to avoid impacting Neovim's startup time.
+- You will receive a notification about the outcome of the update attempt (success or failure).
+
+This helps ensure your `llm` tool stays up-to-date with the latest features and fixes.
 
 ## Usage Examples
 
