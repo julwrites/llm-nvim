@@ -69,7 +69,7 @@ local function initialize_config()
   if not M.config then
     M.config = { get = function() return {} end }
     require('llm.errors').handle('config', 
-      "Failed to initialize config, using empty fallback", nil, 'warning')
+      "Failed to initialize config, using empty fallback", nil, require('llm.errors').levels.WARNING)
   end
 end
 
