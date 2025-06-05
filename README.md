@@ -142,6 +142,7 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 - `:LLM fragments` - Interactive prompt with fragment selection
 - `:LLM schema` - Select and run schema
 - `:LLM template` - Select and run template
+- `:LLM update` - Manually trigger an update check for the underlying `llm` CLI tool.
 
 #### Unified Manager
 - `:LLMToggle [view]` - Toggle unified manager window
