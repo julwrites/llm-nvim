@@ -85,16 +85,41 @@ end
 -- Get configuration value(s)
 function M.get(key)
   if not key then
-    return vim.deepcopy(M.options)
+    -- Return a deepcopy of all *actual* values, not the internal structure
+    local current_values = {}
+    for k_option, _ in pairs(M.options) do
+      current_values[k_option] = M.get(k_option) -- Recursively call M.get for each key
+    end
+    return current_values
   end
-  if M.options[key] == nil then
+
+  local option_entry = M.options[key]
+  if option_entry == nil then
+    -- This case should ideally be caught by M.defaults having all valid keys
+    -- or process_config filtering unknown keys.
+    -- If an unknown key is passed, returning nil is appropriate.
     return nil
   end
-  -- Handle both wrapped values and direct values
-  if type(M.options[key]) == 'table' and M.options[key].value ~= nil then
-    return M.options[key].value
+
+  if type(option_entry) == 'table' then
+    if option_entry.value ~= nil then
+      return option_entry.value -- User-set value
+    elseif option_entry.default ~= nil then
+      return option_entry.default -- Default value from M.defaults
+    end
   end
-  return M.options[key]
+  -- This case should ideally not be reached if options are always tables
+  -- from M.defaults or {value=...} from user config.
+  -- However, returning option_entry directly might be a fallback for unforeseen structures
+  -- or if M.options contains direct values not conforming to {value=...} or {default=...}.
+  -- For robustness, if it's not a table with 'value' or 'default', but the key exists,
+  -- it might be a direct value (though current setup logic aims to wrap these).
+  -- If it's a table but doesn't have .value or .default (e.g. just {type="...", desc="..."}),
+  -- then it implies no value is set and no default value exists, so nil is appropriate.
+  if type(option_entry) == 'table' and option_entry.value == nil and option_entry.default == nil then
+    return nil -- No user-set value and no default value defined for this key
+  end
+  return option_entry -- Fallback for direct values or unexpected structures
 end
 
 -- Register config change listener
