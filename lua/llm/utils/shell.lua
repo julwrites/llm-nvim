@@ -103,7 +103,7 @@ function M.get_last_update_timestamp()
 end
 
 -- Set the timestamp of the last update check
-local function set_last_update_timestamp()
+function M.set_last_update_timestamp()
   ensure_data_dir_exists()
   local f = io.open(last_update_file, "w")
   if not f then
@@ -116,7 +116,7 @@ end
 
 -- Attempt to update the LLM CLI
 function M.update_llm_cli()
-  set_last_update_timestamp()
+  M.set_last_update_timestamp()
   local messages = {}
   local success = false
   local final_success_message = ""
