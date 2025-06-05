@@ -124,7 +124,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 The plugin includes a feature to automatically check for updates to the `llm` command-line tool upon startup.
 
 - When enabled via the `auto_update_cli = true` setting, the plugin will check if the configured `auto_update_interval_days` has passed since the last check.
-- If an update check is due, it will attempt to update the `llm` CLI tool using `pip install --upgrade llm` or, if that fails or pip is not available, `brew upgrade llm`.
+- If an update check is due, it will attempt to update the `llm` CLI tool. The update mechanism tries common upgrade methods including `uv tool upgrade llm`, `pipx upgrade llm`, `pip install --upgrade llm` (and `python -m pip install --upgrade llm`), and `brew upgrade llm` to keep the tool current.
 - This check runs asynchronously in the background to avoid impacting Neovim's startup time.
 - You will receive a notification about the outcome of the update attempt (success or failure).
 
@@ -142,6 +142,7 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 - `:LLM fragments` - Interactive prompt with fragment selection
 - `:LLM schema` - Select and run schema
 - `:LLM template` - Select and run template
+- `:LLM update` - Manually trigger an update check for the underlying `llm` CLI tool.
 
 #### Unified Manager
 - `:LLMToggle [view]` - Toggle unified manager window

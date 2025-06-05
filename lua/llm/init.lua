@@ -8,7 +8,8 @@ local facade = require('llm.facade')
 -- Setup function for configuration
 function M.setup(opts)
   -- Initialize config first
-  M.config = require('llm.config').setup(opts or {})
+  M.config = require('llm.config')
+  M.config.setup(opts or {})
 
   -- Initialize styles
   require('llm.styles').setup_highlights()
@@ -65,11 +66,12 @@ end
 
 -- Initialize config after module definition
 local function initialize_config()
-  M.config = require('llm.config').setup()
+  M.config = require('llm.config')
+  M.config.setup()
   if not M.config then
     M.config = { get = function() return {} end }
     require('llm.errors').handle('config', 
-      "Failed to initialize config, using empty fallback", nil, 'warning')
+      "Failed to initialize config, using empty fallback", nil, require('llm.errors').levels.WARNING)
   end
 end
 

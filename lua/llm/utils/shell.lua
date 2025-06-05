@@ -103,7 +103,7 @@ function M.get_last_update_timestamp()
 end
 
 -- Set the timestamp of the last update check
-local function set_last_update_timestamp()
+function M.set_last_update_timestamp()
   ensure_data_dir_exists()
   local f = io.open(last_update_file, "w")
   if not f then
@@ -116,47 +116,76 @@ end
 
 -- Attempt to update the LLM CLI
 function M.update_llm_cli()
-  set_last_update_timestamp()
+  M.set_last_update_timestamp()
   local messages = {}
   local success = false
+  local final_success_message = ""
 
-  -- Try pip first
-  debug_log("Attempting to update llm CLI using pip...")
-  local pip_cmd = "pip install --upgrade llm"
-  local pip_output = vim.fn.system(pip_cmd .. " 2>&1")
-  local pip_exit_code = vim.v.shell_error
+  local update_methods = {
+    {
+      cmd_name = "uv",
+      check_exists = true,
+      command = "uv tool upgrade llm",
+      success_msg = "llm CLI updated successfully via uv."
+    },
+    {
+      cmd_name = "pipx",
+      check_exists = true,
+      command = "pipx upgrade llm",
+      success_msg = "llm CLI updated successfully via pipx."
+    },
+    {
+      cmd_name = "pip",
+      check_exists = false, -- Assuming pip is often aliased or directly available if python is
+      command = "pip install -U llm",
+      success_msg = "llm CLI updated successfully via pip."
+    },
+    {
+      cmd_name = "python-pip",
+      check_exists = false, -- Assuming python is in path
+      command = "python -m pip install --upgrade llm",
+      success_msg = "llm CLI updated successfully via python -m pip."
+    },
+    {
+      cmd_name = "brew",
+      check_exists = true,
+      command = "brew upgrade llm",
+      success_msg = "llm CLI updated successfully via brew."
+    }
+  }
 
-  table.insert(messages, "pip install --upgrade llm:\n" .. pip_output)
+  for _, method in ipairs(update_methods) do
+    debug_log("Attempting to update llm CLI using " .. method.cmd_name .. "...")
+    local cmd_to_run = method.command
+    local can_run = true
 
-  if pip_exit_code == 0 then
-    debug_log("llm CLI updated successfully via pip.")
-    success = true
-  else
-    debug_log("pip update failed with exit code " .. pip_exit_code .. ". Output: " .. pip_output, vim.log.levels.WARN)
-    -- Try brew if pip failed (assuming brew might be available)
-    if M.command_exists("brew") then
-      debug_log("Attempting to update llm CLI using brew...")
-      local brew_cmd = "brew upgrade llm"
-      local brew_output = vim.fn.system(brew_cmd .. " 2>&1")
-      local brew_exit_code = vim.v.shell_error
-
-      table.insert(messages, "\nbrew upgrade llm:\n" .. brew_output)
-
-      if brew_exit_code == 0 then
-        debug_log("llm CLI updated successfully via brew.")
-        success = true
-      else
-        debug_log("brew update failed with exit code " .. brew_exit_code .. ". Output: " .. brew_output, vim.log.levels.WARN)
+    if method.check_exists then
+      if not M.command_exists(method.cmd_name) then
+        debug_log(method.cmd_name .. " command not found, skipping.", vim.log.levels.INFO)
+        table.insert(messages, method.cmd_name .. " command not found, skipping.")
+        can_run = false
       end
-    else
-      debug_log("brew command not found, skipping brew update attempt.", vim.log.levels.INFO)
-      table.insert(messages, "\nbrew command not found, skipping brew update attempt.")
+    end
+
+    if can_run then
+      local output = vim.fn.system(cmd_to_run .. " 2>&1")
+      local exit_code = vim.v.shell_error
+      table.insert(messages, cmd_to_run .. ":\n" .. output)
+
+      if exit_code == 0 then
+        debug_log(method.success_msg)
+        final_success_message = method.success_msg -- Store the specific success message
+        success = true
+        break -- Exit loop on first success
+      else
+        debug_log(method.cmd_name .. " update failed with exit code " .. exit_code .. ". Output: " .. output, vim.log.levels.WARN)
+      end
     end
   end
 
   return {
     success = success,
-    message = table.concat(messages, "\n")
+    message = success and final_success_message or table.concat(messages, "\n\n") -- If success, only success message, else all attempts
   }
 end
 

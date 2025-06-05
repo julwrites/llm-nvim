@@ -31,6 +31,27 @@ if not ok then
 end
 local config = require("llm.config") -- Load config module
 
+-- Handler function for manually updating the LLM CLI
+local function manual_cli_update()
+  vim.notify("Starting LLM CLI update...", vim.log.levels.INFO)
+  vim.defer_fn(function()
+    local shell = require('llm.utils.shell')
+    local result = shell.update_llm_cli()
+
+    if result and result.success then
+      vim.notify("LLM CLI update successful.", vim.log.levels.INFO)
+    elseif result then -- Not nil, but success is false
+      local msg = "LLM CLI update failed."
+      if result.message and type(result.message) == "string" and #result.message > 0 then
+        msg = msg .. " Details:\n" .. result.message
+      end
+      vim.notify(msg, vim.log.levels.WARN)
+    else -- Result itself is nil
+      vim.notify("LLM CLI update command failed to execute.", vim.log.levels.ERROR)
+    end
+  end, 100) -- Short delay to allow the initial notification to display
+end
+
 -- Command handler registry
 local command_handlers = {
   file = function(prompt) require('llm.commands').prompt_with_current_file(prompt) end,
@@ -40,7 +61,8 @@ local command_handlers = {
   explain = function() require('llm.commands').explain_code() end,
   schema = function() require('llm.schemas.schemas_manager').select_schema() end,
   template = function() require('llm.templates.templates_manager').select_template() end,
-  fragments = function() llm.interactive_prompt_with_fragments() end
+  fragments = function() llm.interactive_prompt_with_fragments() end,
+  update = manual_cli_update
 }
 
 -- Main LLM command with subcommands
@@ -66,7 +88,8 @@ end, {
         "explain",   -- :LLM explain
         "schema",    -- :LLM schema
         "template",  -- :LLM template
-        "fragments"  -- :LLM fragments
+        "fragments", -- :LLM fragments
+        "update"     -- :LLM update
       }
     end
 
@@ -114,7 +137,6 @@ end, {
   end,
   desc = "Toggle LLM Unified Manager (optional view: models|plugins|keys|fragments|templates|schemas)"
 })
-
 
 -- Test environment exports
 local function setup_test_exports()
