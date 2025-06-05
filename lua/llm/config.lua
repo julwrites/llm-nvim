@@ -27,6 +27,16 @@ M.defaults = {
     type = "boolean",
     desc = "Enable debug logging"
   },
+  auto_update_cli = {
+    default = false,
+    type = "boolean",
+    desc = "Enable or disable auto-updates for the LLM CLI"
+  },
+  auto_update_interval_days = {
+    default = 7,
+    type = "number",
+    desc = "Interval in days for checking for updates"
+  },
   -- Add more config options here
 }
 
