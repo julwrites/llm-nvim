@@ -152,9 +152,9 @@ end
 
 -- Populate the buffer with key management content
 function M.populate_keys_buffer(bufnr)
-  local stored_keys = M.get_stored_keys()
+  local all_stored_keys_list = M.get_stored_keys()
   local stored_keys_set = {}
-  for _, key in ipairs(stored_keys) do stored_keys_set[key] = true end
+  for _, key in ipairs(all_stored_keys_list) do stored_keys_set[key] = true end
 
   local lines = {
     "# API Key Management",
@@ -167,30 +167,65 @@ function M.populate_keys_buffer(bufnr)
     ""
   }
 
-  local providers = {
+  local predefined_providers_list = {
     "openai", "anthropic", "mistral", "gemini", "groq", "perplexity",
     "cohere", "replicate", "anyscale", "together", "deepseek", "fireworks",
     "aws", "azure",
   }
+  local predefined_providers_set = {}
+  for _, p_name in ipairs(predefined_providers_list) do predefined_providers_set[p_name] = true end
 
   local key_data = {}
   local line_to_provider = {}
   local current_line = #lines + 1
 
-  for _, provider in ipairs(providers) do
-    local status = stored_keys_set[provider] and "✓" or " "
-    local line = string.format("[%s] %s", status, provider)
+  -- Display predefined providers first
+  for _, provider_name in ipairs(predefined_providers_list) do
+    local is_set = stored_keys_set[provider_name] or false
+    local status = is_set and "✓" or " "
+    local line = string.format("[%s] %s", status, provider_name)
     table.insert(lines, line)
-    key_data[provider] = { line = current_line, is_set = stored_keys_set[provider] or false }
-    line_to_provider[current_line] = provider
+    key_data[provider_name] = { line = current_line, is_set = is_set }
+    line_to_provider[current_line] = provider_name
     current_line = current_line + 1
   end
 
-  table.insert(lines, "")
-  table.insert(lines, "## Custom Key:")
+  table.insert(lines, "") -- Add a blank line before custom keys section
+
+  -- Identify and prepare custom stored keys for display
+  local custom_keys_to_display = {}
+  for _, stored_key_name in ipairs(all_stored_keys_list) do
+    if not predefined_providers_set[stored_key_name] then
+      table.insert(custom_keys_to_display, stored_key_name)
+    end
+  end
+  table.sort(custom_keys_to_display) -- Sort for consistent order
+
+  -- Display custom stored keys
+  if #custom_keys_to_display > 0 then
+    table.insert(lines, "## Custom Keys:")
+    table.insert(lines, "") -- Blank line after title
+    for _, custom_key_name in ipairs(custom_keys_to_display) do
+      -- All keys from get_stored_keys are considered "set"
+      local line = string.format("[✓] %s", custom_key_name)
+      table.insert(lines, line)
+      key_data[custom_key_name] = { line = current_line, is_set = true }
+      line_to_provider[current_line] = custom_key_name
+      current_line = current_line + 1
+    end
+    table.insert(lines, "") -- Add a blank line after custom keys list
+  end
+
+  -- "Add custom key" action line
+  -- If there were no custom keys listed, add the title for it first.
+  if #custom_keys_to_display == 0 then
+    table.insert(lines, "## Custom Key Action:") -- Title if no custom keys are listed above
+    table.insert(lines, "") -- Blank line after title
+  end
   table.insert(lines, "[+] Add custom key")
-  local custom_key_line = current_line + 2
-  line_to_provider[custom_key_line] = "+" -- Special marker for custom key line
+  line_to_provider[current_line] = "+" -- Special marker for the "Add custom key" action line
+  current_line = current_line + 1
+
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
