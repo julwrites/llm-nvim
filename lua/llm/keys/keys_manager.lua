@@ -240,19 +240,46 @@ end
 
 -- Action functions called by keymaps (now accept bufnr)
 function M.set_key_under_cursor(bufnr)
-  local provider_name, _ = M.get_provider_info_under_cursor(bufnr)
+  local provider_name_or_action, _ = M.get_provider_info_under_cursor(bufnr)
 
-  if not provider_name then return end
+  if not provider_name_or_action then
+    return
+  end
 
-  if provider_name == "+" then
-    -- Handle custom key
-    vim.ui.input({ prompt = "Enter custom key name: " }, function(custom_name)
-      if not custom_name or custom_name == "" then return end
-      M.create_key_input_window(custom_name)
+  local function handle_key_setting(p_name, p_value)
+    if M.set_api_key(p_name, p_value) then
+      vim.notify("Key for '" .. p_name .. "' set", vim.log.levels.INFO)
+      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+    else
+      vim.notify("Failed to set key for '" .. p_name .. "'", vim.log.levels.ERROR)
+    end
+  end
+
+  if provider_name_or_action == "+" then
+    -- Handle custom key: Step 1: Get custom key name
+    utils.floating_input({ prompt = "Enter custom key name:" }, function(custom_name)
+      if not custom_name or custom_name == "" then
+        vim.notify("Custom key name cannot be empty.", vim.log.levels.WARN)
+        return
+      end
+      -- Step 2: Get custom key value
+      utils.floating_input({ prompt = "Enter API key for " .. custom_name .. ":" }, function(key_value)
+        if not key_value or key_value == "" then
+          vim.notify("API key value cannot be empty.", vim.log.levels.WARN)
+          return
+        end
+        handle_key_setting(custom_name, key_value)
+      end)
     end)
   else
     -- Handle regular provider
-    M.create_key_input_window(provider_name)
+    utils.floating_input({ prompt = "Enter API key for " .. provider_name_or_action .. ":" }, function(key_value)
+      if not key_value or key_value == "" then
+        vim.notify("API key value cannot be empty.", vim.log.levels.WARN)
+        return
+      end
+      handle_key_setting(provider_name_or_action, key_value)
+    end)
   end
 end
 
@@ -268,83 +295,16 @@ function M.remove_key_under_cursor(bufnr)
 
   utils.floating_confirm({
     prompt = "Remove key for '" .. provider_name .. "'?",
-    options = { "Yes", "No" }
-  }, function(choice)
-    if choice ~= "Yes" then return end
-
-    if M.remove_api_key(provider_name) then
-      vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys")
-    else
-      vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+    on_confirm = function() -- Modified to use on_confirm callback
+      if M.remove_api_key(provider_name) then
+        vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Keys")
+      else
+        vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+      end
     end
-  end)
-end
-
--- Create a floating window for secure key input (modified to refresh unified view)
-function M.create_key_input_window(provider_name)
-  local input_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(input_buf, 'buftype', 'nofile')
-  api.nvim_buf_set_option(input_buf, 'bufhidden', 'wipe')
-  api.nvim_buf_set_option(input_buf, 'swapfile', false)
-
-  local lines = { "Enter API key for '" .. provider_name .. "':", "", "", "", "Press <Enter> to save, <Esc> to cancel" }
-  api.nvim_buf_set_lines(input_buf, 0, -1, false, lines)
-
-  local input_win = utils.create_floating_window(input_buf, 'LLM Set API Key')
-  api.nvim_win_set_cursor(input_win, { 3, 0 })
-  vim.cmd('startinsert')
-  api.nvim_buf_set_option(input_buf, 'modifiable', true)
-  styles.setup_buffer_styling(input_buf) -- Apply basic styling
-
-  -- Store provider name
-  vim.b[input_buf].provider_name = provider_name
-
-  -- Keymaps for the input window
-  local function set_input_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(input_buf, mode, lhs, rhs,
-      { noremap = true, silent = true })
-  end
-  set_input_keymap('i', '<CR>',
-    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('n', '<CR>', [[<Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('i', '<Esc>',
-    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
-  set_input_keymap('n', '<Esc>', [[<Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
-end
-
--- Save the key from the input window (modified to refresh unified view)
-function M.save_key_from_input()
-  local input_buf = api.nvim_get_current_buf()
-  local provider_name = vim.b[input_buf].provider_name
-  local key_value = api.nvim_buf_get_lines(input_buf, 2, 3, false)[1]
-
-  api.nvim_win_close(0, true) -- Close input window
-
-  if key_value and key_value ~= "" then
-    if M.set_api_key(provider_name, key_value) then
-      vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
-    else
-      vim.notify("Failed to set key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-      -- Optionally reopen the Keys view even on failure
-      -- require('llm.unified_manager').switch_view("Keys")
-    end
-  else
-    vim.notify("No key provided, operation cancelled", vim.log.levels.WARN)
-    -- Optionally reopen the Keys view on cancel
-    -- require('llm.unified_manager').switch_view("Keys")
-  end
-end
-
--- Cancel key input (modified to potentially refresh unified view)
-function M.cancel_key_input()
-  local input_buf = api.nvim_get_current_buf()
-  local provider_name = vim.b[input_buf].provider_name
-  api.nvim_win_close(0, true) -- Close input window
-  vim.notify("Key input for '" .. provider_name .. "' cancelled", vim.log.levels.INFO)
-  -- Optionally reopen the Keys view on cancel
-  -- require('llm.unified_manager').switch_view("Keys")
+    -- Removed options table as floating_confirm uses Y/N by default
+  })
 end
 
 -- Helper to get provider info from buffer variables

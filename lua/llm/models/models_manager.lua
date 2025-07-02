@@ -664,6 +664,7 @@ function M.populate_models_buffer(bufnr)
     end
   end
   table.insert(lines, "")
+  table.insert(lines, "[+] Add custom OpenAI model") -- New line for adding custom OpenAI models
   table.insert(lines, "[+] Add custom alias")
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -815,40 +816,70 @@ end
 function M.handle_action_under_cursor(bufnr)
   local current_line = api.nvim_win_get_cursor(0)[1]
   local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
-  if line_content and line_content:match("%[+%].*Add custom alias") then
-    -- Store original window before showing floating inputs
-    local original_win = api.nvim_get_current_win()
+  local original_win = api.nvim_get_current_win() -- Store original window
 
-    utils.floating_input({ prompt = "Enter alias name: " }, function(alias)
-      -- Return focus to original window between inputs
-      if api.nvim_win_is_valid(original_win) then
-        api.nvim_set_current_win(original_win)
+  if line_content and line_content:match("%[+%].*Add custom OpenAI model") then
+    utils.floating_input({ prompt = "Enter Model ID (e.g., gpt-3.5-turbo-custom):" }, function(model_id)
+      if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+      if not model_id or model_id == "" then
+        vim.notify("Model ID cannot be empty.", vim.log.levels.WARN)
+        return
       end
 
+      utils.floating_input({ prompt = "Enter Model Name (display name, e.g., My Custom GPT-3.5):" }, function(model_name)
+        if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+        -- Model name can be empty, will default to model_id if so
+
+        utils.floating_input({ prompt = "Enter API Base URL (optional, press Enter to skip):" }, function(api_base)
+          if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+          local final_api_base = (api_base and api_base ~= "") and api_base or nil
+
+          utils.floating_input({ prompt = "Enter API Key Name (optional, e.g., MY_CUSTOM_KEY, press Enter to skip):" }, function(api_key_name)
+            if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+            local final_api_key_name = (api_key_name and api_key_name ~= "") and api_key_name or nil
+
+            -- Call the function to add the custom OpenAI model
+            local success, err_msg = custom_openai.add_custom_openai_model({
+              model_id = model_id,
+              model_name = (model_name and model_name ~= "") and model_name or nil, -- Pass nil if empty
+              api_base = final_api_base,
+              api_key_name = final_api_key_name,
+            })
+
+            if success then
+              custom_openai.load_custom_openai_models() -- Reload models
+              vim.notify("Custom OpenAI model '" .. (model_name or model_id) .. "' added successfully.", vim.log.levels.INFO)
+              require('llm.unified_manager').switch_view("Models")
+            else
+              vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
+            end
+            vim.cmd('stopinsert') -- Ensure normal mode
+          end)
+        end)
+      end)
+    end)
+  elseif line_content and line_content:match("%[+%].*Add custom alias") then
+    utils.floating_input({ prompt = "Enter alias name: " }, function(alias)
+      if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
       if not alias or alias == "" then
         vim.notify("Alias name cannot be empty", vim.log.levels.WARN)
         return
       end
 
-      utils.floating_input({ prompt = "Enter model name: " }, function(model)
-        -- Return focus to original window before processing
-        if api.nvim_win_is_valid(original_win) then
-          api.nvim_set_current_win(original_win)
-        end
-
-        if not model or model == "" then
-          vim.notify("Model name cannot be empty", vim.log.levels.WARN)
+      utils.floating_input({ prompt = "Enter model ID for alias '" .. alias .. "': " }, function(model_target_id)
+        if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+        if not model_target_id or model_target_id == "" then
+          vim.notify("Model ID cannot be empty", vim.log.levels.WARN)
           return
         end
 
-        if M.set_model_alias(alias, model) then
-          vim.notify("Alias set: " .. alias .. " -> " .. model, vim.log.levels.INFO)
-          vim.cmd('stopinsert') -- Force normal mode
+        if M.set_model_alias(alias, model_target_id) then
+          vim.notify("Alias set: " .. alias .. " -> " .. model_target_id, vim.log.levels.INFO)
           require('llm.unified_manager').switch_view("Models")
         else
-          vim.notify("Failed to set alias", vim.log.levels.ERROR)
-          vim.cmd('stopinsert') -- Force normal mode even on error
+          vim.notify("Failed to set alias for model ID '" .. model_target_id .. "'", vim.log.levels.ERROR)
         end
+        vim.cmd('stopinsert') -- Ensure normal mode
       end)
     end)
   end
