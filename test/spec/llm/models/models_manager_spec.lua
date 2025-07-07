@@ -296,4 +296,83 @@ describe("llm.models.models_manager", function()
       assert.spy(mock_vim_api.nvim_notify).was.called_with("Failed to add custom OpenAI model: DB error", vim.log.levels.ERROR, luassert.match.is_table())
     end)
   end)
+
+  describe("M.delete_custom_model_under_cursor", function()
+    local bufnr = 1
+
+    before_each(function()
+      -- Mock get_model_info_under_cursor for these tests
+      stub(models_manager, "get_model_info_under_cursor")
+      -- Mock floating_confirm to simulate user saying "Yes"
+      mock_utils.floating_confirm = spy.new(function(opts, on_confirm) on_confirm("Yes") end)
+      -- Spy on the delete function in the mock
+      mock_custom_openai.delete_custom_openai_model = spy.new(function() return true end)
+    end)
+
+    after_each(function()
+      models_manager.get_model_info_under_cursor:revert()
+    end)
+
+    it("should not do anything if the model is not custom", function()
+      -- Arrange
+      models_manager.get_model_info_under_cursor:returns("not_custom_id", { is_custom = false })
+
+      -- Act
+      models_manager.delete_custom_model_under_cursor(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_confirm).was.not_called()
+      assert.spy(mock_custom_openai.delete_custom_openai_model).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Can only delete custom OpenAI models.", vim.log.levels.WARN, luassert.match.is_table())
+    end)
+
+    it("should call delete and refresh view on successful deletion", function()
+      -- Arrange
+      local model_id = "custom_model_to_delete"
+      local model_info = { is_custom = true, model_name = "My Custom Model" }
+      models_manager.get_model_info_under_cursor:returns(model_id, model_info)
+      mock_custom_openai.delete_custom_openai_model:returns(true)
+
+      -- Act
+      models_manager.delete_custom_model_under_cursor(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_confirm).was.called()
+      assert.spy(mock_custom_openai.delete_custom_openai_model).was.called_with(model_id)
+      assert.spy(mock_unified_manager.switch_view).was.called_with("Models")
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Custom model 'My Custom Model' deleted.", vim.log.levels.INFO, luassert.match.is_table())
+    end)
+
+    it("should show an error if deletion fails", function()
+      -- Arrange
+      local model_id = "custom_model_to_delete"
+      local model_info = { is_custom = true, model_name = "My Custom Model" }
+      models_manager.get_model_info_under_cursor:returns(model_id, model_info)
+      mock_custom_openai.delete_custom_openai_model:returns(false, "File is read-only")
+
+      -- Act
+      models_manager.delete_custom_model_under_cursor(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_confirm).was.called()
+      assert.spy(mock_custom_openai.delete_custom_openai_model).was.called_with(model_id)
+      assert.spy(mock_unified_manager.switch_view).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Failed to delete custom model: File is read-only", vim.log.levels.ERROR, luassert.match.is_table())
+    end)
+
+    it("should not call delete if user cancels confirmation", function()
+      -- Arrange
+      local model_id = "custom_model_to_delete"
+      local model_info = { is_custom = true, model_name = "My Custom Model" }
+      models_manager.get_model_info_under_cursor:returns(model_id, model_info)
+      mock_utils.floating_confirm = spy.new(function(opts, on_confirm) on_confirm("No") end) -- Simulate user saying "No"
+
+      -- Act
+      models_manager.delete_custom_model_under_cursor(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_confirm).was.called()
+      assert.spy(mock_custom_openai.delete_custom_openai_model).was.not_called()
+    end)
+  end)
 end)

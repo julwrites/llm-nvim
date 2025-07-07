@@ -480,7 +480,7 @@ function M.populate_models_buffer(bufnr)
     "# Model Management",
     "",
     "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit", -- Updated actions
+    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [d]elete custom [q]uit", -- Updated actions
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -740,6 +740,10 @@ function M.setup_models_keymaps(bufnr, manager_module)
     string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
 
+  set_keymap('n', 'd', -- New keymap for deleting custom OpenAI model
+    string.format([[<Cmd>lua require('%s').delete_custom_model_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.models.models_manager', bufnr))
+
   -- REMOVED 'c' keymap for chat (this comment is now redundant as 'c' is reused)
 end
 
@@ -866,6 +870,34 @@ function M.set_alias_for_model_under_cursor(bufnr)
     else
       vim.notify("Failed to set alias via llm CLI", vim.log.levels.ERROR)
       vim.cmd('stopinsert')
+    end
+  end)
+end
+
+-- Deletes the custom model under the cursor.
+function M.delete_custom_model_under_cursor(bufnr)
+  local model_id, model_info = M.get_model_info_under_cursor(bufnr)
+  if not model_id or not model_info then return end
+
+  if not model_info.is_custom then
+    vim.notify("Can only delete custom OpenAI models.", vim.log.levels.WARN)
+    return
+  end
+
+  local display_name = model_info.model_name or model_id
+
+  utils.floating_confirm({
+    prompt = "Delete custom model '" .. display_name .. "'?",
+    options = { "Yes", "No" }
+  }, function(choice)
+    if choice == "Yes" then
+      local success, err_msg = custom_openai.delete_custom_openai_model(model_id)
+      if success then
+        vim.notify("Custom model '" .. display_name .. "' deleted.", vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Models") -- Refresh view
+      else
+        vim.notify("Failed to delete custom model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
+      end
     end
   end)
 end

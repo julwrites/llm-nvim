@@ -3,6 +3,9 @@
 
 local test_helpers = require('test.init')
 
+-- Global mock data table
+mock_data = {}
+
 describe('llm-nvim', function()
   local llm
 
@@ -17,13 +20,6 @@ describe('llm-nvim', function()
   local original_config_get
 
   -- Mock data and call recorders
-  local mock_data = {
-    system_results = {},        -- Stores { output = "...", exit_code = 0 } for commands
-    command_exists_map = {},    -- Stores true/false for command names
-    last_update_timestamp = 0,
-    current_time = 0,
-    config_values = {}          -- Stores config key-value pairs
-  }
   local spy_set_last_update_timestamp_called = false
   local mock_vim_notify_calls = {}
 

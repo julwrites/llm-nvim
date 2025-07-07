@@ -17,5 +17,13 @@ nvim --headless -u NONE -i NONE -n \
   -c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
   -c "lua vim.opt.rtp:append('.')" \
   -c "runtime plugin/llm.lua" \
-  -c "lua require('plenary.busted').run('./test/spec/llm_spec.lua')" \
+  echo "require('plenary.busted').run({'./test/spec/llm_spec.lua', './test/spec/llm/models/models_manager_spec.lua'})" > ./test/run_tests.lua
+
+# Run the tests using Neovim headless mode with proper runtime path setup
+timeout 300 nvim --headless -u NONE -i NONE -n \
+  -c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
+  -c "lua vim.opt.rtp:append('.')" \
+  -c "runtime plugin/llm.lua" \
+  -c "luafile ./test/run_tests.lua" \
+  -c "qa!"
   -c "qa!"
