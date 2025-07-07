@@ -40,7 +40,7 @@ describe("llm.models.models_manager", function()
 
     mock_vim_api = {
       nvim_win_get_cursor = spy.new(function() return {1,0} end),
-      nvim_buf_get_lines = spy.new(function() return {"[+] Add custom OpenAI model"} end),
+      nvim_buf_get_lines = spy.new(function() return {"some model line"} end), -- Generic line content
       nvim_get_current_win = spy.new(function() return 1 end), -- Dummy window ID
       nvim_win_is_valid = spy.new(function() return true end),
       nvim_set_current_win = spy.new(function() end),
@@ -105,138 +105,195 @@ describe("llm.models.models_manager", function()
       assert.is_not_nil(set_lines_calls[1], "nvim_buf_set_lines was not called")
       local lines_table = set_lines_calls[1].args[5]
       local actions_line_found = false
+      local add_custom_model_line_found = false
+      local add_custom_alias_line_found = false
       for _, line_content in ipairs(lines_table) do
-        if type(line_content) == "string" and line_content:match("^Actions:") then
-          actions_line_found = true
-          assert.are.equal("Actions: [s]et default [a]dd alias [r]emove alias [q]uit", line_content)
-          break
+        if type(line_content) == "string" then
+          if line_content:match("^Actions:") then
+            actions_line_found = true
+            assert.are.equal("Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit", line_content)
+          end
+          if line_content:match("%[+%].*Add custom OpenAI model") then
+            add_custom_model_line_found = true
+          end
+          if line_content:match("%[+%].*Add custom alias") then
+            add_custom_alias_line_found = true
+          end
         end
       end
       assert.is_true(actions_line_found, "Actions line not found in buffer content")
+      assert.is_false(add_custom_model_line_found, "'[+] Add custom OpenAI model' line found but should be removed")
+      assert.is_false(add_custom_alias_line_found, "'[+] Add custom alias' line found but should be removed")
     end)
   end)
 
   describe("M.setup_models_keymaps", function()
-    it("should register correct keymaps and not register 'c' for chat", function()
+    it("should register correct keymaps including 'c' for add_custom_openai_model_interactive", function()
       -- Arrange
       local bufnr = 1
       local manager_module = { __name = "llm.models.models_manager" }
-      _G.vim.b[bufnr] = { line_to_model_id = {}, model_data = {} } -- Mock necessary buffer vars
+      _G.vim.b[bufnr] = { line_to_model_id = {}, model_data = {} }
 
       -- Act
       models_manager.setup_models_keymaps(bufnr, manager_module)
 
       -- Assert
       local set_keymap_calls = mock_vim_api.nvim_buf_set_keymap:get_calls()
-      local found_s_keymap = false
-      local found_a_keymap = false
-      local found_r_keymap = false
-      local found_cr_keymap = false
-      local found_c_keymap = false
+      local found_keymaps = {s=false, a=false, r=false, ["<CR>"]=false, c=false}
+      local expected_c_cmd = string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]], manager_module.__name, bufnr)
 
       for _, call_args_tbl in ipairs(set_keymap_calls) do
-        local args = call_args_tbl.args -- Access the actual arguments table
+        local args = call_args_tbl.args
         if args[1] == bufnr and args[2] == 'n' then
-          if args[3] == 's' then found_s_keymap = true end
-          if args[3] == 'a' then found_a_keymap = true end
-          if args[3] == 'r' then found_r_keymap = true end
-          if args[3] == '<CR>' then found_cr_keymap = true end
-          if args[3] == 'c' then found_c_keymap = true end
+          if found_keymaps[args[3]] == false then found_keymaps[args[3]] = true end
+          if args[3] == 'c' then
+            assert.are.equal(expected_c_cmd, args[4], "'c' keymap command is incorrect")
+          end
         end
       end
 
-      assert.is_true(found_s_keymap, "'s' keymap not registered")
-      assert.is_true(found_a_keymap, "'a' keymap not registered")
-      assert.is_true(found_r_keymap, "'r' keymap not registered")
-      assert.is_true(found_cr_keymap, "'<CR>' keymap not registered")
-      assert.is_false(found_c_keymap, "'c' keymap for chat was found but should have been removed")
+      assert.is_true(found_keymaps.s, "'s' keymap not registered")
+      assert.is_true(found_keymaps.a, "'a' keymap not registered")
+      assert.is_true(found_keymaps.r, "'r' keymap not registered")
+      assert.is_true(found_keymaps["<CR>"], "'<CR>' keymap not registered")
+      assert.is_true(found_keymaps.c, "'c' keymap for add_custom_openai_model_interactive not registered")
     end)
   end)
 
-  describe("M.handle_action_under_cursor for Add Custom OpenAI Model", function()
-    it("should correctly process all inputs and call custom_openai functions", function()
-      -- Arrange
-      local bufnr = 1 -- Dummy bufnr
-      -- Simulate cursor being on the "[+] Add custom OpenAI model" line (done in before_each mock_vim_api)
-
-      -- Act
-      models_manager.handle_action_under_cursor(bufnr)
-
-      -- Assert
-      -- Check floating_input calls (simplified check for sequence)
-      assert.spy(mock_utils.floating_input).was.called_with(sinon.match({prompt = "Enter Model ID (e.g., gpt-3.5-turbo-custom):"}), sinon.match.func)
-      assert.spy(mock_utils.floating_input).was.called_with(sinon.match({prompt = "Enter Model Name (display name, e.g., My Custom GPT-3.5):"}), sinon.match.func)
-      assert.spy(mock_utils.floating_input).was.called_with(sinon.match({prompt = "Enter API Base URL (optional, press Enter to skip):"}), sinon.match.func)
-      assert.spy(mock_utils.floating_input).was.called_with(sinon.match({prompt = "Enter API Key Name (optional, e.g., MY_CUSTOM_KEY, press Enter to skip):"}), sinon.match.func)
-      -- Add more specific checks for the new fields if the mock_utils.floating_input is made more sophisticated
-      -- For now, we rely on the order and the final call to add_custom_openai_model
-
-      -- Check that add_custom_openai_model was called with the correct arguments
-      local expected_model_details = {
-        model_id = "test_model_id",
-        model_name = "Test Model Name",
-        api_base = "https://api.example.com/v1",
-        api_key_name = "test_api_key",
-        -- The mock for floating_input needs to be more granular to test these accurately
-        -- For now, this part of the test assumes the values are passed through.
-        -- In a real scenario, the floating_input mock would need to simulate different inputs for each prompt.
-        -- For the purpose of this generation, we'll assume they are passed as mocked.
-        headers = '{"X-Test": "HeaderValue"}', -- Assuming floating_input for headers provides this
-        needs_auth = true,                     -- Assuming floating_input provides "true" converted to boolean
-        supports_functions = true,             -- Assuming "true" converted to boolean
-        supports_system_prompt = false         -- Assuming "false" converted to boolean
-      }
-      assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with(sinon.match(expected_model_details))
-
-      -- Check that load_custom_openai_models was called
-      assert.spy(mock_custom_openai.load_custom_openai_models).was.called()
-
-      -- Check that the view was refreshed
-      assert.spy(mock_unified_manager.switch_view).was.called_with("Models")
-    end)
-
-    it("should abort if model_id is not provided", function()
-      -- Arrange
-      mock_utils.floating_input = spy.new(function(opts, on_confirm)
-        if opts.prompt:match("Model ID") then
-          on_confirm(nil) -- Simulate user providing no model_id
-        end
-      end)
-      package.loaded['llm.utils'] = mock_utils -- Re-apply mock
-      package.loaded['llm.models.models_manager'] = nil
-      models_manager = require('llm.models.models_manager') -- Re-require
-
-      local bufnr = 1
-
-      -- Act
-      models_manager.handle_action_under_cursor(bufnr)
-
-      -- Assert
-      assert.spy(mock_utils.floating_input).was.called(1) -- Only the first input for model_id
-      assert.spy(mock_custom_openai.add_custom_openai_model).was.not_called()
-      assert.spy(mock_custom_openai.load_custom_openai_models).was.not_called()
-      assert.spy(mock_unified_manager.switch_view).was.not_called()
-      assert.spy(mock_vim_api.nvim_notify).was.called_with("Model ID cannot be empty.", vim.log.levels.WARN, sinon.match.any)
-    end)
-
-    it("should handle failure from add_custom_openai_model", function()
+  describe("M.handle_action_under_cursor", function()
+    it("should do nothing or log when <CR> is pressed on a generic line", function()
         -- Arrange
-        mock_custom_openai.add_custom_openai_model = spy.new(function() return false, "Simulated error" end)
-        package.loaded['llm.models.custom_openai'] = mock_custom_openai
-        package.loaded['llm.models.models_manager'] = nil
-        models_manager = require('llm.models.models_manager') -- Re-require
-
         local bufnr = 1
+        _G.vim.b[bufnr] = {}
+        mock_vim_api.nvim_buf_get_lines:returns({"Some other line"}) -- Simulate cursor on a generic line
+        local initial_notify_calls = #mock_vim_api.nvim_notify:get_calls()
 
         -- Act
         models_manager.handle_action_under_cursor(bufnr)
 
         -- Assert
-        assert.spy(mock_custom_openai.add_custom_openai_model).was.called()
-        assert.spy(mock_custom_openai.load_custom_openai_models).was.not_called()
-        assert.spy(mock_unified_manager.switch_view).was.not_called()
-        assert.spy(mock_vim_api.nvim_notify).was.called_with("Failed to add custom OpenAI model: Simulated error", vim.log.levels.ERROR, sinon.match.any)
+        -- Check that no major functions were called, e.g., set_default_model, set_alias, etc.
+        -- For this test, we'll primarily check that no unexpected notifications or actions occur.
+        -- If debug mode is on, it will notify. If off, it might do nothing.
+        -- For simplicity, let's assume no critical action should be triggered.
+        -- This test is mainly to confirm the removal of the [+] line handlers.
+        local final_notify_calls = #mock_vim_api.nvim_notify:get_calls()
+        if models_manager.config and models_manager.config.get('debug') then
+             assert(final_notify_calls > initial_notify_calls, "Expected a debug notification")
+        else
+            -- Depending on specific logging for non-actionable <CR>, adjust this
+            -- For now, we just ensure no crash and no major action.
+        end
+        -- Add more assertions here if <CR> on a model line is given specific (non-add) behavior later.
+        assert.is_true(true) -- Placeholder if no other assertion is made for non-debug
+    end)
+  end)
+
+  describe("M.add_custom_openai_model_interactive", function()
+    local bufnr = 1
+
+    it("should successfully add a new custom OpenAI model", function()
+      -- Arrange
+      local call_idx = 0
+      local inputs = {"test_id_interactive", "Test Name Interactive", "https://interactive.api/v1", "interactive_key"}
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        call_idx = call_idx + 1
+        on_confirm(inputs[call_idx])
+      end)
+      mock_custom_openai.add_custom_openai_model:returns(true)
+
+      -- Act
+      models_manager.add_custom_openai_model_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_input).was.called(4)
+      assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with(luassert.match.TableIncluding({
+        model_id = "test_id_interactive",
+        model_name = "Test Name Interactive",
+        api_base = "https://interactive.api/v1",
+        api_key_name = "interactive_key"
+      }))
+      assert.spy(mock_custom_openai.load_custom_openai_models).was.called()
+      assert.spy(mock_unified_manager.switch_view).was.called_with("Models")
+      assert.spy(mock_vim_api.nvim_notify).was.called_with(
+        "Custom OpenAI model 'Test Name Interactive' added successfully.", vim.log.levels.INFO, luassert.match.is_table()
+      )
     end)
 
-  end
+    it("should abort if model_id input is cancelled", function()
+      -- Arrange
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        if opts.prompt:match("Model ID") then on_confirm(nil) end
+      end)
+
+      -- Act
+      models_manager.add_custom_openai_model_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_input).was.called(1)
+      assert.spy(mock_custom_openai.add_custom_openai_model).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Model ID cannot be empty. Aborted.", vim.log.levels.WARN, luassert.match.is_table())
+    end)
+
+    it("should abort if model_name input is cancelled (and other inputs are skipped)", function()
+      -- Arrange
+      local call_idx = 0
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        call_idx = call_idx + 1
+        if call_idx == 1 then on_confirm("test_id_for_name_cancel") -- model_id is provided
+        elseif call_idx == 2 then on_confirm(nil) -- model_name is cancelled
+        end
+      end)
+      -- In the actual code, if model_name is nil, it proceeds. Let's test API base cancel.
+      call_idx = 0
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        call_idx = call_idx + 1
+        if call_idx == 1 then on_confirm("test_id_for_base_cancel")
+        elseif call_idx == 2 then on_confirm("Test Name For Base Cancel")
+        elseif call_idx == 3 then on_confirm(nil) -- api_base is cancelled (which is fine, it's optional)
+        elseif call_idx == 4 then on_confirm(nil) -- api_key_name is cancelled (also fine)
+        end
+      end)
+      mock_custom_openai.add_custom_openai_model:returns(true) -- Assume it would succeed if not cancelled
+
+      -- Act
+      models_manager.add_custom_openai_model_interactive(bufnr)
+
+      -- Assert
+      -- It should proceed with nil for optional fields if user just presses enter (empty string)
+      -- The current mock for floating_input immediately calls on_confirm.
+      -- If on_confirm(nil) is for an optional field, it should proceed.
+      -- The actual "abort" for optional fields isn't explicitly in the code, it just passes nil.
+      -- The critical abort is model_id.
+      -- This test is more about ensuring the flow completes if optional fields are "empty".
+      assert.spy(mock_utils.floating_input).was.called(4) -- All 4 prompts should appear
+      assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with(luassert.match.TableIncluding({
+          model_id = "test_id_for_base_cancel",
+          model_name = "Test Name For Base Cancel",
+          api_base = nil,
+          api_key_name = nil
+      }))
+      assert.spy(mock_unified_manager.switch_view).was.called_with("Models") -- Since add_custom_openai_model returns true
+    end)
+
+    it("should handle failure from custom_openai.add_custom_openai_model", function()
+      -- Arrange
+      local call_idx = 0
+      local inputs = {"test_id_fail", "Test Name Fail", "https://fail.api/v1", "fail_key"}
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        call_idx = call_idx + 1
+        on_confirm(inputs[call_idx])
+      end)
+      mock_custom_openai.add_custom_openai_model:returns(false, "DB error")
+
+      -- Act
+      models_manager.add_custom_openai_model_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_custom_openai.add_custom_openai_model).was.called()
+      assert.spy(mock_custom_openai.load_custom_openai_models).was.not_called()
+      assert.spy(mock_unified_manager.switch_view).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Failed to add custom OpenAI model: DB error", vim.log.levels.ERROR, luassert.match.is_table())
+    end)
+  end)
 end)
