@@ -480,7 +480,7 @@ function M.populate_models_buffer(bufnr)
     "# Model Management",
     "",
     "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et default [a]dd alias [r]emove alias [c]hat [q]uit",
+    "Actions: [s]et default [a]dd alias [r]emove alias [q]uit", -- Removed [c]hat
     "──────────────────────────────────────────────────────────────",
     ""
   }
@@ -735,6 +735,10 @@ function M.setup_models_keymaps(bufnr, manager_module)
   set_keymap('n', '<CR>',
     string.format([[<Cmd>lua require('%s').handle_action_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
+
+  -- REMOVED 'c' keymap for chat
+  -- No specific helper function was identified as solely used by the 'c' keymap.
+  -- get_model_info_under_cursor() is used by other actions.
 end
 
 -- Action functions called by keymaps (now accept bufnr)

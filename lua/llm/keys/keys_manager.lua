@@ -160,7 +160,7 @@ function M.populate_keys_buffer(bufnr)
     "# API Key Management",
     "",
     "Navigate: [M]odels [P]lugins [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et key [r]emove key [q]uit",
+    "Actions: [s]et key [r]emove key [A]dd custom [q]uit", -- Updated Actions line
     "──────────────────────────────────────────────────────────────",
     "",
     "## Available Providers:",
@@ -216,16 +216,9 @@ function M.populate_keys_buffer(bufnr)
     table.insert(lines, "") -- Add a blank line after custom keys list
   end
 
-  -- "Add custom key" action line
-  -- If there were no custom keys listed, add the title for it first.
-  if #custom_keys_to_display == 0 then
-    table.insert(lines, "## Custom Key Action:") -- Title if no custom keys are listed above
-    table.insert(lines, "") -- Blank line after title
-  end
-  table.insert(lines, "[+] Add custom key")
-  line_to_provider[current_line] = "+" -- Special marker for the "Add custom key" action line
-  current_line = current_line + 1
-
+  -- Removed the "[+] Add custom key" line and its specific title logic from here.
+  -- The general "## Custom Keys:" section title (if custom keys exist) or lack thereof is handled above.
+  -- If no custom keys are listed and no predefined keys either, the buffer will be more minimal.
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -271,51 +264,61 @@ function M.setup_keys_keymaps(bufnr, manager_module)
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.keys.keys_manager', bufnr))
+
+  -- Add new custom key
+  set_keymap('n', 'A', -- Changed from <CR> on a line to 'A'
+    string.format([[<Cmd>lua require('%s').add_new_custom_key_interactive(%d)<CR>]],
+      manager_module.__name or 'llm.keys.keys_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
-function M.set_key_under_cursor(bufnr)
-  local provider_name_or_action, _ = M.get_provider_info_under_cursor(bufnr)
 
-  if not provider_name_or_action then
+-- Function to add a new custom key via interactive input
+function M.add_new_custom_key_interactive(bufnr)
+  utils.floating_input({ prompt = "Enter custom key name:" }, function(custom_name)
+    if not custom_name or custom_name == "" then
+      vim.notify("Custom key name cannot be empty. Aborted.", vim.log.levels.WARN)
+      return
+    end
+
+    utils.floating_input({ prompt = "Enter API key for '" .. custom_name .. "':" }, function(key_value)
+      if not key_value or key_value == "" then
+        vim.notify("API key value cannot be empty. Aborted.", vim.log.levels.WARN)
+        return
+      end
+
+      if M.set_api_key(custom_name, key_value) then
+        vim.notify("Successfully set key for '" .. custom_name .. "'", vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+      else
+        -- M.set_api_key already shows a notification on failure
+        vim.notify("Failed to set key for '" .. custom_name .. "'. See previous errors for details.", vim.log.levels.ERROR)
+      end
+    end)
+  end)
+end
+
+function M.set_key_under_cursor(bufnr)
+  local provider_name, _ = M.get_provider_info_under_cursor(bufnr) -- Renamed provider_name_or_action
+
+  if not provider_name then -- If provider_name is nil (e.g. cursor on empty line or separator)
     return
   end
+  -- The "+" case for adding a key is now handled by add_new_custom_key_interactive
 
-  local function handle_key_setting(p_name, p_value)
-    if M.set_api_key(p_name, p_value) then
-      vim.notify("Key for '" .. p_name .. "' set", vim.log.levels.INFO)
+  -- Handle setting key for an existing provider (predefined or custom listed)
+  utils.floating_input({ prompt = "Enter API key for " .. provider_name .. ":" }, function(key_value)
+    if not key_value or key_value == "" then
+      vim.notify("API key value cannot be empty. Aborted for " .. provider_name .. ".", vim.log.levels.WARN)
+      return
+    end
+    if M.set_api_key(provider_name, key_value) then
+      vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
       require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
     else
-      vim.notify("Failed to set key for '" .. p_name .. "'", vim.log.levels.ERROR)
+      vim.notify("Failed to set key for '" .. provider_name .. "'.", vim.log.levels.ERROR)
     end
-  end
-
-  if provider_name_or_action == "+" then
-    -- Handle custom key: Step 1: Get custom key name
-    utils.floating_input({ prompt = "Enter custom key name:" }, function(custom_name)
-      if not custom_name or custom_name == "" then
-        vim.notify("Custom key name cannot be empty.", vim.log.levels.WARN)
-        return
-      end
-      -- Step 2: Get custom key value
-      utils.floating_input({ prompt = "Enter API key for " .. custom_name .. ":" }, function(key_value)
-        if not key_value or key_value == "" then
-          vim.notify("API key value cannot be empty.", vim.log.levels.WARN)
-          return
-        end
-        handle_key_setting(custom_name, key_value)
-      end)
-    end)
-  else
-    -- Handle regular provider
-    utils.floating_input({ prompt = "Enter API key for " .. provider_name_or_action .. ":" }, function(key_value)
-      if not key_value or key_value == "" then
-        vim.notify("API key value cannot be empty.", vim.log.levels.WARN)
-        return
-      end
-      handle_key_setting(provider_name_or_action, key_value)
-    end)
-  end
+  end)
 end
 
 function M.remove_key_under_cursor(bufnr)

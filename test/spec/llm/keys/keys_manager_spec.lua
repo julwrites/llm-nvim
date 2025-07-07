@@ -103,7 +103,9 @@ describe("llm.keys.keys_manager", function()
       assert.string_matches(lines_str, "## Custom Keys:")
       assert.string_matches(lines_str, "%[✓%] another_custom_token") -- Sorted
       assert.string_matches(lines_str, "%[✓%] my_custom_key")      -- Sorted
-      assert.string_matches(lines_str, "%[+%].-Add custom key")
+      assert.string_not_matches(lines_str, "%[+%].-Add custom key") -- Ensure '+' line is gone
+      assert.string_matches(lines_str, "Actions:.*%[A%]dd custom") -- Check for new action help text
+
 
       -- Check buffer variables
       local vb = _G.vim.b[bufnr]
@@ -159,37 +161,8 @@ describe("llm.keys.keys_manager", function()
       assert.spy(mock_unified_manager.switch_view).was.called_with("Keys")
     end)
 
-    it("M.set_key_under_cursor: should handle setting a new custom key via '+' line", function()
-      -- Arrange: Setup buffer, then simulate cursor on '+' line
-      _G.vim.b[bufnr] = {}
-      keys_manager.get_stored_keys:returns({"openai"}) -- No custom keys initially for this specific test of '+'
-      keys_manager.populate_keys_buffer(bufnr)
-
-      local add_action_line = -1
-      for line_num, action_in_map in pairs(_G.vim.b[bufnr].line_to_provider) do
-          if action_in_map == "+" then
-              add_action_line = line_num; break
-          end
-      end
-      assert(add_action_line > 0, "'+' action line not found in line_to_provider map.")
-      mock_vim_api.nvim_win_get_cursor:returns({add_action_line, 0})
-
-      -- Act
-      keys_manager.set_key_under_cursor(bufnr)
-
-      -- Assert
-      assert.spy(mock_utils.floating_input).was.called_with(
-        match.TableIncluding({ prompt = "Enter custom key name:" }),
-        match.is_function()
-      )
-      assert.spy(mock_utils.floating_input).was.called_with(
-        match.TableIncluding({ prompt = "Enter API key for test_custom_key_name_from_input:" }),
-        match.is_function()
-      )
-      assert.spy(keys_manager.set_api_key).was.called_with("test_custom_key_name_from_input", "test_api_value_from_input")
-      assert.spy(mock_unified_manager.switch_view).was.called_with("Keys")
-    end)
-
+    -- REMOVED: Test for "M.set_key_under_cursor: should handle setting a new custom key via '+' line"
+    -- This functionality is now in M.add_new_custom_key_interactive
 
     it("M.remove_key_under_cursor: should handle removing a custom key", function()
       -- Arrange
@@ -210,4 +183,115 @@ describe("llm.keys.keys_manager", function()
       assert.spy(mock_unified_manager.switch_view).was.called_with("Keys")
     end)
   end
+
+  describe("M.add_new_custom_key_interactive", function()
+    local bufnr = 1
+
+    it("should successfully add a new custom key", function()
+      -- Arrange
+      local nested_call_count = 0
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        nested_call_count = nested_call_count + 1
+        if nested_call_count == 1 then -- Prompt for name
+          on_confirm("new_custom_name")
+        elseif nested_call_count == 2 then -- Prompt for value
+          on_confirm("new_custom_value")
+        end
+      end)
+      keys_manager.set_api_key:returns(true) -- Simulate successful key setting
+
+      -- Act
+      keys_manager.add_new_custom_key_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_input).was.called(2) -- Both inputs called
+      assert.spy(keys_manager.set_api_key).was.called_with("new_custom_name", "new_custom_value")
+      assert.spy(mock_unified_manager.switch_view).was.called_with("Keys")
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Successfully set key for 'new_custom_name'", vim.log.levels.INFO, match.is_table())
+    end)
+
+    it("should abort if custom key name input is cancelled", function()
+      -- Arrange
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        if opts.prompt:match("custom key name") then
+          on_confirm(nil) -- Simulate cancellation
+        end
+      end)
+
+      -- Act
+      keys_manager.add_new_custom_key_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_input).was.called(1) -- Only first input
+      assert.spy(keys_manager.set_api_key).was.not_called()
+      assert.spy(mock_unified_manager.switch_view).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Custom key name cannot be empty. Aborted.", vim.log.levels.WARN, match.is_table())
+    end)
+
+    it("should abort if API key value input is cancelled", function()
+      -- Arrange
+      local nested_call_count = 0
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        nested_call_count = nested_call_count + 1
+        if nested_call_count == 1 then -- Prompt for name
+          on_confirm("new_custom_name_for_cancel_value_test")
+        elseif nested_call_count == 2 then -- Prompt for value
+          on_confirm(nil) -- Simulate cancellation
+        end
+      end)
+
+      -- Act
+      keys_manager.add_new_custom_key_interactive(bufnr)
+
+      -- Assert
+      assert.spy(mock_utils.floating_input).was.called(2) -- Both inputs called
+      assert.spy(keys_manager.set_api_key).was.not_called()
+      assert.spy(mock_unified_manager.switch_view).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("API key value cannot be empty. Aborted.", vim.log.levels.WARN, match.is_table())
+    end)
+
+    it("should handle failure when M.set_api_key returns false", function()
+      -- Arrange
+      local nested_call_count = 0
+      mock_utils.floating_input = spy.new(function(opts, on_confirm)
+        nested_call_count = nested_call_count + 1
+        if nested_call_count == 1 then on_confirm("failed_set_name")
+        elseif nested_call_count == 2 then on_confirm("failed_set_value")
+        end
+      end)
+      keys_manager.set_api_key:returns(false) -- Simulate failure
+
+      -- Act
+      keys_manager.add_new_custom_key_interactive(bufnr)
+
+      -- Assert
+      assert.spy(keys_manager.set_api_key).was.called_with("failed_set_name", "failed_set_value")
+      assert.spy(mock_unified_manager.switch_view).was.not_called()
+      assert.spy(mock_vim_api.nvim_notify).was.called_with("Failed to set key for 'failed_set_name'. See previous errors for details.", vim.log.levels.ERROR, match.is_table())
+    end)
+  end)
+
+  describe("M.setup_keys_keymaps", function()
+    it("should register an 'A' keymap to call add_new_custom_key_interactive", function()
+      -- Arrange
+      local bufnr = 1
+      local manager_module_name = "llm.keys.keys_manager" -- as in the actual module
+
+      -- Act
+      keys_manager.setup_keys_keymaps(bufnr, { __name = manager_module_name }) -- Pass mock manager_module if needed
+
+      -- Assert
+      -- Find the call for the 'A' keymap
+      local set_keymap_calls = mock_vim_api.nvim_buf_set_keymap:get_calls()
+      local found_A_keymap = false
+      for _, call in ipairs(set_keymap_calls) do
+        if call.args[2] == 'n' and call.args[3] == 'A' then
+          found_A_keymap = true
+          assert.are.equal(string.format([[<Cmd>lua require('%s').add_new_custom_key_interactive(%d)<CR>]], manager_module_name, bufnr), call.args[4])
+          break
+        end
+      end
+      assert.is_true(found_A_keymap, "'A' keymap not registered or not correctly configured.")
+    end)
+  end)
 end)

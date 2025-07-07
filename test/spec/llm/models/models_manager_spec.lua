@@ -52,11 +52,32 @@ describe("llm.models.models_manager", function()
     _G.vim.notify = mock_vim_api.nvim_notify -- Also common to stub directly
     _G.vim.cmd = spy.new(function() end) -- Stub vim.cmd
 
+    -- Add spies for nvim_buf_set_lines and nvim_buf_set_keymap
+    mock_vim_api.nvim_buf_set_lines = spy.new(function() end)
+    mock_vim_api.nvim_buf_set_keymap = spy.new(function() end)
+
+    -- Mock modules used by populate_models_buffer and setup_models_keymaps
+    package.loaded['llm.styles'] = { setup_buffer_syntax = spy.new(function() end) }
+
+    -- Mock functions within models_manager that are called by populate_models_buffer
+    -- These are normally defined in the module itself, so we need to load it first, then spy.
     package.loaded['llm.models.models_manager'] = nil
     models_manager = require('llm.models.models_manager')
+    spy.on(models_manager, "get_available_models")
+    spy.on(models_manager, "get_model_aliases")
+
+    -- Mock utils.safe_shell_command if it's used directly by populate_models_buffer
+    mock_utils.safe_shell_command = spy.new(function() return "" end) -- default empty results
+
   end)
 
   after_each(function()
+    if models_manager and models_manager.get_available_models and models_manager.get_available_models.is_spy then
+        models_manager.get_available_models:revert()
+    end
+    if models_manager and models_manager.get_model_aliases and models_manager.get_model_aliases.is_spy then
+        models_manager.get_model_aliases:revert()
+    end
     spy.restore_all()
     package.loaded['llm.utils'] = nil
     package.loaded['llm.models.custom_openai'] = nil
@@ -65,6 +86,71 @@ describe("llm.models.models_manager", function()
     _G.vim.api = nil -- Restore vim.api
     _G.vim.notify = nil
     _G.vim.cmd = nil
+  end)
+
+  describe("M.populate_models_buffer", function()
+    it("should display the correct actions line without chat", function()
+      -- Arrange
+      local bufnr = 1
+      _G.vim.b[bufnr] = {} -- Simulate buffer-local table for bufnr 1
+      models_manager.get_available_models:returns({ "openai:gpt-3.5-turbo" }) -- Provide some dummy model
+      models_manager.get_model_aliases:returns({})
+      mock_utils.safe_shell_command:returns("openai:gpt-3.5-turbo") -- Mock for default model check
+
+      -- Act
+      models_manager.populate_models_buffer(bufnr)
+
+      -- Assert
+      local set_lines_calls = mock_vim_api.nvim_buf_set_lines:get_calls()
+      assert.is_not_nil(set_lines_calls[1], "nvim_buf_set_lines was not called")
+      local lines_table = set_lines_calls[1].args[5]
+      local actions_line_found = false
+      for _, line_content in ipairs(lines_table) do
+        if type(line_content) == "string" and line_content:match("^Actions:") then
+          actions_line_found = true
+          assert.are.equal("Actions: [s]et default [a]dd alias [r]emove alias [q]uit", line_content)
+          break
+        end
+      end
+      assert.is_true(actions_line_found, "Actions line not found in buffer content")
+    end)
+  end)
+
+  describe("M.setup_models_keymaps", function()
+    it("should register correct keymaps and not register 'c' for chat", function()
+      -- Arrange
+      local bufnr = 1
+      local manager_module = { __name = "llm.models.models_manager" }
+      _G.vim.b[bufnr] = { line_to_model_id = {}, model_data = {} } -- Mock necessary buffer vars
+
+      -- Act
+      models_manager.setup_models_keymaps(bufnr, manager_module)
+
+      -- Assert
+      local set_keymap_calls = mock_vim_api.nvim_buf_set_keymap:get_calls()
+      local found_s_keymap = false
+      local found_a_keymap = false
+      local found_r_keymap = false
+      local found_cr_keymap = false
+      local found_c_keymap = false
+
+      for _, call_args_tbl in ipairs(set_keymap_calls) do
+        local args = call_args_tbl.args -- Access the actual arguments table
+        if args[1] == bufnr and args[2] == 'n' then
+          if args[3] == 's' then found_s_keymap = true end
+          if args[3] == 'a' then found_a_keymap = true end
+          if args[3] == 'r' then found_r_keymap = true end
+          if args[3] == '<CR>' then found_cr_keymap = true end
+          if args[3] == 'c' then found_c_keymap = true end
+        end
+      end
+
+      assert.is_true(found_s_keymap, "'s' keymap not registered")
+      assert.is_true(found_a_keymap, "'a' keymap not registered")
+      assert.is_true(found_r_keymap, "'r' keymap not registered")
+      assert.is_true(found_cr_keymap, "'<CR>' keymap not registered")
+      assert.is_false(found_c_keymap, "'c' keymap for chat was found but should have been removed")
+    end)
   end)
 
   describe("M.handle_action_under_cursor for Add Custom OpenAI Model", function()
