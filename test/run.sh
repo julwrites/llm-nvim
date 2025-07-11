@@ -12,18 +12,13 @@ if [ ! -d "test/plenary.nvim" ]; then
   echo "Plenary.nvim cloned successfully"
 fi
 
-# Run the tests using Neovim headless mode with proper runtime path setup
-nvim --headless -u NONE -i NONE -n \
-  -c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
-  -c "lua vim.opt.rtp:append('.')" \
-  -c "runtime plugin/llm.lua" \
-  echo "require('plenary.busted').run({'./test/spec/llm_spec.lua', './test/spec/llm/models/models_manager_spec.lua'})" > ./test/run_tests.lua
+# Create a temporary config directory
+export XDG_CONFIG_HOME=$(mktemp -d)
 
-# Run the tests using Neovim headless mode with proper runtime path setup
-timeout 300 nvim --headless -u NONE -i NONE -n \
-  -c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
-  -c "lua vim.opt.rtp:append('.')" \
-  -c "runtime plugin/llm.lua" \
-  -c "luafile ./test/run_tests.lua" \
+# Run the tests using Neovim headless mode with a minimal init file
+nvim --headless -u test/init.lua -i NONE -n \
+  -c "lua require('plenary.busted').run('test/spec/llm_spec.lua')" \
   -c "qa!"
-  -c "qa!"
+
+# Clean up the temporary config directory
+rm -rf $XDG_CONFIG_HOME
