@@ -11,7 +11,7 @@ This document outlines the test tasks for various functionalities of the `llm-nv
 - [x] Test `:LLM fragments` command: Verify the interactive prompt with fragment selection.
 - [x] Test `:LLM schema` command: Verify the selection and execution of a schema.
 - [x] Test `:LLM template` command: Verify the selection and execution of a template.
-- [ ] Test `:LLM update` command: Verify manual triggering of the `llm` CLI update.
+- [x] Test `:LLM update` command: Verify manual triggering of the `llm` CLI update.
 - [ ] Test `llm.setup()` configuration options: Verify that various configuration options are applied correctly.
 - [ ] Test Markdown-formatted responses with syntax highlighting: Verify that LLM responses are displayed with correct Markdown formatting and syntax highlighting.
 - [ ] Test asynchronous command execution: Verify that commands run asynchronously without blocking the Neovim UI.
