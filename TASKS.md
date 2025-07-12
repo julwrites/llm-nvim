@@ -9,8 +9,8 @@ This document outlines the test tasks for various functionalities of the `llm-nv
 - [x] Test `:LLM selection [{prompt}]` command: Verify that the visual selection is sent to the LLM with an optional prompt.
 - [x] Test `:LLM explain` command: Verify that the current buffer's code is sent for explanation.
 - [x] Test `:LLM fragments` command: Verify the interactive prompt with fragment selection.
-- [ ] Test `:LLM schema` command: Verify the selection and execution of a schema.
-- [ ] Test `:LLM template` command: Verify the selection and execution of a template.
+- [x] Test `:LLM schema` command: Verify the selection and execution of a schema.
+- [x] Test `:LLM template` command: Verify the selection and execution of a template.
 - [ ] Test `:LLM update` command: Verify manual triggering of the `llm` CLI update.
 - [ ] Test `llm.setup()` configuration options: Verify that various configuration options are applied correctly.
 - [ ] Test Markdown-formatted responses with syntax highlighting: Verify that LLM responses are displayed with correct Markdown formatting and syntax highlighting.
