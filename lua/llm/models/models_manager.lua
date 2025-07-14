@@ -480,7 +480,7 @@ function M.populate_models_buffer(bufnr)
     "# Model Management",
     "",
     "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit", -- Updated actions
+    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [d]elete custom model [q]uit", -- Updated actions
     "──────────────────────────────────────────────────────────────",
     ""
   }
