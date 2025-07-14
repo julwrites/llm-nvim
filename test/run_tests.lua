@@ -1,49 +1,75 @@
+#!/usr/bin/env lua
+
 -- Test runner for llm-nvim
 -- License: Apache 2.0
 
--- This script should be run with 'nvim -l' not directly with lua
--- Example: nvim --headless -l test/run_tests.lua
+-- This script is intended to be run directly from the command line.
+-- It will bootstrap by cloning plenary if not present, then execute tests.
 
--- Check if we're running inside Neovim
-if not vim then
-  print("Error: This test runner must be executed within Neovim")
-  print("Usage: nvim --headless -l test/run_tests.lua")
-  os.exit(1)
+local function file_exists(path)
+  local f = io.open(path, "r")
+  if f then
+    f:close()
+    return true
+  end
+  return false
 end
 
--- Add the current directory to package.path
-package.path = package.path .. ';./?.lua;./test/?.lua'
+local function run_command(cmd)
+  print("Executing: " .. cmd)
+  local handle = os.execute(cmd)
+  return handle
+end
 
--- Check if plenary.nvim exists
 local plenary_path = './test/plenary.nvim'
-local f = io.open(plenary_path .. '/lua/plenary/init.lua', 'r')
-if not f then
-  print("Error: plenary.nvim not found or incomplete in test directory")
-  print("The test runner script should have cloned it automatically.")
-  print("If not, please run: git clone --depth 1 https://github.com/nvim-lua/plenary.nvim.git test/plenary.nvim")
-  vim.cmd('cq 1')  -- Exit with error code
-  return
+if not file_exists(plenary_path .. '/lua/plenary/init.lua') then
+  print("Cloning plenary.nvim...")
+  local code = run_command("git clone --depth 1 https://github.com/nvim-lua/plenary.nvim.git " .. plenary_path)
+  if code ~= 0 then
+    print("Failed to clone plenary.nvim")
+    os.exit(1)
+  end
 end
-f:close()
 
--- Setup the runtime path properly
-vim.opt.runtimepath:append(plenary_path)
-vim.opt.runtimepath:append('.')
+local nvim_executable = os.getenv("NEOVIM_BIN") or "nvim"
 
--- Load the plugin is handled by minimal_init in test/init.lua
-
--- Run tests using plenary.nvim's PlenaryBustedDirectory command
-local status, err = pcall(function()
-  -- Use the PlenaryBustedDirectory command to run tests in the directory
-  -- minimal_init tells Busted to source test/init.lua before each test file
-  vim.cmd('PlenaryBustedDirectory test/spec { minimal_init = "test/init.lua" }')
-end)
-
-if not status then
-  print("Test execution failed: " .. tostring(err))
-  vim.cmd('cq 1')  -- Exit with error code
-else
-  -- PlenaryBustedDirectory sets the exit code based on test results,
-  -- so we can just exit normally if the command itself didn't error.
-  vim.cmd('qa!')   -- Exit normally
+-- Check if nvim is in the path
+if not file_exists("/usr/bin/nvim") then
+    print("Error: Neovim executable ('" .. nvim_executable .. "') not found in /usr/bin.")
+    print("Please install Neovim or set the NEOVIM_BIN environment variable.")
+    os.exit(1)
 end
+
+
+-- Use a timeout for the nvim command to prevent it from hanging
+local timeout_duration = 30 -- seconds
+local test_path = "./test/spec/"
+if #arg > 0 then
+  test_path = arg[1]
+end
+
+local nvim_command = string.format(
+    "timeout %d %s --headless -u NONE -i NONE -n " ..
+    '-c "set runtimepath+=%s" ' ..
+    '-c "set runtimepath+=." ' ..
+    '-c "lua require(\'plenary.busted\').run(\'%s\')"',
+    timeout_duration,
+    "/usr/bin/nvim",
+    plenary_path,
+    test_path
+)
+
+local code = run_command(nvim_command)
+
+
+if code == 124 then -- Timeout exit code
+  print("\nError: Test runner timed out after " .. timeout_duration .. " seconds.")
+  print("This might indicate a hanging test or an issue with the Neovim process.")
+  os.exit(124)
+elseif code ~= 0 then
+  print("\nTests failed with exit code: " .. tostring(code))
+  os.exit(code)
+end
+
+print("\nTests completed successfully.")
+os.exit(0)
