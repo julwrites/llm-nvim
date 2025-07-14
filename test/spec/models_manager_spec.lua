@@ -82,20 +82,12 @@ describe("models_manager", function()
     local mock_custom_openai
 
     before_each(function()
-      -- Reset the custom_openai module's data
-      local custom_openai = require('llm.models.custom_openai')
-      custom_openai.custom_openai_models = {}
-
       mock_custom_openai = {
         custom_openai_models = {},
         load_custom_openai_models = function() end,
         is_custom_openai_model_valid = function(_) return false end,
       }
-      package.loaded['llm.models.custom_openai'] = mock_custom_openai
-    end)
-
-    after_each(function()
-      package.loaded['llm.models.custom_openai'] = nil
+      models_manager.set_custom_openai(mock_custom_openai)
     end)
 
     it("should return a list of models from the cli", function()
@@ -103,7 +95,7 @@ describe("models_manager", function()
         return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil
       end
       local models = models_manager.get_available_models()
-      assert.are.same({ "OpenAI: gpt-3.5-turbo", "Anthropic: claude-2" }, models)
+      assert.are.same({ "Anthropic: claude-2", "OpenAI: gpt-3.5-turbo" }, models)
     end)
 
     it("should include custom openai models", function()

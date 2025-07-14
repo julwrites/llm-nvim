@@ -15,6 +15,10 @@ local commands = require('llm.commands')
 local custom_openai = require('llm.models.custom_openai')
 local models_io = require('llm.models.models_io')
 
+function M.set_custom_openai(new_custom_openai)
+    custom_openai = new_custom_openai
+end
+
 -- Add pattern escape function to vim namespace if it doesn't exist
 if not vim.pesc then
   vim.pesc = function(s)
