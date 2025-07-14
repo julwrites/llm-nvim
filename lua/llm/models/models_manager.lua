@@ -372,10 +372,18 @@ function M.remove_model_alias(alias)
     local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
 
   -- If aliases file doesn't exist, nothing to remove
-  if not aliases_file then
-    vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
-    return false
-  end
+  if not err then
+    vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
+    return true
+  else
+    -- If CLI command fails, modify the aliases.json file directly
+    local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
+
+    -- If aliases file doesn't exist, nothing to remove
+    if not aliases_file then
+      vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
+      return false
+    end
 
   -- Read existing aliases
   local aliases_data = {}
