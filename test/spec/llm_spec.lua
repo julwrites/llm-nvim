@@ -32,30 +32,11 @@ describe('llm-nvim', function()
   local config_module
 
   before_each(function()
-    _G.mock_data = mock_data
     test_helpers.setup()
     -- Load the main llm module fresh for each test
     package.loaded['llm'] = nil
     llm = require('llm')
     test_helpers.expose_module_functions(llm)
-
-    -- Mock safe_shell_command and get_config_path
-    local utils = require('llm.utils')
-    utils.safe_shell_command = function(cmd)
-      if cmd == "llm models" then
-        return [[
-Models:
-------------------
-gpt-4o                 OpenAI
-claude-3-sonnet-20240229 Anthropic
-claude-3-opus-20240229 Anthropic
-]]
-      end
-      return ""
-    end
-    utils.get_config_path = function(file)
-      return "/tmp/" .. file, "/tmp/" .. file
-    end
 
     -- Load modules whose functions we need to mock
     package.loaded['llm.utils.shell'] = nil
@@ -1086,90 +1067,133 @@ describe("shell.update_llm_cli", function()
   end
 
   it("1. should succeed with uv if available and command works", function()
-    _G.mock_data.command_exists_map["uv"] = true
-    _G.mock_data.system_results["uv tool upgrade llm"] = { output = "uv success output", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = true
+    mock_data.system_results["uv tool upgrade llm"] = { output = "uv success output", exit_code = 0 }
+    -- _G._TEST_MOCK_V_SHELL_ERROR_VALUE is set by the system mock based on exit_code
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via uv.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("uv tool upgrade llm"))
+    assert.are.equal(0, get_system_call_count("pipx upgrade llm")) -- Should not attempt others
   end)
 
   it("2. should succeed with pipx if uv fails", function()
-    _G.mock_data.command_exists_map["uv"] = true
-    _G.mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
-    _G.mock_data.command_exists_map["pipx"] = true
-    _G.mock_data.system_results["pipx upgrade llm"] = { output = "pipx success", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = true
+    mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
+    mock_data.command_exists_map["pipx"] = true
+    mock_data.system_results["pipx upgrade llm"] = { output = "pipx success", exit_code = 0 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via pipx.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("uv tool upgrade llm"))
+    assert.are.equal(1, get_system_call_count("pipx upgrade llm"))
   end)
 
   it("3. should succeed with pip if uv and pipx fail", function()
-    _G.mock_data.command_exists_map["uv"] = false
-    _G.mock_data.command_exists_map["pipx"] = true
-    _G.mock_data.system_results["pipx upgrade llm"] = { output = "pipx failed", exit_code = 1 }
-    _G.mock_data.system_results["pip install -U llm"] = { output = "pip success", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = false
+    mock_data.command_exists_map["pipx"] = true
+    mock_data.system_results["pipx upgrade llm"] = { output = "pipx failed", exit_code = 1 }
+    -- No command_exists check for pip, directly try system call
+    mock_data.system_results["pip install -U llm"] = { output = "pip success", exit_code = 0 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via pip.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(0, get_system_call_count("uv tool upgrade llm")) -- uv not found
+    assert.are.equal(1, get_system_call_count("pipx upgrade llm"))
+    assert.are.equal(1, get_system_call_count("pip install -U llm"))
   end)
 
   it("4. should succeed with python -m pip if uv, pipx, and pip fail", function()
-    _G.mock_data.command_exists_map["uv"] = false
-    _G.mock_data.command_exists_map["pipx"] = false
-    _G.mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
-    _G.mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip success", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = false
+    mock_data.command_exists_map["pipx"] = false
+    mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
+    mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip success", exit_code = 0 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via python -m pip.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("pip install -U llm"))
+    assert.are.equal(1, get_system_call_count("python -m pip install --upgrade llm"))
   end)
 
   it("5. should succeed with brew if all python methods fail", function()
-    _G.mock_data.command_exists_map["uv"] = false
-    _G.mock_data.command_exists_map["pipx"] = false
-    _G.mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
-    _G.mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip failed", exit_code = 1 }
-    _G.mock_data.command_exists_map["brew"] = true
-    _G.mock_data.system_results["brew upgrade llm"] = { output = "brew success", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = false
+    mock_data.command_exists_map["pipx"] = false
+    mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
+    mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip failed", exit_code = 1 }
+    mock_data.command_exists_map["brew"] = true
+    mock_data.system_results["brew upgrade llm"] = { output = "brew success", exit_code = 0 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via brew.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("python -m pip install --upgrade llm"))
+    assert.are.equal(1, get_system_call_count("brew upgrade llm"))
   end)
 
   it("6. should report failure if all methods fail", function()
-    _G.mock_data.command_exists_map["uv"] = true
-    _G.mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
-    _G.mock_data.command_exists_map["pipx"] = true
-    _G.mock_data.system_results["pipx upgrade llm"] = { output = "pipx failed", exit_code = 1 }
-    _G.mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
-    _G.mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip failed", exit_code = 1 }
-    _G.mock_data.command_exists_map["brew"] = true
-    _G.mock_data.system_results["brew upgrade llm"] = { output = "brew failed", exit_code = 1 }
+    mock_data.command_exists_map["uv"] = true
+    mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
+    mock_data.command_exists_map["pipx"] = true
+    mock_data.system_results["pipx upgrade llm"] = { output = "pipx failed", exit_code = 1 }
+    mock_data.system_results["pip install -U llm"] = { output = "pip failed", exit_code = 1 }
+    mock_data.system_results["python -m pip install --upgrade llm"] = { output = "python -m pip failed", exit_code = 1 }
+    mock_data.command_exists_map["brew"] = true
+    mock_data.system_results["brew upgrade llm"] = { output = "brew failed", exit_code = 1 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_false(result.success)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("uv tool upgrade llm"))
+    assert.are.equal(1, get_system_call_count("pipx upgrade llm"))
+    assert.are.equal(1, get_system_call_count("pip install -U llm"))
+    assert.are.equal(1, get_system_call_count("python -m pip install --upgrade llm"))
+    assert.are.equal(1, get_system_call_count("brew upgrade llm"))
+
+    -- Check if message contains parts of all attempts
+    assert.string_matches(result.message, "uv tool upgrade llm")
+    assert.string_matches(result.message, "uv failed")
+    assert.string_matches(result.message, "pipx upgrade llm")
+    assert.string_matches(result.message, "pipx failed")
+    assert.string_matches(result.message, "pip install -U llm")
+    assert.string_matches(result.message, "pip failed")
+    assert.string_matches(result.message, "python -m pip install --upgrade llm")
+    assert.string_matches(result.message, "python -m pip failed")
+    assert.string_matches(result.message, "brew upgrade llm")
+    assert.string_matches(result.message, "brew failed")
   end)
 
   it("7. should skip pipx if not found and try pip", function()
-    _G.mock_data.command_exists_map["uv"] = true
-    _G.mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
-    _G.mock_data.command_exists_map["pipx"] = false -- pipx not found
-    _G.mock_data.system_results["pip install -U llm"] = { output = "pip success", exit_code = 0 }
+    mock_data.command_exists_map["uv"] = true
+    mock_data.system_results["uv tool upgrade llm"] = { output = "uv failed", exit_code = 1 }
+    mock_data.command_exists_map["pipx"] = false -- pipx not found
+    mock_data.system_results["pip install -U llm"] = { output = "pip success", exit_code = 0 }
 
     local result = shell_utils_for_update_test.update_llm_cli()
 
     assert.is_true(result.success)
     assert.are.equal("llm CLI updated successfully via pip.", result.message)
+    assert.is_true(spy_set_last_update_timestamp_called)
+    assert.are.equal(1, get_system_call_count("uv tool upgrade llm"))
+    assert.are.equal(0, get_system_call_count("pipx upgrade llm")) -- Not called
+    assert.are.equal(1, get_system_call_count("pip install -U llm")) -- Called
+    -- Cannot directly check "pipx command not found, skipping" message here if pip succeeds,
+    -- as result.message will be the success message. This behavior is implicitly tested
+    -- by checking that pipx was not called and pip was.
   end)
 end)
 
@@ -1255,26 +1279,30 @@ describe("llm.init auto-update logic", function()
   end)
 
   it("3. should attempt update and notify success if interval PASSED and update SUCCEEDS", function(done)
-    _G.mock_data.config_values["auto_update_cli"] = true
-    _G.mock_data.config_values["auto_update_interval_days"] = 7
-    _G.mock_data.last_update_timestamp = _G.mock_data.current_time - (8 * 24 * 60 * 60)
+    mock_data.config_values["auto_update_cli"] = true
+    mock_data.config_values["auto_update_interval_days"] = 7
+    -- current_time is 10 days. last_update_timestamp to 8 days ago from current_time
+    mock_data.last_update_timestamp = mock_data.current_time - (8 * 24 * 60 * 60)
     mock_shell_update_llm_cli_return_value = { success = true, message = "Updated OK via test" }
 
     llm_init_module.setup({})
 
+    -- Check initial notification (synchronous)
     assert.is_true(find_notify_message("Checking for LLM CLI updates..."))
+    -- update_llm_cli is called, but its callback (and subsequent notify) is deferred
     assert.are.equal(1, mock_shell_update_llm_cli_calls)
 
     vim.defer_fn(function()
-      assert.is_true(find_notify_message("LLM CLI auto-update successful."))
+      assert.is_true(find_notify_message("LLM CLI auto-update successful."),
+        "Did not find success notification. All notifications: " .. table.concat(get_notify_messages(), "\n---\n"))
       done()
-    end, 200)
+    end, 200) -- Wait for deferred functions from init.lua (100ms + processing)
   end)
 
   it("4. should attempt update and notify failure if interval PASSED and update FAILS", function(done)
-    _G.mock_data.config_values["auto_update_cli"] = true
-    _G.mock_data.config_values["auto_update_interval_days"] = 7
-    _G.mock_data.last_update_timestamp = _G.mock_data.current_time - (8 * 24 * 60 * 60)
+    mock_data.config_values["auto_update_cli"] = true
+    mock_data.config_values["auto_update_interval_days"] = 7
+    mock_data.last_update_timestamp = mock_data.current_time - (8 * 24 * 60 * 60)
     mock_shell_update_llm_cli_return_value = { success = false, message = "Update failed badly via test" }
 
     llm_init_module.setup({})
@@ -1284,8 +1312,8 @@ describe("llm.init auto-update logic", function()
 
     vim.defer_fn(function()
       local found, call_args = find_notify_message("LLM CLI auto-update failed.")
-      assert.is_true(found)
-      if found then
+      assert.is_true(found, "Did not find failure notification. All notifications: " .. table.concat(get_notify_messages(), "\n---\n"))
+      if found then -- Check for details only if the main message was found
          assert.string_matches(call_args.msg, "Details:\nUpdate failed badly via test")
       end
       done()
@@ -1349,13 +1377,13 @@ describe(":LLM update command", function()
 
     vim.cmd(':LLM update')
 
-    assert.is_true(find_notify_msg_local("Starting LLM CLI update..."))
+    assert.is_true(find_notify_msg_local("Starting LLM CLI update..."), "Initial notification not found.")
 
     vim.defer_fn(function()
-      assert.are.equal(1, mock_shell_update_llm_cli_calls_for_command_test)
-      assert.is_true(find_notify_msg_local("LLM CLI update successful."))
+      assert.are.equal(1, mock_shell_update_llm_cli_calls_for_command_test, "update_llm_cli was not called exactly once.")
+      assert.is_true(find_notify_msg_local("LLM CLI update successful."), "Success notification not found.")
       done()
-    end, 250)
+    end, 250) -- Increased delay slightly to ensure all prior defer_fn have completed
   end)
 
   it("2. command should trigger update and notify failure", function(done)
@@ -1366,12 +1394,12 @@ describe(":LLM update command", function()
 
     vim.cmd(':LLM update')
 
-    assert.is_true(find_notify_msg_local("Starting LLM CLI update..."))
+    assert.is_true(find_notify_msg_local("Starting LLM CLI update..."), "Initial notification not found.")
 
     vim.defer_fn(function()
-      assert.are.equal(1, mock_shell_update_llm_cli_calls_for_command_test)
+      assert.are.equal(1, mock_shell_update_llm_cli_calls_for_command_test, "update_llm_cli was not called exactly once.")
       local found, call_args = find_notify_msg_local("LLM CLI update failed.")
-      assert.is_true(found)
+      assert.is_true(found, "Failure notification not found.")
       if found then
         assert.string_matches(call_args.msg, "Details:\nManual update failed badly", 1, true)
       end
