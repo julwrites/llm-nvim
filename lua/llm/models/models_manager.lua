@@ -13,6 +13,11 @@ local styles = require('llm.styles') -- Added for highlighting
 local commands = require('llm.commands')
 
 local custom_openai = require('llm.models.custom_openai')
+local models_io = require('llm.models.models_io')
+
+function M.set_custom_openai(new_custom_openai)
+    custom_openai = new_custom_openai
+end
 
 -- Add pattern escape function to vim namespace if it doesn't exist
 if not vim.pesc then
@@ -105,7 +110,7 @@ function M.get_available_models()
   -- Load custom OpenAI models first
   custom_openai.load_custom_openai_models()
 
-  local result, err = utils.safe_shell_command("llm models")
+  local result, err = models_io.get_models_from_cli()
   if err then
     errors.handle(
       errors.categories.MODEL,
@@ -243,9 +248,7 @@ function M.set_default_model(model_name)
     return false
   end
 
-  local result, err = utils.safe_shell_command(
-    string.format('llm models default %s', model_name)
-  )
+  local result, err = models_io.set_default_model_in_cli(model_name)
 
   if err then
     errors.handle(
@@ -265,7 +268,7 @@ function M.get_model_aliases()
     return {}
   end
 
-  local result, err = utils.safe_shell_command("llm aliases --json")
+  local result, err = models_io.get_aliases_from_cli()
   if err then
     errors.handle(
       errors.categories.MODEL,
@@ -326,9 +329,7 @@ function M.set_model_alias(alias, model)
     return false
   end
 
-  local result, err = utils.safe_shell_command(
-    string.format('llm aliases set %s %s', alias, model)
-  )
+  local result, err = models_io.set_alias_in_cli(alias, model)
 
   if err then
     errors.handle(
@@ -359,10 +360,7 @@ function M.remove_model_alias(alias)
   end
 
   -- Try CLI command first with better error handling
-  local escaped_alias = string.format("'%s'", alias:gsub("'", "'\\''"))
-  local cmd = string.format("llm aliases remove %s", escaped_alias)
-
-  local _, err = utils.safe_shell_command(cmd)
+  local _, err = models_io.remove_alias_in_cli(alias)
 
   -- If aliases file doesn't exist, nothing to remove
   if not err then
@@ -471,7 +469,7 @@ function M.populate_models_buffer(bufnr)
   end
 
   local aliases = M.get_model_aliases()
-  local default_model_output = utils.safe_shell_command("llm models default", "Failed to get default model")
+  local default_model_output, _ = models_io.get_default_model_from_cli()
   local default_model = ""
   if default_model_output then
     default_model = default_model_output:match("Default model: ([^\r\n]+)") or default_model_output:match("([^\r\n]+)") or
