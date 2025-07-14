@@ -788,7 +788,6 @@ function M.add_custom_openai_model_interactive(bufnr)
           else
             vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
           end
-          vim.cmd('stopinsert') -- Ensure normal mode
         end)
       end)
     end)
