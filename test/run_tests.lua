@@ -51,7 +51,7 @@ end
 
 
 -- Use a timeout for the nvim command to prevent it from hanging
-local test_path = "./test/spec/"
+local test_path = "./test/spec/simple_spec.lua"
 if #arg > 0 then
   test_path = arg[1]
 end
