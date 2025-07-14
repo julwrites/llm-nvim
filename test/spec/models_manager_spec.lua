@@ -82,6 +82,10 @@ describe("models_manager", function()
     local mock_custom_openai
 
     before_each(function()
+      -- Reset the custom_openai module's data
+      local custom_openai = require('llm.models.custom_openai')
+      custom_openai.custom_openai_models = {}
+
       mock_custom_openai = {
         custom_openai_models = {},
         load_custom_openai_models = function() end,
