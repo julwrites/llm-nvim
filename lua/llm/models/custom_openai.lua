@@ -313,7 +313,7 @@ local function serialize_to_yaml(models_list)
     if model.model_id and model.model_id ~= "" then
       table.insert(yaml_lines, "- model_id: " .. model.model_id)
 
-      if model.model_name and model.model_name ~= "" and model.model_name ~= model.model_id then
+      if model.model_name and model.model_name ~= "" then
         table.insert(yaml_lines, "  model_name: " .. model.model_name)
       end
       if model.api_base and model.api_base ~= "" then
