@@ -368,9 +368,8 @@ function M.remove_model_alias(alias)
     vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
     return true
   else
-    vim.notify("Failed to remove alias '" .. alias .. "' using llm CLI. Error: " .. err, vim.log.levels.ERROR)
-    return false
-  end
+    -- If CLI command fails, modify the aliases.json file directly
+    local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
 
   -- If aliases file doesn't exist, nothing to remove
   if not aliases_file then
