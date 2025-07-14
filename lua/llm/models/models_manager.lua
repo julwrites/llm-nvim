@@ -110,7 +110,7 @@ function M.get_available_models()
     errors.handle(
       errors.categories.MODEL,
       "Failed to get available models",
-      {error = err},
+      { error = err },
       errors.levels.ERROR
     )
     return {}
@@ -251,7 +251,7 @@ function M.set_default_model(model_name)
     errors.handle(
       errors.categories.MODEL,
       "Failed to set default model",
-      {model = model_name, error = err},
+      { model = model_name, error = err },
       errors.levels.ERROR
     )
   end
@@ -270,7 +270,7 @@ function M.get_model_aliases()
     errors.handle(
       errors.categories.MODEL,
       "Failed to get model aliases",
-      {error = err},
+      { error = err },
       errors.levels.ERROR
     )
     return {}
@@ -334,7 +334,7 @@ function M.set_model_alias(alias, model)
     errors.handle(
       errors.categories.MODEL,
       "Failed to set model alias",
-      {alias = alias, model = model, error = err},
+      { alias = alias, model = model, error = err },
       errors.levels.ERROR
     )
   end
@@ -371,58 +371,59 @@ function M.remove_model_alias(alias)
     -- If CLI command fails, modify the aliases.json file directly
     local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
 
-  -- If aliases file doesn't exist, nothing to remove
-  if not aliases_file then
-    vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
-    return false
-  end
+    -- If aliases file doesn't exist, nothing to remove
+    if not aliases_file then
+      vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
+      return false
+    end
 
-  -- Read existing aliases
-  local aliases_data = {}
-  local file = io.open(aliases_file, "r")
+    -- Read existing aliases
+    local aliases_data = {}
+    local file = io.open(aliases_file, "r")
 
-  if file then
-    local content = file:read("*a")
+    if file then
+      local content = file:read("*a")
+      file:close()
+
+      -- Parse JSON if file exists and has content
+      if content and content ~= "" then
+        local success, result
+        success, result = pcall(vim.fn.json_decode, content)
+        if success and type(result) == "table" then
+          aliases_data = result
+        else
+          vim.notify("Failed to parse aliases JSON: " .. (result or "unknown error"), vim.log.levels.ERROR)
+          aliases_data = {} -- Reset to empty table if parsing failed
+        end
+      end
+    else
+      vim.notify("Failed to open aliases file for reading", vim.log.levels.ERROR)
+      return false
+    end
+
+    -- Check if the alias exists
+    if aliases_data[alias] == nil then
+      vim.notify("Alias '" .. alias .. "' not found in aliases file", vim.log.levels.WARN)
+      return false
+    end
+
+    -- Remove the alias
+    aliases_data[alias] = nil
+
+    -- Write the updated aliases back to the file
+    local updated_content = vim.fn.json_encode(aliases_data)
+    file = io.open(aliases_file, "w")
+    if not file then
+      vim.notify("Failed to open aliases file for writing: " .. aliases_file, vim.log.levels.ERROR)
+      return false
+    end
+
+    file:write(updated_content)
     file:close()
 
-    -- Parse JSON if file exists and has content
-    if content and content ~= "" then
-      local success, result
-      success, result = pcall(vim.fn.json_decode, content)
-      if success and type(result) == "table" then
-        aliases_data = result
-      else
-        vim.notify("Failed to parse aliases JSON: " .. (result or "unknown error"), vim.log.levels.ERROR)
-        aliases_data = {} -- Reset to empty table if parsing failed
-      end
-    end
-  else
-    vim.notify("Failed to open aliases file for reading", vim.log.levels.ERROR)
-    return false
+    vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
+    return true
   end
-
-  -- Check if the alias exists
-  if aliases_data[alias] == nil then
-    vim.notify("Alias '" .. alias .. "' not found in aliases file", vim.log.levels.WARN)
-    return false
-  end
-
-  -- Remove the alias
-  aliases_data[alias] = nil
-
-  -- Write the updated aliases back to the file
-  local updated_content = vim.fn.json_encode(aliases_data)
-  file = io.open(aliases_file, "w")
-  if not file then
-    vim.notify("Failed to open aliases file for writing: " .. aliases_file, vim.log.levels.ERROR)
-    return false
-  end
-
-  file:write(updated_content)
-  file:close()
-
-  vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
-  return true
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
@@ -783,7 +784,8 @@ function M.add_custom_openai_model_interactive(bufnr)
 
           if success then
             custom_openai.load_custom_openai_models() -- Reload models
-            vim.notify("Custom OpenAI model '" .. (final_model_name or model_id) .. "' added successfully.", vim.log.levels.INFO)
+            vim.notify("Custom OpenAI model '" .. (final_model_name or model_id) .. "' added successfully.",
+              vim.log.levels.INFO)
             require('llm.unified_manager').switch_view("Models")
           else
             vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
@@ -794,7 +796,6 @@ function M.add_custom_openai_model_interactive(bufnr)
     end)
   end)
 end
-
 
 -- Sets the model under the cursor as the default LLM model.
 function M.set_model_under_cursor(bufnr)
@@ -883,8 +884,10 @@ function M.handle_action_under_cursor(bufnr)
   -- Could potentially make it an alias for 's' (set default) or another action if desired.
   -- For now, it does nothing if not on a previously active [+] line.
   if config.get("debug") then
-    local line_content = api.nvim_buf_get_lines(bufnr, api.nvim_win_get_cursor(0)[1] - 1, api.nvim_win_get_cursor(0)[1], false)[1]
-    vim.notify("Enter pressed on line: " .. (line_content or "empty") .. ". No specific action for <CR> on this line.", vim.log.levels.DEBUG)
+    local line_content = api.nvim_buf_get_lines(bufnr, api.nvim_win_get_cursor(0)[1] - 1, api.nvim_win_get_cursor(0)[1],
+      false)[1]
+    vim.notify("Enter pressed on line: " .. (line_content or "empty") .. ". No specific action for <CR> on this line.",
+      vim.log.levels.DEBUG)
   end
 end
 
