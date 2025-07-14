@@ -17,16 +17,24 @@ end
 
 local function run_command(cmd)
   print("Executing: " .. cmd)
-  local handle = os.execute(cmd)
-  return handle
+  local handle = io.popen(cmd)
+  if not handle then
+    return nil, "Failed to run command: " .. cmd
+  end
+  local output = handle:read("*a")
+  local ok, err, code = handle:close()
+  if not ok then
+    return output, err, code
+  end
+  return output, err, code
 end
 
 local plenary_path = './test/plenary.nvim'
 if not file_exists(plenary_path .. '/lua/plenary/init.lua') then
   print("Cloning plenary.nvim...")
-  local code = run_command("git clone --depth 1 https://github.com/nvim-lua/plenary.nvim.git " .. plenary_path)
+  local _, err, code = run_command("git clone --depth 1 https://github.com/nvim-lua/plenary.nvim.git " .. plenary_path)
   if code ~= 0 then
-    print("Failed to clone plenary.nvim")
+    print("Failed to clone plenary.nvim: " .. (err or "Unknown error"))
     os.exit(1)
   end
 end
@@ -34,8 +42,8 @@ end
 local nvim_executable = os.getenv("NEOVIM_BIN") or "nvim"
 
 -- Check if nvim is in the path
-local nvim_path_output = run_command("command -v " .. nvim_executable)
-if nvim_path_output == "" or nvim_path_output:match("not found") then
+local nvim_path_output, err, code = run_command("command -v " .. nvim_executable)
+if code ~= 0 then
     print("Error: Neovim executable ('" .. nvim_executable .. "') not found in PATH.")
     print("Please install Neovim or set the NEOVIM_BIN environment variable.")
     os.exit(1)
@@ -60,7 +68,7 @@ local nvim_command = string.format(
     test_path
 )
 
-local code = run_command(nvim_command)
+code = os.execute(nvim_command)
 
 
 if code == 124 then -- Timeout exit code
