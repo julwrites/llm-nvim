@@ -9,6 +9,10 @@ local keys_manager = require('llm.keys.keys_manager')
 -- Cache for custom OpenAI models
 M.custom_openai_models = {}
 
+function M.get_custom_openai_models()
+  return M.custom_openai_models
+end
+
 -- Default values for model properties
 local DEFAULT_MODEL_PROPERTIES = {
   needs_auth = true,
@@ -430,6 +434,73 @@ function M.add_custom_openai_model(model_details)
 
   table.insert(models_list, new_model_entry)
   local yaml_content = serialize_to_yaml(models_list)
+
+  local out_file = io.open(yaml_path, "w")
+  if not out_file then
+    return false, "Failed to open YAML file for writing: " .. yaml_path
+  end
+
+  out_file:write(yaml_content)
+  out_file:close()
+
+  -- Clear the cache so it reloads next time
+  M.custom_openai_models = {}
+
+  return true, nil -- Success, no error message
+end
+
+-- Delete a custom OpenAI model from the extra-openai-models.yaml file
+function M.delete_custom_openai_model(model_id)
+  if not model_id or model_id == "" then
+    return false, "model_id is required"
+  end
+
+  local _, yaml_path = utils.get_config_path("extra-openai-models.yaml")
+  if not yaml_path then
+    return false, "Could not determine or create config directory for extra-openai-models.yaml"
+  end
+
+  local models_list = {}
+  local file = io.open(yaml_path, "r")
+  if file then
+    local content = file:read("*a")
+    file:close()
+    if content and content ~= "" then
+      local parsed_data = utils.parse_simple_yaml(yaml_path)
+      if type(parsed_data) == 'table' then
+        local is_list = true
+        local count = 0
+        for k, _ in pairs(parsed_data) do count = count + 1; if type(k) ~= 'number' or k < 1 then is_list = false; break end end
+        if count > 0 and not parsed_data[1] then is_list = false end
+        if #parsed_data ~= count then is_list = false end
+
+        if is_list then
+          models_list = parsed_data
+        else
+          if config.get("debug") then vim.notify("YAML content in " .. yaml_path .. " is not a list. Backing up.", vim.log.levels.WARN) end
+          local backup_path = yaml_path .. ".non_list_backup." .. os.time()
+          os.rename(yaml_path, backup_path)
+          vim.notify("Backed up non-list YAML to: " .. backup_path, vim.log.levels.WARN)
+          models_list = {}
+        end
+      else
+        if config.get("debug") then vim.notify("Failed to parse YAML in " .. yaml_path .. ". Backing up.", vim.log.levels.WARN) end
+        local backup_path = yaml_path .. ".parse_failed_backup." .. os.time()
+        os.rename(yaml_path, backup_path)
+        vim.notify("Backed up unparsable YAML to: " .. backup_path, vim.log.levels.WARN)
+        models_list = {}
+      end
+    end
+  end
+
+  local new_models_list = {}
+  for _, model in ipairs(models_list) do
+    if model.model_id ~= model_id then
+      table.insert(new_models_list, model)
+    end
+  end
+
+  local yaml_content = serialize_to_yaml(new_models_list)
 
   local out_file = io.open(yaml_path, "w")
   if not out_file then

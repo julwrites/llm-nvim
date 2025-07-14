@@ -740,10 +740,62 @@ function M.setup_models_keymaps(bufnr, manager_module)
     string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
 
+  set_keymap('n', 'd', -- New keymap for deleting custom OpenAI model
+    string.format([[<Cmd>lua require('%s').delete_custom_model_interactive(%d)<CR>]],
+      manager_module.__name or 'llm.models.models_manager', bufnr))
+
   -- REMOVED 'c' keymap for chat (this comment is now redundant as 'c' is reused)
 end
 
 -- Action functions called by keymaps (now accept bufnr)
+
+-- Function to delete a custom OpenAI model via interactive input
+function M.delete_custom_model_interactive(bufnr)
+  local custom_models = custom_openai.get_custom_openai_models()
+  local model_list = {}
+  for id, model in pairs(custom_models) do
+    table.insert(model_list, { id = id, name = model.model_name or id })
+  end
+
+  if #model_list == 0 then
+    vim.notify("No custom models to delete.", vim.log.levels.INFO)
+    return
+  end
+
+  local display_list = {}
+  for _, model in ipairs(model_list) do
+    table.insert(display_list, model.name)
+  end
+
+  vim.ui.select(display_list, { prompt = "Select a custom model to delete:" }, function(choice)
+    if not choice then return end
+
+    local selected_model
+    for _, model in ipairs(model_list) do
+      if model.name == choice then
+        selected_model = model
+        break
+      end
+    end
+
+    if selected_model then
+      utils.floating_confirm({
+        prompt = "Are you sure you want to delete '" .. selected_model.name .. "'?",
+        on_confirm = function(confirmed)
+          if confirmed then
+            local success, err_msg = custom_openai.delete_custom_openai_model(selected_model.id)
+            if success then
+              vim.notify("Custom model '" .. selected_model.name .. "' deleted successfully.", vim.log.levels.INFO)
+              require('llm.unified_manager').switch_view("Models")
+            else
+              vim.notify("Failed to delete custom model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
+            end
+          end
+        end
+      })
+    end
+  end)
+end
 
 -- Function to add a new custom OpenAI model via interactive input
 function M.add_custom_openai_model_interactive(bufnr)
