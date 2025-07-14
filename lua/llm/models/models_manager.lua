@@ -384,6 +384,7 @@ function M.remove_model_alias(alias)
     if file then
       local content = file:read("*a")
       file:close()
+      vim.notify("Opened file and read: " .. content, vim.log.levels.ERROR)
 
       -- Parse JSON if file exists and has content
       if content and content ~= "" then
@@ -911,17 +912,19 @@ function M.remove_alias_for_model_under_cursor(bufnr)
 
     utils.floating_confirm({
       prompt = "Remove alias '" .. alias .. "'?",
-      options = { "Yes", "No" }
-    }, function(choice)
-      if choice == "Yes" then
-        if M.remove_model_alias(alias) then
-          vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-          require('llm.unified_manager').switch_view("Models")
-        else
-          vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
+      options = { "Yes", "No" },
+      on_confirm = function(choice)
+        if choice == "Yes" then
+          vim.notify("Attempting to remove alias: " .. alias, vim.log.levels.INFO)
+          if M.remove_model_alias(alias) then
+            vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+            require('llm.unified_manager').switch_view("Models")
+          else
+            vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
+          end
         end
       end
-    end)
+    })
   end)
 end
 
