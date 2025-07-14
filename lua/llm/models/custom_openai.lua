@@ -404,7 +404,7 @@ function M.add_custom_openai_model(model_details)
   -- Prepare the new model entry with defaults for new fields
   local new_model_entry = {
     model_id = model_details.model_id,
-    model_name = (model_details.model_name and model_details.model_name ~= "") and model_details.model_name or model_details.model_id,
+    model_name = (model_details.model_name and model_details.model_name ~= "") and model_details.model_name or nil,
     api_base = (model_details.api_base and model_details.api_base ~= "") and model_details.api_base or DEFAULT_MODEL_PROPERTIES.api_base,
     api_key_name = (model_details.api_key_name and model_details.api_key_name ~= "") and model_details.api_key_name or DEFAULT_MODEL_PROPERTIES.api_key_name,
     needs_auth = (model_details.needs_auth == nil) and DEFAULT_MODEL_PROPERTIES.needs_auth or model_details.needs_auth,
