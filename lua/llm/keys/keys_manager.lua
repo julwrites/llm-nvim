@@ -152,45 +152,73 @@ end
 
 -- Populate the buffer with key management content
 function M.populate_keys_buffer(bufnr)
-  local stored_keys = M.get_stored_keys()
+  local all_stored_keys_list = M.get_stored_keys()
   local stored_keys_set = {}
-  for _, key in ipairs(stored_keys) do stored_keys_set[key] = true end
+  for _, key in ipairs(all_stored_keys_list) do stored_keys_set[key] = true end
 
   local lines = {
     "# API Key Management",
     "",
     "Navigate: [M]odels [P]lugins [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et key [r]emove key [q]uit",
+    "Actions: [s]et key [r]emove key [A]dd custom [q]uit", -- Updated Actions line
     "──────────────────────────────────────────────────────────────",
     "",
     "## Available Providers:",
     ""
   }
 
-  local providers = {
+  local predefined_providers_list = {
     "openai", "anthropic", "mistral", "gemini", "groq", "perplexity",
     "cohere", "replicate", "anyscale", "together", "deepseek", "fireworks",
     "aws", "azure",
   }
+  local predefined_providers_set = {}
+  for _, p_name in ipairs(predefined_providers_list) do predefined_providers_set[p_name] = true end
 
   local key_data = {}
   local line_to_provider = {}
   local current_line = #lines + 1
 
-  for _, provider in ipairs(providers) do
-    local status = stored_keys_set[provider] and "✓" or " "
-    local line = string.format("[%s] %s", status, provider)
+  -- Display predefined providers first
+  for _, provider_name in ipairs(predefined_providers_list) do
+    local is_set = stored_keys_set[provider_name] or false
+    local status = is_set and "✓" or " "
+    local line = string.format("[%s] %s", status, provider_name)
     table.insert(lines, line)
-    key_data[provider] = { line = current_line, is_set = stored_keys_set[provider] or false }
-    line_to_provider[current_line] = provider
+    key_data[provider_name] = { line = current_line, is_set = is_set }
+    line_to_provider[current_line] = provider_name
     current_line = current_line + 1
   end
 
-  table.insert(lines, "")
-  table.insert(lines, "## Custom Key:")
-  table.insert(lines, "[+] Add custom key")
-  local custom_key_line = current_line + 2
-  line_to_provider[custom_key_line] = "+" -- Special marker for custom key line
+  table.insert(lines, "") -- Add a blank line before custom keys section
+
+  -- Identify and prepare custom stored keys for display
+  local custom_keys_to_display = {}
+  for _, stored_key_name in ipairs(all_stored_keys_list) do
+    if not predefined_providers_set[stored_key_name] then
+      table.insert(custom_keys_to_display, stored_key_name)
+    end
+  end
+  table.sort(custom_keys_to_display) -- Sort for consistent order
+
+  -- Display custom stored keys
+  if #custom_keys_to_display > 0 then
+    table.insert(lines, "## Custom Keys:")
+    table.insert(lines, "") -- Blank line after title
+    for _, custom_key_name in ipairs(custom_keys_to_display) do
+      -- All keys from get_stored_keys are considered "set"
+      local line = string.format("[✓] %s", custom_key_name)
+      table.insert(lines, line)
+      key_data[custom_key_name] = { line = current_line, is_set = true }
+      line_to_provider[current_line] = custom_key_name
+      current_line = current_line + 1
+    end
+    table.insert(lines, "") -- Add a blank line after custom keys list
+  end
+
+  -- Removed the "[+] Add custom key" line and its specific title logic from here.
+  -- The general "## Custom Keys:" section title (if custom keys exist) or lack thereof is handled above.
+  -- If no custom keys are listed and no predefined keys either, the buffer will be more minimal.
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -236,24 +264,61 @@ function M.setup_keys_keymaps(bufnr, manager_module)
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.keys.keys_manager', bufnr))
+
+  -- Add new custom key
+  set_keymap('n', 'A', -- Changed from <CR> on a line to 'A'
+    string.format([[<Cmd>lua require('%s').add_new_custom_key_interactive(%d)<CR>]],
+      manager_module.__name or 'llm.keys.keys_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
-function M.set_key_under_cursor(bufnr)
-  local provider_name, _ = M.get_provider_info_under_cursor(bufnr)
 
-  if not provider_name then return end
+-- Function to add a new custom key via interactive input
+function M.add_new_custom_key_interactive(bufnr)
+  utils.floating_input({ prompt = "Enter custom key name:" }, function(custom_name)
+    if not custom_name or custom_name == "" then
+      vim.notify("Custom key name cannot be empty. Aborted.", vim.log.levels.WARN)
+      return
+    end
 
-  if provider_name == "+" then
-    -- Handle custom key
-    vim.ui.input({ prompt = "Enter custom key name: " }, function(custom_name)
-      if not custom_name or custom_name == "" then return end
-      M.create_key_input_window(custom_name)
+    utils.floating_input({ prompt = "Enter API key for '" .. custom_name .. "':" }, function(key_value)
+      if not key_value or key_value == "" then
+        vim.notify("API key value cannot be empty. Aborted.", vim.log.levels.WARN)
+        return
+      end
+
+      if M.set_api_key(custom_name, key_value) then
+        vim.notify("Successfully set key for '" .. custom_name .. "'", vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+      else
+        -- M.set_api_key already shows a notification on failure
+        vim.notify("Failed to set key for '" .. custom_name .. "'. See previous errors for details.", vim.log.levels.ERROR)
+      end
     end)
-  else
-    -- Handle regular provider
-    M.create_key_input_window(provider_name)
+  end)
+end
+
+function M.set_key_under_cursor(bufnr)
+  local provider_name, _ = M.get_provider_info_under_cursor(bufnr) -- Renamed provider_name_or_action
+
+  if not provider_name then -- If provider_name is nil (e.g. cursor on empty line or separator)
+    return
   end
+  -- The "+" case for adding a key is now handled by add_new_custom_key_interactive
+
+  -- Handle setting key for an existing provider (predefined or custom listed)
+  utils.floating_input({ prompt = "Enter API key for " .. provider_name .. ":" }, function(key_value)
+    if not key_value or key_value == "" then
+      vim.notify("API key value cannot be empty. Aborted for " .. provider_name .. ".", vim.log.levels.WARN)
+      return
+    end
+    if M.set_api_key(provider_name, key_value) then
+      vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
+      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+    else
+      vim.notify("Failed to set key for '" .. provider_name .. "'.", vim.log.levels.ERROR)
+    end
+  end)
 end
 
 function M.remove_key_under_cursor(bufnr)
@@ -268,83 +333,16 @@ function M.remove_key_under_cursor(bufnr)
 
   utils.floating_confirm({
     prompt = "Remove key for '" .. provider_name .. "'?",
-    options = { "Yes", "No" }
-  }, function(choice)
-    if choice ~= "Yes" then return end
-
-    if M.remove_api_key(provider_name) then
-      vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys")
-    else
-      vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+    on_confirm = function() -- Modified to use on_confirm callback
+      if M.remove_api_key(provider_name) then
+        vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Keys")
+      else
+        vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+      end
     end
-  end)
-end
-
--- Create a floating window for secure key input (modified to refresh unified view)
-function M.create_key_input_window(provider_name)
-  local input_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(input_buf, 'buftype', 'nofile')
-  api.nvim_buf_set_option(input_buf, 'bufhidden', 'wipe')
-  api.nvim_buf_set_option(input_buf, 'swapfile', false)
-
-  local lines = { "Enter API key for '" .. provider_name .. "':", "", "", "", "Press <Enter> to save, <Esc> to cancel" }
-  api.nvim_buf_set_lines(input_buf, 0, -1, false, lines)
-
-  local input_win = utils.create_floating_window(input_buf, 'LLM Set API Key')
-  api.nvim_win_set_cursor(input_win, { 3, 0 })
-  vim.cmd('startinsert')
-  api.nvim_buf_set_option(input_buf, 'modifiable', true)
-  styles.setup_buffer_styling(input_buf) -- Apply basic styling
-
-  -- Store provider name
-  vim.b[input_buf].provider_name = provider_name
-
-  -- Keymaps for the input window
-  local function set_input_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(input_buf, mode, lhs, rhs,
-      { noremap = true, silent = true })
-  end
-  set_input_keymap('i', '<CR>',
-    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('n', '<CR>', [[<Cmd>lua require('llm.keys.keys_manager').save_key_from_input()<CR>]])
-  set_input_keymap('i', '<Esc>',
-    [[<Cmd>stopinsert<CR><Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
-  set_input_keymap('n', '<Esc>', [[<Cmd>lua require('llm.keys.keys_manager').cancel_key_input()<CR>]])
-end
-
--- Save the key from the input window (modified to refresh unified view)
-function M.save_key_from_input()
-  local input_buf = api.nvim_get_current_buf()
-  local provider_name = vim.b[input_buf].provider_name
-  local key_value = api.nvim_buf_get_lines(input_buf, 2, 3, false)[1]
-
-  api.nvim_win_close(0, true) -- Close input window
-
-  if key_value and key_value ~= "" then
-    if M.set_api_key(provider_name, key_value) then
-      vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
-    else
-      vim.notify("Failed to set key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-      -- Optionally reopen the Keys view even on failure
-      -- require('llm.unified_manager').switch_view("Keys")
-    end
-  else
-    vim.notify("No key provided, operation cancelled", vim.log.levels.WARN)
-    -- Optionally reopen the Keys view on cancel
-    -- require('llm.unified_manager').switch_view("Keys")
-  end
-end
-
--- Cancel key input (modified to potentially refresh unified view)
-function M.cancel_key_input()
-  local input_buf = api.nvim_get_current_buf()
-  local provider_name = vim.b[input_buf].provider_name
-  api.nvim_win_close(0, true) -- Close input window
-  vim.notify("Key input for '" .. provider_name .. "' cancelled", vim.log.levels.INFO)
-  -- Optionally reopen the Keys view on cancel
-  -- require('llm.unified_manager').switch_view("Keys")
+    -- Removed options table as floating_confirm uses Y/N by default
+  })
 end
 
 -- Helper to get provider info from buffer variables

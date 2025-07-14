@@ -350,13 +350,18 @@ function M.floating_confirm(opts)
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)
+  api.nvim_buf_set_var(buf, 'floating_confirm_options', opts.options)
 end
 
 function M._confirm_floating_dialog(confirmed)
   local buf = api.nvim_get_current_buf()
   local callback = api.nvim_buf_get_var(buf, 'floating_confirm_callback')
   api.nvim_win_close(0, true)
-  callback(confirmed)
+  if confirmed then
+    callback("Yes")
+  else
+    callback("No")
+  end
 end
 
 function M._select_floating_confirm(index)
