@@ -34,8 +34,9 @@ end
 local nvim_executable = os.getenv("NEOVIM_BIN") or "nvim"
 
 -- Check if nvim is in the path
-if not file_exists("/usr/bin/nvim") then
-    print("Error: Neovim executable ('" .. nvim_executable .. "') not found in /usr/bin.")
+local nvim_path_output = run_command("command -v " .. nvim_executable)
+if nvim_path_output == "" or nvim_path_output:match("not found") then
+    print("Error: Neovim executable ('" .. nvim_executable .. "') not found in PATH.")
     print("Please install Neovim or set the NEOVIM_BIN environment variable.")
     os.exit(1)
 end
@@ -54,7 +55,7 @@ local nvim_command = string.format(
     '-c "set runtimepath+=." ' ..
     '-c "lua require(\'plenary.busted\').run(\'%s\')"',
     timeout_duration,
-    "/usr/bin/nvim",
+    nvim_executable,
     plenary_path,
     test_path
 )
