@@ -51,18 +51,16 @@ end
 
 
 -- Use a timeout for the nvim command to prevent it from hanging
-local timeout_duration = 30 -- seconds
 local test_path = "./test/spec/"
 if #arg > 0 then
   test_path = arg[1]
 end
 
 local nvim_command = string.format(
-    "timeout %d %s --headless -u NONE -i NONE -n " ..
+    "%s --headless -u NONE -i NONE -n " ..
     '-c "set runtimepath+=%s" ' ..
     '-c "set runtimepath+=." ' ..
     '-c "lua require(\'plenary.busted\').run(\'%s\')"',
-    timeout_duration,
     nvim_executable,
     plenary_path,
     test_path
@@ -71,11 +69,7 @@ local nvim_command = string.format(
 code = os.execute(nvim_command)
 
 
-if code == 124 then -- Timeout exit code
-  print("\nError: Test runner timed out after " .. timeout_duration .. " seconds.")
-  print("This might indicate a hanging test or an issue with the Neovim process.")
-  os.exit(124)
-elseif code ~= 0 then
+if code ~= 0 then
   print("\nTests failed with exit code: " .. tostring(code))
   os.exit(code)
 end
