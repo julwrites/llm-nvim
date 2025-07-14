@@ -95,6 +95,7 @@ describe("models_manager", function()
         return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil
       end
       local models = models_manager.get_available_models()
+      table.sort(models)
       assert.are.same({ "Anthropic: claude-2", "OpenAI: gpt-3.5-turbo" }, models)
     end)
 
@@ -106,7 +107,8 @@ describe("models_manager", function()
         ["my-custom-model"] = { model_id = "my-custom-model", model_name = "My Custom Model" }
       }
       local models = models_manager.get_available_models()
-      assert.are.same({ "OpenAI: gpt-3.5-turbo", "Custom OpenAI: My Custom Model" }, models)
+      table.sort(models)
+      assert.are.same({ "Custom OpenAI: My Custom Model", "OpenAI: gpt-3.5-turbo" }, models)
     end)
 
     it("should not include duplicate standard openai models", function()
@@ -117,7 +119,8 @@ describe("models_manager", function()
         ["gpt-3.5-turbo"] = { model_id = "gpt-3.5-turbo", model_name = "My Custom GPT-3.5" }
       }
       local models = models_manager.get_available_models()
-      assert.are.same({ "OpenAI: gpt-3.5-turbo-16k", "Custom OpenAI: My Custom GPT-3.5" }, models)
+      table.sort(models)
+      assert.are.same({ "Custom OpenAI: My Custom GPT-3.5", "OpenAI: gpt-3.5-turbo-16k" }, models)
     end)
   end)
 
