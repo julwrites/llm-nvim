@@ -9,7 +9,7 @@ test:
 		-c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
 		-c "lua vim.opt.rtp:append('.')" \
 		-c "runtime plugin/llm.lua" \
-		-c "lua require('plenary.busted').run('./test/spec/llm_spec.lua')" \
+		-c "lua require('plenary.busted').run('./test/spec/')" \
 		-c "q"
 
 # Install test dependencies
