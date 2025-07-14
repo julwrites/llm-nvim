@@ -10,7 +10,7 @@ test:
 			-c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
 			-c "lua vim.opt.rtp:append('.')" \
 			-c "runtime plugin/llm.lua" \
-			-c "lua require('plenary.busted').run(file)" \
+			-c "lua require('plenary.busted').run('$$file')" \
 			-c "q"; \
 	done
 
