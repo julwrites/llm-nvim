@@ -1,10 +1,12 @@
 # TODO
 
 - [x] Add more tests for the core functionality of the plugin.
-  - [x] Add tests for `set_default_model`
-  - [x] Add tests for `set_model_alias`
-  - [x] Add tests for `remove_model_alias`
-  - [x] Add tests for `is_model_available`
+  - [x] Add tests for models
+  - [ ] Add tests for keys
+  - [ ] Add tests for schemas
+  - [ ] Add tests for templates
+  - [ ] Add tests for fragments
+  - [ ] Add tests for plugins
 - [ ] Add tests for the UI components.
   - [ ] Add headless UI tests for Neovim interactions.
 - [x] Refactor the existing code to make it more testable.
