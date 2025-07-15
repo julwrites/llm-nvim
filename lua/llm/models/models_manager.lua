@@ -628,7 +628,14 @@ function M.generate_models_list()
   end
 
   -- Add content to buffer
-  for provider, provider_models in pairs(providers) do
+  local provider_keys = {}
+  for key, _ in pairs(providers) do
+    table.insert(provider_keys, key)
+  end
+  table.sort(provider_keys)
+
+  for _, provider in ipairs(provider_keys) do
+    local provider_models = providers[provider]
     if #provider_models > 0 then
       table.insert(lines, provider)
       table.insert(lines, string.rep("─", #provider))
