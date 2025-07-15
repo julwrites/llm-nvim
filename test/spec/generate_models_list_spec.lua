@@ -47,31 +47,29 @@ describe("generate_models_list", function()
     assert.is_table(data.line_to_model_id)
     assert.is_table(data.model_data)
     local expected_lines = {
-        "# Model Management",
-        "",
-        "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
-        "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit",
-        "──────────────────────────────────────────────────────────────",
-        "",
-        "OpenAI",
-        "───",
-        "[✓] OpenAI: gpt-3.5-turbo",
-        "",
-        "Anthropic",
-        "─────────",
-        "[ ] Anthropic: claude-2",
-        "",
-        ""
+        ["# Model Management"] = true,
+        [""] = true,
+        ["Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas"] = true,
+        ["Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit"] = true,
+        ["──────────────────────────────────────────────────────────────"] = true,
+        ["OpenAI"] = true,
+        [string.rep("─", # "OpenAI")] = true,
+        ["[✓] OpenAI: gpt-3.5-turbo"] = true,
+        ["Anthropic"] = true,
+        [string.rep("─", # "Anthropic")] = true,
+        ["[ ] Anthropic: claude-2"] = true,
     }
-    for _, expected_line in ipairs(expected_lines) do
-        local found = false
-        for _, actual_line in ipairs(data.lines) do
-            if actual_line == expected_line then
-                found = true
-                break
-            end
+
+    for _, actual_line in ipairs(data.lines) do
+        if expected_lines[actual_line] then
+            expected_lines[actual_line] = false
         end
-        assert.is_true(found, "Expected line not found: " .. expected_line)
+    end
+
+    for line, not_found in pairs(expected_lines) do
+        if not_found then
+            assert.is_true(false, "Expected line not found: " .. line)
+        end
     end
   end)
 end)
