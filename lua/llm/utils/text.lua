@@ -24,9 +24,11 @@ end
 
 -- Escape special pattern characters in a string
 function M.escape_pattern(s)
-  -- Escape these special pattern characters: ^$()%.[]*+-?
-  local escaped = string.gsub(s, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
-  return escaped
+  local special_chars = { "%", "(", ")", ".", "+", "-", "*", "?", "[", "]", "^", "$", "(", ")" }
+  for _, char in ipairs(special_chars) do
+    s = s:gsub("%" .. char, "%%" .. char)
+  end
+  return s
 end
 
 -- Simple YAML Parser
@@ -98,25 +100,23 @@ function M.parse_simple_yaml(filepath)
       local item_indent = indent + 2 -- Standard YAML list item content indent
 
       -- Ensure the parent is a list
-      if not current_level or current_level.type ~= 'list' then
-        -- If data is nil, start a new list at the root
+      if not current_level or (current_level.type ~= 'list' and not current_level.pending_key) then
         if data == nil then
           data = {}
           current_data = data
           table.insert(stack, { indent = indent, data = current_data, type = 'list' })
           current_level = stack[#stack]
-          -- If parent exists but isn't a list, this might be an error or requires context
-          -- For simplicity, we'll assume list items imply a list context
-        elseif current_level and current_level.type == 'map' then
-          -- This scenario is complex (list inside map without key).
-          -- A simple parser might error or make assumptions.
-          -- Let's assume the list starts here if the parent is a map.
-          -- We need a key for the map though. This logic needs refinement for robust parsing.
-          -- For now, let's focus on lists starting at root or nested under keys.
-          if debug_mode then vim.notify(
-            "YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN) end
-          goto continue    -- Skip this line for now
+        elseif current_level and current_level.type == 'map' and current_level.pending_key then
+          local parent_map = current_level.data
+          local pending_key = current_level.pending_key
+          parent_map[pending_key] = {}
+          current_data = parent_map[pending_key]
+          table.insert(stack, { indent = indent, data = current_data, type = 'list' })
+          current_level = stack[#stack]
         end
+      else
+        -- This is a list item, and we are in a list context.
+        -- No need to do anything here.
       end
 
       -- Check for key-value pair within the list item
