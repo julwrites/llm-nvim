@@ -37,6 +37,7 @@ M.parse_simple_yaml = text_utils.parse_simple_yaml
 
 -- Ensure the configuration directory exists
 function M.ensure_config_dir_exists(config_dir)
+  local config = require('llm.config')
   if not config_dir or config_dir == "" then
     return false
   end
@@ -55,7 +56,7 @@ function M.ensure_config_dir_exists(config_dir)
     local mkdir_cmd = string.format("mkdir -p '%s'", config_dir)
     local success, err = pcall(os.execute, mkdir_cmd)
     if success and err == 0 then
-      if self.config.get('debug') then
+      if config.get('debug') then
         vim.notify("Created config directory: " .. config_dir, vim.log.levels.DEBUG)
       end
       return true

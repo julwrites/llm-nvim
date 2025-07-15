@@ -19,6 +19,10 @@ function M.set_custom_openai(new_custom_openai)
     custom_openai = new_custom_openai
 end
 
+function M.set_models_io(new_models_io)
+    models_io = new_models_io
+end
+
 -- Add pattern escape function to vim namespace if it doesn't exist
 if not vim.pesc then
   vim.pesc = function(s)
