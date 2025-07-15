@@ -260,6 +260,7 @@ describe("models_manager", function()
             full_line = "OpenAI: gpt-4"
         }
         mock_models_io.set_default_model_in_cli = function(_) return "success", nil end
+        models_manager.is_model_available = function() return true end
         local result = models_manager.set_default_model_logic(model_id, model_info)
         assert.is_true(result.success)
         assert.are.equal("Default model set to: GPT-4", result.message)
