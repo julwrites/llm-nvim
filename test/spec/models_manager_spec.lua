@@ -241,8 +241,14 @@ describe("models_manager", function()
   end)
 
   describe("set_default_model_logic", function()
+    local original_is_model_available
+
+    before_each(function()
+        original_is_model_available = models_manager.is_model_available
+    end)
+
     after_each(function()
-        models_manager.is_model_available = function() return true end
+        models_manager.is_model_available = original_is_model_available
     end)
 
     it("should return success when setting a new default model", function()
