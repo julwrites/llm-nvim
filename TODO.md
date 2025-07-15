@@ -2,6 +2,7 @@
 
 - [x] Add more tests for the core functionality of the plugin.
   - [x] Add tests for models
+  - [x] Add tests for utils
   - [ ] Add tests for keys
   - [ ] Add tests for schemas
   - [ ] Add tests for templates
