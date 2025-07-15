@@ -234,9 +234,9 @@ describe("models_manager", function()
       assert.is_true(models_manager.remove_model_alias("alias"))
     end)
 
-    it("should return true on failure but not finding alias", function()
+    it("should return false on failure when alias is not found", function()
         mock_models_io.remove_alias_in_cli = function(_) return nil, "error" end
-        assert.is_true(models_manager.remove_model_alias("alias"))
+        assert.is_false(models_manager.remove_model_alias("alias"))
     end)
   end)
 
