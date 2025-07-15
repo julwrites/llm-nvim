@@ -287,7 +287,7 @@ describe("models_manager", function()
             full_line = "OpenAI: gpt-4"
         }
         local spy = require('luassert.spy').on(models_manager, "is_model_available")
-        spy.returns(false)
+        spy:and_return(false)
         local result = models_manager.set_default_model_logic(model_id, model_info)
         assert.is_false(result.success)
         assert.are.equal("Cannot set as default: OpenAI requirements not met (API key/plugin/config)", result.message)
