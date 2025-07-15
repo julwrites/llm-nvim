@@ -241,6 +241,10 @@ describe("models_manager", function()
   end)
 
   describe("set_default_model_logic", function()
+    after_each(function()
+        models_manager.is_model_available = function() return true end
+    end)
+
     it("should return success when setting a new default model", function()
         local model_id = "gpt-4"
         local model_info = {
