@@ -240,6 +240,52 @@ describe("models_manager", function()
     end)
   end)
 
+  describe("set_default_model_logic", function()
+    it("should return success when setting a new default model", function()
+        local model_id = "gpt-4"
+        local model_info = {
+            model_name = "GPT-4",
+            is_default = false,
+            is_custom = false,
+            full_line = "OpenAI: gpt-4"
+        }
+        mock_models_io.set_default_model_in_cli = function(_) return "success", nil end
+        local result = models_manager.set_default_model_logic(model_id, model_info)
+        assert.is_true(result.success)
+        assert.are.equal("Default model set to: GPT-4", result.message)
+    end)
+
+    it("should return failure when model is already the default", function()
+        local model_id = "gpt-4"
+        local model_info = {
+            model_name = "GPT-4",
+            is_default = true,
+            is_custom = false,
+            full_line = "OpenAI: gpt-4"
+        }
+        local result = models_manager.set_default_model_logic(model_id, model_info)
+        assert.is_false(result.success)
+        assert.are.equal("Model 'GPT-4' is already the default", result.message)
+    end)
+
+    it("should return failure when model is not available", function()
+        local model_id = "gpt-4"
+        local model_info = {
+            model_name = "GPT-4",
+            is_default = false,
+            is_custom = false,
+            full_line = "OpenAI: gpt-4"
+        }
+        -- Mock is_model_available to return false
+        models_manager.is_model_available = function() return false end
+        local result = models_manager.set_default_model_logic(model_id, model_info)
+        assert.is_false(result.success)
+        assert.are.equal("Cannot set as default: OpenAI requirements not met (API key/plugin/config)", result.message)
+        -- Restore original function
+        models_manager.is_model_available = function() return true end
+    end)
+  end)
+
   describe("is_model_available", function()
     local mock_keys_manager
     local mock_plugins_manager

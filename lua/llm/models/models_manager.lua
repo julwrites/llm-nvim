@@ -453,19 +453,23 @@ function M.select_model()
 end
 
 -- Populate the buffer with model management content
-function M.populate_models_buffer(bufnr)
+-- Generate the list of models for the management buffer
+function M.generate_models_list()
   local models = M.get_available_models()
   if #models == 0 then
-    api.nvim_buf_set_lines(bufnr, 0, -1, false, {
-      "# Model Management - No Models Found",
-      "",
-      "No models found. Make sure llm CLI is properly installed and configured.",
-      "Use the [K]eys manager to set up API keys for your providers.",
-      "Or use the [P]lugins manager to install required plugins.",
-      "",
-      "Press [q]uit or use navigation keys ([P]lugins, [K]eys, etc.)"
-    })
-    return {}, {} -- Return empty lookup tables
+    return {
+      lines = {
+        "# Model Management - No Models Found",
+        "",
+        "No models found. Make sure llm CLI is properly installed and configured.",
+        "Use the [K]eys manager to set up API keys for your providers.",
+        "Or use the [P]lugins manager to install required plugins.",
+        "",
+        "Press [q]uit or use navigation keys ([P]lugins, [K]eys, etc.)"
+      },
+      line_to_model_id = {},
+      model_data = {}
+    }
   end
 
   local aliases = M.get_model_aliases()
@@ -664,18 +668,27 @@ function M.populate_models_buffer(bufnr)
     end
   end
   table.insert(lines, "")
-  -- REMOVED: table.insert(lines, "[+] Add custom OpenAI model")
-  -- REMOVED: table.insert(lines, "[+] Add custom alias")
-  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  -- Apply syntax highlighting
+  return {
+    lines = lines,
+    line_to_model_id = line_to_model_id,
+    model_data = model_data
+  }
+end
+
+-- Populate the buffer with model management content
+function M.populate_models_buffer(bufnr)
+  local ui = require('llm.ui')
+  local data = M.generate_models_list()
+
+  ui.display_in_buffer(bufnr, data.lines)
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Store lookup tables in buffer variables for keymaps
-  vim.b[bufnr].line_to_model_id = line_to_model_id
-  vim.b[bufnr].model_data = model_data
+  vim.b[bufnr].line_to_model_id = data.line_to_model_id
+  vim.b[bufnr].model_data = data.model_data
 
-  return line_to_model_id, model_data -- Return for direct use if needed
+  return data.line_to_model_id, data.model_data -- Return for direct use if needed
 end
 
 -- Setup keymaps for the model management buffer
@@ -797,18 +810,17 @@ function M.add_custom_openai_model_interactive(bufnr)
 end
 
 -- Sets the model under the cursor as the default LLM model.
-function M.set_model_under_cursor(bufnr)
-  local model_id, model_info = M.get_model_info_under_cursor(bufnr)
-  if not model_id or not model_info then return end      -- Exit if no model info found
-
-  local display_name = model_info.model_name or model_id -- Use model_name for messages if available
-
-  if model_info.is_default then
-    vim.notify("Model '" .. display_name .. "' is already the default", vim.log.levels.INFO)
-    return
+function M.set_default_model_logic(model_id, model_info)
+  if not model_id or not model_info then
+    return { success = false, message = "No model info found" }
   end
 
-  -- Check availability using the model_id for custom models or full_line for others
+  local display_name = model_info.model_name or model_id
+
+  if model_info.is_default then
+    return { success = false, message = "Model '" .. display_name .. "' is already the default" }
+  end
+
   local check_identifier = model_info.is_custom and model_id or model_info.full_line
   if not M.is_model_available(check_identifier) then
     local provider = "unknown"
@@ -827,19 +839,28 @@ function M.set_model_under_cursor(bufnr)
     elseif model_info.full_line:match("ollama") then
       provider = "Ollama"
     end
-    vim.notify("Cannot set as default: " .. provider .. " requirements not met (API key/plugin/config)",
-      vim.log.levels.ERROR)
-    return
+    return { success = false, message = "Cannot set as default: " .. provider .. " requirements not met (API key/plugin/config)" }
   end
 
-  -- Use model_id when setting the default via CLI
-  vim.notify("Setting default model to: " .. display_name .. " (ID: " .. model_id .. ")", vim.log.levels.INFO)
   if M.set_default_model(model_id) then
-    config.options.model = model_id                      -- Update runtime config as well
-    vim.notify("Default model set to: " .. display_name, vim.log.levels.INFO)
+    config.options.model = model_id
+    return { success = true, message = "Default model set to: " .. display_name }
+  else
+    return { success = false, message = "Failed to set default model via llm CLI" }
+  end
+end
+
+-- Sets the model under the cursor as the default LLM model.
+function M.set_model_under_cursor(bufnr)
+  local ui = require('llm.ui')
+  local model_id, model_info = M.get_model_info_under_cursor(bufnr)
+  local result = M.set_default_model_logic(model_id, model_info)
+
+  if result.success then
+    ui.notify(result.message, vim.log.levels.INFO)
     require('llm.unified_manager').switch_view("Models") -- Refresh view
   else
-    vim.notify("Failed to set default model via llm CLI", vim.log.levels.ERROR)
+    ui.notify(result.message, vim.log.levels.ERROR)
   end
 end
 
