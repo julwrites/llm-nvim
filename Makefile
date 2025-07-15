@@ -8,7 +8,7 @@ test:
 	@for file in `find ./test/spec -name "*_spec.lua"`; do \
 		nvim --headless -u NONE -i NONE -n \
 			-c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
-			-c "lua vim.opt.rtp:append('./test/spec')" \
+			-c "lua vim.opt.rtp:append('./test')" \
 			-c "lua vim.opt.rtp:append('.')" \
 			-c "runtime plugin/llm.lua" \
 			-c "lua require('plenary.busted').run('$$file')" \
