@@ -9,6 +9,7 @@ function M.setup()
   -- Set minimal vim configuration for testing
   vim.opt.runtimepath:append('.')
   vim.opt.runtimepath:append('./test')
+  vim.opt.runtimepath:append('./test/plenary.nvim')
 
   -- Set test environment variable
   vim.env.LLM_NVIM_TEST = "1"

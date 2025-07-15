@@ -30,13 +30,13 @@ M.floating_confirm = ui_utils.floating_confirm
 
 -- Expose text utilities
 M.get_visual_selection = text_utils.get_visual_selection
-M.escape_pattern = text_utils.escape_pattern
 M.parse_simple_yaml = text_utils.parse_simple_yaml
 
 -- Internal UI functions (must stay in main utils file since they're referenced in keymaps)
 
 -- Ensure the configuration directory exists
 function M.ensure_config_dir_exists(config_dir)
+  local config = require('llm.config')
   if not config_dir or config_dir == "" then
     return false
   end
@@ -55,7 +55,7 @@ function M.ensure_config_dir_exists(config_dir)
     local mkdir_cmd = string.format("mkdir -p '%s'", config_dir)
     local success, err = pcall(os.execute, mkdir_cmd)
     if success and err == 0 then
-      if self.config.get('debug') then
+      if config.get('debug') then
         vim.notify("Created config directory: " .. config_dir, vim.log.levels.DEBUG)
       end
       return true
@@ -411,11 +411,6 @@ function M.setup_buffer_highlighting(buf)
 end
 
 -- Escape special pattern characters in a string
-function M.escape_pattern(s)
-  -- Escape these special pattern characters: ^$()%.[]*+-?
-  local escaped = string.gsub(s, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
-  return escaped
-end
 
 -- Debug function to check fragment aliases
 function M.debug_fragment_aliases()

@@ -3,20 +3,28 @@
 describe("models_manager", function()
   local models_manager
   local mock_models_io
+  local mock_custom_openai
 
   before_each(function()
     -- Mock models_io
     mock_models_io = {
-      get_models_from_cli = function() return "", nil end,
-      get_default_model_from_cli = function() return "", nil end,
-      set_default_model_in_cli = function(_) return "", nil end,
-      get_aliases_from_cli = function() return "{}", nil end,
-      set_alias_in_cli = function(_, _) return "", nil end,
-      remove_alias_in_cli = function(_) return "", nil end,
+      get_models_from_cli = function() return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil end,
+      get_default_model_from_cli = function() return "gpt-3.5-turbo", nil end,
+      set_default_model_in_cli = function(_) return "success", nil end,
+      get_aliases_from_cli = function() return '{"alias1": "model1", "alias2": "model2"}', nil end,
+      set_alias_in_cli = function(_, _) return "success", nil end,
+      remove_alias_in_cli = function(_) return "success", nil end,
+    }
+
+    mock_custom_openai = {
+      custom_openai_models = {},
+      load_custom_openai_models = function() end,
+      is_custom_openai_model_valid = function(_) return false end,
     }
 
     -- Load models_manager with mocked dependencies
     package.loaded['llm.models.models_io'] = mock_models_io
+    package.loaded['llm.models.custom_openai'] = mock_custom_openai
     models_manager = require('llm.models.models_manager')
   end)
 
