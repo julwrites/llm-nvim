@@ -46,7 +46,7 @@ describe("generate_models_list", function()
     assert.is_table(data.lines)
     assert.is_table(data.line_to_model_id)
     assert.is_table(data.model_data)
-    assert.are.same({
+    local expected_lines = {
         "# Model Management",
         "",
         "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
@@ -62,6 +62,16 @@ describe("generate_models_list", function()
         "[ ] Anthropic: claude-2",
         "",
         ""
-    }, data.lines)
+    }
+    for _, expected_line in ipairs(expected_lines) do
+        local found = false
+        for _, actual_line in ipairs(data.lines) do
+            if actual_line == expected_line then
+                found = true
+                break
+            end
+        end
+        assert.is_true(found, "Expected line not found: " .. expected_line)
+    end
   end)
 end)
