@@ -30,7 +30,6 @@ M.floating_confirm = ui_utils.floating_confirm
 
 -- Expose text utilities
 M.get_visual_selection = text_utils.get_visual_selection
-M.escape_pattern = text_utils.escape_pattern
 M.parse_simple_yaml = text_utils.parse_simple_yaml
 
 -- Internal UI functions (must stay in main utils file since they're referenced in keymaps)
@@ -412,11 +411,6 @@ function M.setup_buffer_highlighting(buf)
 end
 
 -- Escape special pattern characters in a string
-function M.escape_pattern(s)
-  -- Escape these special pattern characters: ^$()%.[]*+-?
-  local escaped = string.gsub(s, "[%(%)%.%+%-%*%?%[%]%^%$%%]", "%%%1")
-  return escaped
-end
 
 -- Debug function to check fragment aliases
 function M.debug_fragment_aliases()
