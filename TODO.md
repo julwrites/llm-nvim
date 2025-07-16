@@ -1,13 +1,13 @@
 # TODO
 
 - [x] Add more tests for the core functionality of the plugin.
-  - [x] Add tests for models
+  - [x] Add tests for models (full coverage)
   - [x] Add tests for utils - Done
-  - [ ] Add tests for keys
-  - [ ] Add tests for schemas
-  - [ ] Add tests for templates
-  - [ ] Add tests for fragments
-  - [ ] Add tests for plugins
+  - [x] Add tests for keys (full coverage)
+  - [x] Add tests for schemas (full coverage)
+  - [x] Add tests for templates (full coverage)
+  - [x] Add tests for fragments (full coverage)
+  - [x] Add tests for plugins (full coverage)
 - [ ] Add tests for the UI components.
   - [ ] Add headless UI tests for Neovim interactions.
 - [x] Refactor the existing code to make it more testable.

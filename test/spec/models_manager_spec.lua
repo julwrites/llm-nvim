@@ -183,6 +183,12 @@ describe("models_manager", function()
       mock_models_io.set_default_model_in_cli = function(_) return nil, "error" end
       assert.is_false(models_manager.set_default_model("gpt-3.5-turbo"))
     end)
+
+    it("should not call models_io.set_default_model_in_cli if model name is nil", function()
+        local spy = require('luassert.spy').on(mock_models_io, "set_default_model_in_cli")
+        models_manager.set_default_model(nil)
+        assert.spy(spy).was_not.called()
+    end)
   end)
 
   describe("set_model_alias", function()
@@ -245,6 +251,12 @@ describe("models_manager", function()
     it("should return false on failure when alias is not found", function()
         mock_models_io.remove_alias_in_cli = function(_) return nil, "error" end
         assert.is_false(models_manager.remove_model_alias("alias"))
+    end)
+
+    it("should not call models_io.remove_alias_in_cli if alias is nil", function()
+        local spy = require('luassert.spy').on(mock_models_io, "remove_alias_in_cli")
+        models_manager.remove_model_alias(nil)
+        assert.spy(spy).was_not.called()
     end)
   end)
 
@@ -346,6 +358,32 @@ describe("models_manager", function()
 
     it("should return false for Ollama model when plugin is not installed", function()
         assert.is_false(models_manager.is_model_available("ollama/llama2"))
+    end)
+  end)
+
+  describe("custom models", function()
+    it("should add a custom model", function()
+        local mock_file_utils = {
+            save_json = require('luassert.spy').create(),
+            get_config_dir = function() return "config_dir" end,
+        }
+        package.loaded['llm.utils.file_utils'] = mock_file_utils
+        models_manager = require('llm.models.models_manager')
+
+        models_manager.add_custom_model("my-custom-model", "My Custom Model")
+        assert.spy(mock_file_utils.save_json).was.called_with("config_dir/custom_models/my-custom-model.json", { model_id = "my-custom-model", model_name = "My Custom Model" })
+    end)
+
+    it("should remove a custom model", function()
+        local mock_file_utils = {
+            delete_file = require('luassert.spy').create(),
+            get_config_dir = function() return "config_dir" end,
+        }
+        package.loaded['llm.utils.file_utils'] = mock_file_utils
+        models_manager = require('llm.models.models_manager')
+
+        models_manager.remove_custom_model("my-custom-model")
+        assert.spy(mock_file_utils.delete_file).was.called_with("config_dir/custom_models/my-custom-model.json")
     end)
   end)
 end)
