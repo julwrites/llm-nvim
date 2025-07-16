@@ -114,6 +114,12 @@ function M.set_last_update_timestamp()
   f:close()
 end
 
+function M.run_update_command(cmd)
+  local output = vim.fn.system(cmd .. " 2>&1")
+  local exit_code = vim.v.shell_error
+  return output, exit_code
+end
+
 -- Attempt to update the LLM CLI
 function M.update_llm_cli()
   M.set_last_update_timestamp()
@@ -168,8 +174,7 @@ function M.update_llm_cli()
     end
 
     if can_run then
-      local output = vim.fn.system(cmd_to_run .. " 2>&1")
-      local exit_code = vim.v.shell_error
+      local output, exit_code = M.run_update_command(cmd_to_run)
       table.insert(messages, cmd_to_run .. ":\n" .. output)
 
       if exit_code == 0 then
