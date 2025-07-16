@@ -17,3 +17,9 @@
   - [x] Fix schemas_manager tests (round 3)
   - [x] Refactor all manager tests
 - [ ] Add more features to the plugin.
+- [ ] Add tests for the `_loader.lua` files.
+  - [ ] Add tests for `fragments_loader.lua`.
+  - [ ] Add tests for `plugins_loader.lua`.
+  - [ ] Add tests for `schemas_loader.lua`.
+  - [ ] Add tests for `templates_loader.lua`.
+- [ ] Fix nil method errors in tests.
