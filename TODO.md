@@ -14,5 +14,5 @@
   - [x] Refactor `populate_models_buffer`
   - [x] Refactor `set_model_under_cursor`
 - [x] Fix the existing bugs.
-  - [x] Fix schemas_manager tests
+  - [x] Fix schemas_manager tests (round 2)
 - [ ] Add more features to the plugin.

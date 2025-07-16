@@ -4,11 +4,9 @@ describe("schemas_manager", function()
   local schemas_manager
   local mock_schemas_loader
   local mock_file_utils
-  local spy
+  local spy = require('luassert.spy')
 
   before_each(function()
-    spy = require('luassert.spy')
-
     mock_schemas_loader = {
       load_schemas = function() return {} end,
     }
