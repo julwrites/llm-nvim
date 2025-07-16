@@ -133,8 +133,11 @@ describe("llm.utils.shell", function()
     it("should return false if llm is not installed", function()
       local original_command_exists = shell.command_exists
       shell.command_exists = function() return false end
+      local original_notify_error = rawget(shell, "notify_error")
+      rawset(shell, "notify_error", function() end)
       assert.is_false(shell.check_llm_installed())
       shell.command_exists = original_command_exists
+      rawset(shell, "notify_error", original_notify_error)
     end)
   end)
 
@@ -143,9 +146,11 @@ describe("llm.utils.shell", function()
       local original_command_exists = shell.command_exists
       shell.command_exists = function() return true end
       local original_system = vim.fn.system
-      vim.fn.system = function()
-        vim.v.shell_error = 0
-        return "Successfully installed llm"
+      vim.fn.system = function(cmd)
+        if cmd == "uv tool upgrade llm 2>&1" then
+          vim.v.shell_error = 0
+          return "Successfully installed llm"
+        end
       end
       local result = shell.update_llm_cli()
       assert.is_true(result.success)
@@ -156,11 +161,19 @@ describe("llm.utils.shell", function()
 
     it("should return an error message if the command fails", function()
       local original_command_exists = shell.command_exists
-      shell.command_exists = function() return false end
+      shell.command_exists = function() return true end
+      local original_system = vim.fn.system
+      vim.fn.system = function(cmd)
+        if cmd == "uv tool upgrade llm 2>&1" then
+          vim.v.shell_error = 1
+          return "Failed to install llm"
+        end
+      end
       local result = shell.update_llm_cli()
       assert.is_false(result.success)
       assert.is_not_nil(result.message)
       shell.command_exists = original_command_exists
+      vim.fn.system = original_system
     end)
   end)
 
