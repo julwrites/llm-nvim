@@ -3,19 +3,34 @@
 describe("templates_manager", function()
   local templates_manager
   local mock_templates_loader
+  local mock_file_utils
+  local mock_shell
 
   before_each(function()
     mock_templates_loader = {
       load_templates = function() return {} end,
     }
 
+    mock_file_utils = {
+      save_json = function(_, _) end,
+      get_config_dir = function() return "config_dir" end,
+    }
+
+    mock_shell = {
+      run = function(_) end,
+    }
+
     package.loaded['llm.templates.templates_loader'] = mock_templates_loader
+    package.loaded['llm.utils.file_utils'] = mock_file_utils
+    package.loaded['llm.utils.shell'] = mock_shell
     templates_manager = require('llm.templates.templates_manager')
   end)
 
   after_each(function()
     package.loaded['llm.templates.templates_loader'] = nil
     package.loaded['llm.templates.templates_manager'] = nil
+    package.loaded['llm.utils.file_utils'] = nil
+    package.loaded['llm.utils.shell'] = nil
   end)
 
   it("should be a table", function()
@@ -49,53 +64,50 @@ describe("templates_manager", function()
 
   describe("delete_template", function()
     it("should call delete on the template", function()
-        local fake_template = { name = "template1", delete = require('luassert.spy').create() }
-        local fake_templates = { fake_template }
-        mock_templates_loader.load_templates = function() return fake_templates end
-        templates_manager.load()
-        templates_manager.delete_template("template1")
-        assert.spy(fake_template.delete).was.called()
+      local deleted = false
+      local fake_template = { name = "template1", delete = function() deleted = true end }
+      local fake_templates = { fake_template }
+      mock_templates_loader.load_templates = function() return fake_templates end
+      templates_manager.load()
+      templates_manager.delete_template("template1")
+      assert.is_true(deleted)
     end)
   end)
 
   describe("create_template", function()
     it("should create a new template", function()
-        local mock_file_utils = {
-            save_json = require('luassert.spy').create(),
-            get_config_dir = function() return "config_dir" end,
-        }
-        package.loaded['llm.utils.file_utils'] = mock_file_utils
-        templates_manager = require('llm.templates.templates_manager')
-
-        templates_manager.create_template("my-template", "My Template")
-        assert.spy(mock_file_utils.save_json).was.called_with("config_dir/templates/my-template.json", { name = "my-template", description = "My Template" })
+      local saved_path, saved_data
+      mock_file_utils.save_json = function(path, data)
+        saved_path = path
+        saved_data = data
+      end
+      templates_manager.create_template("my-template", "My Template")
+      assert.are.equal("config_dir/templates/my-template.json", saved_path)
+      assert.are.same({ name = "my-template", description = "My Template" }, saved_data)
     end)
   end)
 
   describe("edit_template", function()
     it("should save the edited template", function()
-        local mock_file_utils = {
-            save_json = require('luassert.spy').create(),
-            get_config_dir = function() return "config_dir" end,
-        }
-        package.loaded['llm.utils.file_utils'] = mock_file_utils
-        templates_manager = require('llm.templates.templates_manager')
-
-        templates_manager.edit_template("my-template", "My Edited Template")
-        assert.spy(mock_file_utils.save_json).was.called_with("config_dir/templates/my-template.json", { name = "my-template", description = "My Edited Template" })
+      local saved_path, saved_data
+      mock_file_utils.save_json = function(path, data)
+        saved_path = path
+        saved_data = data
+      end
+      templates_manager.edit_template("my-template", "My Edited Template")
+      assert.are.equal("config_dir/templates/my-template.json", saved_path)
+      assert.are.same({ name = "my-template", description = "My Edited Template" }, saved_data)
     end)
   end)
 
   describe("run_template", function()
     it("should run a template", function()
-        local mock_shell = {
-            run = require('luassert.spy').create(),
-        }
-        package.loaded['llm.utils.shell'] = mock_shell
-        templates_manager = require('llm.templates.templates_manager')
-
-        templates_manager.run_template("my-template")
-        assert.spy(mock_shell.run).was.called_with("llm -t my-template")
+      local command_run
+      mock_shell.run = function(command)
+        command_run = command
+      end
+      templates_manager.run_template("my-template")
+      assert.are.equal("llm -t my-template", command_run)
     end)
   end)
 end)

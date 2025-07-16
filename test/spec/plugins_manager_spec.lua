@@ -49,45 +49,45 @@ describe("plugins_manager", function()
 
   describe("install_plugin", function()
     it("should call install on the plugin", function()
-        local spy = require('luassert.spy')
-        local fake_plugin = { name = "plugin1", install = spy.create() }
-        local fake_plugins = { fake_plugin }
-        mock_plugins_loader.load_plugins = function() return fake_plugins end
-        plugins_manager.load()
-        plugins_manager.install_plugin("plugin1")
-        assert.spy(fake_plugin.install).was.called()
+      local installed = false
+      local fake_plugin = { name = "plugin1", install = function() installed = true end }
+      local fake_plugins = { fake_plugin }
+      mock_plugins_loader.load_plugins = function() return fake_plugins end
+      plugins_manager.load()
+      plugins_manager.install_plugin("plugin1")
+      assert.is_true(installed)
     end)
 
     it("should not call install on a non-existent plugin", function()
-        local spy = require('luassert.spy')
-        local fake_plugin = { name = "plugin1", install = spy.create() }
-        local fake_plugins = { fake_plugin }
-        mock_plugins_loader.load_plugins = function() return fake_plugins end
-        plugins_manager.load()
-        plugins_manager.install_plugin("non_existent_plugin")
-        assert.spy(fake_plugin.install).was_not.called()
+      local installed = false
+      local fake_plugin = { name = "plugin1", install = function() installed = true end }
+      local fake_plugins = { fake_plugin }
+      mock_plugins_loader.load_plugins = function() return fake_plugins end
+      plugins_manager.load()
+      plugins_manager.install_plugin("non_existent_plugin")
+      assert.is_false(installed)
     end)
   end)
 
   describe("uninstall_plugin", function()
     it("should call uninstall on the plugin", function()
-        local spy = require('luassert.spy')
-        local fake_plugin = { name = "plugin1", uninstall = spy.create() }
-        local fake_plugins = { fake_plugin }
-        mock_plugins_loader.load_plugins = function() return fake_plugins end
-        plugins_manager.load()
-        plugins_manager.uninstall_plugin("plugin1")
-        assert.spy(fake_plugin.uninstall).was.called()
+      local uninstalled = false
+      local fake_plugin = { name = "plugin1", uninstall = function() uninstalled = true end }
+      local fake_plugins = { fake_plugin }
+      mock_plugins_loader.load_plugins = function() return fake_plugins end
+      plugins_manager.load()
+      plugins_manager.uninstall_plugin("plugin1")
+      assert.is_true(uninstalled)
     end)
 
     it("should not call uninstall on a non-existent plugin", function()
-        local spy = require('luassert.spy')
-        local fake_plugin = { name = "plugin1", uninstall = spy.create() }
-        local fake_plugins = { fake_plugin }
-        mock_plugins_loader.load_plugins = function() return fake_plugins end
-        plugins_manager.load()
-        plugins_manager.uninstall_plugin("non_existent_plugin")
-        assert.spy(fake_plugin.uninstall).was_not.called()
+      local uninstalled = false
+      local fake_plugin = { name = "plugin1", uninstall = function() uninstalled = true end }
+      local fake_plugins = { fake_plugin }
+      mock_plugins_loader.load_plugins = function() return fake_plugins end
+      plugins_manager.load()
+      plugins_manager.uninstall_plugin("non_existent_plugin")
+      assert.is_false(uninstalled)
     end)
   end)
 end)

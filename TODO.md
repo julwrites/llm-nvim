@@ -15,4 +15,5 @@
   - [x] Refactor `set_model_under_cursor`
 - [x] Fix the existing bugs.
   - [x] Fix schemas_manager tests (round 3)
+  - [x] Refactor all manager tests
 - [ ] Add more features to the plugin.
