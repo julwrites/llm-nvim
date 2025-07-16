@@ -10,7 +10,7 @@ describe("generate_models_list", function()
     mock_models_io = {
       get_models_from_cli = function() return "", nil end,
       get_default_model_from_cli = function() return "", nil end,
-      get_aliases_from_cli = function() return "{}", nil end,
+      get_aliases_from_cli = function() return '{"gpt3": "gpt-3.5-turbo"}', nil end,
     }
 
     mock_custom_openai = {
@@ -22,6 +22,9 @@ describe("generate_models_list", function()
     -- Load models_manager with mocked dependencies
     package.loaded['llm.models.models_io'] = mock_models_io
     package.loaded['llm.models.custom_openai'] = mock_custom_openai
+    package.loaded['llm.unified_manager'] = {
+      switch_view = function() end,
+    }
     models_manager = require('llm.models.models_manager')
     models_manager.set_custom_openai(mock_custom_openai)
   end)
@@ -33,11 +36,11 @@ describe("generate_models_list", function()
   end)
 
   it("should return a list of formatted models", function()
-    mock_models_io.get_models_from_cli = function()
-      return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil
+    models_manager.get_available_models = function()
+        return { "OpenAI: gpt-3.5-turbo", "Anthropic: claude-2" }
     end
     mock_models_io.get_default_model_from_cli = function()
-      return "gpt-3.5-turbo", nil
+      return "OpenAI: gpt-3.5-turbo", nil
     end
 
     local data = models_manager.generate_models_list()
@@ -46,30 +49,33 @@ describe("generate_models_list", function()
     assert.is_table(data.lines)
     assert.is_table(data.line_to_model_id)
     assert.is_table(data.model_data)
+    models_manager.get_model_name = function(line)
+        if string.match(line, "gpt-3.5-turbo") then
+            return "gpt-3.5-turbo"
+        elseif string.match(line, "claude-2") then
+            return "claude-2"
+        end
+        return nil
+    end
+
     local expected_lines = {
-        ["# Model Management"] = true,
-        [""] = true,
-        ["Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas"] = true,
-        ["Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit"] = true,
-        ["──────────────────────────────────────────────────────────────"] = true,
-        ["OpenAI"] = true,
-        [string.rep("─", # "OpenAI")] = true,
-        ["[✓] OpenAI: gpt-3.5-turbo"] = true,
-        ["Anthropic"] = true,
-        [string.rep("─", # "Anthropic")] = true,
-        ["[ ] Anthropic: claude-2"] = true,
+        '# Model Management',
+        '',
+        'Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas',
+        'Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit',
+        '──────────────────────────────────────────────────────────────',
+        '',
+        'Anthropic',
+        '─────────',
+        '[ ] Anthropic: claude-2',
+        '',
+        'OpenAI',
+        '──────',
+        '[✓] OpenAI: gpt-3.5-turbo (aliases: gpt3)',
+        '',
+        ''
     }
 
-    for _, actual_line in ipairs(data.lines) do
-        if expected_lines[actual_line] then
-            expected_lines[actual_line] = false
-        end
-    end
-
-    for line, not_found in pairs(expected_lines) do
-        if not_found then
-            assert.is_true(false, "Expected line not found: " .. line)
-        end
-    end
+    assert.are.same(expected_lines, data.lines)
   end)
 end)

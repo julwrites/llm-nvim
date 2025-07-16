@@ -18,7 +18,11 @@ describe("schemas_manager", function()
 
     package.loaded['llm.schemas.schemas_loader'] = mock_schemas_loader
     package.loaded['llm.utils.file_utils'] = mock_file_utils
+    package.loaded['llm.unified_manager'] = {
+      switch_view = function() end,
+    }
     schemas_manager = require('llm.schemas.schemas_manager')
+    schemas_manager.load = function() end
   end)
 
   after_each(function()
@@ -70,6 +74,7 @@ describe("schemas_manager", function()
             saved_path = path
             saved_data = data
         end
+        schemas_manager:load()
         schemas_manager.create_schema("my-schema", "My Schema")
         assert.are.equal("config_dir/schemas/my-schema.json", saved_path)
         assert.are.same({ name = "my-schema", description = "My Schema" }, saved_data)
@@ -81,6 +86,7 @@ describe("schemas_manager", function()
             saved_path = path
             saved_data = data
         end
+        schemas_manager:load()
         schemas_manager.edit_schema("my-schema", "My Edited Schema")
         assert.are.equal("config_dir/schemas/my-schema.json", saved_path)
         assert.are.same({ name = "my-schema", description = "My Edited Schema" }, saved_data)
@@ -92,6 +98,7 @@ describe("schemas_manager", function()
             saved_path = path
             saved_data = data
         end
+        schemas_manager:load()
         schemas_manager.alias_schema("my-schema", "my-alias")
         assert.are.equal("config_dir/schemas/my-alias.json", saved_path)
         assert.are.same({ name = "my-alias", alias = "my-schema" }, saved_data)

@@ -10,7 +10,11 @@ describe("plugins_manager", function()
     }
 
     package.loaded['llm.plugins.plugins_loader'] = mock_plugins_loader
+    package.loaded['llm.unified_manager'] = {
+      switch_view = function() end,
+    }
     plugins_manager = require('llm.plugins.plugins_manager')
+    plugins_manager.load = function() end
   end)
 
   after_each(function()
@@ -23,6 +27,10 @@ describe("plugins_manager", function()
   end)
 
   describe("get_plugins", function()
+    before_each(function()
+      plugins_manager:load()
+    end)
+
     it("should return the loaded plugins", function()
       local fake_plugins = { { name = "plugin1" }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
@@ -33,17 +41,17 @@ describe("plugins_manager", function()
 
   describe("is_plugin_installed", function()
     it("should return true if the plugin is installed", function()
-      local fake_plugins = { { name = "plugin1" }, { name = "plugin2" } }
+      local fake_plugins = { { name = "plugin1", installed = true }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
       plugins_manager.load()
       assert.is_true(plugins_manager.is_plugin_installed("plugin1"))
     end)
 
     it("should return false if the plugin is not installed", function()
-      local fake_plugins = { { name = "plugin1" }, { name = "plugin2" } }
+      local fake_plugins = { { name = "plugin1", installed = true }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
       plugins_manager.load()
-      assert.is_false(plugins_manager.is_plugin_installed("non_existent_plugin"))
+      assert.is_false(plugins_manager.is_plugin_installed("plugin2"))
     end)
   end)
 

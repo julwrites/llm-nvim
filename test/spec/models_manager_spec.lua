@@ -369,7 +369,7 @@ describe("models_manager", function()
         }
         package.loaded['llm.utils.file_utils'] = mock_file_utils
         models_manager = require('llm.models.models_manager')
-
+        models_manager:load()
         models_manager.add_custom_model("my-custom-model", "My Custom Model")
         assert.spy(mock_file_utils.save_json).was.called_with("config_dir/custom_models/my-custom-model.json", { model_id = "my-custom-model", model_name = "My Custom Model" })
     end)
@@ -381,7 +381,7 @@ describe("models_manager", function()
         }
         package.loaded['llm.utils.file_utils'] = mock_file_utils
         models_manager = require('llm.models.models_manager')
-
+        models_manager:load()
         models_manager.remove_custom_model("my-custom-model")
         assert.spy(mock_file_utils.delete_file).was.called_with("config_dir/custom_models/my-custom-model.json")
     end)
