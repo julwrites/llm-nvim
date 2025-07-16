@@ -63,6 +63,14 @@ describe("llm.utils.text", function()
       local selection = text.get_visual_selection()
       assert.are.equal("hello", selection)
     end)
+
+    it("should return the visual selection for multiline", function()
+      vim.fn.setpos("'<", { 0, 1, 1, 0 })
+      vim.fn.setpos("'>", { 0, 2, 5, 0 })
+      vim.api.nvim_buf_set_lines(0, 0, -1, false, { "hello world", "goodbye world" })
+      local selection = text.get_visual_selection()
+      assert.are.equal("hello world\ngoodb", selection)
+    end)
   end)
 
   describe("escape_pattern", function()
@@ -129,6 +137,48 @@ describe("llm.utils.shell", function()
       shell.command_exists = original_command_exists
     end)
   end)
+
+  describe("update_llm_cli", function()
+    it("should return a success message if the command succeeds", function()
+      local original_command_exists = shell.command_exists
+      shell.command_exists = function() return true end
+      local original_system = vim.fn.system
+      vim.fn.system = function()
+        vim.v.shell_error = 0
+        return "Successfully installed llm"
+      end
+      local result = shell.update_llm_cli()
+      assert.is_true(result.success)
+      assert.is_not_nil(result.message)
+      shell.command_exists = original_command_exists
+      vim.fn.system = original_system
+    end)
+
+    it("should return an error message if the command fails", function()
+      local original_command_exists = shell.command_exists
+      shell.command_exists = function() return false end
+      local result = shell.update_llm_cli()
+      assert.is_false(result.success)
+      assert.is_not_nil(result.message)
+      shell.command_exists = original_command_exists
+    end)
+  end)
+
+  describe("get_last_update_timestamp", function()
+    it("should return a timestamp", function()
+      local timestamp = shell.get_last_update_timestamp()
+      assert.is_number(timestamp)
+    end)
+  end)
+
+  describe("set_last_update_timestamp", function()
+    it("should set the timestamp", function()
+      shell.set_last_update_timestamp()
+      local timestamp = shell.get_last_update_timestamp()
+      assert.is_number(timestamp)
+      assert.is_true(timestamp > 0)
+    end)
+  end)
 end)
 
 
@@ -171,6 +221,25 @@ describe("llm.utils.file_utils", function()
           return "/tmp/llm/logs.db"
         elseif cmd == "dirname '/tmp/llm/logs.db'" then
           return "/tmp/llm"
+        end
+      end
+      file_utils.ensure_config_dir_exists = function() return true end
+
+      local config_dir, config_path = file_utils.get_config_path("test.json")
+      assert.are.equal("/tmp/llm", config_dir)
+      assert.are.equal("/tmp/llm/test.json", config_path)
+
+      shell.safe_shell_command = original_safe_shell_command
+    end)
+
+    it("should handle trailing whitespace in paths", function()
+      local shell = require("llm.utils.shell")
+      local original_safe_shell_command = shell.safe_shell_command
+      shell.safe_shell_command = function(cmd, _)
+        if cmd == "llm logs path" then
+          return "/tmp/llm/logs.db  "
+        elseif cmd == "dirname '/tmp/llm/logs.db'" then
+          return "/tmp/llm  "
         end
       end
       file_utils.ensure_config_dir_exists = function() return true end
