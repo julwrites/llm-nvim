@@ -806,7 +806,7 @@ function M.run_template_under_cursor(bufnr)
 
       -- Close manager and proceed with regular template flow
       require('llm.unified_manager').close()
-      vim.schedule(function()
+      vim.schedule(function(self)
         -- First check if we need parameters
         local params = {}
         local param_names = {}
@@ -829,7 +829,7 @@ function M.run_template_under_cursor(bufnr)
           local function collect_next_param(index)
             if index > #param_names then
               -- All parameters collected, ask for input source
-              M.run_template_with_input(full_template, params)
+              self.run_template_with_input(full_template, params)
               return
             end
 
@@ -850,16 +850,16 @@ function M.run_template_under_cursor(bufnr)
           collect_next_param(1)
         else
           -- No parameters needed, ask for input source directly
-          M.run_template_with_input(full_template, params)
+          self.run_template_with_input(full_template, params)
         end
-      end)
+      end, M)
     end)
   else
     -- Regular template
     require('llm.unified_manager').close()
-    vim.schedule(function()
-      M.run_template_with_params(template_name)
-    end)
+    vim.schedule(function(self)
+      self.run_template_with_params(template_name)
+    end, M)
   end
 end
 
@@ -870,9 +870,9 @@ function M.edit_template_under_cursor(bufnr)
     return
   end
   require('llm.unified_manager').close() -- Close manager before editing
-  vim.schedule(function()
-    M.edit_template(template_name)       -- This function handles reopening the manager
-  end)
+  vim.schedule(function(self)
+    self.edit_template(template_name)       -- This function handles reopening the manager
+  end, M)
 end
 
 function M.delete_template_under_cursor(bufnr)
@@ -918,7 +918,7 @@ function M.view_template_details_under_cursor(bufnr)
   -- Close the unified manager before showing details
   require('llm.unified_manager').close()
 
-  vim.schedule(function()
+  vim.schedule(function(self)
     -- Create a buffer for template details
     local detail_buf = api.nvim_create_buf(false, true)
     api.nvim_buf_set_option(detail_buf, "buftype", "nofile")
@@ -967,7 +967,7 @@ function M.view_template_details_under_cursor(bufnr)
 
     -- Set up highlighting
     styles.setup_buffer_styling(detail_buf)
-  end)
+  end, M)
 end
 
 -- Helper to get template info from buffer variables
@@ -1010,18 +1010,18 @@ function M.run_template_by_name(template_name)
     return
   end
   require('llm.unified_manager').close() -- Close manager if open
-  vim.schedule(function()
-    M.run_template_with_params(template_name)
-  end)
+  vim.schedule(function(self)
+    self.run_template_with_params(template_name)
+  end, M)
 end
 
 -- Edit template from details view (ensure it closes details view first)
 function M.edit_template_from_details(template_name)
   -- Close the current window (template details)
   api.nvim_win_close(0, true)
-  vim.schedule(function()
-    M.edit_template(template_name) -- This handles reopening manager
-  end)
+  vim.schedule(function(self)
+    self.edit_template(template_name) -- This handles reopening manager
+  end, M)
 end
 
 -- Re-export functions from templates_loader
