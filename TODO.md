@@ -13,5 +13,6 @@
 - [x] Refactor the existing code to make it more testable.
   - [x] Refactor `populate_models_buffer`
   - [x] Refactor `set_model_under_cursor`
-- [ ] Fix the existing bugs.
+- [x] Fix the existing bugs.
+  - [x] Fix schemas_manager tests
 - [ ] Add more features to the plugin.
