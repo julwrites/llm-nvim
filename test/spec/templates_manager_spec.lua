@@ -46,7 +46,7 @@ describe("templates_manager", function()
       local fake_templates = { { name = "template1" }, { name = "template2" } }
       mock_templates_loader.load_templates = function() return fake_templates end
       templates_manager:load()
-      assert.are.same(fake_templates, templates_manager.get_templates())
+      assert.are.same(fake_templates, templates_manager:get_templates())
     end)
   end)
 
@@ -55,78 +55,65 @@ describe("templates_manager", function()
       local fake_templates = { { name = "template1" }, { name = "template2" } }
       mock_templates_loader.load_templates = function() return fake_templates end
       templates_manager:load()
-      assert.are.same(fake_templates[1], templates_manager.get_template("template1"))
+      assert.are.same(fake_templates[1], templates_manager:get_template("template1"))
     end)
 
     it("should return nil if the template is not found", function()
       local fake_templates = { { name = "template1" }, { name = "template2" } }
       mock_templates_loader.load_templates = function() return fake_templates end
       templates_manager:load()
-      assert.is_nil(templates_manager.get_template("non_existent_template"))
+      assert.is_nil(templates_manager:get_template("non_existent_template"))
     end)
   end)
 
   describe("delete_template", function()
-    before_each(function()
-      templates_manager:load()
-    end)
-
     it("should call delete on the template", function()
       local deleted = false
       local fake_template = { name = "template1", delete = function() deleted = true end }
       local fake_templates = { fake_template }
       mock_templates_loader.load_templates = function() return fake_templates end
       templates_manager:load()
-      templates_manager.delete_template("template1")
+      templates_manager:delete_template("template1")
       assert.is_true(deleted)
     end)
   end)
 
   describe("create_template", function()
-    before_each(function()
-      templates_manager:load()
-    end)
-
     it("should create a new template", function()
       local saved_path, saved_data
       mock_file_utils.save_json = function(path, data)
         saved_path = path
         saved_data = data
       end
-      templates_manager.create_template("my-template", "My Template")
+      templates_manager:load()
+      templates_manager:create_template("my-template", "My Template")
       assert.are.equal("config_dir/templates/my-template.json", saved_path)
       assert.are.same({ name = "my-template", description = "My Template" }, saved_data)
     end)
   end)
 
   describe("edit_template", function()
-    before_each(function()
-      templates_manager:load()
-    end)
-
     it("should save the edited template", function()
       local saved_path, saved_data
       mock_file_utils.save_json = function(path, data)
         saved_path = path
         saved_data = data
       end
-      templates_manager.edit_template("my-template", "My Edited Template")
+      templates_manager:load()
+      templates_manager:edit_template("my-template", "My Edited Template")
       assert.are.equal("config_dir/templates/my-template.json", saved_path)
       assert.are.same({ name = "my-template", description = "My Edited Template" }, saved_data)
     end)
   end)
 
   describe("run_template", function()
-    before_each(function()
-      templates_manager:load()
-    end)
-
     it("should run a template", function()
       local command_run
       mock_shell.run = function(command)
         command_run = command
       end
-      templates_manager.run_template("my-template")
+      templates_manager:load()
+      templates_manager:run_template("my-template")
       assert.are.equal("llm -t my-template", command_run)
     end)
   end)

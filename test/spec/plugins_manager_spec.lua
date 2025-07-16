@@ -27,15 +27,11 @@ describe("plugins_manager", function()
   end)
 
   describe("get_plugins", function()
-    before_each(function()
-      plugins_manager:load()
-    end)
-
     it("should return the loaded plugins", function()
       local fake_plugins = { { name = "plugin1" }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
       plugins_manager.load()
-      assert.are.same(fake_plugins, plugins_manager.get_plugins())
+      assert.are.same(fake_plugins, plugins_manager:get_plugins())
     end)
   end)
 
@@ -43,15 +39,15 @@ describe("plugins_manager", function()
     it("should return true if the plugin is installed", function()
       local fake_plugins = { { name = "plugin1", installed = true }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
-      plugins_manager.load()
-      assert.is_true(plugins_manager.is_plugin_installed("plugin1"))
+      plugins_manager:load()
+      assert.is_true(plugins_manager:is_plugin_installed("plugin1"))
     end)
 
     it("should return false if the plugin is not installed", function()
       local fake_plugins = { { name = "plugin1", installed = true }, { name = "plugin2" } }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
-      plugins_manager.load()
-      assert.is_false(plugins_manager.is_plugin_installed("plugin2"))
+      plugins_manager:load()
+      assert.is_false(plugins_manager:is_plugin_installed("plugin2"))
     end)
   end)
 
@@ -84,7 +80,7 @@ describe("plugins_manager", function()
       local fake_plugins = { fake_plugin }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
       plugins_manager.load()
-      plugins_manager.uninstall_plugin("plugin1")
+      plugins_manager:uninstall_plugin("plugin1")
       assert.is_true(uninstalled)
     end)
 
@@ -94,7 +90,7 @@ describe("plugins_manager", function()
       local fake_plugins = { fake_plugin }
       mock_plugins_loader.load_plugins = function() return fake_plugins end
       plugins_manager.load()
-      plugins_manager.uninstall_plugin("non_existent_plugin")
+      plugins_manager:uninstall_plugin("plugin2")
       assert.is_false(uninstalled)
     end)
   end)

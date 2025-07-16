@@ -57,8 +57,7 @@ describe("fragments_manager", function()
         saved_path = path
         saved_data = data
       end
-      fragments_manager:load()
-      fragments_manager.add_file_as_fragment("/path/to/file.txt")
+      fragments_manager:add_file_as_fragment("/path/to/file.txt")
       assert.are.equal("config_dir/fragments/file.txt.json", saved_path)
       assert.are.same({ path = "/path/to/file.txt" }, saved_data)
     end)
@@ -70,22 +69,20 @@ describe("fragments_manager", function()
       mock_shell.run = function(command)
         command_run = command
       end
+      fragments_manager:load()
       fragments_manager.add_github_repo_as_fragment("owner/repo")
       assert.are.equal("llm fragments add-repo owner/repo", command_run)
     end)
   end)
 
   describe("prompt_with_fragment", function()
-    before_each(function()
-      fragments_manager:load()
-    end)
-
     it("should prompt with a fragment", function()
       local command_run
       mock_shell.run = function(command)
         command_run = command
       end
-      fragments_manager.prompt_with_fragment("my-fragment")
+      fragments_manager:load()
+      fragments_manager:prompt_with_fragment("my-fragment")
       assert.are.equal("llm prompt -s 'my-fragment'", command_run)
     end)
   end)

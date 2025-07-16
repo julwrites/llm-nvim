@@ -41,19 +41,21 @@ describe("schemas_manager", function()
     before_each(function()
       fake_schemas = { { name = "schema1" }, { name = "schema2" } }
       mock_schemas_loader.load_schemas = function() return fake_schemas end
-      schemas_manager:load()
     end)
 
     it("should return the loaded schemas", function()
-      assert.are.same(fake_schemas, schemas_manager.get_schemas())
+      schemas_manager:load()
+      assert.are.same(fake_schemas, schemas_manager:get_schemas())
     end)
 
     it("should return the correct schema by name", function()
-      assert.are.same(fake_schemas[1], schemas_manager.get_schema("schema1"))
+      schemas_manager:load()
+      assert.are.same(fake_schemas[1], schemas_manager:get_schema("schema1"))
     end)
 
     it("should return nil if the schema is not found", function()
-      assert.is_nil(schemas_manager.get_schema("non_existent_schema"))
+      schemas_manager:load()
+      assert.is_nil(schemas_manager:get_schema("non_existent_schema"))
     end)
   end)
 
@@ -64,7 +66,7 @@ describe("schemas_manager", function()
         local fake_schemas = { fake_schema }
         mock_schemas_loader.load_schemas = function() return fake_schemas end
         schemas_manager:load()
-        schemas_manager.delete_schema("schema1")
+        schemas_manager:delete_schema("schema1")
         assert.is_true(deleted)
     end)
 
@@ -75,7 +77,7 @@ describe("schemas_manager", function()
             saved_data = data
         end
         schemas_manager:load()
-        schemas_manager.create_schema("my-schema", "My Schema")
+        schemas_manager:create_schema("my-schema", "My Schema")
         assert.are.equal("config_dir/schemas/my-schema.json", saved_path)
         assert.are.same({ name = "my-schema", description = "My Schema" }, saved_data)
     end)
@@ -87,7 +89,7 @@ describe("schemas_manager", function()
             saved_data = data
         end
         schemas_manager:load()
-        schemas_manager.edit_schema("my-schema", "My Edited Schema")
+        schemas_manager:edit_schema("my-schema", "My Edited Schema")
         assert.are.equal("config_dir/schemas/my-schema.json", saved_path)
         assert.are.same({ name = "my-schema", description = "My Edited Schema" }, saved_data)
     end)
@@ -99,7 +101,7 @@ describe("schemas_manager", function()
             saved_data = data
         end
         schemas_manager:load()
-        schemas_manager.alias_schema("my-schema", "my-alias")
+        schemas_manager:alias_schema("my-schema", "my-alias")
         assert.are.equal("config_dir/schemas/my-alias.json", saved_path)
         assert.are.same({ name = "my-alias", alias = "my-schema" }, saved_data)
     end)
