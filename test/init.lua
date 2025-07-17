@@ -25,13 +25,13 @@ function M.setup()
 
   -- Load the plugin
   -- Use pcall to catch any errors during loading
-  local ok, err = pcall(function()
-    dofile(vim.fn.fnamemodify('./plugin/llm.lua', ':p'))
-  end)
+  -- local ok, err = pcall(function()
+  --   dofile(vim.fn.fnamemodify('./plugin/llm.lua', ':p'))
+  -- end)
 
-  if not ok then
-    print("Error loading plugin: " .. tostring(err))
-  end
+  -- if not ok then
+  --   print("Error loading plugin: " .. tostring(err))
+  -- end
 
   -- Make sure the module is loaded and available globally for tests
   _G.llm = require('llm')
