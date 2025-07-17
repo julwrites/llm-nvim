@@ -95,30 +95,34 @@ describe("templates_manager", function()
 
   describe("delete_template_under_cursor", function()
     it("should call delete on the template after confirmation", function()
-        -- Mock get_template_info_under_cursor to return a template
         spy.on(templates_manager, 'get_template_info_under_cursor', function()
             return "template1", { start_line = 1, end_line = 1 }
         end)
+        local schedule_spy = spy.on(vim, 'schedule')
 
-        -- Mock floating_confirm to simulate user confirmation
-        local floating_confirm_spy = spy.on(package.loaded['llm.utils'], 'floating_confirm')
+        -- Mock floating_confirm to immediately confirm
+        package.loaded['llm.utils'].floating_confirm = function(opts)
+            opts.on_confirm(true)
+        end
 
         templates_manager.delete_template_under_cursor(1)
 
-        -- Simulate the callback from floating_confirm
-        floating_confirm_spy.calls[1].refs[1].on_confirm(true)
+        -- Manually trigger the scheduled function
+        schedule_spy.calls[1].refs[1]()
 
-        -- Check that delete_template was called
         assert.spy(mock_templates_loader.delete_template).was.called_with("template1")
+        schedule_spy:revert()
     end)
   end)
 
   describe("create_template_from_manager", function()
     it("should call create_template", function()
       local create_template_spy = spy.on(templates_manager, 'create_template')
+      local schedule_spy = spy.on(vim, 'schedule')
       templates_manager.create_template_from_manager(1)
-      vim.defer_fn(function() end, 0) -- Simulate the scheduler
+      schedule_spy.calls[1].refs[1]()
       assert.spy(create_template_spy).was.called()
+      schedule_spy:revert()
     end)
   end)
 
@@ -128,27 +132,25 @@ describe("templates_manager", function()
             return "template1", { is_loader = false }
         end)
       local run_template_with_params_spy = spy.on(templates_manager, 'run_template_with_params')
-
+      local schedule_spy = spy.on(vim, 'schedule')
       templates_manager.run_template_under_cursor(1)
-      vim.defer_fn(function() end, 0) -- Simulate the scheduler
-
+      schedule_spy.calls[1].refs[1]()
       assert.spy(run_template_with_params_spy).was.called_with("template1")
+      schedule_spy:revert()
     end)
 
     it("should handle template loaders", function()
         spy.on(templates_manager, 'get_template_info_under_cursor', function()
             return "loader:test_loader", { is_loader = true, prefix = "test_loader" }
         end)
-        local floating_input_spy = spy.on(package.loaded['llm.utils'], 'floating_input')
-        mock_templates_loader.get_template_details = function() return { prompt = "test" } end
+        mock_templates_loader.get_template_details = spy.new(function() return { prompt = "test" } end)
+
+        package.loaded['llm.utils'].floating_input = function(opts, cb)
+            cb("owner/repo/template")
+        end
 
         templates_manager.run_template_under_cursor(1)
 
-        -- Simulate user providing a path
-        floating_input_spy.calls[1].refs[2]("owner/repo/template")
-
-        -- We can't easily test the rest of the flow due to nested callbacks
-        -- But we can assert that we tried to get template details for the full path
         assert.spy(mock_templates_loader.get_template_details).was.called_with("test_loader:owner/repo/template")
     end)
   end)
@@ -174,7 +176,9 @@ describe("templates_manager", function()
       ui_select_spy.calls[4].refs[3]("No options")
       -- Step 7: Parameters (should be skipped)
       -- Step 8: Extract
-      package.loaded['llm.utils'].floating_confirm({ on_confirm = function(c) c(true) end })
+        package.loaded['llm.utils'].floating_confirm = function(opts, cb)
+            cb("Yes")
+        end
       -- Step 9: Schema
       ui_select_spy.calls[5].refs[3]("No schema")
 
@@ -188,7 +192,10 @@ describe("templates_manager", function()
         local floating_input_spy = spy.on(package.loaded['llm.utils'], 'floating_input')
         local ui_select_spy = spy.on(vim.ui, 'select')
         local ui_input_spy = spy.on(vim.ui, 'input')
-        spy.on(require('llm.models.models_manager'), 'get_available_models', function() return {"model1"} end)
+        package.loaded['llm.models.models_manager'] = {
+            get_available_models = function() return {"model1"} end,
+            extract_model_name = function(m) return m end,
+        }
 
         templates_manager.create_template()
 
@@ -208,7 +215,9 @@ describe("templates_manager", function()
         -- Step 6: Options
         ui_select_spy.calls[5].refs[3]("No options")
         -- Step 8: Extract
-        package.loaded['llm.utils'].floating_confirm({ on_confirm = function(c) c(false) end })
+        package.loaded['llm.utils'].floating_confirm = function(opts, cb)
+            cb("No")
+        end
         -- Step 9: Schema
         ui_select_spy.calls[6].refs[3]("No schema")
 
