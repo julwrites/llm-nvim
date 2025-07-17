@@ -2,88 +2,122 @@
 
 describe("fragments_manager", function()
   local fragments_manager
+  local spy
   local mock_fragments_loader
-  local mock_file_utils
-  local mock_shell
 
   before_each(function()
+    spy = require('luassert.spy')
     mock_fragments_loader = {
-      load_fragments = function() return {} end,
-    }
-
-    mock_file_utils = {
-      save_json = function(_, _) end,
-      get_config_dir = function() return "config_dir" end,
-    }
-
-    mock_shell = {
-      run = function(_) end,
+      get_fragments = function()
+        return {
+          {
+            hash = 'hash1',
+            aliases = { 'alias1' },
+            source = 'source1',
+            content = 'content1',
+            datetime = 'datetime1',
+          },
+        }
+      end,
+      get_all_fragments = function()
+        return {
+          {
+            hash = 'hash1',
+            aliases = { 'alias1' },
+            source = 'source1',
+            content = 'content1',
+            datetime = 'datetime1',
+          },
+          {
+            hash = 'hash2',
+            aliases = {},
+            source = 'source2',
+            content = 'content2',
+            datetime = 'datetime2',
+          },
+        }
+      end,
+      set_fragment_alias = spy.new(function() return true end),
+      remove_fragment_alias = spy.new(function() return true end),
+      select_file_as_fragment = spy.new(function() end),
+      add_github_fragment = spy.new(function() end),
     }
 
     package.loaded['llm.fragments.fragments_loader'] = mock_fragments_loader
-    package.loaded['llm.utils.file_utils'] = mock_file_utils
-    package.loaded['llm.utils.shell'] = mock_shell
     package.loaded['llm.unified_manager'] = {
       switch_view = function() end,
     }
+    package.loaded['llm.utils'] = {
+        floating_input = function(_, cb) cb("test") end,
+        floating_confirm = function(opts) opts.on_confirm(true) end,
+        create_floating_window = function() end,
+    }
+    package.loaded['llm'] = {
+        prompt = spy.new(function() end)
+    }
+
     fragments_manager = require('llm.fragments.fragments_manager')
-    fragments_manager.load = function() end
   end)
 
   after_each(function()
     package.loaded['llm.fragments.fragments_loader'] = nil
     package.loaded['llm.fragments.fragments_manager'] = nil
-    package.loaded['llm.utils.file_utils'] = nil
-    package.loaded['llm.utils.shell'] = nil
+    package.loaded['llm.unified_manager'] = nil
+    package.loaded['llm.utils'] = nil
+    package.loaded['llm'] = nil
   end)
 
   it("should be a table", function()
     assert.is_table(fragments_manager)
   end)
 
-  describe("get_fragments", function()
-    it("should return the loaded fragments", function()
-      local fake_fragments = { { name = "fragment1" }, { name = "fragment2" } }
-      mock_fragments_loader.load_fragments = function() return fake_fragments end
-      fragments_manager:load()
-      assert.are.same(fake_fragments, fragments_manager.get_fragments())
+  describe("set_alias_for_fragment_under_cursor", function()
+    it("should set an alias for a fragment", function()
+      vim.b[1] = {
+        line_to_fragment = { [1] = "hash1" },
+        fragment_data = { hash1 = { start_line = 1, end_line = 6 } },
+      }
+      vim.api.nvim_win_set_cursor(0, { 1, 0 })
+      fragments_manager.set_alias_for_fragment_under_cursor(1)
+      assert.spy(mock_fragments_loader.set_fragment_alias).was.called_with("hash1", "test")
     end)
   end)
 
-  describe("add_file_as_fragment", function()
-    it("should add a file as a fragment", function()
-      local saved_path, saved_data
-      mock_file_utils.save_json = function(path, data)
-        saved_path = path
-        saved_data = data
-      end
-      fragments_manager:add_file_as_fragment("/path/to/file.txt")
-      assert.are.equal("config_dir/fragments/file.txt.json", saved_path)
-      assert.are.same({ path = "/path/to/file.txt" }, saved_data)
+  describe("remove_alias_from_fragment_under_cursor", function()
+    it("should remove an alias from a fragment", function()
+        vim.b[1] = {
+            line_to_fragment = { [1] = "hash1" },
+            fragment_data = { hash1 = { start_line = 1, end_line = 6, aliases = { "alias1" } } },
+        }
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        fragments_manager.remove_alias_from_fragment_under_cursor(1)
+        assert.spy(mock_fragments_loader.remove_fragment_alias).was.called_with("alias1")
     end)
   end)
 
-  describe("add_github_repo_as_fragment", function()
-    it("should add a github repo as a fragment", function()
-      local command_run
-      mock_shell.run = function(command)
-        command_run = command
-      end
-      fragments_manager:load()
-      fragments_manager.add_github_repo_as_fragment("owner/repo")
-      assert.are.equal("llm fragments add-repo owner/repo", command_run)
+  describe("add_file_fragment", function()
+    it("should add a file fragment", function()
+      fragments_manager.add_file_fragment(1)
+      assert.spy(mock_fragments_loader.select_file_as_fragment).was.called()
     end)
   end)
 
-  describe("prompt_with_fragment", function()
+  describe("add_github_fragment_from_manager", function()
+    it("should add a github fragment", function()
+      fragments_manager.add_github_fragment_from_manager(1)
+      assert.spy(mock_fragments_loader.add_github_fragment).was.called()
+    end)
+  end)
+
+  describe("prompt_with_fragment_under_cursor", function()
     it("should prompt with a fragment", function()
-      local command_run
-      mock_shell.run = function(command)
-        command_run = command
-      end
-      fragments_manager:load()
-      fragments_manager:prompt_with_fragment("my-fragment")
-      assert.are.equal("llm prompt -s 'my-fragment'", command_run)
+        vim.b[1] = {
+            line_to_fragment = { [1] = "hash1" },
+            fragment_data = { hash1 = { start_line = 1, end_line = 6, aliases = { "alias1" } } },
+        }
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        fragments_manager.prompt_with_fragment_under_cursor(1)
+        assert.spy(package.loaded['llm'].prompt).was.called_with("test", { "alias1" })
     end)
   end)
 end)
