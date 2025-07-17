@@ -23,18 +23,22 @@ function M.setup()
   -- Clear any existing mappings
   vim.cmd('mapclear')
 
+  print("Loading plugin...")
   -- Load the plugin
   -- Use pcall to catch any errors during loading
-  -- local ok, err = pcall(function()
-  --   dofile(vim.fn.fnamemodify('./plugin/llm.lua', ':p'))
-  -- end)
+  local ok, err = pcall(function()
+    dofile(vim.fn.fnamemodify('./plugin/llm.lua', ':p'))
+  end)
 
-  -- if not ok then
-  --   print("Error loading plugin: " .. tostring(err))
-  -- end
+  if not ok then
+    print("Error loading plugin: " .. tostring(err))
+  end
+  print("Plugin loaded.")
 
   -- Make sure the module is loaded and available globally for tests
+  print("Loading llm module...")
   _G.llm = require('llm')
+  print("llm module loaded.")
 end
 
 -- Mock function for llm command execution
