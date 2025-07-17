@@ -95,19 +95,19 @@ describe("templates_manager", function()
 
   describe("delete_template_under_cursor", function()
     it("should call delete on the template after confirmation", function()
-        spy.on(templates_manager, 'get_template_info_under_cursor', function()
-            return "template1", { start_line = 1, end_line = 1 }
-        end)
+        vim.b[1] = {
+            line_to_template = { [1] = "template1" },
+            template_data = { template1 = { start_line = 1, end_line = 1 } }
+        }
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
         local schedule_spy = spy.on(vim, 'schedule')
 
-        -- Mock floating_confirm to immediately confirm
         package.loaded['llm.utils'].floating_confirm = function(opts)
             opts.on_confirm(true)
         end
 
         templates_manager.delete_template_under_cursor(1)
 
-        -- Manually trigger the scheduled function
         schedule_spy.calls[1].refs[1]()
 
         assert.spy(mock_templates_loader.delete_template).was.called_with("template1")
