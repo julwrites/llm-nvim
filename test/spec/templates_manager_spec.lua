@@ -110,7 +110,9 @@ describe("templates_manager", function()
 
         templates_manager.delete_template_under_cursor(1)
 
-        scheduled_function()
+        if scheduled_function then
+            scheduled_function()
+        end
 
         assert.spy(mock_templates_loader.delete_template).was.called_with("template1")
     end)
@@ -119,11 +121,15 @@ describe("templates_manager", function()
   describe("create_template_from_manager", function()
     it("should call create_template", function()
       local create_template_spy = spy.on(templates_manager, 'create_template')
-      local schedule_spy = spy.on(vim, 'schedule')
+      local scheduled_function
+      vim.schedule = function(fn)
+        scheduled_function = fn
+      end
       templates_manager.create_template_from_manager(1)
-      schedule_spy.calls[1].refs[1]()
+      if scheduled_function then
+        scheduled_function()
+      end
       assert.spy(create_template_spy).was.called()
-      schedule_spy:revert()
     end)
   end)
 
@@ -138,7 +144,9 @@ describe("templates_manager", function()
         scheduled_function = fn
       end
       templates_manager.run_template_under_cursor(1)
-      scheduled_function(templates_manager)
+      if scheduled_function then
+        scheduled_function(templates_manager)
+      end
       assert.spy(run_template_with_params_spy).was.called_with("template1")
     end)
 
