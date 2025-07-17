@@ -98,7 +98,11 @@ describe("templates_manager", function()
         spy.on(templates_manager, 'get_template_info_under_cursor', function()
             return "template1", { start_line = 1, end_line = 1 }
         end)
-        local schedule_spy = spy.on(vim, 'schedule')
+
+        local scheduled_function
+        vim.schedule = function(fn)
+            scheduled_function = fn
+        end
 
         package.loaded['llm.utils'].floating_confirm = function(opts)
             opts.on_confirm(true)
@@ -106,10 +110,9 @@ describe("templates_manager", function()
 
         templates_manager.delete_template_under_cursor(1)
 
-        schedule_spy.calls[1].refs[1]()
+        scheduled_function()
 
         assert.spy(mock_templates_loader.delete_template).was.called_with("template1")
-        schedule_spy:revert()
     end)
   end)
 
@@ -130,11 +133,13 @@ describe("templates_manager", function()
             return "template1", { is_loader = false }
         end)
       local run_template_with_params_spy = spy.on(templates_manager, 'run_template_with_params')
-      local schedule_spy = spy.on(vim, 'schedule')
+      local scheduled_function
+      vim.schedule = function(fn)
+        scheduled_function = fn
+      end
       templates_manager.run_template_under_cursor(1)
-      schedule_spy.calls[1].refs[1](templates_manager)
+      scheduled_function(templates_manager)
       assert.spy(run_template_with_params_spy).was.called_with("template1")
-      schedule_spy:revert()
     end)
 
     it("should handle template loaders", function()
@@ -143,11 +148,13 @@ describe("templates_manager", function()
         end)
         mock_templates_loader.get_template_details = spy.new(function() return { prompt = "test" } end)
 
+        local floating_input_cb
         package.loaded['llm.utils'].floating_input = function(opts, cb)
-            cb("owner/repo/template")
+            floating_input_cb = cb
         end
 
         templates_manager.run_template_under_cursor(1)
+        floating_input_cb("owner/repo/template")
 
         assert.spy(mock_templates_loader.get_template_details).was.called_with("test_loader:owner/repo/template")
     end)
