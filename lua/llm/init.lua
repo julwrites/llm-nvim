@@ -2,8 +2,8 @@
 -- License: Apache 2.0
 
 local M = {}
-local api = require('llm.api')
 local facade = require('llm.facade')
+local loaders = require('llm.core.loaders')
 
 -- Setup function for configuration
 function M.setup(opts)
@@ -12,24 +12,20 @@ function M.setup(opts)
   M.config.setup(opts or {})
 
   -- Initialize styles
-  require('llm.styles').setup_highlights()
+  require('llm.ui.styles').setup_highlights()
 
   -- Initialize facade with managers
   facade.init()
 
-  -- Refresh plugins cache on startup if enabled
-  if not M.config.get("no_auto_refresh_plugins") then
-    vim.defer_fn(function()
-      require('llm.plugins.plugins_loader').refresh_plugins_cache()
-    end, 1000) -- Longer delay to avoid startup impact
-  end
+  -- Load all data
+  loaders.load_all()
 
   -- Auto-update LLM CLI check
   local auto_update_cli = M.config.get('auto_update_cli')
   local auto_update_interval_days = M.config.get('auto_update_interval_days')
 
   if auto_update_cli then
-    local shell = require('llm.utils.shell')
+    local shell = require('llm.core.utils.shell')
     local last_update_ts = shell.get_last_update_timestamp()
     local current_ts = os.time()
     local days_since_last_update = (current_ts - last_update_ts) / (60 * 60 * 24)
@@ -45,7 +41,7 @@ function M.setup(opts)
           if result.message and string.len(result.message) > 0 then
             msg = msg .. " Details:\n" .. result.message
              -- Check if notify module is available to use more advanced notification
-            local notify_mod = require('llm.utils.notify')
+            local notify_mod = require('llm.core.utils.notify')
             if notify_mod and notify_mod.notify then
               notify_mod.notify(msg, vim.log.levels.WARN, {title = "LLM Auto-Update"})
             else
@@ -63,30 +59,6 @@ function M.setup(opts)
 
   return M
 end
-
--- Initialize config after module definition
-local function initialize_config()
-  M.config = require('llm.config')
-  M.config.setup()
-  if not M.config then
-    M.config = { get = function() return {} end }
-    require('llm.errors').handle('config', 
-      "Failed to initialize config, using empty fallback", nil, require('llm.errors').levels.WARNING)
-  end
-end
-
--- Initialize config immediately after module definition
-initialize_config()
-
--- Initialize config path cache by making a call early
--- This helps ensure the config directory is known before managers need it
-vim.defer_fn(function()
-  require('llm.utils').get_config_path("")
-  -- Refresh plugins cache in background after a short delay
-  vim.defer_fn(function()
-    require('llm.plugins.plugins_loader').refresh_plugins_cache()
-  end, 500) -- Longer delay to avoid startup impact
-end, 100)   -- Small delay to avoid blocking startup
 
 -- Expose facade functions
 for k, v in pairs(facade) do

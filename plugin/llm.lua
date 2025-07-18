@@ -17,7 +17,7 @@ if not ok then
   -- If the main module fails to load, notify the user and stop.
   -- The error message from the require will provide details.
   if not vim.env.LLM_NVIM_TEST then
-    local shell = require('llm.utils.shell')
+    local shell = require('llm.core.utils.shell')
     if not shell.check_llm_installed() then
       vim.notify(
         "llm CLI not found.\n" ..
@@ -37,7 +37,7 @@ local config = require("llm.config") -- Load config module
 local function manual_cli_update()
   vim.notify("Starting LLM CLI update...", vim.log.levels.INFO)
   vim.defer_fn(function()
-    local shell = require('llm.utils.shell')
+    local shell = require('llm.core.utils.shell')
     local result = shell.update_llm_cli()
 
     if result and result.success then
@@ -61,8 +61,8 @@ local command_handlers = {
     require('llm.commands').prompt_with_selection(prompt, nil, is_range)
   end,
   explain = function() require('llm.commands').explain_code() end,
-  schema = function() require('llm.schemas.schemas_manager').select_schema() end,
-  template = function() require('llm.templates.templates_manager').select_template() end,
+  schema = function() require('llm.managers.schemas_manager').select_schema() end,
+  template = function() require('llm.managers.templates_manager').select_template() end,
   fragments = function() llm.interactive_prompt_with_fragments() end,
   update = manual_cli_update
 }
@@ -139,41 +139,3 @@ end, {
   end,
   desc = "Toggle LLM Unified Manager (optional view: models|plugins|keys|fragments|templates|schemas)"
 })
-
--- Test environment exports
-local function setup_test_exports()
-  if not vim.env.LLM_NVIM_TEST then return end
-
-  local test_exports = {
-    select_model = llm.select_model,
-    get_available_models = llm.get_available_models,
-    extract_model_name = llm.extract_model_name,
-    set_default_model = llm.set_default_model,
-    get_available_plugins = llm.get_available_plugins,
-    get_installed_plugins = llm.get_installed_plugins,
-    is_plugin_installed = llm.is_plugin_installed,
-    install_plugin = llm.install_plugin,
-    uninstall_plugin = llm.uninstall_plugin,
-    get_fragments = llm.get_fragments,
-    set_fragment_alias = llm.set_fragment_alias,
-    remove_fragment_alias = llm.remove_fragment_alias,
-    get_stored_keys = llm.get_stored_keys,
-    is_key_set = llm.is_key_set,
-    set_api_key = llm.set_api_key,
-    remove_api_key = llm.remove_api_key,
-    get_schemas = llm.get_schemas,
-    get_schema = llm.get_schema,
-    save_schema = llm.save_schema,
-    run_schema = llm.run_schema,
-    get_templates = llm.get_templates,
-    get_template_details = llm.get_template_details,
-    delete_template = llm.delete_template,
-    run_template = llm.run_template
-  }
-
-  for name, fn in pairs(test_exports) do
-    _G[name] = fn
-  end
-end
-
-setup_test_exports()
