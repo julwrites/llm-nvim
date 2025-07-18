@@ -38,14 +38,13 @@ local function configure_buffer(buf, opts)
 end
 
 function M.create_split_buffer()
-  local buf = api.nvim_create_buf()
-  api.nvim_open_win(buf, true)
+  local buf = api.nvim_create_buf(false, true)
+  api.nvim_open_win(buf, true, {})
   return buf
 end
 
 function M.create_buffer_with_content(content, buffer_name, filetype)
-  M.create_split_buffer()
-  local buf = api.nvim_get_current_buf()
+  local buf = M.create_split_buffer()
   configure_buffer(buf, {
     name = buffer_name or 'LLM Output',
     filetype = filetype,
@@ -101,20 +100,40 @@ end
 
 function M.floating_input(opts, on_confirm)
   local buf = api.nvim_create_buf(false, true)
-  local win = api.nvim_open_win(buf, true, get_window_config(0.6, 0.05, opts.prompt or 'Input'))
+  local win = api.nvim_open_win(buf, true, get_window_config(0.6, 1, opts.prompt or 'Input'))
 
   if opts.default then
     api.nvim_buf_set_lines(buf, 0, -1, false, { opts.default })
   end
 
-  set_floating_keymaps(buf, 
-    '<cmd>lua require("llm.utils")._confirm_floating_input()<CR>',
-    '<cmd>lua require("llm.utils")._close_floating_input()<CR>'
+  set_floating_keymaps(buf,
+    '<cmd>lua require("llm.core.utils.ui")._confirm_floating_input()<CR>',
+    '<cmd>lua require("llm.core.utils.ui")._close_floating_input()<CR>'
   )
 
   api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
     if on_confirm then on_confirm(input) end
   end)
+
+  api.nvim_command('startinsert')
+end
+
+function M._confirm_floating_input()
+  local buf = api.nvim_get_current_buf()
+  local win = api.nvim_get_current_win()
+  local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+  local input = table.concat(lines, '\n')
+  local callback = api.nvim_buf_get_var(buf, 'floating_input_callback')
+  api.nvim_win_close(win, true)
+  api.nvim_command('stopinsert')
+  if callback then
+    callback(input)
+  end
+end
+
+function M._close_floating_input()
+  local win = api.nvim_get_current_win()
+  api.nvim_win_close(win, true)
 end
 
 -- Create a floating confirmation dialog with styling
@@ -173,19 +192,30 @@ function M.floating_confirm(opts)
   api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13) -- No
 
   -- Set keymaps with better visual feedback
-  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
     { noremap = true, silent = true, desc = "Confirm action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(true)<CR>',
+  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
     { noremap = true, silent = true, desc = "Confirm action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
-  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.utils")._confirm_floating_dialog(false)<CR>',
+  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
 
   -- Store callback in buffer var
   api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)
+end
+
+function M._confirm_floating_dialog(confirmed)
+  local buf = api.nvim_get_current_buf()
+  local callback = api.nvim_buf_get_var(buf, 'floating_confirm_callback')
+  api.nvim_win_close(api.nvim_get_current_win(), true)
+  if confirmed then
+    callback("Yes")
+  else
+    callback("No")
+  end
 end
 
 return M

@@ -1,7 +1,7 @@
 local M = {}
 
 local config = require('llm.config')
-local shell = require('llm.utils.shell')
+local shell = require('llm.core.utils.shell')
 
 -- Pure path utilities --------------------------------------------------------
 

@@ -63,7 +63,7 @@ end
 -- Execute command and return status, stdout, stderr
 function M.execute(cmd)
   local handle = io.popen(cmd .. " 2>&1", "r")
-  if not handle then 
+  if not handle then
     notify_error("Failed to execute command: " .. cmd)
     return nil, "Failed to execute command"
   end
