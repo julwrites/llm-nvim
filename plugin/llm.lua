@@ -9,6 +9,8 @@ if vim.g.loaded_llm == 1 then
 end
 vim.g.loaded_llm = 1
 
+local shell = require('llm.core.utils.shell')
+
 -- Load the main module from lua/llm/init.lua
 -- This is the primary entry point for the plugin's Lua code.
 -- Plugin managers ensure the 'lua/' directory is in runtimepath before this.
@@ -17,7 +19,6 @@ if not ok then
   -- If the main module fails to load, notify the user and stop.
   -- The error message from the require will provide details.
   if not vim.env.LLM_NVIM_TEST then
-    local shell = require('llm.core.utils.shell')
     if not shell.check_llm_installed() then
       vim.notify(
         "llm CLI not found.\n" ..
@@ -37,7 +38,6 @@ local config = require("llm.config") -- Load config module
 local function manual_cli_update()
   vim.notify("Starting LLM CLI update...", vim.log.levels.INFO)
   vim.defer_fn(function()
-    local shell = require('llm.core.utils.shell')
     local result = shell.update_llm_cli()
 
     if result and result.success then
