@@ -251,7 +251,7 @@ function M.select_model()
 
   models_view.select_model(models, function(choice)
     if not choice then return end
-    local model_name = M.extract_model_name(choice)
+    local model_name = M.extract_model_name(choice.id)
     config.options.model = model_name
     vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
   end)
@@ -311,16 +311,16 @@ function M.generate_models_list()
     table.insert(model_to_aliases[model], alias)
   end
 
-  for _, model_line in ipairs(models) do
-    local extracted_name = M.extract_model_name(model_line) -- This is the name/id part of the line
-    local model_id = extracted_name                         -- Default model_id to extracted name
-    local model_name = extracted_name                       -- Default model_name to extracted name
+  for _, model in ipairs(models) do
+    local extracted_name = model.id -- This is the name/id part of the line
+    local model_id = model.id                         -- Default model_id to extracted name
+    local model_name = model.name                       -- Default model_name to extracted name
     local is_custom = false
     local custom_model_info = nil
 
     -- Determine provider and potentially find custom model info
     local provider_key = "Other"
-    if model_line:match("^Custom OpenAI:") then
+    if model.provider == "Custom OpenAI" then
       provider_key = "Custom OpenAI"
       is_custom = true
       -- Find the corresponding custom model data using the extracted name/id
@@ -347,7 +347,7 @@ function M.generate_models_list()
         end
         -- Keep model_id and model_name as extracted_name
       end
-    elseif model_line:match("OpenAI") then
+    elseif model.provider == "OpenAI" then
       -- Check if this standard-looking line corresponds to a loaded custom model ID
       custom_model_info = custom_openai.custom_openai_models[extracted_name]
       if custom_model_info then
@@ -362,15 +362,15 @@ function M.generate_models_list()
       else
         provider_key = "OpenAI"
       end
-    elseif model_line:match("Anthropic") then
+    elseif model.provider == "Anthropic" then
       provider_key = "Anthropic"
-    elseif model_line:match("Mistral") then
+    elseif model.provider == "Mistral" then
       provider_key = "Mistral"
-    elseif model_line:match("Gemini") then
+    elseif model.provider == "Gemini" then
       provider_key = "Gemini"
-    elseif model_line:match("Groq") then
+    elseif model.provider == "Groq" then
       provider_key = "Groq"
-    elseif model_line:match("gguf") or model_line:match("ollama") or model_line:match("local") then
+    elseif model.provider == "gguf" or model.provider == "ollama" or model.provider == "local" then
       provider_key = "Local Models"
     end
 
@@ -378,7 +378,7 @@ function M.generate_models_list()
     local entry = {
       model_id = model_id,
       model_name = model_name,
-      full_line = model_line, -- The original line from `llm models` or constructed for custom
+      full_line = model.id, -- The original line from `llm models` or constructed for custom
       is_default = false,
       is_custom = is_custom,
       aliases = model_to_aliases[model_id] or {} -- Check aliases ONLY by model_id
