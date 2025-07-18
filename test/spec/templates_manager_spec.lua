@@ -98,7 +98,10 @@ describe("templates_manager", function()
         spy.on(templates_manager, 'get_template_info_under_cursor', function()
             return "template1", { start_line = 1, end_line = 1 }
         end)
-        local schedule_spy = spy.on(vim, 'schedule')
+        local scheduled_function
+        vim.schedule = function(fn)
+            scheduled_function = fn
+        end
 
         package.loaded['llm.utils'].floating_confirm = function(opts)
             opts.on_confirm(true)
@@ -106,21 +109,26 @@ describe("templates_manager", function()
 
         templates_manager.delete_template_under_cursor(1)
 
-        schedule_spy.calls[1].refs[1]()
+        if scheduled_function then
+            scheduled_function()
+        end
 
         assert.spy(mock_templates_loader.delete_template).was.called_with("template1")
-        schedule_spy:revert()
     end)
   end)
 
   describe("create_template_from_manager", function()
     it("should call create_template", function()
       local create_template_spy = spy.on(templates_manager, 'create_template')
-      local schedule_spy = spy.on(vim, 'schedule')
+      local scheduled_function
+      vim.schedule = function(fn)
+        scheduled_function = fn
+      end
       templates_manager.create_template_from_manager(1)
-      schedule_spy.calls[1].refs[1]()
+      if scheduled_function then
+        scheduled_function()
+      end
       assert.spy(create_template_spy).was.called()
-      schedule_spy:revert()
     end)
   end)
 
@@ -130,11 +138,15 @@ describe("templates_manager", function()
             return "template1", { is_loader = false }
         end)
       local run_template_with_params_spy = spy.on(templates_manager, 'run_template_with_params')
-      local schedule_spy = spy.on(vim, 'schedule')
+      local scheduled_function
+      vim.schedule = function(fn)
+        scheduled_function = fn
+      end
       templates_manager.run_template_under_cursor(1)
-      schedule_spy.calls[1].refs[1](templates_manager)
+      if scheduled_function then
+        scheduled_function(templates_manager)
+      end
       assert.spy(run_template_with_params_spy).was.called_with("template1")
-      schedule_spy:revert()
     end)
 
     it("should handle template loaders", function()
@@ -149,7 +161,9 @@ describe("templates_manager", function()
         end
 
         templates_manager.run_template_under_cursor(1)
-        floating_input_cb("owner/repo/template")
+        if floating_input_cb then
+            floating_input_cb("owner/repo/template")
+        end
 
         assert.spy(mock_templates_loader.get_template_details).was.called_with("test_loader:owner/repo/template")
     end)
