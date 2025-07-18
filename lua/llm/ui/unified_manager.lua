@@ -1,19 +1,19 @@
--- llm/unified_manager.lua - Unified management window for llm-nvim
+-- llm/ui/unified_manager.lua - Unified management window for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 local api = vim.api
-local utils = require('llm.utils')
-local styles = require('llm.styles')
+local ui = require('llm.core.utils.ui')
+local styles = require('llm.ui.styles')
 
 -- Manager modules
-local models_manager = require('llm.models.models_manager')
-local plugins_manager = require('llm.plugins.plugins_manager')
-local keys_manager = require('llm.keys.keys_manager')
-local fragments_manager = require('llm.fragments.fragments_manager')
-local templates_manager = require('llm.templates.templates_manager')
-local schemas_manager = require('llm.schemas.schemas_manager')
+local models_manager = require('llm.managers.models_manager')
+local plugins_manager = require('llm.managers.plugins_manager')
+local keys_manager = require('llm.managers.keys_manager')
+local fragments_manager = require('llm.managers.fragments_manager')
+local templates_manager = require('llm.managers.templates_manager')
+local schemas_manager = require('llm.managers.schemas_manager')
 
 -- State for the unified window
 local state = {
@@ -74,7 +74,7 @@ local function close_window()
   if state.current_view then
     state.last_view = state.current_view
   end
-  
+
   if state.winid and api.nvim_win_is_valid(state.winid) then
     api.nvim_win_close(state.winid, true)
   end
@@ -98,16 +98,16 @@ local function setup_common_keymaps(bufnr)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  set_keymap('n', 'q', '<Cmd>lua require("llm.unified_manager").close()<CR>')
-  set_keymap('n', '<Esc>', '<Cmd>lua require("llm.unified_manager").close()<CR>')
+  set_keymap('n', 'q', '<Cmd>lua require("llm.ui.unified_manager").close()<CR>')
+  set_keymap('n', '<Esc>', '<Cmd>lua require("llm.ui.unified_manager").close()<CR>')
 
   -- Keymaps to switch views
-  set_keymap('n', 'M', '<Cmd>lua require("llm.unified_manager").switch_view("Models")<CR>')
-  set_keymap('n', 'P', '<Cmd>lua require("llm.unified_manager").switch_view("Plugins")<CR>')
-  set_keymap('n', 'K', '<Cmd>lua require("llm.unified_manager").switch_view("Keys")<CR>')
-  set_keymap('n', 'F', '<Cmd>lua require("llm.unified_manager").switch_view("Fragments")<CR>')
-  set_keymap('n', 'T', '<Cmd>lua require("llm.unified_manager").switch_view("Templates")<CR>')
-  set_keymap('n', 'S', '<Cmd>lua require("llm.unified_manager").switch_view("Schemas")<CR>')
+  set_keymap('n', 'M', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Models")<CR>')
+  set_keymap('n', 'P', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Plugins")<CR>')
+  set_keymap('n', 'K', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Keys")<CR>')
+  set_keymap('n', 'F', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Fragments")<CR>')
+  set_keymap('n', 'T', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Templates")<CR>')
+  set_keymap('n', 'S', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Schemas")<CR>')
 end
 
 -- Switch the view within the unified window
@@ -116,7 +116,7 @@ function M.switch_view(view_name)
     M.open(view_name) -- Open if not already open
     return
   end
-  
+
 
   if not views[view_name] then
     vim.notify("Invalid view: " .. view_name, vim.log.levels.ERROR)
@@ -150,7 +150,7 @@ function M.switch_view(view_name)
   api.nvim_win_set_config(state.winid, { title = ' LLM Unified Manager (' .. view_config.title .. ') ' })
 
   -- Setup syntax highlighting
-  styles.setup_buffer_styling(state.bufnr)
+  styles.setup_buffer_syntax(state.bufnr)
 
   -- Setup keymaps (common + view-specific)
   -- Setting new keymaps below will overwrite any previous ones for the same keys.
@@ -186,8 +186,8 @@ function M.open(initial_view)
   api.nvim_buf_set_option(state.bufnr, 'bufhidden', 'wipe')
   api.nvim_buf_set_option(state.bufnr, 'swapfile', false)
 
-  -- Create window using utils function
-  state.winid = utils.create_floating_window(state.bufnr, 'LLM Unified Manager')
+  -- Create window using ui function
+  state.winid = ui.create_floating_window(state.bufnr, 'LLM Unified Manager')
 
   -- Switch to the initial view
   M.switch_view(initial_view)
