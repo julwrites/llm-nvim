@@ -1,4 +1,4 @@
--- llm/fragments/fragments_manager.lua - Fragment management functionality for llm-nvim
+-- llm/managers/fragments_manager.lua - Fragment management functionality for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
@@ -6,18 +6,28 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local fn = vim.fn
+local llm_cli = require('llm.core.data.llm_cli')
+local cache = require('llm.core.data.cache')
+local fragments_view = require('llm.ui.views.fragments_view')
+local styles = require('llm.ui.styles')
 
--- Forward declarations
-local utils = require('llm.utils')
-local fragments_loader = require('llm.fragments.fragments_loader')
-local fragments_view = require('llm.fragments.fragments_view')
-local plugins_manager = require('llm.plugins.plugins_manager')
-local styles = require('llm.styles') -- Added
+-- Get fragments from llm CLI
+function M.get_fragments()
+    local cached_fragments = cache.get('fragments')
+    if cached_fragments then
+        return cached_fragments
+    end
+
+    local fragments_json = llm_cli.run_llm_command('fragments list --json')
+    local fragments = vim.fn.json_decode(fragments_json)
+    cache.set('fragments', fragments)
+    return fragments
+end
 
 -- Populate the buffer with fragment management content
 function M.populate_fragments_buffer(bufnr)
   local show_all = _G.llm_fragments_show_all or false
-  local fragments = show_all and fragments_loader.get_all_fragments() or fragments_loader.get_fragments()
+  local fragments = M.get_fragments()
   local show_mode = show_all and "all" or "with_aliases"
 
   local lines = {
@@ -40,6 +50,9 @@ function M.populate_fragments_buffer(bufnr)
     table.insert(lines, "Use 'n' to add a new fragment from a file.")
   else
     for i, fragment in ipairs(fragments) do
+        if not show_all and (#fragment.aliases == 0) then
+            goto continue
+        end
       local aliases = #fragment.aliases > 0 and table.concat(fragment.aliases, ", ") or "none"
       local source = fragment.source or "unknown"
       local first_line = fragment.content:match("^[^\r\n]*") or ""
@@ -70,6 +83,7 @@ function M.populate_fragments_buffer(bufnr)
       }
       for j = 0, 5 do line_to_fragment[current_line + j] = fragment.hash end
       current_line = current_line + 6
+      ::continue::
     end
   end
 
@@ -110,9 +124,10 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
 
   fragments_view.get_alias(function(alias)
     if not alias or alias == "" then return end
-    if fragments_loader.set_fragment_alias(fragment_hash, alias) then
+    if llm_cli.run_llm_command('fragments alias set ' .. fragment_hash .. ' ' .. alias) then
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Fragments")
+      cache.invalidate('fragments')
+      require('llm.ui.unified_manager').switch_view("Fragments")
     else
       vim.notify("Failed to set alias", vim.log.levels.ERROR)
     end
@@ -141,9 +156,10 @@ end
 function M.confirm_and_remove_alias(alias)
   fragments_view.confirm_remove_alias(alias, function(confirmed)
     if not confirmed then return end
-    if fragments_loader.remove_fragment_alias(alias) then
+    if llm_cli.run_llm_command('fragments alias remove ' .. alias) then
       vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Fragments")
+      cache.invalidate('fragments')
+      require('llm.ui.unified_manager').switch_view("Fragments")
     else
       vim.notify("Failed to remove alias", vim.log.levels.ERROR)
     end
@@ -152,19 +168,25 @@ end
 
 function M.toggle_fragments_view(bufnr)
   _G.llm_fragments_show_all = not (_G.llm_fragments_show_all or false)
-  require('llm.unified_manager').switch_view("Fragments")
+  require('llm.ui.unified_manager').switch_view("Fragments")
 end
 
 function M.add_file_fragment(bufnr)
-  fragments_loader.select_file_as_fragment(function()
-    require('llm.unified_manager').switch_view("Fragments")
-  end, true)
+    fragments_view.select_file(function(file_path)
+        if not file_path then return end
+        llm_cli.run_llm_command('fragments store ' .. file_path)
+        cache.invalidate('fragments')
+        require('llm.ui.unified_manager').switch_view("Fragments")
+    end)
 end
 
 function M.add_github_fragment_from_manager(bufnr)
-  fragments_loader.add_github_fragment(function()
-    require('llm.unified_manager').switch_view("Fragments")
-  end)
+    fragments_view.get_github_url(function(url)
+        if not url then return end
+        llm_cli.run_llm_command('fragments store ' .. url)
+        cache.invalidate('fragments')
+        require('llm.ui.unified_manager').switch_view("Fragments")
+    end)
 end
 
 function M.get_fragment_info_under_cursor(bufnr)
@@ -184,7 +206,7 @@ end
 
 function M.manage_fragments(show_all)
   _G.llm_fragments_show_all = show_all or false
-  require('llm.unified_manager').open_specific_manager("Fragments")
+  require('llm.ui.unified_manager').open_specific_manager("Fragments")
 end
 
 function M.prompt_with_fragment_under_cursor(bufnr)
@@ -210,6 +232,6 @@ function M.prompt_with_fragment_under_cursor(bufnr)
   end)
 end
 
-M.__name = 'llm.fragments.fragments_manager'
+M.__name = 'llm.managers.fragments_manager'
 
 return M

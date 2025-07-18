@@ -1,40 +1,33 @@
--- llm/keys/keys_manager.lua - API key management for llm-nvim
+-- llm/managers/keys_manager.lua - API key management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 -- Forward declarations
 local api = vim.api
-local utils = require('llm.utils')
-local keys_view = require('llm.keys.keys_view')
-local styles = require('llm.styles') -- Added
+local llm_cli = require('llm.core.data.llm_cli')
+local cache = require('llm.core.data.cache')
+local keys_view = require('llm.ui.views.keys_view')
+local styles = require('llm.ui.styles')
 
 -- Get stored API keys from llm CLI
 function M.get_stored_keys()
-  if not utils.check_llm_installed() then
-    return {}
-  end
-
-  local result = utils.safe_shell_command("llm keys", "Failed to get stored keys")
-  if not result then
-    return {}
-  end
-
-  local stored_keys = {}
-  for line in result:gmatch("[^\r\n]+") do
-    if line ~= "Stored keys:" and line ~= "------------------" and line ~= "" then
-      table.insert(stored_keys, line)
+    local cached_keys = cache.get('keys')
+    if cached_keys then
+        return cached_keys
     end
-  end
 
-  return stored_keys
+    local keys_json = llm_cli.run_llm_command('keys list --json')
+    local keys = vim.fn.json_decode(keys_json)
+    cache.set('keys', keys)
+    return keys
 end
 
 -- Check if an API key is set
 function M.is_key_set(key_name)
   local stored_keys = M.get_stored_keys()
   for _, key in ipairs(stored_keys) do
-    if key == key_name then
+    if key.name == key_name then
       return true
     end
   end
@@ -43,103 +36,23 @@ end
 
 -- Set an API key by directly modifying the keys.json file
 function M.set_api_key(key_name, key_value)
-  if not utils.check_llm_installed() then
-    return false
-  end
-
-  local keys_dir, keys_file = utils.get_config_path("keys.json")
-
-  if not keys_file then
-    local home = os.getenv("HOME")
-    if not home then
-      vim.notify("Could not determine home directory", vim.log.levels.ERROR)
-      return false
-    end
-    keys_dir = home .. "/.config/io.datasette.llm"
-    keys_file = keys_dir .. "/keys.json"
-    os.execute("mkdir -p " .. keys_dir)
-  end
-
-  local keys_data = {}
-  local file = io.open(keys_file, "r")
-
-  if file then
-    local content = file:read("*a")
-    file:close()
-    if content and content ~= "" then
-      local success
-      success, keys_data = pcall(vim.fn.json_decode, content)
-      if not success or type(keys_data) ~= "table" then
-        keys_data = {}
-      end
-    end
-  end
-
-  keys_data[key_name] = key_value
-
-  local updated_content = vim.fn.json_encode(keys_data)
-  file = io.open(keys_file, "w")
-  if not file then
-    vim.notify("Failed to open keys file for writing: " .. keys_file, vim.log.levels.ERROR)
-    return false
-  end
-
-  file:write(updated_content)
-  file:close()
-
-  vim.notify("Successfully set key for '" .. key_name .. "'", vim.log.levels.INFO)
-  return true
+    local result = llm_cli.run_llm_command('keys set ' .. key_name .. ' ' .. key_value)
+    cache.invalidate('keys')
+    return result ~= nil
 end
 
 -- Remove an API key by directly modifying the keys.json file
 function M.remove_api_key(key_name)
-  if not utils.check_llm_installed() then
-    return false
-  end
-
-  local _, keys_file = utils.get_config_path("keys.json")
-
-  if not keys_file then
-    vim.notify("Could not find keys.json file in standard locations", vim.log.levels.ERROR)
-    return false
-  end
-
-  local file = io.open(keys_file, "r")
-  if not file then
-    vim.notify("Keys file not found or not readable: " .. keys_file, vim.log.levels.ERROR)
-    return false
-  end
-
-  local content = file:read("*a")
-  file:close()
-
-  local success, keys_data = pcall(vim.fn.json_decode, content)
-  if not success or type(keys_data) ~= "table" then
-    vim.notify("Failed to parse keys file", vim.log.levels.ERROR)
-    return false
-  end
-
-  keys_data[key_name] = nil
-
-  local updated_content = vim.fn.json_encode(keys_data)
-  file = io.open(keys_file, "w")
-  if not file then
-    vim.notify("Failed to open keys file for writing", vim.log.levels.ERROR)
-    return false
-  end
-
-  file:write(updated_content)
-  file:close()
-
-  vim.notify("Successfully removed key: " .. key_name, vim.log.levels.INFO)
-  return true
+    local result = llm_cli.run_llm_command('keys remove ' .. key_name)
+    cache.invalidate('keys')
+    return result ~= nil
 end
 
 -- Populate the buffer with key management content
 function M.populate_keys_buffer(bufnr)
   local all_stored_keys_list = M.get_stored_keys()
   local stored_keys_set = {}
-  for _, key in ipairs(all_stored_keys_list) do stored_keys_set[key] = true end
+  for _, key in ipairs(all_stored_keys_list) do stored_keys_set[key.name] = true end
 
   local lines = {
     "# API Key Management",
@@ -177,9 +90,9 @@ function M.populate_keys_buffer(bufnr)
   table.insert(lines, "")
 
   local custom_keys_to_display = {}
-  for _, stored_key_name in ipairs(all_stored_keys_list) do
-    if not predefined_providers_set[stored_key_name] then
-      table.insert(custom_keys_to_display, stored_key_name)
+  for _, stored_key in ipairs(all_stored_keys_list) do
+    if not predefined_providers_set[stored_key.name] then
+      table.insert(custom_keys_to_display, stored_key.name)
     end
   end
   table.sort(custom_keys_to_display)
@@ -232,7 +145,7 @@ function M.add_new_custom_key_interactive(bufnr)
 
       if M.set_api_key(custom_name, key_value) then
         vim.notify("Successfully set key for '" .. custom_name .. "'", vim.log.levels.INFO)
-        require('llm.unified_manager').switch_view("Keys")
+        require('llm.ui.unified_manager').switch_view("Keys")
       else
         vim.notify("Failed to set key for '" .. custom_name .. "'. See previous errors for details.", vim.log.levels.ERROR)
       end
@@ -251,7 +164,7 @@ function M.set_key_under_cursor(bufnr)
     end
     if M.set_api_key(provider_name, key_value) then
       vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys")
+      require('llm.ui.unified_manager').switch_view("Keys")
     else
       vim.notify("Failed to set key for '" .. provider_name .. "'.", vim.log.levels.ERROR)
     end
@@ -271,7 +184,7 @@ function M.remove_key_under_cursor(bufnr)
   keys_view.confirm_remove_key(provider_name, function()
     if M.remove_api_key(provider_name) then
       vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys")
+      require('llm.ui.unified_manager').switch_view("Keys")
     else
       vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
     end
@@ -296,9 +209,9 @@ function M.get_provider_info_under_cursor(bufnr)
 end
 
 function M.manage_keys()
-  require('llm.unified_manager').open_specific_manager("Keys")
+  require('llm.ui.unified_manager').open_specific_manager("Keys")
 end
 
-M.__name = 'llm.keys.keys_manager'
+M.__name = 'llm.managers.keys_manager'
 
 return M

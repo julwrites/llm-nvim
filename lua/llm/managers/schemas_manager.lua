@@ -1,22 +1,69 @@
--- llm/schemas/schemas_manager.lua - Schema management for llm-nvim
+-- llm/managers/schemas_manager.lua - Schema management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 -- Forward declarations
 local api = vim.api
-local schemas_loader = require('llm.schemas.schemas_loader')
-local schemas_view = require('llm.schemas.schemas_view')
-local utils = require('llm.utils')
-local styles = require('llm.styles')
+local llm_cli = require('llm.core.data.llm_cli')
+local cache = require('llm.core.data.cache')
+local schemas_view = require('llm.ui.views.schemas_view')
+local styles = require('llm.ui.styles')
+
+-- Get schemas from llm CLI
+function M.get_schemas()
+    local cached_schemas = cache.get('schemas')
+    if cached_schemas then
+        return cached_schemas
+    end
+
+    local schemas_json = llm_cli.run_llm_command('schemas list --json')
+    local schemas = vim.fn.json_decode(schemas_json)
+    cache.set('schemas', schemas)
+    return schemas
+end
+
+-- Get a specific schema from llm CLI
+function M.get_schema(schema_id)
+    local schema_json = llm_cli.run_llm_command('schemas get ' .. schema_id)
+    return vim.fn.json_decode(schema_json)
+end
+
+-- Save a schema
+function M.save_schema(name, content)
+    local temp_file_path = vim.fn.tempname()
+    local file = io.open(temp_file_path, "w")
+    if not file then
+        return false
+    end
+    file:write(content)
+    file:close()
+
+    local result = llm_cli.run_llm_command('schemas save ' .. name .. ' ' .. temp_file_path)
+    os.remove(temp_file_path)
+    cache.invalidate('schemas')
+    return result ~= nil
+end
+
+-- Run a schema
+function M.run_schema(schema_id, input, is_multi)
+    local temp_file_path = vim.fn.tempname()
+    local file = io.open(temp_file_path, "w")
+    if not file then
+        return nil
+    end
+    file:write(input)
+    file:close()
+
+    local multi_flag = is_multi and " --multi" or ""
+    local result = llm_cli.run_llm_command('schema ' .. schema_id .. ' ' .. temp_file_path .. multi_flag)
+    os.remove(temp_file_path)
+    return result
+end
 
 -- Select and run a schema
 function M.select_schema()
-  if not utils.check_llm_installed() then
-    return
-  end
-
-  local schemas = schemas_loader.get_schemas()
+  local schemas = M.get_schemas()
   schemas_view.select_schema(schemas, function(choice)
     if not choice then return end
 
@@ -24,7 +71,7 @@ function M.select_schema()
     local selection = ""
     local mode = api.nvim_get_mode().mode
     if mode == 'v' or mode == 'V' or mode == '' then
-      selection = utils.get_visual_selection()
+      selection = require('llm.core.utils.text').get_visual_selection()
       has_selection = selection ~= ""
     end
 
@@ -32,13 +79,13 @@ function M.select_schema()
       schemas_view.get_schema_type(function(schema_type)
         if not schema_type then return end
         local is_multi = schema_type == "Multi schema (array of items)"
-        local result = schemas_loader.run_schema(choice, selection, is_multi)
+        local result = M.run_schema(choice.id, selection, is_multi)
         if result then
-          utils.create_buffer_with_content(result, "Schema Result: " .. choice, "json")
+          require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. choice.id, "json")
         end
       end)
     else
-      M.run_schema_with_input_source(choice)
+      M.run_schema_with_input_source(choice.id)
     end
   end)
 end
@@ -61,9 +108,9 @@ function M.run_schema_with_input_source(schema_id)
         local lines = api.nvim_buf_get_lines(0, 0, -1, false)
         local content = table.concat(lines, "\n")
         vim.notify("Running schema on buffer content...", vim.log.levels.INFO)
-        local result = schemas_loader.run_schema(schema_id, content, is_multi)
+        local result = M.run_schema(schema_id, content, is_multi)
         if result then
-          utils.create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
+          require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
         else
           vim.notify("Failed to run schema on buffer content", vim.log.levels.ERROR)
         end
@@ -74,9 +121,9 @@ function M.run_schema_with_input_source(schema_id)
             return
           end
           vim.notify("Running schema on URL content...", vim.log.levels.INFO)
-          local result = schemas_loader.run_schema_with_url(schema_id, url, is_multi)
+          local result = M.run_schema(schema_id, url, is_multi)
           if result then
-            utils.create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
+            require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
           else
             vim.notify("Failed to run schema on URL content", vim.log.levels.ERROR)
           end
@@ -121,7 +168,7 @@ function M.handle_manual_text_input(schema_id, is_multi)
     callback = function(args)
       if api.nvim_buf_is_valid(args.buf) then
         api.nvim_buf_set_option(args.buf, "modified", false)
-        require('llm.schemas.schemas_manager').submit_schema_input_from_buffer(args.buf)
+        require('llm.managers.schemas_manager').submit_schema_input_from_buffer(args.buf)
         return true
       end
     end,
@@ -160,19 +207,15 @@ function M.submit_schema_input_from_buffer(buf)
   api.nvim_command(buf .. "bdelete!")
   vim.notify("Running schema on input text...", vim.log.levels.INFO)
 
-  local result = schemas_loader.run_schema(schema_id, content, is_multi)
+  local result = M.run_schema(schema_id, content, is_multi)
   if result then
-    utils.create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
+    require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
   else
     vim.notify("Failed to run schema on input text", vim.log.levels.ERROR)
   end
 end
 
 function M.create_schema()
-  if not utils.check_llm_installed() then
-    return
-  end
-
   schemas_view.get_schema_name(function(name)
     if not name or name == "" then
       vim.notify("Schema name cannot be empty", vim.log.levels.WARN)
@@ -231,7 +274,7 @@ function M.handle_schema_creation(name, format_choice)
     buffer = bufnr,
     callback = function(args)
       if api.nvim_buf_is_valid(args.buf) then
-        require('llm.schemas.schemas_manager').save_schema_from_temp_file(args.buf)
+        require('llm.managers.schemas_manager').save_schema_from_temp_file(args.buf)
       end
     end,
   })
@@ -268,7 +311,7 @@ function M.save_schema_from_temp_file(bufnr)
   end
 
   vim.notify("Schema validated. Saving schema '" .. name .. "'...", vim.log.levels.INFO)
-  local success = schemas_loader.save_schema(name, validated_content)
+  local success = M.save_schema(name, validated_content)
   if success then
     vim.notify("Schema '" .. name .. "' saved successfully", vim.log.levels.INFO)
     vim.defer_fn(function()
@@ -282,24 +325,8 @@ function M.save_schema_from_temp_file(bufnr)
 end
 
 function M.validate_schema(content, format)
-  if format == "DSL (simplified schema syntax)" then
-    local json_schema, dsl_err = schemas_loader.create_schema_from_dsl(content)
-    if dsl_err then
-      return nil, false, "DSL Error: " .. dsl_err
-    end
-    local is_valid, err = schemas_loader.validate_json_schema(json_schema)
-    if not is_valid then
-      return nil, false, "Generated JSON invalid: " .. err
-    end
-    return json_schema, true, nil
-  else -- JSON Schema
-    local json_ok, decode_err = pcall(vim.fn.json_decode, content)
-    if not json_ok then
-      return nil, false, "Invalid JSON: " .. tostring(decode_err):sub(1, 100)
-    end
-    local is_valid, err = schemas_loader.validate_json_schema(content)
-    return content, is_valid, err
-  end
+    -- Validation is now handled by the llm-cli
+    return content, true, nil
 end
 
 function M.populate_schemas_buffer(bufnr)
@@ -308,7 +335,7 @@ function M.populate_schemas_buffer(bufnr)
   end
   local show_named_only = _G.llm_schemas_named_only
 
-  local all_schemas = schemas_loader.get_schemas()
+  local all_schemas = M.get_schemas()
   local named_schemas, unnamed_schemas = M.categorize_schemas(all_schemas)
   local schemas_to_show = show_named_only and named_schemas or vim.list_extend(vim.deepcopy(named_schemas), unnamed_schemas)
 
@@ -325,26 +352,12 @@ end
 function M.categorize_schemas(all_schemas)
   local named_schemas = {}
   local unnamed_schemas = {}
-  local _, schema_config_file = utils.get_config_path("schemas.json")
-  local schema_ids_to_names = {}
-  if schema_config_file then
-    local config_file = io.open(schema_config_file, "r")
-    if config_file then
-      local content = config_file:read("*all"); config_file:close()
-      if content and content ~= "" then
-        local success, parsed = pcall(vim.fn.json_decode, content)
-        if success and parsed then
-          for name, id in pairs(parsed) do schema_ids_to_names[id] = name end
-        end
-      end
-    end
-  end
 
-  for id, description in pairs(all_schemas) do
-    if schema_ids_to_names[id] then
-      table.insert(named_schemas, { id = id, name = schema_ids_to_names[id], description = description })
+  for _, schema in ipairs(all_schemas) do
+    if schema.name then
+      table.insert(named_schemas, schema)
     else
-      table.insert(unnamed_schemas, { id = id, description = description })
+      table.insert(unnamed_schemas, schema)
     end
   end
 
@@ -371,7 +384,7 @@ function M.build_buffer_lines(schemas, show_named_only)
     table.insert(lines, "----------")
     for i, schema in ipairs(schemas) do
       local description = schema.description:gsub("\n", " ")
-      local schema_details = schemas_loader.get_schema(schema.id)
+      local schema_details = M.get_schema(schema.id)
       local is_valid = schema_details and schema_details.content and pcall(vim.fn.json_decode, schema_details.content)
       table.insert(lines, string.format("Schema %d: %s", i, schema.id))
       if schema.name then
@@ -398,7 +411,7 @@ function M.build_schema_data(schemas, start_line)
       index = i,
       name = schema.name,
       description = schema.description,
-      is_valid = schemas_loader.get_schema(schema.id) and true or false,
+      is_valid = M.get_schema(schema.id) and true or false,
       start_line = current_line,
     }
     for j = 0, entry_lines - 1 do
@@ -430,7 +443,7 @@ function M.run_schema_under_cursor(bufnr)
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.run_schema_with_input_source(schema_id)
   end)
@@ -442,12 +455,12 @@ function M.view_schema_details_under_cursor(bufnr)
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  local schema = schemas_loader.get_schema(schema_id)
+  local schema = M.get_schema(schema_id)
   if not schema then
     vim.notify("Failed to get schema details for '" .. schema_id .. "'", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     schemas_view.show_details(schema_id, schema, M)
   end)
@@ -468,9 +481,10 @@ function M.set_alias_for_schema_under_cursor(bufnr)
       vim.notify("Alias cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
       return
     end
-    if schemas_loader.set_schema_alias(schema_id, new_alias) then
+    if llm_cli.run_llm_command('schemas alias set ' .. schema_id .. ' ' .. new_alias) then
       vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Schemas")
+      cache.invalidate('schemas')
+      require('llm.ui.unified_manager').switch_view("Schemas")
     else
       vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
     end
@@ -478,7 +492,7 @@ function M.set_alias_for_schema_under_cursor(bufnr)
 end
 
 function M.create_schema_from_manager(bufnr)
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.create_schema()
   end)
@@ -492,7 +506,7 @@ function M.run_schema_from_details(schema_id)
 end
 
 function M.set_alias_from_details(schema_id)
-  local schema = schemas_loader.get_schema(schema_id)
+  local schema = M.get_schema(schema_id)
   schemas_view.get_alias(schema and schema.name, function(new_alias)
     if not new_alias or new_alias == "" then
       vim.notify("Alias cannot be empty", vim.log.levels.WARN)
@@ -502,11 +516,12 @@ function M.set_alias_from_details(schema_id)
       vim.notify("Alias cannot contain path separators (/ or \\)", vim.log.levels.ERROR)
       return
     end
-    if schemas_loader.set_schema_alias(schema_id, new_alias) then
+    if llm_cli.run_llm_command('schemas alias set ' .. schema_id .. ' ' .. new_alias) then
       vim.notify("Schema alias set to '" .. new_alias .. "'", vim.log.levels.INFO)
+      cache.invalidate('schemas')
       api.nvim_win_close(0, true)
       vim.schedule(function()
-        require('llm.unified_manager').open_specific_manager("Schemas")
+        require('llm.ui.unified_manager').open_specific_manager("Schemas")
       end)
     else
       vim.notify("Failed to set schema alias", vim.log.levels.ERROR)
@@ -522,9 +537,10 @@ function M.delete_alias_for_schema_under_cursor(bufnr)
   end
   schemas_view.confirm_delete_alias(schema_info.name, function(confirmed)
     if not confirmed then return end
-    if schemas_loader.remove_schema_alias(schema_id, schema_info.name) then
+    if llm_cli.run_llm_command('schemas alias remove ' .. schema_info.name) then
       vim.notify("Schema alias '" .. schema_info.name .. "' deleted", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Schemas")
+      cache.invalidate('schemas')
+      require('llm.ui.unified_manager').switch_view("Schemas")
     else
       vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
     end
@@ -537,7 +553,7 @@ function M.edit_schema_under_cursor(bufnr)
     vim.notify("No schema found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.edit_schema_from_details(schema_id)
   end)
@@ -545,25 +561,26 @@ end
 
 function M.toggle_schemas_view(bufnr)
   _G.llm_schemas_named_only = not (_G.llm_schemas_named_only == true)
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
-    require('llm.unified_manager').open_specific_manager("Schemas")
+    require('llm.ui.unified_manager').open_specific_manager("Schemas")
   end)
 end
 
 function M.delete_alias_from_details(schema_id)
-  local schema = schemas_loader.get_schema(schema_id)
+  local schema = M.get_schema(schema_id)
   if not schema or not schema.name then
     vim.notify("This schema does not have an alias to delete", vim.log.levels.WARN)
     return
   end
   schemas_view.confirm_delete_alias(schema.name, function(confirmed)
     if not confirmed then return end
-    if schemas_loader.remove_schema_alias(schema_id, schema.name) then
+    if llm_cli.run_llm_command('schemas alias remove ' .. schema.name) then
       vim.notify("Schema alias '" .. schema.name .. "' deleted", vim.log.levels.INFO)
+      cache.invalidate('schemas')
       api.nvim_win_close(0, true)
       vim.schedule(function()
-        require('llm.unified_manager').open_specific_manager("Schemas")
+        require('llm.ui.unified_manager').open_specific_manager("Schemas")
       end)
     else
       vim.notify("Failed to delete schema alias", vim.log.levels.ERROR)
@@ -588,13 +605,9 @@ end
 
 function M.manage_schemas(show_named_only)
   _G.llm_schemas_named_only = show_named_only or true
-  require('llm.unified_manager').open_specific_manager("Schemas")
+  require('llm.ui.unified_manager').open_specific_manager("Schemas")
 end
 
-M.__name = 'llm.schemas.schemas_manager'
-M.get_schemas = schemas_loader.get_schemas
-M.get_schema = schemas_loader.get_schema
-M.save_schema = schemas_loader.save_schema
-M.run_schema = schemas_loader.run_schema
+M.__name = 'llm.managers.schemas_manager'
 
 return M

@@ -1,4 +1,4 @@
--- llm/models/models_manager.lua - Model management functionality
+-- llm/managers/models_manager.lua - Model management functionality
 -- License: Apache 2.0
 
 local errors = require('llm.errors')
@@ -7,14 +7,15 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local fn = vim.fn
-local utils = require('llm.utils')
+local llm_cli = require('llm.core.data.llm_cli')
+local cache = require('llm.core.data.cache')
 local config = require('llm.config')
-local styles = require('llm.styles') -- Added for highlighting
+local styles = require('llm.ui.styles')
 local commands = require('llm.commands')
 
-local custom_openai = require('llm.models.custom_openai')
-local models_io = require('llm.models.models_io')
-local models_view = require('llm.models.models_view')
+local custom_openai = require('llm.managers.custom_openai')
+local models_io = require('llm.managers.models_io')
+local models_view = require('llm.ui.views.models_view')
 
 function M.set_custom_openai(new_custom_openai)
     custom_openai = new_custom_openai
@@ -43,8 +44,8 @@ end
 
 -- Get available providers with valid API keys
 local function get_available_providers()
-  local keys_manager = require('llm.keys.keys_manager')
-  local plugins_manager = require('llm.plugins.plugins_manager')
+  local keys_manager = require('llm.managers.keys_manager')
+  local plugins_manager = require('llm.managers.plugins_manager')
 
   return {
     -- OpenAI only requires the API key, not a plugin
@@ -108,85 +109,15 @@ end
 
 -- Get available models from llm CLI
 function M.get_available_models()
-  if not utils.check_llm_installed() then
-    return {}
-  end
-
-  -- Load custom OpenAI models first
-  custom_openai.load_custom_openai_models()
-
-  local result, err = models_io.get_models_from_cli()
-  if err then
-    errors.handle(
-      errors.categories.MODEL,
-      "Failed to get available models",
-      { error = err },
-      errors.levels.ERROR
-    )
-    return {}
-  end
-
-  local models = {}
-  local standard_openai_models = {}
-
-  -- First pass: collect all models and identify standard OpenAI models
-  for line in result:gmatch("[^\r\n]+") do
-    -- Skip header lines and empty lines
-    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
-      -- Check if this is a standard OpenAI model
-      if line:match("^OpenAI:") then
-        table.insert(standard_openai_models, line)
-      else
-        -- Non-OpenAI model, add it directly
-        table.insert(models, line)
-      end
+    local cached_models = cache.get('models')
+    if cached_models then
+        return cached_models
     end
-  end
 
-  -- Ensure custom models are loaded
-  if vim.tbl_isempty(custom_openai.custom_openai_models) then
-    custom_openai.load_custom_openai_models()
-  end
-
-  if config.get("debug") then
-    vim.notify(
-      "Adding " .. vim.tbl_count(custom_openai.custom_openai_models) .. " custom OpenAI models to available models list",
-      vim.log.levels.INFO)
-  end
-
-  -- Create a set of model IDs and names to filter out duplicates
-  local custom_model_ids = {}
-
-  -- Add all custom OpenAI models to the list
-  for model_id, model_info in pairs(custom_openai.custom_openai_models) do
-    -- Use model_id for duplicate detection
-    custom_model_ids[model_id:lower()] = true
-
-    -- Use model_name for display if available, otherwise model_id
-    local display_name = model_info.model_name or model_id
-    local provider_prefix = "Custom OpenAI: "
-    -- Construct the line using the display name
-    local model_line = provider_prefix .. display_name
-    table.insert(models, model_line)
-
-    if config.get("debug") then
-      vim.notify("Added custom OpenAI model to list: " .. model_line .. " (ID: " .. model_id .. ")", vim.log.levels.INFO)
-    end
-  end
-
-  -- Add standard OpenAI models that don't conflict (by model_id) with custom ones
-  for _, line in ipairs(standard_openai_models) do
-    local extracted_name = M.extract_model_name(line)
-    -- Check against the set of custom model IDs
-    if extracted_name and not custom_model_ids[extracted_name:lower()] then
-      table.insert(models, line)
-    elseif config.get("debug") and extracted_name then
-      vim.notify("Skipping standard OpenAI model due to conflict with custom ID: " .. extracted_name,
-        vim.log.levels.DEBUG)
-    end
-  end
-
-  return models
+    local models_json = llm_cli.run_llm_command('models list --json')
+    local models = vim.fn.json_decode(models_json)
+    cache.set('models', models)
+    return models
 end
 
 -- Extract model name from the full model line
@@ -249,64 +180,21 @@ function M.set_default_model(model_name)
     return false
   end
 
-  if not utils.check_llm_installed() then
-    return false
-  end
-
-  local result, err = models_io.set_default_model_in_cli(model_name)
-
-  if err then
-    errors.handle(
-      errors.categories.MODEL,
-      "Failed to set default model",
-      { model = model_name, error = err },
-      errors.levels.ERROR
-    )
-  end
-
+  local result = llm_cli.run_llm_command('default ' .. model_name)
   return result ~= nil
 end
 
 -- Get model aliases from llm CLI
 function M.get_model_aliases()
-  if not utils.check_llm_installed() then
-    return {}
-  end
-
-  local result, err = models_io.get_aliases_from_cli()
-  if err then
-    errors.handle(
-      errors.categories.MODEL,
-      "Failed to get model aliases",
-      { error = err },
-      errors.levels.ERROR
-    )
-    return {}
-  end
-
-  local aliases = {}
-
-  -- Try to parse JSON output
-  local success, parsed = pcall(vim.fn.json_decode, result)
-  if success and type(parsed) == "table" then
-    aliases = parsed
-  else
-    -- Fallback to line parsing if JSON parsing fails
-    for line in result:gmatch("[^\r\n]+") do
-      if not line:match("^%-%-") and not line:match("^Aliases:") then
-        local alias, model = line:match("([^%s:]+)%s*:%s*(.+)")
-        if alias and model then
-          -- Remove any trailing "(embedding)" text
-          model = model:gsub("%s*%(embedding%)", "")
-          -- Trim whitespace
-          model = model:match("^%s*(.-)%s*$")
-          aliases[alias] = model
-        end
-      end
+    local cached_aliases = cache.get('aliases')
+    if cached_aliases then
+        return cached_aliases
     end
-  end
 
-  return aliases
+    local aliases_json = llm_cli.run_llm_command('aliases list --json')
+    local aliases = vim.fn.json_decode(aliases_json)
+    cache.set('aliases', aliases)
+    return aliases
 end
 
 -- Set a model alias using llm CLI
@@ -330,21 +218,8 @@ function M.set_model_alias(alias, model)
     return false
   end
 
-  if not utils.check_llm_installed() then
-    return false
-  end
-
-  local result, err = models_io.set_alias_in_cli(alias, model)
-
-  if err then
-    errors.handle(
-      errors.categories.MODEL,
-      "Failed to set model alias",
-      { alias = alias, model = model, error = err },
-      errors.levels.ERROR
-    )
-  end
-
+  local result = llm_cli.run_llm_command('alias set ' .. alias .. ' ' .. model)
+  cache.invalidate('aliases')
   return result ~= nil
 end
 
@@ -360,74 +235,9 @@ function M.remove_model_alias(alias)
     return false
   end
 
-  if not utils.check_llm_installed() then
-    return false
-  end
-
-  -- Try CLI command first with better error handling
-  local _, err = models_io.remove_alias_in_cli(alias)
-
-  -- If aliases file doesn't exist, nothing to remove
-  if not err then
-    vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
-    return true
-  else
-    -- If CLI command fails, modify the aliases.json file directly
-    local aliases_dir, aliases_file = utils.get_config_path("aliases.json")
-
-    -- If aliases file doesn't exist, nothing to remove
-    if not aliases_file then
-      vim.notify("Could not find aliases.json file", vim.log.levels.ERROR)
-      return false
-    end
-
-    -- Read existing aliases
-    local aliases_data = {}
-    local file = io.open(aliases_file, "r")
-
-    if file then
-      local content = file:read("*a")
-      file:close()
-
-      -- Parse JSON if file exists and has content
-      if content and content ~= "" then
-        local success, result
-        success, result = pcall(vim.fn.json_decode, content)
-        if success and type(result) == "table" then
-          aliases_data = result
-        else
-          vim.notify("Failed to parse aliases JSON: " .. (result or "unknown error"), vim.log.levels.ERROR)
-          aliases_data = {} -- Reset to empty table if parsing failed
-        end
-      end
-    else
-      vim.notify("Failed to open aliases file for reading", vim.log.levels.ERROR)
-      return false
-    end
-
-    -- Check if the alias exists
-    if aliases_data[alias] == nil then
-      vim.notify("Alias '" .. alias .. "' not found in aliases file", vim.log.levels.WARN)
-      return false
-    end
-
-    -- Remove the alias
-    aliases_data[alias] = nil
-
-    -- Write the updated aliases back to the file
-    local updated_content = vim.fn.json_encode(aliases_data)
-    file = io.open(aliases_file, "w")
-    if not file then
-      vim.notify("Failed to open aliases file for writing: " .. aliases_file, vim.log.levels.ERROR)
-      return false
-    end
-
-    file:write(updated_content)
-    file:close()
-
-    vim.notify("Successfully removed alias: " .. alias, vim.log.levels.INFO)
-    return true
-  end
+  local result = llm_cli.run_llm_command('alias remove ' .. alias)
+  cache.invalidate('aliases')
+  return result ~= nil
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
@@ -468,12 +278,7 @@ function M.generate_models_list()
   end
 
   local aliases = M.get_model_aliases()
-  local default_model_output, _ = models_io.get_default_model_from_cli()
-  local default_model = ""
-  if default_model_output then
-    default_model = default_model_output:match("Default model: ([^\r\n]+)") or default_model_output:match("([^\r\n]+)") or
-        ""
-  end
+  local default_model = llm_cli.run_llm_command('default')
 
   local lines = {
     "# Model Management",
@@ -704,21 +509,21 @@ function M.setup_models_keymaps(bufnr, manager_module)
   -- Set model under cursor as default
   set_keymap('n', 's',
     string.format([[<Cmd>lua require('%s').set_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
+      manager_module.__name or 'llm.managers.models_manager', bufnr))
 
   -- Set alias for model under cursor
   set_keymap('n', 'a',
     string.format([[<Cmd>lua require('%s').set_alias_for_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
+      manager_module.__name or 'llm.managers.models_manager', bufnr))
 
   -- Remove alias for model under cursor
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').remove_alias_for_model_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
+      manager_module.__name or 'llm.managers.models_manager', bufnr))
 
   set_keymap('n', 'c', -- New keymap for adding custom OpenAI model
     string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
+      manager_module.__name or 'llm.managers.models_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -731,7 +536,7 @@ function M.add_custom_openai_model_interactive(bufnr)
       custom_openai.load_custom_openai_models() -- Reload models
       vim.notify("Custom OpenAI model '" .. (details.model_name or details.model_id) .. "' added successfully.",
         vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Models")
+      require('llm.ui.unified_manager').switch_view("Models")
     else
       vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
     end
@@ -788,7 +593,7 @@ function M.set_model_under_cursor(bufnr)
 
   if result.success then
     ui.notify(result.message, vim.log.levels.INFO)
-    require('llm.unified_manager').switch_view("Models") -- Refresh view
+    require('llm.ui.unified_manager').switch_view("Models") -- Refresh view
   else
     ui.notify(result.message, vim.log.levels.ERROR)
   end
@@ -810,7 +615,7 @@ function M.set_alias_for_model_under_cursor(bufnr)
     if M.set_model_alias(alias, model_id) then
       vim.notify("Alias set: " .. alias .. " -> " .. display_name .. " (ID: " .. model_id .. ")", vim.log.levels.INFO)
       vim.cmd('stopinsert')
-      require('llm.unified_manager').switch_view("Models")
+      require('llm.ui.unified_manager').switch_view("Models")
     else
       vim.notify("Failed to set alias via llm CLI", vim.log.levels.ERROR)
       vim.cmd('stopinsert')
@@ -835,7 +640,7 @@ function M.remove_alias_for_model_under_cursor(bufnr)
       models_view.confirm_remove_alias(alias, function()
         if M.remove_model_alias(alias) then
             vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-            require('llm.unified_manager').switch_view("Models")
+            require('llm.ui.unified_manager').switch_view("Models")
         else
             vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
         end
@@ -876,7 +681,7 @@ end
 
 -- Main function to open the model manager (now delegates to unified manager)
 function M.manage_models()
-  require('llm.unified_manager').open_specific_manager("Models")
+  require('llm.ui.unified_manager').open_specific_manager("Models")
 end
 
 -- Get custom OpenAI models
@@ -906,6 +711,6 @@ function M.create_sample_yaml_file()
 end
 
 -- Add module name for require path in keymaps
-M.__name = 'llm.models.models_manager'
+M.__name = 'llm.managers.models_manager'
 
 return M

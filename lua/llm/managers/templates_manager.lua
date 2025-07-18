@@ -1,25 +1,93 @@
--- llm/templates/templates_manager.lua - Template management for llm-nvim
+-- llm/managers/templates_manager.lua - Template management for llm-nvim
 -- License: Apache 2.0
 
 local M = {}
 
 -- Forward declarations
 local api = vim.api
-local templates_loader = require('llm.templates.templates_loader')
-local templates_view = require('llm.templates.templates_view')
-local utils = require('llm.utils')
-local models_manager = require('llm.models.models_manager')
-local fragments_loader = require('llm.fragments.fragments_loader')
-local schemas_loader = require('llm.schemas.schemas_loader')
-local styles = require('llm.styles') -- Added
+local llm_cli = require('llm.core.data.llm_cli')
+local cache = require('llm.core.data.cache')
+local templates_view = require('llm.ui.views.templates_view')
+local styles = require('llm.ui.styles')
+local models_manager = require('llm.managers.models_manager')
+
+-- Get templates from llm CLI
+function M.get_templates()
+    local cached_templates = cache.get('templates')
+    if cached_templates then
+        return cached_templates
+    end
+
+    local templates_json = llm_cli.run_llm_command('templates list --json')
+    local templates = vim.fn.json_decode(templates_json)
+    cache.set('templates', templates)
+    return templates
+end
+
+-- Get a specific template from llm CLI
+function M.get_template_details(template_name)
+    local template_json = llm_cli.run_llm_command('templates show ' .. template_name)
+    return vim.fn.json_decode(template_json)
+end
+
+-- Create a template
+function M.create_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
+    local cmd = 'templates save ' .. name
+    if prompt then
+        cmd = cmd .. ' --prompt ' .. vim.fn.shellescape(prompt)
+    end
+    if system then
+        cmd = cmd .. ' --system ' .. vim.fn.shellescape(system)
+    end
+    if model then
+        cmd = cmd .. ' --model ' .. model
+    end
+    for k, v in pairs(options) do
+        cmd = cmd .. ' -o ' .. k .. ' ' .. vim.fn.shellescape(v)
+    end
+    for _, f in ipairs(fragments) do
+        cmd = cmd .. ' -f ' .. f
+    end
+    for _, f in ipairs(system_fragments) do
+        cmd = cmd .. ' -sf ' .. f
+    end
+    for k, v in pairs(defaults) do
+        cmd = cmd .. ' -d ' .. k .. ' ' .. vim.fn.shellescape(v)
+    end
+    if extract then
+        cmd = cmd .. ' --extract'
+    end
+    if schema then
+        cmd = cmd .. ' --schema ' .. schema
+    end
+
+    local result = llm_cli.run_llm_command(cmd)
+    cache.invalidate('templates')
+    return result ~= nil
+end
+
+-- Delete a template
+function M.delete_template(template_name)
+    local result = llm_cli.run_llm_command('templates delete ' .. template_name .. ' -y')
+    cache.invalidate('templates')
+    return result ~= nil
+end
+
+-- Run a template
+function M.run_template(template_name, input, params)
+    local cmd = 'llm -t ' .. template_name
+    if input then
+        cmd = cmd .. ' ' .. vim.fn.shellescape(input)
+    end
+    for k, v in pairs(params) do
+        cmd = cmd .. ' -p ' .. k .. ' ' .. vim.fn.shellescape(v)
+    end
+    return llm_cli.run_llm_command(cmd)
+end
 
 -- Select and run a template
 function M.select_template()
-  if not utils.check_llm_installed() then
-    return
-  end
-
-  local templates = templates_loader.get_templates()
+  local templates = M.get_templates()
   templates_view.select_template(templates, function(choice)
     if not choice then return end
 
@@ -29,20 +97,20 @@ function M.select_template()
     local mode = api.nvim_get_mode().mode
     if mode == 'v' or mode == 'V' or mode == '' then
       -- Get the visual selection
-      selection = utils.get_visual_selection()
+      selection = require('llm.core.utils.text').get_visual_selection()
       has_selection = selection ~= ""
     end
 
     if has_selection then
-      M.run_template_with_selection(choice, selection)
+      M.run_template_with_selection(choice.name, selection)
     else
-      M.run_template_with_params(choice)
+      M.run_template_with_params(choice.name)
     end
   end)
 end
 
 function M.run_template_with_selection(template_name, selection)
-  local template = templates_loader.get_template_details(template_name)
+  local template = M.get_template_details(template_name)
   if not template then
     vim.notify("Failed to get template details", vim.log.levels.ERROR)
     return
@@ -53,15 +121,15 @@ function M.run_template_with_selection(template_name, selection)
 
   if #param_names > 0 then
     M.collect_params_and_run(template_name, selection, param_names, template.defaults, function(final_params)
-      local result = templates_loader.run_template(template_name, selection, final_params)
+      local result = M.run_template(template_name, selection, final_params)
       if result then
-        utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
+        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
       end
     end)
   else
-    local result = templates_loader.run_template(template_name, selection, {})
+    local result = M.run_template(template_name, selection, {})
     if result then
-      utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
+      require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
     end
   end
 end
@@ -109,7 +177,7 @@ function M.run_template_with_params(template_name)
     return
   end
 
-  local template = templates_loader.get_template_details(template_name)
+  local template = M.get_template_details(template_name)
   if not template then
     vim.notify("Failed to get template details", vim.log.levels.ERROR)
     return
@@ -137,21 +205,21 @@ function M.run_template_with_input(template_name, params)
     if not choice then return end
 
     if choice == "Current selection" then
-      local selection = utils.get_visual_selection()
+      local selection = require('llm.core.utils.text').get_visual_selection()
       if selection == "" then
         vim.notify("No text selected", vim.log.levels.ERROR)
         return
       end
-      local result = templates_loader.run_template(template_name, selection, params)
+      local result = M.run_template(template_name, selection, params)
       if result then
-        utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
+        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
       end
     elseif choice == "Current buffer" then
       local lines = api.nvim_buf_get_lines(0, 0, -1, false)
       local content = table.concat(lines, "\n")
-      local result = templates_loader.run_template(template_name, content, params)
+      local result = M.run_template(template_name, content, params)
       if result then
-        utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
+        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
       end
     elseif choice == "URL (will use curl)" then
       templates_view.get_user_input("Enter URL:", nil, function(url)
@@ -159,9 +227,9 @@ function M.run_template_with_input(template_name, params)
           vim.notify("URL cannot be empty", vim.log.levels.WARN)
           return
         end
-        local result = templates_loader.run_template_with_url(template_name, url, params)
+        local result = M.run_template(template_name, url, params)
         if result then
-          utils.create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
+          require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
         end
       end)
     end
@@ -170,10 +238,6 @@ end
 
 -- Create a template with guided flow
 function M.create_template()
-  if not utils.check_llm_installed() then
-    return
-  end
-
   templates_view.get_user_input("Enter template name:", nil, function(name)
     if not name or name == "" then
       vim.notify("Template name cannot be empty", vim.log.levels.WARN)
@@ -273,7 +337,7 @@ function M.add_fragments_loop(template, fragment_type, on_done)
     end
 
     if choice == "Select from file browser" then
-      fragments_loader.select_file_as_fragment(function(fragment_path)
+      require('llm.managers.fragments_manager').select_file_as_fragment(function(fragment_path)
         if fragment_path then
           table.insert(template[fragment_type], fragment_path)
         end
@@ -362,7 +426,7 @@ function M.continue_template_creation_schema(template)
       return
     end
 
-    local schemas = schemas_loader.get_schemas()
+    local schemas = require('llm.managers.schemas_manager').get_schemas()
     templates_view.select_schema(schemas, function(schema_name)
       if schema_name then
         template.schema = schema_name
@@ -374,7 +438,7 @@ end
 
 function M.finalize_template_creation(template)
   vim.notify("Creating template '" .. template.name .. "'...", vim.log.levels.INFO)
-  local success = templates_loader.create_template(
+  local success = M.create_template(
     template.name,
     template.prompt,
     template.system,
@@ -402,10 +466,7 @@ end
 
 -- Populate the buffer with template management content
 function M.populate_templates_buffer(bufnr)
-  local templates = templates_loader.get_templates()
-  local template_names = {}
-  for name, _ in pairs(templates) do table.insert(template_names, name) end
-  table.sort(template_names)
+  local templates = M.get_templates()
 
   local lines = {
     "# Template Management",
@@ -420,45 +481,36 @@ function M.populate_templates_buffer(bufnr)
   local line_to_template = {}
   local current_line = #lines + 1
 
-  if #template_names == 0 then
+  if #templates == 0 then
     table.insert(lines, "No templates found. Press 'c' to create one.")
   else
-    for i, name in ipairs(template_names) do
-      local is_loader = name:match("^loader:")
-      local prefix = is_loader and name:match("^loader:(.+)$")
-      local description = templates[name] or ""
-      
-      local entry_lines = {}
-      if is_loader then
-        table.insert(entry_lines, string.format("Loader %d: %s", i, prefix))
-        table.insert(entry_lines, string.format("  Description: %s", description))
-        table.insert(entry_lines, string.format("  Usage: llm -t %s:owner/repo/template", prefix))
-      else
-        table.insert(entry_lines, string.format("Template %d: %s", i, name))
-        table.insert(entry_lines, string.format("  Description: %s", description))
-      end
+    for i, template in ipairs(templates) do
+      local description = template.description or ""
+
+      local entry_lines = {
+        string.format("Template %d: %s", i, template.name),
+        string.format("  Description: %s", description)
+      }
       table.insert(entry_lines, "")
 
       local start_line = current_line
       local end_line = current_line + #entry_lines - 1
-      
+
       for line_num = start_line, end_line do
-        line_to_template[line_num] = name
+        line_to_template[line_num] = template.name
       end
 
-      template_data[name] = {
+      template_data[template.name] = {
         index = i,
         description = description,
         start_line = start_line,
         end_line = end_line,
-        is_loader = is_loader,
-        prefix = prefix
       }
 
-      for _, line in ipairs(entry_lines) do 
-        table.insert(lines, line) 
+      for _, line in ipairs(entry_lines) do
+        table.insert(lines, line)
       end
-      
+
       current_line = current_line + #entry_lines
     end
   end
@@ -478,15 +530,15 @@ function M.setup_templates_keymaps(bufnr, manager_module)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.templates.templates_manager', bufnr))
-  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.templates.templates_manager', bufnr))
-  set_keymap('n', 'e', string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.templates.templates_manager', bufnr))
-  set_keymap('n', 'd', string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.templates.templates_manager', bufnr))
-  set_keymap('n', 'v', string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.templates.templates_manager', bufnr))
+  set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'e', string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'd', string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
+  set_keymap('n', 'v', string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
 end
 
 function M.create_template_from_manager(bufnr)
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.create_template()
   end)
@@ -499,21 +551,10 @@ function M.run_template_under_cursor(bufnr)
     return
   end
 
-  if template_info.is_loader then
-    templates_view.get_user_input("Enter template path for " .. template_info.prefix .. " (e.g. owner/repo/template):", nil, function(path)
-      if not path or path == "" then return end
-      local full_template = template_info.prefix .. ":" .. path
-      require('llm.unified_manager').close()
-      vim.schedule(function()
-        M.run_template_with_params(full_template)
-      end)
-    end)
-  else
-    require('llm.unified_manager').close()
+    require('llm.ui.unified_manager').close()
     vim.schedule(function()
       M.run_template_with_params(template_name)
     end)
-  end
 end
 
 function M.edit_template_under_cursor(bufnr)
@@ -522,7 +563,7 @@ function M.edit_template_under_cursor(bufnr)
     vim.notify("No template found under cursor", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.edit_template(template_name)
   end)
@@ -538,12 +579,12 @@ function M.delete_template_under_cursor(bufnr)
   templates_view.confirm_delete(template_name, function(confirmed)
     if not confirmed then return end
     vim.schedule(function()
-      local success, err = templates_loader.delete_template(template_name)
+      local success = M.delete_template(template_name)
       if success then
         vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
-        require('llm.unified_manager').switch_view("Templates")
+        require('llm.ui.unified_manager').switch_view("Templates")
       else
-        vim.notify("Failed to delete template: " .. (err or "unknown error"), vim.log.levels.ERROR)
+        vim.notify("Failed to delete template", vim.log.levels.ERROR)
       end
     end)
   end)
@@ -556,13 +597,13 @@ function M.view_template_details_under_cursor(bufnr)
     return
   end
 
-  local template = templates_loader.get_template_details(template_name)
+  local template = M.get_template_details(template_name)
   if not template then
     vim.notify("Failed to get template details for '" .. template_name .. "'", vim.log.levels.ERROR)
     return
   end
 
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.show_template_details(template_name, template)
   end)
@@ -575,7 +616,7 @@ function M.show_template_details(template_name, template)
   api.nvim_buf_set_option(detail_buf, "swapfile", false)
   api.nvim_buf_set_name(detail_buf, "Template Details: " .. template_name)
 
-  local detail_win = utils.create_floating_window(detail_buf, 'LLM Template Details: ' .. template_name)
+  local detail_win = require('llm.core.utils.ui').create_floating_window(detail_buf, 'LLM Template Details: ' .. template_name)
 
   local lines = { "# Template: " .. template_name, "" }
   if template.system and template.system ~= "" then
@@ -602,8 +643,8 @@ function M.show_template_details(template_name, template)
 
   set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_detail_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
-  set_detail_keymap("n", "e", string.format([[<Cmd>lua require('llm.templates.templates_manager').edit_template_from_details('%s')<CR>]], template_name))
-  set_detail_keymap("n", "r", string.format([[<Cmd>lua require('llm.templates.templates_manager').run_template_with_params('%s')<CR>]], template_name))
+  set_detail_keymap("n", "e", string.format([[<Cmd>lua require('llm.managers.templates_manager').edit_template_from_details('%s')<CR>]], template_name))
+  set_detail_keymap("n", "r", string.format([[<Cmd>lua require('llm.managers.templates_manager').run_template_with_params('%s')<CR>]], template_name))
 
   styles.setup_buffer_styling(detail_buf)
 end
@@ -627,22 +668,29 @@ function M.get_template_info_under_cursor(bufnr)
 end
 
 function M.manage_templates()
-  require('llm.unified_manager').open_specific_manager("Templates")
+  require('llm.ui.unified_manager').open_specific_manager("Templates")
 end
 
-M.__name = 'llm.templates.templates_manager'
+M.__name = 'llm.managers.templates_manager'
 
 function M.run_template_by_name(template_name)
   if not template_name or template_name == "" then
     vim.notify("No template name provided", vim.log.levels.ERROR)
     return
   end
-  local templates = templates_loader.get_templates()
-  if not templates[template_name] then
+  local templates = M.get_templates()
+  local found = false
+  for _, t in ipairs(templates) do
+    if t.name == template_name then
+      found = true
+      break
+    end
+  end
+  if not found then
     vim.notify("Template '" .. template_name .. "' not found", vim.log.levels.ERROR)
     return
   end
-  require('llm.unified_manager').close()
+  require('llm.ui.unified_manager').close()
   vim.schedule(function()
     M.run_template_with_params(template_name)
   end)
@@ -654,10 +702,5 @@ function M.edit_template_from_details(template_name)
     M.edit_template(template_name)
   end)
 end
-
-M.get_templates = templates_loader.get_templates
-M.get_template_details = templates_loader.get_template_details
-M.delete_template = templates_loader.delete_template
-M.run_template = templates_loader.run_template
 
 return M
