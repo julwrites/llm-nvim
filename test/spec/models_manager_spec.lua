@@ -2,35 +2,54 @@
 
 describe("models_manager", function()
   local models_manager
+  local spy
   local mock_models_io
   local mock_custom_openai
+  local mock_keys_manager
+  local mock_plugins_manager
 
   before_each(function()
+    spy = require('luassert.spy')
     -- Mock models_io
     mock_models_io = {
       get_models_from_cli = function() return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil end,
       get_default_model_from_cli = function() return "gpt-3.5-turbo", nil end,
-      set_default_model_in_cli = function(_) return "success", nil end,
+      set_default_model_in_cli = spy.new(function(_) return "success", nil end),
       get_aliases_from_cli = function() return '{"alias1": "model1", "alias2": "model2"}', nil end,
-      set_alias_in_cli = function(_, _) return "success", nil end,
-      remove_alias_in_cli = function(_) return "success", nil end,
+      set_alias_in_cli = spy.new(function(_, _) return "success", nil end),
+      remove_alias_in_cli = spy.new(function(_) return "success", nil end),
     }
 
     mock_custom_openai = {
       custom_openai_models = {},
       load_custom_openai_models = function() end,
       is_custom_openai_model_valid = function(_) return false end,
+      add = function() end,
+      remove = function() end,
+      load = function() end,
+    }
+
+    mock_keys_manager = {
+        is_key_set = function(_) return false end,
+    }
+    mock_plugins_manager = {
+        is_plugin_installed = function(_) return false end,
     }
 
     -- Load models_manager with mocked dependencies
     package.loaded['llm.models.models_io'] = mock_models_io
     package.loaded['llm.models.custom_openai'] = mock_custom_openai
+    package.loaded['llm.keys.keys_manager'] = mock_keys_manager
+    package.loaded['llm.plugins.plugins_manager'] = mock_plugins_manager
     models_manager = require('llm.models.models_manager')
   end)
 
   after_each(function()
     package.loaded['llm.models.models_io'] = nil
     package.loaded['llm.models.models_manager'] = nil
+    package.loaded['llm.models.custom_openai'] = nil
+    package.loaded['llm.keys.keys_manager'] = nil
+    package.loaded['llm.plugins.plugins_manager'] = nil
   end)
 
   it("should be a table", function()
@@ -87,17 +106,6 @@ describe("models_manager", function()
   end)
 
   describe("get_available_models", function()
-    local mock_custom_openai
-
-    before_each(function()
-      mock_custom_openai = {
-        custom_openai_models = {},
-        load_custom_openai_models = function() end,
-        is_custom_openai_model_valid = function(_) return false end,
-      }
-      models_manager.set_custom_openai(mock_custom_openai)
-    end)
-
     it("should return a list of models from the cli", function()
       mock_models_io.get_models_from_cli = function()
         return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil
@@ -169,13 +177,11 @@ describe("models_manager", function()
 
     it("should call models_io.set_default_model_in_cli with the correct model name", function()
       local model_name = "gpt-3.5-turbo"
-      local spy = require('luassert.spy').on(mock_models_io, "set_default_model_in_cli")
       models_manager.set_default_model(model_name)
-      assert.spy(spy).was.called_with(model_name)
+      assert.spy(mock_models_io.set_default_model_in_cli).was.called_with(model_name)
     end)
 
     it("should return true on success", function()
-      mock_models_io.set_default_model_in_cli = function(_) return "success", nil end
       assert.is_true(models_manager.set_default_model("gpt-3.5-turbo"))
     end)
 
@@ -185,9 +191,8 @@ describe("models_manager", function()
     end)
 
     it("should not call models_io.set_default_model_in_cli if model name is nil", function()
-        local spy = require('luassert.spy').on(mock_models_io, "set_default_model_in_cli")
         models_manager.set_default_model(nil)
-        assert.spy(spy).was_not.called()
+        assert.spy(mock_models_io.set_default_model_in_cli).was_not.called()
     end)
   end)
 
@@ -211,13 +216,11 @@ describe("models_manager", function()
     it("should call models_io.set_alias_in_cli with the correct alias and model", function()
       local alias = "my-alias"
       local model = "gpt-3.5-turbo"
-      local spy = require('luassert.spy').on(mock_models_io, "set_alias_in_cli")
       models_manager.set_model_alias(alias, model)
-      assert.spy(spy).was.called_with(alias, model)
+      assert.spy(mock_models_io.set_alias_in_cli).was.called_with(alias, model)
     end)
 
     it("should return true on success", function()
-      mock_models_io.set_alias_in_cli = function(_, _) return "success", nil end
       assert.is_true(models_manager.set_model_alias("alias", "model"))
     end)
 
@@ -238,13 +241,11 @@ describe("models_manager", function()
 
     it("should call models_io.remove_alias_in_cli with the correct alias", function()
       local alias = "my-alias"
-      local spy = require('luassert.spy').on(mock_models_io, "remove_alias_in_cli")
       models_manager.remove_model_alias(alias)
-      assert.spy(spy).was.called_with(alias)
+      assert.spy(mock_models_io.remove_alias_in_cli).was.called_with(alias)
     end)
 
     it("should return true on success", function()
-      mock_models_io.remove_alias_in_cli = function(_) return "success", nil end
       assert.is_true(models_manager.remove_model_alias("alias"))
     end)
 
@@ -254,9 +255,8 @@ describe("models_manager", function()
     end)
 
     it("should not call models_io.remove_alias_in_cli if alias is nil", function()
-        local spy = require('luassert.spy').on(mock_models_io, "remove_alias_in_cli")
         models_manager.remove_model_alias(nil)
-        assert.spy(spy).was_not.called()
+        assert.spy(mock_models_io.remove_alias_in_cli).was_not.called()
     end)
   end)
 
@@ -269,7 +269,6 @@ describe("models_manager", function()
             is_custom = false,
             full_line = "OpenAI: gpt-4"
         }
-        mock_models_io.set_default_model_in_cli = function(_) return "success", nil end
         models_manager.is_model_available = function() return true end
         local result = models_manager.set_default_model_logic(model_id, model_info)
         assert.is_true(result.success)
@@ -305,20 +304,6 @@ describe("models_manager", function()
   end)
 
   describe("is_model_available", function()
-    local mock_keys_manager
-    local mock_plugins_manager
-
-    before_each(function()
-        mock_keys_manager = {
-            is_key_set = function(_) return false end,
-        }
-        mock_plugins_manager = {
-            is_plugin_installed = function(_) return false end,
-        }
-        package.loaded['llm.keys.keys_manager'] = mock_keys_manager
-        package.loaded['llm.plugins.plugins_manager'] = mock_plugins_manager
-    end)
-
     it("should return true for local models", function()
         assert.is_true(models_manager.is_model_available("local-model"))
     end)
@@ -353,27 +338,15 @@ describe("models_manager", function()
 
   describe("custom models", function()
     it("should add a custom model", function()
-        local mock_file_utils = {
-            save_json = function() end,
-            get_config_dir = function() return "/tmp" end,
-        }
-        package.loaded['llm.utils.file_utils'] = mock_file_utils
-        models_manager = require('llm.models.models_manager')
-        models_manager:load()
+        spy.on(mock_custom_openai, 'add')
         models_manager.add_custom_model("my-custom-model", "My Custom Model")
-        -- The test is not asserting anything here, it's just checking that the code doesn't crash.
+        assert.spy(mock_custom_openai.add).was.called_with("my-custom-model", "My Custom Model")
     end)
 
     it("should remove a custom model", function()
-        local mock_file_utils = {
-            delete_file = function() end,
-            get_config_dir = function() return "/tmp" end,
-        }
-        package.loaded['llm.utils.file_utils'] = mock_file_utils
-        models_manager = require('llm.models.models_manager')
-        models_manager:load()
+        spy.on(mock_custom_openai, 'remove')
         models_manager.remove_custom_model("my-custom-model")
-        -- The test is not asserting anything here, it's just checking that the code doesn't crash.
+        assert.spy(mock_custom_openai.remove).was.called_with("my-custom-model")
     end)
   end)
 end)

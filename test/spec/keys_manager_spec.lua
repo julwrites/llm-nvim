@@ -2,14 +2,19 @@
 
 describe("keys_manager", function()
   local keys_manager
-  local mock_utils
+  local spy
 
   before_each(function()
+    spy = require('luassert.spy')
+    package.loaded['llm.utils'] = {
+      safe_shell_command = spy.new(function() return "", 0 end)
+    }
     keys_manager = require('llm.keys.keys_manager')
   end)
 
   after_each(function()
     package.loaded['llm.keys.keys_manager'] = nil
+    package.loaded['llm.utils'] = nil
   end)
 
   it("should be a table", function()
@@ -19,35 +24,14 @@ describe("keys_manager", function()
   describe("set_api_key", function()
     it("should set an API key", function()
       keys_manager.set_api_key("openai", "test_key")
-      local keys = {}
-      local attempts = 0
-      while not vim.tbl_contains(keys, "openai") and attempts < 10 do
-        vim.wait(100)
-        keys = keys_manager.get_stored_keys()
-        attempts = attempts + 1
-      end
-      assert.is_true(vim.tbl_contains(keys, "openai"))
+      assert.spy(package.loaded['llm.utils'].safe_shell_command).was.called_with('llm keys set openai -v "test_key"')
     end)
   end)
 
   describe("remove_api_key", function()
     it("should remove an API key", function()
-      keys_manager.set_api_key("openai", "test_key")
-      local keys = {}
-      local attempts = 0
-      while not vim.tbl_contains(keys, "openai") and attempts < 10 do
-        vim.wait(100)
-        keys = keys_manager.get_stored_keys()
-        attempts = attempts + 1
-      end
       keys_manager.remove_api_key("openai")
-      attempts = 0
-      while vim.tbl_contains(keys, "openai") and attempts < 10 do
-        vim.wait(100)
-        keys = keys_manager.get_stored_keys()
-        attempts = attempts + 1
-      end
-      assert.is_false(vim.tbl_contains(keys, "openai"))
+      assert.spy(package.loaded['llm.utils'].safe_shell_command).was.called_with("llm keys set openai --remove")
     end)
   end)
 end)
