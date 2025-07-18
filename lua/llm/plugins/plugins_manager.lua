@@ -7,6 +7,7 @@ local M = {}
 local api = vim.api
 local utils = require('llm.utils')
 local plugins_loader = require('llm.plugins.plugins_loader')
+local plugins_view = require('llm.plugins.plugins_view')
 local styles = require('llm.styles') -- Added for highlighting
 
 -- Get plugin descriptions
@@ -229,18 +230,6 @@ function M.setup_plugins_keymaps(bufnr, manager_module)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  -- Helper to get plugin info
-  local function get_plugin_info_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local line_to_plugin = vim.b[bufnr].line_to_plugin
-    local plugin_data = vim.b[bufnr].plugin_data
-    local plugin_name = line_to_plugin and line_to_plugin[current_line]
-    if plugin_name and plugin_data and plugin_data[plugin_name] then
-      return plugin_name, plugin_data[plugin_name]
-    end
-    return nil, nil
-  end
-
   -- Install plugin under cursor
   set_keymap('n', 'i',
     string.format([[<Cmd>lua require('%s').install_plugin_under_cursor(%d)<CR>]],
@@ -255,9 +244,6 @@ function M.setup_plugins_keymaps(bufnr, manager_module)
   set_keymap('n', 'r',
     string.format([[<Cmd>lua require('%s').refresh_plugin_list(%d)<CR>]],
       manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
-
-  -- Debug key (if needed)
-  -- set_keymap('n', 'D', string.format([[<Cmd>lua require('%s').run_debug_functions(%d)<CR>]], manager_module.__name or 'llm.plugins.plugins_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -290,24 +276,21 @@ function M.uninstall_plugin_under_cursor(bufnr)
     return
   end
 
-  utils.floating_confirm({
-    prompt = "Uninstall " .. plugin_name .. "?",
-    on_confirm = function(confirmed)
-      if not confirmed then return end
-      vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
-      
-      -- Run in schedule to avoid blocking UI
-      vim.schedule(function()
-        local success, err = M.uninstall_plugin(plugin_name)
-        if success then
-          vim.notify("Successfully uninstalled: " .. plugin_name, vim.log.levels.INFO)
-          require('llm.unified_manager').switch_view("Plugins")
-        else
-          vim.notify("Failed to uninstall " .. plugin_name .. ": " .. (err or "unknown error"), vim.log.levels.ERROR)
-        end
-      end)
-    end
-  })
+  plugins_view.confirm_uninstall(plugin_name, function(confirmed)
+    if not confirmed then return end
+    vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
+
+    -- Run in schedule to avoid blocking UI
+    vim.schedule(function()
+      local success, err = M.uninstall_plugin(plugin_name)
+      if success then
+        vim.notify("Successfully uninstalled: " .. plugin_name, vim.log.levels.INFO)
+        require('llm.unified_manager').switch_view("Plugins")
+      else
+        vim.notify("Failed to uninstall " .. plugin_name .. ": " .. (err or "unknown error"), vim.log.levels.ERROR)
+      end
+    end)
+  end)
 end
 
 function M.refresh_plugin_list(bufnr)

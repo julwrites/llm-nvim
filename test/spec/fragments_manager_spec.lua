@@ -4,6 +4,7 @@ describe("fragments_manager", function()
   local fragments_manager
   local spy
   local mock_fragments_loader
+  local mock_fragments_view
 
   before_each(function()
     spy = require('luassert.spy')
@@ -43,27 +44,43 @@ describe("fragments_manager", function()
       add_github_fragment = spy.new(function() end),
     }
 
+    mock_fragments_view = {
+        view_fragment = spy.new(function() end),
+        get_alias = function(callback) callback("test") end,
+        select_alias_to_remove = function(aliases, callback) callback("alias1") end,
+        confirm_remove_alias = function(alias, callback) callback(true) end,
+        get_prompt = function(callback) callback("test prompt") end,
+    }
+
     package.loaded['llm.fragments.fragments_loader'] = mock_fragments_loader
+    package.loaded['llm.fragments.fragments_view'] = mock_fragments_view
     package.loaded['llm.unified_manager'] = {
       switch_view = function() end,
-    }
-    package.loaded['llm.utils'] = {
-        floating_input = function(_, cb) cb("test") end,
-        floating_confirm = function(opts) opts.on_confirm(true) end,
-        create_floating_window = function() end,
     }
     package.loaded['llm'] = {
         prompt = spy.new(function() end)
     }
 
     fragments_manager = require('llm.fragments.fragments_manager')
+
+    fragments_manager.get_fragment_info_under_cursor = function()
+        return "hash1", {
+            hash = 'hash1',
+            aliases = { 'alias1' },
+            source = 'source1',
+            content = 'content1',
+            datetime = 'datetime1',
+        }
+    end
+
+    vim.api.nvim_win_close = function() end
   end)
 
   after_each(function()
     package.loaded['llm.fragments.fragments_loader'] = nil
+    package.loaded['llm.fragments.fragments_view'] = nil
     package.loaded['llm.fragments.fragments_manager'] = nil
     package.loaded['llm.unified_manager'] = nil
-    package.loaded['llm.utils'] = nil
     package.loaded['llm'] = nil
   end)
 
@@ -73,11 +90,6 @@ describe("fragments_manager", function()
 
   describe("set_alias_for_fragment_under_cursor", function()
     it("should set an alias for a fragment", function()
-      vim.b[1] = {
-        line_to_fragment = { [1] = "hash1" },
-        fragment_data = { hash1 = { start_line = 1, end_line = 6 } },
-      }
-      vim.api.nvim_win_set_cursor(0, { 1, 0 })
       fragments_manager.set_alias_for_fragment_under_cursor(1)
       assert.spy(mock_fragments_loader.set_fragment_alias).was.called_with("hash1", "test")
     end)
@@ -85,11 +97,6 @@ describe("fragments_manager", function()
 
   describe("remove_alias_from_fragment_under_cursor", function()
     it("should remove an alias from a fragment", function()
-        vim.b[1] = {
-            line_to_fragment = { [1] = "hash1" },
-            fragment_data = { hash1 = { start_line = 1, end_line = 6, aliases = { "alias1" } } },
-        }
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
         fragments_manager.remove_alias_from_fragment_under_cursor(1)
         assert.spy(mock_fragments_loader.remove_fragment_alias).was.called_with("alias1")
     end)
@@ -111,13 +118,15 @@ describe("fragments_manager", function()
 
   describe("prompt_with_fragment_under_cursor", function()
     it("should prompt with a fragment", function()
-        vim.b[1] = {
-            line_to_fragment = { [1] = "hash1" },
-            fragment_data = { hash1 = { start_line = 1, end_line = 6, aliases = { "alias1" } } },
-        }
-        vim.api.nvim_win_set_cursor(0, { 1, 0 })
         fragments_manager.prompt_with_fragment_under_cursor(1)
-        assert.spy(package.loaded['llm'].prompt).was.called_with("test", { "alias1" })
+        assert.spy(package.loaded['llm'].prompt).was.called_with("test prompt", { "alias1" })
+    end)
+  end)
+
+  describe("view_fragment_under_cursor", function()
+    it("should view a fragment", function()
+      fragments_manager.view_fragment_under_cursor(1)
+      assert.spy(mock_fragments_view.view_fragment).was.called()
     end)
   end)
 end)

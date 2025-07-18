@@ -40,7 +40,7 @@ describe("generate_models_list", function()
         return { "OpenAI: gpt-3.5-turbo", "Anthropic: claude-2" }
     end
     mock_models_io.get_default_model_from_cli = function()
-      return "OpenAI: gpt-3.5-turbo", nil
+      return "gpt-3.5-turbo", nil
     end
 
     local data = models_manager.generate_models_list()
