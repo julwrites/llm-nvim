@@ -780,23 +780,17 @@ function M.create_template_from_manager(bufnr)
   end)
 end
 
-function M.run_template_under_cursor(bufnr)
-  local template_name, template_info = M.get_template_info_under_cursor(bufnr)
-  if not template_name then
-    vim.notify("No template found under cursor", vim.log.levels.ERROR)
-    return
-  end
-
+function M.run_template_logic(template_name, template_info, callback)
   if template_info and template_info.is_loader then
     -- For template loaders, prompt for the full template path
     utils.floating_input({
       prompt = string.format("Enter template path for %s (e.g. owner/repo/template):", template_info.prefix),
     }, function(path)
       if not path or path == "" then return end
-      
+
       -- Construct full template name with prefix
       local full_template = template_info.prefix .. ":" .. path
-      
+
       -- Verify the template exists by trying to get its details
       local template_details = templates_loader.get_template_details(full_template)
       if not template_details then
@@ -804,9 +798,30 @@ function M.run_template_under_cursor(bufnr)
         return
       end
 
-      -- Close manager and proceed with regular template flow
-      require('llm.unified_manager').close()
-      vim.schedule(function(self)
+      if callback then
+        callback(full_template, template_details)
+      end
+    end)
+  else
+    -- Regular template
+    if callback then
+      callback(template_name)
+    end
+  end
+end
+
+function M.run_template_under_cursor(bufnr)
+  local template_name, template_info = M.get_template_info_under_cursor(bufnr)
+  if not template_name then
+    vim.notify("No template found under cursor", vim.log.levels.ERROR)
+    return
+  end
+
+  M.run_template_logic(template_name, template_info, function(full_template, template_details)
+    -- Close manager and proceed with regular template flow
+    require('llm.unified_manager').close()
+    vim.schedule(function(self)
+      if template_details then
         -- First check if we need parameters
         local params = {}
         local param_names = {}
@@ -852,15 +867,11 @@ function M.run_template_under_cursor(bufnr)
           -- No parameters needed, ask for input source directly
           self.run_template_with_input(full_template, params)
         end
-      end, M)
-    end)
-  else
-    -- Regular template
-    require('llm.unified_manager').close()
-    vim.schedule(function(self)
-      self.run_template_with_params(template_name)
+      else
+        self.run_template_with_params(full_template)
+      end
     end, M)
-  end
+  end)
 end
 
 function M.edit_template_under_cursor(bufnr)
@@ -873,6 +884,18 @@ function M.edit_template_under_cursor(bufnr)
   vim.schedule(function(self)
     self.edit_template(template_name)       -- This function handles reopening the manager
   end, M)
+end
+
+function M.delete_template_logic(template_name, callback)
+  local success, err = templates_loader.delete_template(template_name)
+  if success then
+    vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
+    if callback then
+      callback()
+    end
+  else
+    vim.notify("Failed to delete template: " .. (err or "unknown error"), vim.log.levels.ERROR)
+  end
 end
 
 function M.delete_template_under_cursor(bufnr)
@@ -890,13 +913,9 @@ function M.delete_template_under_cursor(bufnr)
 
       -- Perform deletion in a scheduled callback to ensure UI updates properly
       vim.schedule(function()
-        local success, err = templates_loader.delete_template(template_name)
-        if success then
-          vim.notify("Template '" .. template_name .. "' deleted", vim.log.levels.INFO)
+        M.delete_template_logic(template_name, function()
           require('llm.unified_manager').switch_view("Templates")
-        else
-          vim.notify("Failed to delete template: " .. (err or "unknown error"), vim.log.levels.ERROR)
-        end
+        end)
       end)
     end
   })
