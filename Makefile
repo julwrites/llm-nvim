@@ -5,15 +5,25 @@
 
 # Run tests
 test:
-	@for file in `find ./test/spec -name "*_spec.lua"`; do \
+	@if [ -z "$(file)" ]; then \
+		for file in `find ./test/spec -name "*_spec.lua"`; do \
+			nvim --headless -u NONE -i NONE -n \
+				-c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
+				-c "lua vim.opt.rtp:append('./test/lua')" \
+				-c "lua vim.opt.rtp:append('.')" \
+				-c "runtime plugin/llm.lua" \
+				-c "lua require('plenary.busted').run('$$file')" \
+				-c "q"; \
+		done \
+	else \
 		nvim --headless -u NONE -i NONE -n \
 			-c "lua vim.opt.rtp:append('./test/plenary.nvim')" \
 			-c "lua vim.opt.rtp:append('./test/lua')" \
 			-c "lua vim.opt.rtp:append('.')" \
 			-c "runtime plugin/llm.lua" \
-			-c "lua require('plenary.busted').run('$$file')" \
+			-c "lua require('plenary.busted').run('$(file)')" \
 			-c "q"; \
-	done
+	fi
 
 # Install test dependencies
 test-deps:

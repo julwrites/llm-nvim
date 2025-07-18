@@ -14,6 +14,7 @@ local commands = require('llm.commands')
 
 local custom_openai = require('llm.models.custom_openai')
 local models_io = require('llm.models.models_io')
+local models_view = require('llm.models.models_view')
 
 function M.set_custom_openai(new_custom_openai)
     custom_openai = new_custom_openai
@@ -438,20 +439,10 @@ function M.select_model()
     return
   end
 
-  vim.ui.select(models, {
-    prompt = "Select LLM model:",
-    format_item = function(item)
-      return item
-    end
-  }, function(choice)
+  models_view.select_model(models, function(choice)
     if not choice then return end
-
-    -- Extract model name from the full model line
     local model_name = M.extract_model_name(choice)
-
-    -- Set the model in config
     config.options.model = model_name
-
     vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
   end)
 end
@@ -710,36 +701,6 @@ function M.setup_models_keymaps(bufnr, manager_module)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  -- Helper function to get model info (ID and data) from current line
-  local function get_model_info_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local line_to_model_id = vim.b[bufnr].line_to_model_id
-    local model_data = vim.b[bufnr].model_data
-
-    if not line_to_model_id or not model_data then
-      if config.get("debug") then
-        vim.notify(string.format("Buffer data missing for bufnr %d (line_to_model_id: %s, model_data: %s)",
-          bufnr, tostring(line_to_model_id), tostring(model_data)), vim.log.levels.DEBUG)
-      end
-      return nil, nil -- Return nil for both model_id and model_info
-    end
-
-    local model_id = line_to_model_id[current_line]
-    if model_id and model_data[model_id] then
-      -- Return model_id and the corresponding data table
-      return model_id, model_data[model_id]
-    end
-
-    -- Add debug log if no model info is found for the line
-    if config.get("debug") then
-      local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
-      vim.notify(string.format("No model info found for line %d (content: '%s', mapped_id: %s) in bufnr %d",
-        current_line, line_content or "nil", tostring(model_id), bufnr), vim.log.levels.DEBUG)
-    end
-
-    return nil, nil -- Return nil for both model_id and model_info
-  end
-
   -- Set model under cursor as default
   set_keymap('n', 's',
     string.format([[<Cmd>lua require('%s').set_model_under_cursor(%d)<CR>]],
@@ -755,68 +716,26 @@ function M.setup_models_keymaps(bufnr, manager_module)
     string.format([[<Cmd>lua require('%s').remove_alias_for_model_under_cursor(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
 
-  -- Add custom alias (when on the [+] line)
-  set_keymap('n', '<CR>',
-    string.format([[<Cmd>lua require('%s').handle_action_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.models.models_manager', bufnr))
-
   set_keymap('n', 'c', -- New keymap for adding custom OpenAI model
     string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]],
       manager_module.__name or 'llm.models.models_manager', bufnr))
-
-  -- REMOVED 'c' keymap for chat (this comment is now redundant as 'c' is reused)
 end
 
 -- Action functions called by keymaps (now accept bufnr)
 
 -- Function to add a new custom OpenAI model via interactive input
 function M.add_custom_openai_model_interactive(bufnr)
-  local original_win = api.nvim_get_current_win() -- Store original window
-
-  utils.floating_input({ prompt = "Enter Model ID (e.g., gpt-3.5-turbo-custom):" }, function(model_id)
-    if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
-    if not model_id or model_id == "" then
-      vim.notify("Model ID cannot be empty. Aborted.", vim.log.levels.WARN)
-      return
+  models_view.get_custom_model_details(function(details)
+    local success, err_msg = custom_openai.add_custom_openai_model(details)
+    if success then
+      custom_openai.load_custom_openai_models() -- Reload models
+      vim.notify("Custom OpenAI model '" .. (details.model_name or details.model_id) .. "' added successfully.",
+        vim.log.levels.INFO)
+      require('llm.unified_manager').switch_view("Models")
+    else
+      vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
     end
-
-    utils.floating_input({ prompt = "Enter Model Name (display name, optional):" }, function(model_name)
-      if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
-      local final_model_name = (model_name and model_name ~= "") and model_name or nil
-
-      utils.floating_input({ prompt = "Enter API Base URL (optional):" }, function(api_base)
-        if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
-        local final_api_base = (api_base and api_base ~= "") and api_base or nil
-
-        utils.floating_input({ prompt = "Enter API Key Name (optional, from keys.json):" }, function(api_key_name)
-          if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
-          local final_api_key_name = (api_key_name and api_key_name ~= "") and api_key_name or nil
-
-          -- For now, we are not prompting for headers, needs_auth etc. in this interactive flow.
-          -- Those can be added later if desired, or users can edit the YAML.
-          -- Passing existing defaults from custom_openai.add_custom_openai_model
-          local model_details = {
-            model_id = model_id,
-            model_name = final_model_name,
-            api_base = final_api_base,
-            api_key_name = final_api_key_name,
-            -- headers, needs_auth, supports_functions, supports_system_prompt will use defaults in add_custom_openai_model
-          }
-
-          local success, err_msg = custom_openai.add_custom_openai_model(model_details)
-
-          if success then
-            custom_openai.load_custom_openai_models() -- Reload models
-            vim.notify("Custom OpenAI model '" .. (final_model_name or model_id) .. "' added successfully.",
-              vim.log.levels.INFO)
-            require('llm.unified_manager').switch_view("Models")
-          else
-            vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
-          end
-          vim.cmd('stopinsert') -- Ensure normal mode
-        end)
-      end)
-    end)
+    vim.cmd('stopinsert') -- Ensure normal mode
   end)
 end
 
@@ -881,16 +800,13 @@ function M.set_alias_for_model_under_cursor(bufnr)
   if not model_id or not model_info then return end
 
   local display_name = model_info.model_name or model_id
-  local original_win = api.nvim_get_current_win()
 
-  utils.floating_input({ prompt = "Enter alias for model '" .. display_name .. "': " }, function(alias)
-    if api.nvim_win_is_valid(original_win) then api.nvim_set_current_win(original_win) end
+  models_view.get_alias(display_name, function(alias)
     if not alias or alias == "" then
       vim.notify("Alias cannot be empty", vim.log.levels.WARN)
       return
     end
 
-    -- Use model_id when setting the alias via CLI
     if M.set_model_alias(alias, model_id) then
       vim.notify("Alias set: " .. alias .. " -> " .. display_name .. " (ID: " .. model_id .. ")", vim.log.levels.INFO)
       vim.cmd('stopinsert')
@@ -900,26 +816,6 @@ function M.set_alias_for_model_under_cursor(bufnr)
       vim.cmd('stopinsert')
     end
   end)
-end
-
-function M.handle_action_under_cursor(bufnr)
-  -- local current_line = api.nvim_win_get_cursor(0)[1]
-  -- local line_content = api.nvim_buf_get_lines(bufnr, current_line - 1, current_line, false)[1]
-  -- local original_win = api.nvim_get_current_win() -- Store original window
-
-  -- REMOVED logic for "[+] Add custom OpenAI model" as it's now in M.add_custom_openai_model_interactive
-  -- REMOVED logic for "[+] Add custom alias" as 'a' keymap is used directly on a model
-
-  -- If <CR> is pressed on a model line, it currently does nothing specific beyond
-  -- what other plugins might do for a an enter key in a nofile buffer.
-  -- Could potentially make it an alias for 's' (set default) or another action if desired.
-  -- For now, it does nothing if not on a previously active [+] line.
-  if config.get("debug") then
-    local line_content = api.nvim_buf_get_lines(bufnr, api.nvim_win_get_cursor(0)[1] - 1, api.nvim_win_get_cursor(0)[1],
-      false)[1]
-    vim.notify("Enter pressed on line: " .. (line_content or "empty") .. ". No specific action for <CR> on this line.",
-      vim.log.levels.DEBUG)
-  end
 end
 
 -- Removes an alias associated with the model under the cursor.
@@ -934,26 +830,16 @@ function M.remove_alias_for_model_under_cursor(bufnr)
     return
   end
 
-  vim.ui.select(model_info.aliases, {
-      prompt = "Select alias to remove:",
-      format_item = function(item) return item end
-    },
-    function(alias)
+  models_view.select_alias_to_remove(model_info.aliases, function(alias)
       if not alias then return end
-
-      utils.floating_confirm({
-        prompt = "Remove alias '" .. alias .. "'?",
-        on_confirm = function(choice)
-          if choice == "Yes" then
-            if M.remove_model_alias(alias) then
-              vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-              require('llm.unified_manager').switch_view("Models")
-            else
-              vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
-            end
-          end
+      models_view.confirm_remove_alias(alias, function()
+        if M.remove_model_alias(alias) then
+            vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+            require('llm.unified_manager').switch_view("Models")
+        else
+            vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
         end
-      })
+      end)
     end
   )
 end

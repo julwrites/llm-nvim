@@ -2,108 +2,83 @@
 
 describe("keys_manager", function()
   local keys_manager
-  local mock_fs
-  local mock_file_utils
+  local spy
+  local mock_keys_view
+  local mock_utils
 
   before_each(function()
-    mock_fs = {
-      find = function(_, _) return {} end,
+    spy = require('luassert.spy')
+    mock_keys_view = {
+      get_custom_key_name = function(callback) callback("custom_key") end,
+      get_api_key = function(provider, callback) callback("test_key") end,
+      confirm_remove_key = function(provider, callback) callback() end,
+    }
+    mock_utils = {
+        check_llm_installed = function() return true end,
+        get_config_path = function() return "", "/tmp/keys.json" end,
+    }
+    package.loaded['llm.keys.keys_view'] = mock_keys_view
+    package.loaded['llm.utils'] = mock_utils
+    package.loaded['llm.unified_manager'] = {
+        switch_view = function() end
     }
 
-    mock_file_utils = {
-      save_json = function(_, _) end,
-      get_config_dir = function() return "config_dir" end,
-      rename_file = function(_, _) end,
-      delete_file = function(_) end,
-    }
+    -- Mock io functions
+    io.open = function()
+        return {
+            read = function() return '{}' end,
+            write = function() end,
+            close = function() end,
+        }
+    end
+    os.execute = function() end
 
-    package.loaded['llm.utils.file_utils'] = mock_file_utils
-    package.loaded['llm.keys.keys_manager'] = require('llm.keys.keys_manager')
+
     keys_manager = require('llm.keys.keys_manager')
+    keys_manager.get_provider_info_under_cursor = function()
+        return "openai", {}
+    end
+    vim.b = {
+        [1] = {
+            stored_keys_set = { openai = true }
+        }
+    }
   end)
 
   after_each(function()
-    package.loaded['llm.utils.file_utils'] = nil
+    package.loaded['llm.keys.keys_view'] = nil
     package.loaded['llm.keys.keys_manager'] = nil
+    package.loaded['llm.utils'] = nil
+    package.loaded['llm.unified_manager'] = nil
+    io.open = nil
+    os.execute = nil
   end)
 
   it("should be a table", function()
     assert.is_table(keys_manager)
   end)
 
-  describe("is_key_set", function()
-    it("should return true if a key is found", function()
-      mock_fs.find = function(_, _) return { "some/path/keys.json" } end
-      assert.is_true(keys_manager.is_key_set("openai"))
-    end)
-
-    it("should return false if no key is found", function()
-      assert.is_false(keys_manager.is_key_set("openai"))
-    end)
-
-    it("should return false for a nil provider", function()
-      assert.is_false(keys_manager.is_key_set(nil))
+  describe("set_api_key", function()
+    it("should set an API key", function()
+      local set_spy = spy.on(keys_manager, 'set_api_key')
+      keys_manager.set_key_under_cursor(1)
+      assert.spy(set_spy).was.called_with("openai", "test_key")
     end)
   end)
 
-  describe("get_keys", function()
-    it("should return a list of available keys", function()
-      mock_fs.find = function(_, _) return { "some/path/openai.json", "some/path/anthropic.json" } end
-      local keys = keys_manager.get_keys()
-      assert.are.same({ "anthropic", "openai" }, keys)
-    end)
-
-    it("should return an empty list if no keys are found", function()
-      local keys = keys_manager.get_keys()
-      assert.are.same({}, keys)
+  describe("remove_api_key", function()
+    it("should remove an API key", function()
+      local remove_spy = spy.on(keys_manager, 'remove_api_key')
+      keys_manager.remove_key_under_cursor(1)
+      assert.spy(remove_spy).was.called_with("openai")
     end)
   end)
 
-  describe("save_key", function()
-    it("should create a new key", function()
-      local saved_path, saved_data
-      mock_file_utils.save_json = function(path, data)
-        saved_path = path
-        saved_data = data
-      end
-      keys_manager.save_key("new_provider", "new_key")
-      assert.are.equal("config_dir/keys/new_provider.json", saved_path)
-      assert.are.same({ key = "new_key" }, saved_data)
-    end)
-
-    it("should update an existing key", function()
-      local saved_path, saved_data
-      mock_file_utils.save_json = function(path, data)
-        saved_path = path
-        saved_data = data
-      end
-      keys_manager.save_key("existing_provider", "updated_key")
-      assert.are.equal("config_dir/keys/existing_provider.json", saved_path)
-      assert.are.same({ key = "updated_key" }, saved_data)
-    end)
-  end)
-
-  describe("rename_key", function()
-    it("should rename a key", function()
-      local old_path, new_path
-      mock_file_utils.rename_file = function(old, new)
-        old_path = old
-        new_path = new
-      end
-      keys_manager.rename_key("old_provider", "new_provider")
-      assert.are.equal("config_dir/keys/old_provider.json", old_path)
-      assert.are.equal("config_dir/keys/new_provider.json", new_path)
-    end)
-  end)
-
-  describe("delete_key", function()
-    it("should delete a key", function()
-      local deleted_path
-      mock_file_utils.delete_file = function(path)
-        deleted_path = path
-      end
-      keys_manager.delete_key("provider_to_delete")
-      assert.are.equal("config_dir/keys/provider_to_delete.json", deleted_path)
+  describe("add_new_custom_key_interactive", function()
+    it("should add a new custom key", function()
+        local set_spy = spy.on(keys_manager, 'set_api_key')
+        keys_manager.add_new_custom_key_interactive(1)
+        assert.spy(set_spy).was.called_with("custom_key", "test_key")
     end)
   end)
 end)
