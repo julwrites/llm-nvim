@@ -1,15 +1,15 @@
--- llm/plugins/plugins_view.lua - UI functions for plugin management
+-- llm/ui/views/plugins_view.lua - UI functions for plugin management
 -- License: Apache 2.0
 
 local M = {}
 
-local utils = require('llm.utils')
+local ui = require('llm.core.utils.ui')
 
 function M.confirm_uninstall(plugin_name, callback)
-  utils.floating_confirm({
+  ui.floating_confirm({
     prompt = "Uninstall " .. plugin_name .. "?",
     on_confirm = function(confirmed)
-      callback(confirmed)
+      callback(confirmed == "Yes")
     end
   })
 end

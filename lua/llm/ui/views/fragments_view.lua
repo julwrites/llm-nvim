@@ -1,9 +1,9 @@
--- llm/fragments/fragments_view.lua - UI functions for fragment management
+-- llm/ui/views/fragments_view.lua - UI functions for fragment management
 -- License: Apache 2.0
 
 local M = {}
 
-local utils = require('llm.utils')
+local ui = require('llm.core.utils.ui')
 local api = vim.api
 
 function M.view_fragment(fragment_hash, fragment_info)
@@ -13,7 +13,7 @@ function M.view_fragment(fragment_hash, fragment_info)
   api.nvim_buf_set_option(content_buf, 'swapfile', false)
   api.nvim_buf_set_name(content_buf, 'Fragment: ' .. fragment_hash:sub(1, 8))
 
-  utils.create_floating_window(content_buf, 'LLM Fragment Content')
+  ui.create_floating_window(content_buf, 'LLM Fragment Content')
 
   local content_lines = {
     "# Fragment: " .. fragment_hash,
@@ -46,7 +46,7 @@ function M.view_fragment(fragment_hash, fragment_info)
 end
 
 function M.get_alias(callback)
-  utils.floating_input({ prompt = "Enter alias for fragment: " }, callback)
+  ui.floating_input({ prompt = "Enter alias for fragment: " }, callback)
 end
 
 function M.select_alias_to_remove(aliases, callback)
@@ -54,18 +54,30 @@ function M.select_alias_to_remove(aliases, callback)
 end
 
 function M.confirm_remove_alias(alias, callback)
-  utils.floating_confirm({
+  ui.floating_confirm({
     prompt = "Remove alias '" .. alias .. "'?",
     on_confirm = function(confirmed)
-      callback(confirmed)
+      callback(confirmed == "Yes")
     end
   })
 end
 
 function M.get_prompt(callback)
-    utils.floating_input({
+    ui.floating_input({
         prompt = "Enter prompt to use with fragment: "
     }, callback)
+end
+
+function M.select_file(callback)
+    vim.ui.input({ prompt = "Enter file path: ", completion = "file" }, function(path)
+        callback(path)
+    end)
+end
+
+function M.get_github_url(callback)
+    vim.ui.input({ prompt = "Enter GitHub URL: " }, function(url)
+        callback(url)
+    end)
 end
 
 return M

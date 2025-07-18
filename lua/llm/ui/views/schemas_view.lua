@@ -1,31 +1,30 @@
--- llm/schemas/schemas_view.lua - UI functions for schema management
+-- llm/ui/views/schemas_view.lua - UI functions for schema management
 -- License: Apache 2.0
 
 local M = {}
 
-local utils = require('llm.utils')
+local ui = require('llm.core.utils.ui')
+local styles = require('llm.ui.styles')
 local api = vim.api
 
 function M.select_schema(schemas, callback)
-  local schema_ids = {}
-  local schema_descriptions = {}
+  local schema_items = {}
 
-  for id, description in pairs(schemas) do
-    table.insert(schema_ids, id)
-    schema_descriptions[id] = description
+  for _, schema in ipairs(schemas) do
+    table.insert(schema_items, schema)
   end
 
-  if #schema_ids == 0 then
+  if #schema_items == 0 then
     vim.notify("No schemas found", vim.log.levels.INFO)
     return
   end
 
-  table.sort(schema_ids)
+  table.sort(schema_items, function(a, b) return a.name < b.name end)
 
-  vim.ui.select(schema_ids, {
+  vim.ui.select(schema_items, {
     prompt = "Select a schema to run:",
     format_item = function(item)
-      return item .. " - " .. (schema_descriptions[item] or "")
+      return item.name .. " - " .. (item.description or "")
     end
   }, callback)
 end
@@ -50,23 +49,20 @@ function M.get_input_source(callback)
 end
 
 function M.get_url(callback)
-  utils.floating_input({
+  ui.floating_input({
     prompt = "Enter URL:",
-    on_confirm = callback,
-  })
+  }, callback)
 end
 
 function M.get_schema_name(callback)
-  utils.floating_input({
+  ui.floating_input({
     prompt = "Enter schema name:",
-    on_confirm = callback,
-  })
+  }, callback)
 end
 
 function M.get_schema_format(callback)
-  utils.floating_confirm({
+  ui.floating_confirm({
     prompt = "Select schema format:",
-    options = { "JSON Schema", "DSL (simplified schema syntax)" },
     on_confirm = callback,
   })
 end
@@ -74,18 +70,17 @@ end
 function M.get_alias(current_alias, callback)
   local prompt_text = current_alias and "Enter new alias (current: " .. current_alias .. "): " or
       "Enter alias for schema: "
-  utils.floating_input({
+  ui.floating_input({
     prompt = prompt_text,
     default = current_alias or "",
-    on_confirm = callback,
-  })
+  }, callback)
 end
 
 function M.confirm_delete_alias(alias, callback)
-  utils.floating_confirm({
+  ui.floating_confirm({
     prompt = "Delete alias '" .. alias .. "'?",
     on_confirm = function(confirmed)
-      callback(confirmed)
+      callback(confirmed == "Yes")
     end,
   })
 end
@@ -97,7 +92,7 @@ function M.show_details(schema_id, schema, manager)
   api.nvim_buf_set_option(detail_buf, "swapfile", false)
   api.nvim_buf_set_name(detail_buf, "Schema Details: " .. schema_id)
 
-  local detail_win = utils.create_floating_window(detail_buf, 'LLM Schema Details: ' .. schema_id)
+  local detail_win = ui.create_floating_window(detail_buf, 'LLM Schema Details: ' .. schema_id)
 
   local lines = { "# Schema: " .. schema_id, "" }
   if schema.name then
@@ -141,15 +136,15 @@ function M.show_details(schema_id, schema, manager)
   set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_detail_keymap("n", "<Esc>", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
   set_detail_keymap("n", "r",
-    string.format([[<Cmd>lua require('llm.schemas.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
+    string.format([[<Cmd>lua require('llm.managers.schemas_manager').run_schema_from_details('%s')<CR>]], schema_id))
   set_detail_keymap("n", "e",
-    string.format([[<Cmd>lua require('llm.schemas.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
+    string.format([[<Cmd>lua require('llm.managers.schemas_manager').edit_schema_from_details('%s')<CR>]], schema_id))
   set_detail_keymap("n", "a",
-    string.format([[<Cmd>lua require('llm.schemas.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
+    string.format([[<Cmd>lua require('llm.managers.schemas_manager').set_alias_from_details('%s')<CR>]], schema_id))
   set_detail_keymap("n", "d",
-    string.format([[<Cmd>lua require('llm.schemas.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
+    string.format([[<Cmd>lua require('llm.managers.schemas_manager').delete_alias_from_details('%s')<CR>]], schema_id))
 
-  require('llm.styles').setup_buffer_styling(detail_buf)
+  styles.setup_buffer_syntax(detail_buf)
 end
 
 return M

@@ -1,36 +1,34 @@
--- llm/templates/templates_view.lua - UI functions for template management
+-- llm/ui/views/templates_view.lua - UI functions for template management
 -- License: Apache 2.0
 
 local M = {}
 
-local utils = require('llm.utils')
+local ui = require('llm.core.utils.ui')
 
 function M.select_template(templates, callback)
-    local template_names = {}
-    local template_descriptions = {}
+    local template_items = {}
 
-    for name, description in pairs(templates) do
-        table.insert(template_names, name)
-        template_descriptions[name] = description
+    for _, template in ipairs(templates) do
+        table.insert(template_items, template)
     end
 
-    if #template_names == 0 then
+    if #template_items == 0 then
         vim.notify("No templates found", vim.log.levels.INFO)
         return
     end
 
-    table.sort(template_names)
+    table.sort(template_items, function(a,b) return a.name < b.name end)
 
-    vim.ui.select(template_names, {
+    vim.ui.select(template_items, {
         prompt = "Select a template to run:",
         format_item = function(item)
-            return item .. " - " .. (template_descriptions[item] or "")
+            return item.name .. " - " .. (item.description or "")
         end
     }, callback)
 end
 
 function M.get_user_input(prompt, default, callback)
-    utils.floating_input({
+    ui.floating_input({
         prompt = prompt,
         default = default,
     }, callback)
@@ -111,12 +109,12 @@ function M.get_option_choice(callback)
 end
 
 function M.confirm_extract(callback)
-    utils.floating_confirm({
+    ui.floating_confirm({
         prompt = "Extract first code block from response?",
-        options = { "Yes", "No" }
-    }, function(choice)
-        callback(choice == "Yes")
-    end)
+        on_confirm = function(choice)
+            callback(choice == "Yes")
+        end
+    })
 end
 
 function M.get_schema_choice(callback)
@@ -130,8 +128,8 @@ end
 
 function M.select_schema(schemas, callback)
     local schema_names = {}
-    for name, _ in pairs(schemas) do
-        table.insert(schema_names, name)
+    for _, schema in ipairs(schemas) do
+        table.insert(schema_names, schema.name)
     end
     table.sort(schema_names)
 
@@ -147,9 +145,13 @@ function M.select_schema(schemas, callback)
 end
 
 function M.confirm_delete(template_name, callback)
-    utils.floating_confirm({
+    ui.floating_confirm({
         prompt = "Delete template '" .. template_name .. "'?",
-        on_confirm = callback,
+        on_confirm = function(choice)
+            if choice == "Yes" then
+                callback()
+            end
+        end
     })
 end
 
