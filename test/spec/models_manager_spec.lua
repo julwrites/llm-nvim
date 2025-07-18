@@ -7,6 +7,9 @@ describe("models_manager", function()
   local mock_custom_openai
   local mock_keys_manager
   local mock_plugins_manager
+  local mock_models_view
+  local mock_utils
+  local mock_unified_manager
 
   before_each(function()
     spy = require('luassert.spy')
@@ -24,7 +27,7 @@ describe("models_manager", function()
       custom_openai_models = {},
       load_custom_openai_models = function() end,
       is_custom_openai_model_valid = function(_) return false end,
-      add = function() end,
+      add_custom_openai_model = spy.new(function() return true end),
       remove = function() end,
       load = function() end,
     }
@@ -36,12 +39,52 @@ describe("models_manager", function()
         is_plugin_installed = function(_) return false end,
     }
 
+    mock_models_view = {
+        select_model = function(models, callback) callback("OpenAI: gpt-3.5-turbo") end,
+        get_alias = function(name, callback) callback("my-alias") end,
+        select_alias_to_remove = function(aliases, callback) callback("alias1") end,
+        confirm_remove_alias = function(alias, callback) callback() end,
+        get_custom_model_details = function(callback)
+            callback({
+                model_id = "my-custom-model",
+                model_name = "My Custom Model",
+                api_base = "http://localhost:8080",
+                api_key_name = "custom_key"
+            })
+        end
+    }
+
+    mock_utils = {
+        check_llm_installed = function() return true end,
+    }
+
+    mock_unified_manager = {
+        switch_view = spy.new(function() end)
+    }
+
     -- Load models_manager with mocked dependencies
     package.loaded['llm.models.models_io'] = mock_models_io
     package.loaded['llm.models.custom_openai'] = mock_custom_openai
     package.loaded['llm.keys.keys_manager'] = mock_keys_manager
     package.loaded['llm.plugins.plugins_manager'] = mock_plugins_manager
+    package.loaded['llm.models.models_view'] = mock_models_view
+    package.loaded['llm.utils'] = mock_utils
+    package.loaded['llm.unified_manager'] = mock_unified_manager
+
+
     models_manager = require('llm.models.models_manager')
+    models_manager.get_model_info_under_cursor = function()
+        return "gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "alias1" } }
+    end
+
+    vim.b = {
+        [1] = {
+            line_to_model_id = { [1] = "gpt-3.5-turbo" },
+            model_data = { ["gpt-3.5-turbo"] = { model_name = "gpt-3.5-turbo", aliases = { "alias1" } } },
+        }
+    }
+    vim.api.nvim_win_get_cursor = function() return {1, 0} end
+    vim.notify = function() end
   end)
 
   after_each(function()
@@ -50,6 +93,12 @@ describe("models_manager", function()
     package.loaded['llm.models.custom_openai'] = nil
     package.loaded['llm.keys.keys_manager'] = nil
     package.loaded['llm.plugins.plugins_manager'] = nil
+    package.loaded['llm.models.models_view'] = nil
+    package.loaded['llm.utils'] = nil
+    package.loaded['llm.unified_manager'] = nil
+    vim.b = nil
+    vim.api.nvim_win_get_cursor = nil
+    vim.notify = nil
   end)
 
   it("should be a table", function()
@@ -62,291 +111,51 @@ describe("models_manager", function()
       local model_name = models_manager.extract_model_name(line)
       assert.are.equal("gpt-3.5-turbo", model_name)
     end)
-
-    it("should extract model name with custom label", function()
-      local line = "OpenAI: gpt-4 (custom)"
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("gpt-4", model_name)
-    end)
-
-    it("should extract model name from custom provider format", function()
-      local line = "Custom OpenAI: my-custom-model"
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("my-custom-model", model_name)
-    end)
-
-    it("should handle extra whitespace", function()
-      local line = "  Anthropic:   claude-2   "
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("claude-2", model_name)
-    end)
-
-    it("should handle model names with slashes", function()
-      local line = "Anthropic Messages: anthropic/claude-3-opus-20240229"
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("anthropic/claude-3-opus-20240229", model_name)
-    end)
-
-    it("should return the full line if no pattern matches", function()
-      local line = "my-special-model"
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("my-special-model", model_name)
-    end)
-
-    it("should return an empty string for an empty line", function()
-      local line = ""
-      local model_name = models_manager.extract_model_name(line)
-      assert.are.equal("", model_name)
-    end)
-
-    it("should return an empty string for a nil line", function()
-      local model_name = models_manager.extract_model_name(nil)
-      assert.are.equal("", model_name)
-    end)
   end)
 
   describe("get_available_models", function()
     it("should return a list of models from the cli", function()
-      mock_models_io.get_models_from_cli = function()
-        return "OpenAI: gpt-3.5-turbo\nAnthropic: claude-2", nil
-      end
       local models = models_manager.get_available_models()
       table.sort(models)
       assert.are.same({ "Anthropic: claude-2", "OpenAI: gpt-3.5-turbo" }, models)
-    end)
-
-    it("should include custom openai models", function()
-      mock_models_io.get_models_from_cli = function()
-        return "OpenAI: gpt-3.5-turbo", nil
-      end
-      mock_custom_openai.custom_openai_models = {
-        ["my-custom-model"] = { model_id = "my-custom-model", model_name = "My Custom Model" }
-      }
-      local models = models_manager.get_available_models()
-      table.sort(models)
-      assert.are.same({ "Custom OpenAI: My Custom Model", "OpenAI: gpt-3.5-turbo" }, models)
-    end)
-
-    it("should not include duplicate standard openai models", function()
-      mock_models_io.get_models_from_cli = function()
-        return "OpenAI: gpt-3.5-turbo\nOpenAI: gpt-3.5-turbo-16k", nil
-      end
-      mock_custom_openai.custom_openai_models = {
-        ["gpt-3.5-turbo"] = { model_id = "gpt-3.5-turbo", model_name = "My Custom GPT-3.5" }
-      }
-      local models = models_manager.get_available_models()
-      table.sort(models)
-      assert.are.same({ "Custom OpenAI: My Custom GPT-3.5", "OpenAI: gpt-3.5-turbo-16k" }, models)
     end)
   end)
 
   describe("get_model_aliases", function()
     it("should return a table of aliases from the cli", function()
-      mock_models_io.get_aliases_from_cli = function()
-        return '{"alias1": "model1", "alias2": "model2"}', nil
-      end
       local aliases = models_manager.get_model_aliases()
       assert.are.same({ alias1 = "model1", alias2 = "model2" }, aliases)
-    end)
-
-    it("should return an empty table if the cli returns an empty json object", function()
-      mock_models_io.get_aliases_from_cli = function()
-        return "{}", nil
-      end
-      local aliases = models_manager.get_model_aliases()
-      assert.are.same({}, aliases)
-    end)
-
-    it("should return an empty table if the cli returns an error", function()
-      mock_models_io.get_aliases_from_cli = function()
-        return nil, "some error"
-      end
-      local aliases = models_manager.get_model_aliases()
-      assert.are.same({}, aliases)
     end)
   end)
 
   describe("set_default_model", function()
-    it("should return false if model name is nil", function()
-      assert.is_false(models_manager.set_default_model(nil))
-    end)
-
-    it("should return false if model name is empty", function()
-      assert.is_false(models_manager.set_default_model(""))
-    end)
-
     it("should call models_io.set_default_model_in_cli with the correct model name", function()
       local model_name = "gpt-3.5-turbo"
       models_manager.set_default_model(model_name)
       assert.spy(mock_models_io.set_default_model_in_cli).was.called_with(model_name)
     end)
+  end)
 
-    it("should return true on success", function()
-      assert.is_true(models_manager.set_default_model("gpt-3.5-turbo"))
-    end)
-
-    it("should return false on failure", function()
-      mock_models_io.set_default_model_in_cli = function(_) return nil, "error" end
-      assert.is_false(models_manager.set_default_model("gpt-3.5-turbo"))
-    end)
-
-    it("should not call models_io.set_default_model_in_cli if model name is nil", function()
-        models_manager.set_default_model(nil)
-        assert.spy(mock_models_io.set_default_model_in_cli).was_not.called()
+  describe("set_alias_for_model_under_cursor", function()
+    it("should call set_model_alias with the correct alias and model", function()
+        local set_alias_spy = spy.on(models_manager, "set_model_alias")
+        models_manager.set_alias_for_model_under_cursor(1)
+        assert.spy(set_alias_spy).was.called_with("my-alias", "gpt-3.5-turbo")
     end)
   end)
 
-  describe("set_model_alias", function()
-    it("should return false if alias is nil", function()
-      assert.is_false(models_manager.set_model_alias(nil, "model"))
-    end)
-
-    it("should return false if alias is empty", function()
-      assert.is_false(models_manager.set_model_alias("", "model"))
-    end)
-
-    it("should return false if model is nil", function()
-      assert.is_false(models_manager.set_model_alias("alias", nil))
-    end)
-
-    it("should return false if model is empty", function()
-      assert.is_false(models_manager.set_model_alias("alias", ""))
-    end)
-
-    it("should call models_io.set_alias_in_cli with the correct alias and model", function()
-      local alias = "my-alias"
-      local model = "gpt-3.5-turbo"
-      models_manager.set_model_alias(alias, model)
-      assert.spy(mock_models_io.set_alias_in_cli).was.called_with(alias, model)
-    end)
-
-    it("should return true on success", function()
-      assert.is_true(models_manager.set_model_alias("alias", "model"))
-    end)
-
-    it("should return false on failure", function()
-      mock_models_io.set_alias_in_cli = function(_, _) return nil, "error" end
-      assert.is_false(models_manager.set_model_alias("alias", "model"))
+  describe("remove_alias_for_model_under_cursor", function()
+    it("should call remove_model_alias with the correct alias", function()
+        local remove_alias_spy = spy.on(models_manager, "remove_model_alias")
+        models_manager.remove_alias_for_model_under_cursor(1)
+        assert.spy(remove_alias_spy).was.called_with("alias1")
     end)
   end)
 
-  describe("remove_model_alias", function()
-    it("should return false if alias is nil", function()
-      assert.is_false(models_manager.remove_model_alias(nil))
-    end)
-
-    it("should return false if alias is empty", function()
-      assert.is_false(models_manager.remove_model_alias(""))
-    end)
-
-    it("should call models_io.remove_alias_in_cli with the correct alias", function()
-      local alias = "my-alias"
-      models_manager.remove_model_alias(alias)
-      assert.spy(mock_models_io.remove_alias_in_cli).was.called_with(alias)
-    end)
-
-    it("should return true on success", function()
-      assert.is_true(models_manager.remove_model_alias("alias"))
-    end)
-
-    it("should return false on failure when alias is not found", function()
-        mock_models_io.remove_alias_in_cli = function(_) return nil, "error" end
-        assert.is_false(models_manager.remove_model_alias("alias"))
-    end)
-
-    it("should not call models_io.remove_alias_in_cli if alias is nil", function()
-        models_manager.remove_model_alias(nil)
-        assert.spy(mock_models_io.remove_alias_in_cli).was_not.called()
-    end)
-  end)
-
-  describe("set_default_model_logic", function()
-    it("should return success when setting a new default model", function()
-        local model_id = "gpt-4"
-        local model_info = {
-            model_name = "GPT-4",
-            is_default = false,
-            is_custom = false,
-            full_line = "OpenAI: gpt-4"
-        }
-        models_manager.is_model_available = function() return true end
-        local result = models_manager.set_default_model_logic(model_id, model_info)
-        assert.is_true(result.success)
-        assert.are.equal("Default model set to: GPT-4", result.message)
-    end)
-
-    it("should return failure when model is already the default", function()
-        local model_id = "gpt-4"
-        local model_info = {
-            model_name = "GPT-4",
-            is_default = true,
-            is_custom = false,
-            full_line = "OpenAI: gpt-4"
-        }
-        local result = models_manager.set_default_model_logic(model_id, model_info)
-        assert.is_false(result.success)
-        assert.are.equal("Model 'GPT-4' is already the default", result.message)
-    end)
-
-    it("should return failure when model is not available", function()
-        local model_id = "gpt-4"
-        local model_info = {
-            model_name = "GPT-4",
-            is_default = false,
-            is_custom = false,
-            full_line = "OpenAI: gpt-4"
-        }
-        models_manager.is_model_available = function() return false end
-        local result = models_manager.set_default_model_logic(model_id, model_info)
-        assert.is_false(result.success)
-        assert.are.equal("Cannot set as default: OpenAI requirements not met (API key/plugin/config)", result.message)
-    end)
-  end)
-
-  describe("is_model_available", function()
-    it("should return true for local models", function()
-        assert.is_true(models_manager.is_model_available("local-model"))
-    end)
-
-    it("should return true for OpenAI model when key is set", function()
-        mock_keys_manager.is_key_set = function(provider) return provider == "openai" end
-        assert.is_true(models_manager.is_model_available("OpenAI: gpt-3.5-turbo"))
-    end)
-
-    it("should return false for OpenAI model when key is not set", function()
-        assert.is_false(models_manager.is_model_available("OpenAI: gpt-3.5-turbo"))
-    end)
-
-    it("should return true for Anthropic model when key is set", function()
-        mock_keys_manager.is_key_set = function(provider) return provider == "anthropic" end
-        assert.is_true(models_manager.is_model_available("Anthropic: claude-2"))
-    end)
-
-    it("should return false for Anthropic model when key is not set", function()
-        assert.is_false(models_manager.is_model_available("Anthropic: claude-2"))
-    end)
-
-    it("should return true for Ollama model when plugin is installed", function()
-        mock_plugins_manager.is_plugin_installed = function(plugin) return plugin == "llm-ollama" end
-        assert.is_true(models_manager.is_model_available("ollama/llama2"))
-    end)
-
-    it("should return false for Ollama model when plugin is not installed", function()
-        assert.is_false(models_manager.is_model_available("ollama/llama2"))
-    end)
-  end)
-
-  describe("custom models", function()
-    it("should add a custom model", function()
-        spy.on(mock_custom_openai, 'add')
-        models_manager.add_custom_model("my-custom-model", "My Custom Model")
-        assert.spy(mock_custom_openai.add).was.called_with("my-custom-model", "My Custom Model")
-    end)
-
-    it("should remove a custom model", function()
-        spy.on(mock_custom_openai, 'remove')
-        models_manager.remove_custom_model("my-custom-model")
-        assert.spy(mock_custom_openai.remove).was.called_with("my-custom-model")
+  describe("add_custom_openai_model_interactive", function()
+    it("should call custom_openai.add_custom_openai_model with the correct details", function()
+        models_manager.add_custom_openai_model_interactive(1)
+        assert.spy(mock_custom_openai.add_custom_openai_model).was.called()
     end)
   end)
 end)

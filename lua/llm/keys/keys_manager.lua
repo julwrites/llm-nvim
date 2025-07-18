@@ -6,6 +6,7 @@ local M = {}
 -- Forward declarations
 local api = vim.api
 local utils = require('llm.utils')
+local keys_view = require('llm.keys.keys_view')
 local styles = require('llm.styles') -- Added
 
 -- Get stored API keys from llm CLI
@@ -46,46 +47,36 @@ function M.set_api_key(key_name, key_value)
     return false
   end
 
-  -- Find the keys.json file in the standard locations
   local keys_dir, keys_file = utils.get_config_path("keys.json")
 
-  -- If keys file doesn't exist, create it in the default location
   if not keys_file then
     local home = os.getenv("HOME")
     if not home then
       vim.notify("Could not determine home directory", vim.log.levels.ERROR)
       return false
     end
-
     keys_dir = home .. "/.config/io.datasette.llm"
     keys_file = keys_dir .. "/keys.json"
-
-    -- Create directory if it doesn't exist
     os.execute("mkdir -p " .. keys_dir)
   end
 
-  -- Read existing keys or create empty table
   local keys_data = {}
   local file = io.open(keys_file, "r")
 
   if file then
     local content = file:read("*a")
     file:close()
-
-    -- Parse JSON if file exists and has content
     if content and content ~= "" then
       local success
       success, keys_data = pcall(vim.fn.json_decode, content)
       if not success or type(keys_data) ~= "table" then
-        keys_data = {} -- Reset to empty table if parsing failed
+        keys_data = {}
       end
     end
   end
 
-  -- Set the key
   keys_data[key_name] = key_value
 
-  -- Write the updated keys back to the file
   local updated_content = vim.fn.json_encode(keys_data)
   file = io.open(keys_file, "w")
   if not file then
@@ -106,7 +97,6 @@ function M.remove_api_key(key_name)
     return false
   end
 
-  -- Find the keys.json file in the standard locations
   local _, keys_file = utils.get_config_path("keys.json")
 
   if not keys_file then
@@ -114,28 +104,23 @@ function M.remove_api_key(key_name)
     return false
   end
 
-  -- Check if the file exists and is readable
   local file = io.open(keys_file, "r")
   if not file then
     vim.notify("Keys file not found or not readable: " .. keys_file, vim.log.levels.ERROR)
     return false
   end
 
-  -- Read the current keys
   local content = file:read("*a")
   file:close()
 
-  -- Parse JSON
   local success, keys_data = pcall(vim.fn.json_decode, content)
   if not success or type(keys_data) ~= "table" then
     vim.notify("Failed to parse keys file", vim.log.levels.ERROR)
     return false
   end
 
-  -- Remove the key
   keys_data[key_name] = nil
 
-  -- Write the updated keys back to the file
   local updated_content = vim.fn.json_encode(keys_data)
   file = io.open(keys_file, "w")
   if not file then
@@ -160,7 +145,7 @@ function M.populate_keys_buffer(bufnr)
     "# API Key Management",
     "",
     "Navigate: [M]odels [P]lugins [F]ragments [T]emplates [S]chemas",
-    "Actions: [s]et key [r]emove key [A]dd custom [q]uit", -- Updated Actions line
+    "Actions: [s]et key [r]emove key [A]dd custom [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",
     "## Available Providers:",
@@ -179,7 +164,6 @@ function M.populate_keys_buffer(bufnr)
   local line_to_provider = {}
   local current_line = #lines + 1
 
-  -- Display predefined providers first
   for _, provider_name in ipairs(predefined_providers_list) do
     local is_set = stored_keys_set[provider_name] or false
     local status = is_set and "✓" or " "
@@ -190,98 +174,57 @@ function M.populate_keys_buffer(bufnr)
     current_line = current_line + 1
   end
 
-  table.insert(lines, "") -- Add a blank line before custom keys section
+  table.insert(lines, "")
 
-  -- Identify and prepare custom stored keys for display
   local custom_keys_to_display = {}
   for _, stored_key_name in ipairs(all_stored_keys_list) do
     if not predefined_providers_set[stored_key_name] then
       table.insert(custom_keys_to_display, stored_key_name)
     end
   end
-  table.sort(custom_keys_to_display) -- Sort for consistent order
+  table.sort(custom_keys_to_display)
 
-  -- Display custom stored keys
   if #custom_keys_to_display > 0 then
     table.insert(lines, "## Custom Keys:")
-    table.insert(lines, "") -- Blank line after title
+    table.insert(lines, "")
     for _, custom_key_name in ipairs(custom_keys_to_display) do
-      -- All keys from get_stored_keys are considered "set"
       local line = string.format("[✓] %s", custom_key_name)
       table.insert(lines, line)
       key_data[custom_key_name] = { line = current_line, is_set = true }
       line_to_provider[current_line] = custom_key_name
       current_line = current_line + 1
     end
-    table.insert(lines, "") -- Add a blank line after custom keys list
+    table.insert(lines, "")
   end
 
-  -- Removed the "[+] Add custom key" line and its specific title logic from here.
-  -- The general "## Custom Keys:" section title (if custom keys exist) or lack thereof is handled above.
-  -- If no custom keys are listed and no predefined keys either, the buffer will be more minimal.
-
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-
-  -- Apply syntax highlighting
-  styles.setup_buffer_syntax(bufnr) -- Use styles module
-
-  -- Store lookup tables in buffer variables
+  styles.setup_buffer_syntax(bufnr)
   vim.b[bufnr].line_to_provider = line_to_provider
   vim.b[bufnr].key_data = key_data
-  vim.b[bufnr].stored_keys_set = stored_keys_set -- Store for checking in actions
-
-  return line_to_provider, key_data              -- Return for direct use if needed
+  vim.b[bufnr].stored_keys_set = stored_keys_set
 end
 
 -- Setup keymaps for the key management buffer
 function M.setup_keys_keymaps(bufnr, manager_module)
-  manager_module = manager_module or M -- Allow passing self
+  manager_module = manager_module or M
 
   local function set_keymap(mode, lhs, rhs)
     api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
-  -- Helper to get provider info
-  local function get_provider_info_under_cursor()
-    local current_line = api.nvim_win_get_cursor(0)[1]
-    local line_to_provider = vim.b[bufnr].line_to_provider
-    local key_data = vim.b[bufnr].key_data
-    local provider_name = line_to_provider and line_to_provider[current_line]
-    if provider_name and key_data and key_data[provider_name] then
-      return provider_name, key_data[provider_name]
-    elseif provider_name == "+" then -- Handle custom key line
-      return "+", nil
-    end
-    return nil, nil
-  end
-
-  -- Set key under cursor
-  set_keymap('n', 's',
-    string.format([[<Cmd>lua require('%s').set_key_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.keys.keys_manager', bufnr))
-
-  -- Remove key under cursor
-  set_keymap('n', 'r',
-    string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]],
-      manager_module.__name or 'llm.keys.keys_manager', bufnr))
-
-  -- Add new custom key
-  set_keymap('n', 'A', -- Changed from <CR> on a line to 'A'
-    string.format([[<Cmd>lua require('%s').add_new_custom_key_interactive(%d)<CR>]],
-      manager_module.__name or 'llm.keys.keys_manager', bufnr))
+  set_keymap('n', 's', string.format([[<Cmd>lua require('%s').set_key_under_cursor(%d)<CR>]], manager_module.__name, bufnr))
+  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').remove_key_under_cursor(%d)<CR>]], manager_module.__name, bufnr))
+  set_keymap('n', 'A', string.format([[<Cmd>lua require('%s').add_new_custom_key_interactive(%d)<CR>]], manager_module.__name, bufnr))
 end
 
--- Action functions called by keymaps (now accept bufnr)
-
--- Function to add a new custom key via interactive input
 function M.add_new_custom_key_interactive(bufnr)
-  utils.floating_input({ prompt = "Enter custom key name:" }, function(custom_name)
+  keys_view.get_custom_key_name(function(custom_name)
     if not custom_name or custom_name == "" then
       vim.notify("Custom key name cannot be empty. Aborted.", vim.log.levels.WARN)
       return
     end
 
-    utils.floating_input({ prompt = "Enter API key for '" .. custom_name .. "':" }, function(key_value)
+    keys_view.get_api_key(custom_name, function(key_value)
       if not key_value or key_value == "" then
         vim.notify("API key value cannot be empty. Aborted.", vim.log.levels.WARN)
         return
@@ -289,9 +232,8 @@ function M.add_new_custom_key_interactive(bufnr)
 
       if M.set_api_key(custom_name, key_value) then
         vim.notify("Successfully set key for '" .. custom_name .. "'", vim.log.levels.INFO)
-        require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+        require('llm.unified_manager').switch_view("Keys")
       else
-        -- M.set_api_key already shows a notification on failure
         vim.notify("Failed to set key for '" .. custom_name .. "'. See previous errors for details.", vim.log.levels.ERROR)
       end
     end)
@@ -299,22 +241,17 @@ function M.add_new_custom_key_interactive(bufnr)
 end
 
 function M.set_key_under_cursor(bufnr)
-  local provider_name, _ = M.get_provider_info_under_cursor(bufnr) -- Renamed provider_name_or_action
+  local provider_name, _ = M.get_provider_info_under_cursor(bufnr)
+  if not provider_name then return end
 
-  if not provider_name then -- If provider_name is nil (e.g. cursor on empty line or separator)
-    return
-  end
-  -- The "+" case for adding a key is now handled by add_new_custom_key_interactive
-
-  -- Handle setting key for an existing provider (predefined or custom listed)
-  utils.floating_input({ prompt = "Enter API key for " .. provider_name .. ":" }, function(key_value)
+  keys_view.get_api_key(provider_name, function(key_value)
     if not key_value or key_value == "" then
       vim.notify("API key value cannot be empty. Aborted for " .. provider_name .. ".", vim.log.levels.WARN)
       return
     end
     if M.set_api_key(provider_name, key_value) then
       vim.notify("Key for '" .. provider_name .. "' set", vim.log.levels.INFO)
-      require('llm.unified_manager').switch_view("Keys") -- Refresh unified view
+      require('llm.unified_manager').switch_view("Keys")
     else
       vim.notify("Failed to set key for '" .. provider_name .. "'.", vim.log.levels.ERROR)
     end
@@ -323,7 +260,7 @@ end
 
 function M.remove_key_under_cursor(bufnr)
   local provider_name, key_info = M.get_provider_info_under_cursor(bufnr)
-  if not provider_name or provider_name == "+" then return end -- Cannot remove '+'
+  if not provider_name or provider_name == "+" then return end
 
   local stored_keys_set = vim.b[bufnr].stored_keys_set
   if not stored_keys_set[provider_name] then
@@ -331,21 +268,16 @@ function M.remove_key_under_cursor(bufnr)
     return
   end
 
-  utils.floating_confirm({
-    prompt = "Remove key for '" .. provider_name .. "'?",
-    on_confirm = function() -- Modified to use on_confirm callback
-      if M.remove_api_key(provider_name) then
-        vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-        require('llm.unified_manager').switch_view("Keys")
-      else
-        vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-      end
+  keys_view.confirm_remove_key(provider_name, function()
+    if M.remove_api_key(provider_name) then
+      vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+      require('llm.unified_manager').switch_view("Keys")
+    else
+      vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
     end
-    -- Removed options table as floating_confirm uses Y/N by default
-  })
+  end)
 end
 
--- Helper to get provider info from buffer variables
 function M.get_provider_info_under_cursor(bufnr)
   local current_line = api.nvim_win_get_cursor(0)[1]
   local line_to_provider = vim.b[bufnr].line_to_provider
@@ -356,19 +288,17 @@ function M.get_provider_info_under_cursor(bufnr)
   end
   local provider_name = line_to_provider[current_line]
   if provider_name == "+" then
-    return "+", nil -- Special case for custom key line
+    return "+", nil
   elseif provider_name and key_data[provider_name] then
     return provider_name, key_data[provider_name]
   end
   return nil, nil
 end
 
--- Main function to open the key manager (now delegates to unified manager)
 function M.manage_keys()
   require('llm.unified_manager').open_specific_manager("Keys")
 end
 
--- Add module name for require path in keymaps
 M.__name = 'llm.keys.keys_manager'
 
 return M

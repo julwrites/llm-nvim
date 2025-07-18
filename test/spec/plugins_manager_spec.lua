@@ -4,13 +4,19 @@ describe("plugins_manager", function()
   local plugins_manager
   local spy
   local mock_utils
+  local mock_plugins_view
 
   before_each(function()
     spy = require('luassert.spy')
     mock_utils = {
-      safe_shell_command = spy.new(function() return "", 0 end)
+      safe_shell_command = spy.new(function() return "", 0 end),
+      check_llm_installed = function() return true end,
+    }
+    mock_plugins_view = {
+        confirm_uninstall = function(plugin_name, callback) callback(true) end
     }
     package.loaded['llm.utils'] = mock_utils
+    package.loaded['llm.plugins.plugins_view'] = mock_plugins_view
     package.loaded['llm.plugins.plugins_loader'] = {
       get_all_plugin_names = function() return { 'plugin1', 'plugin2' } end,
       get_plugins_with_descriptions = function()
@@ -31,12 +37,20 @@ describe("plugins_manager", function()
       switch_view = function() end,
     }
     plugins_manager = require('llm.plugins.plugins_manager')
+
+    plugins_manager.get_plugin_info_under_cursor = function()
+        return "plugin1", { installed = true }
+    end
+
+    vim.schedule = function(fn) fn() end
   end)
 
   after_each(function()
     package.loaded['llm.plugins.plugins_loader'] = nil
     package.loaded['llm.plugins.plugins_manager'] = nil
+    package.loaded['llm.plugins.plugins_view'] = nil
     package.loaded['llm.utils'] = nil
+    vim.schedule = nil
   end)
 
   it("should be a table", function()
@@ -66,9 +80,9 @@ describe("plugins_manager", function()
     end)
   end)
 
-  describe("uninstall_plugin", function()
+  describe("uninstall_plugin_under_cursor", function()
     it("should call safe_shell_command with the correct arguments", function()
-        plugins_manager.uninstall_plugin("plugin1")
+        plugins_manager.uninstall_plugin_under_cursor(1)
         assert.spy(mock_utils.safe_shell_command).was.called_with('llm uninstall plugin1 -y', 'Failed to uninstall plugin: plugin1')
     end)
   end)
