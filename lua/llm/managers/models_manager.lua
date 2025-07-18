@@ -114,8 +114,17 @@ function M.get_available_models()
         return cached_models
     end
 
-    local models_json = llm_cli.run_llm_command('models list --json')
-    local models = vim.fn.json_decode(models_json)
+    local models_json = llm_cli.run_llm_command('models list')
+    if not models_json then return {} end
+    local models = {}
+    for line in models_json:gmatch("[^\r\n]+") do
+        if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
+            local provider, model_id = line:match("([^:]+):%s*(.+)")
+            if provider and model_id then
+                table.insert(models, { provider = provider, id = model_id, name = model_id })
+            end
+        end
+    end
     cache.set('models', models)
     return models
 end
@@ -192,6 +201,7 @@ function M.get_model_aliases()
     end
 
     local aliases_json = llm_cli.run_llm_command('aliases list --json')
+    if not aliases_json then return {} end
     local aliases = vim.fn.json_decode(aliases_json)
     cache.set('aliases', aliases)
     return aliases
@@ -485,7 +495,7 @@ end
 
 -- Populate the buffer with model management content
 function M.populate_models_buffer(bufnr)
-  local ui = require('llm.ui')
+  local ui = require('llm.ui.ui')
   local data = M.generate_models_list()
 
   ui.display_in_buffer(bufnr, data.lines)
@@ -587,7 +597,7 @@ end
 
 -- Sets the model under the cursor as the default LLM model.
 function M.set_model_under_cursor(bufnr)
-  local ui = require('llm.ui')
+  local ui = require('llm.ui.ui')
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
   local result = M.set_default_model_logic(model_id, model_info)
 
