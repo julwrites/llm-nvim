@@ -1,17 +1,25 @@
 # TODO
 
 - [x] Add more tests for the core functionality of the plugin.
-  - [x] Add tests for models
+  - [x] Add tests for models (full coverage)
   - [x] Add tests for utils - Done
-  - [ ] Add tests for keys
-  - [ ] Add tests for schemas
-  - [ ] Add tests for templates
-  - [ ] Add tests for fragments
-  - [ ] Add tests for plugins
+  - [x] Add tests for keys (full coverage)
+  - [x] Add tests for schemas (full coverage)
+  - [x] Add tests for templates (full coverage)
+  - [x] Add tests for fragments (full coverage)
+  - [x] Add tests for plugins (full coverage)
 - [ ] Add tests for the UI components.
   - [ ] Add headless UI tests for Neovim interactions.
 - [x] Refactor the existing code to make it more testable.
   - [x] Refactor `populate_models_buffer`
   - [x] Refactor `set_model_under_cursor`
-- [ ] Fix the existing bugs.
+- [x] Fix the existing bugs.
+  - [x] Fix schemas_manager tests (round 3)
+  - [x] Refactor all manager tests
 - [ ] Add more features to the plugin.
+- [ ] Add tests for the `_loader.lua` files.
+  - [ ] Add tests for `fragments_loader.lua`.
+  - [ ] Add tests for `plugins_loader.lua`.
+  - [ ] Add tests for `schemas_loader.lua`.
+  - [ ] Add tests for `templates_loader.lua`.
+- [ ] Fix nil method errors in tests.

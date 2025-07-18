@@ -16,16 +16,18 @@ local ok, llm = pcall(require, "llm")
 if not ok then
   -- If the main module fails to load, notify the user and stop.
   -- The error message from the require will provide details.
-  local shell = require('llm.utils.shell')
-  if not shell.check_llm_installed() then
-    vim.notify(
-      "llm CLI not found.\n" ..
-      "Install with: pip install llm or brew install llm\n" ..
-      "If already installed, ensure it's in your PATH or set g:llm_executable_path",
-      vim.log.levels.ERROR
-    )
-  else
-    vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
+  if not vim.env.LLM_NVIM_TEST then
+    local shell = require('llm.utils.shell')
+    if not shell.check_llm_installed() then
+      vim.notify(
+        "llm CLI not found.\n" ..
+        "Install with: pip install llm or brew install llm\n" ..
+        "If already installed, ensure it's in your PATH or set g:llm_executable_path",
+        vim.log.levels.ERROR
+      )
+    else
+      vim.notify("Failed to load llm module: " .. (llm or "unknown error"), vim.log.levels.ERROR)
+    end
   end
   return
 end
