@@ -485,10 +485,9 @@ end
 
 -- Populate the buffer with model management content
 function M.populate_models_buffer(bufnr)
-  local ui = require('llm.core.utils.ui')
   local data = M.generate_models_list()
 
-  ui.create_buffer_with_content(table.concat(data.lines, "\n"), "Model Management", "markdown")
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, data.lines)
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Store lookup tables in buffer variables for keymaps
@@ -714,3 +713,5 @@ end
 M.__name = 'llm.managers.models_manager'
 
 return M
+
+[end of lua/llm/managers/models_manager.lua]
