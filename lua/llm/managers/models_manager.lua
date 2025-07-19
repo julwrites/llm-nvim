@@ -192,7 +192,7 @@ function M.set_default_model(model_name)
     return false
   end
 
-  local result = llm_cli.run_llm_command('default ' .. model_name)
+  local result = llm_cli.run_llm_command('models default ' .. model_name)
   return result ~= nil
 end
 
