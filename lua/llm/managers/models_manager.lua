@@ -291,7 +291,11 @@ function M.generate_models_list()
   end
 
   local aliases = M.get_model_aliases()
-  local default_model = llm_cli.run_llm_command('default')
+  local default_model_output = llm_cli.run_llm_command('default')
+  local default_model = ""
+  if default_model_output then
+    default_model = default_model_output:match("Default model: (.+)")
+  end
 
   local lines = {
     "# Model Management",
@@ -388,8 +392,6 @@ function M.generate_models_list()
     -- Check if this model is the default ONLY by model_id
     if model_id == default_model then
       entry.is_default = true
-      default_found = true
-      default_model_id = model_id -- Store the ID of the default model
     end
 
     -- Check for duplicates before adding to the provider list
@@ -415,22 +417,6 @@ function M.generate_models_list()
   local model_data = {}       -- Stores detailed info keyed by model_id
   local line_to_model_id = {} -- Maps buffer line number to model_id
   local current_line = #lines + 1
-  -- Flexible default model matching (if exact match wasn't found)
-  if not default_found and default_model ~= "" then
-    for _, provider_models in pairs(providers) do
-      for _, model_entry in ipairs(provider_models) do
-        -- Check if default_model is a substring of model_id, or vice-versa (ONLY check model_id)
-        if model_entry.model_id:find(default_model, 1, true) or default_model:find(model_entry.model_id, 1, true) then
-          model_entry.is_default = true
-          default_found = true
-          default_model_id = model_entry.model_id -- Store the ID
-          break
-        end
-      end
-      if default_found then break end
-    end
-  end
-
   -- Add content to buffer
   local provider_keys = {}
   for key, _ in pairs(providers) do
