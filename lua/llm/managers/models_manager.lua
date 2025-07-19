@@ -458,12 +458,8 @@ function M.generate_models_list()
         local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
             ""
         -- Display model_name in the list
-        local display_line_part = model_entry.full_line:match(":(.*)") or
-            model_entry
-            .model_name                                             -- Extract name part or use model_name
-        display_line_part = display_line_part:match("^%s*(.-)%s*$") -- Trim whitespace
-        local provider_prefix = model_entry.full_line:match("^[^:]+:") or
-            ""                                                      -- Extract provider prefix
+        local display_line_part = model_entry.full_line
+        local provider_prefix = model_entry.provider .. ":"
         local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 
         table.insert(lines, line)

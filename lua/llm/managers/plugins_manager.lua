@@ -17,8 +17,15 @@ function M.get_available_plugins()
         return cached_plugins
     end
 
-    local plugins_json = llm_cli.run_llm_command('plugins --all --json')
-    local plugins = vim.fn.json_decode(plugins_json)
+    local plugins_output = llm_cli.run_llm_command('plugins --all')
+    if not plugins_output then return {} end
+    local plugins = {}
+    for line in plugins_output:gmatch("[^\r\n]+") do
+        local plugin_name, description = line:match("^(%S+)%s*-%s*(.*)")
+        if plugin_name and description then
+            table.insert(plugins, { name = plugin_name, description = description })
+        end
+    end
     cache.set('available_plugins', plugins)
     return plugins
 end
@@ -30,8 +37,15 @@ function M.get_installed_plugins()
         return cached_plugins
     end
 
-    local plugins_json = llm_cli.run_llm_command('plugins --json')
-    local plugins = vim.fn.json_decode(plugins_json)
+    local plugins_output = llm_cli.run_llm_command('plugins')
+    if not plugins_output then return {} end
+    local plugins = {}
+    for line in plugins_output:gmatch("[^\r\n]+") do
+        local plugin_name = line:match('"name":%s*"([^"]+)"')
+        if plugin_name then
+            table.insert(plugins, { name = plugin_name })
+        end
+    end
     cache.set('installed_plugins', plugins)
     return plugins
 end
@@ -51,6 +65,7 @@ end
 function M.install_plugin(plugin_name)
     local result = llm_cli.run_llm_command('install ' .. plugin_name)
     cache.invalidate('installed_plugins')
+    cache.invalidate('available_plugins')
     return result ~= nil
 end
 
@@ -58,6 +73,7 @@ end
 function M.uninstall_plugin(plugin_name)
     local result = llm_cli.run_llm_command('uninstall ' .. plugin_name .. ' -y')
     cache.invalidate('installed_plugins')
+    cache.invalidate('available_plugins')
     return result ~= nil
 end
 
