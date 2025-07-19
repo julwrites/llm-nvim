@@ -41,9 +41,11 @@ function M.get_installed_plugins()
     if not plugins_output then return {} end
     local plugins = {}
     for line in plugins_output:gmatch("[^\r\n]+") do
-        local plugin_name = line:match('"name":%s*"([^"]+)"')
-        if plugin_name then
-            table.insert(plugins, { name = plugin_name })
+        if not line:match("^%-%-") and line ~= "" and not line:match("^Plugins:") then
+            local plugin_name = line:match("%S+")
+            if plugin_name then
+                table.insert(plugins, { name = plugin_name })
+            end
         end
     end
     cache.set('installed_plugins', plugins)

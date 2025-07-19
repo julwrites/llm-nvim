@@ -122,6 +122,9 @@ function M.get_available_models()
             local provider, model_id = line:match("([^:]+):%s*(.+)")
             if provider and model_id then
                 table.insert(models, { provider = provider, id = model_id, name = model_id })
+            else
+                -- Handle lines without a provider
+                table.insert(models, { provider = "Other", id = line, name = line })
             end
         end
     end
@@ -329,9 +332,8 @@ function M.generate_models_list()
     local custom_model_info = nil
 
     -- Determine provider and potentially find custom model info
-    local provider_key = "Other"
-    if model.provider == "Custom OpenAI" then
-      provider_key = "Custom OpenAI"
+    local provider_key = model.provider or "Other"
+    if provider_key == "Custom OpenAI" then
       is_custom = true
       -- Find the corresponding custom model data using the extracted name/id
       -- Prioritize matching the extracted name directly to a model_id first
@@ -357,7 +359,7 @@ function M.generate_models_list()
         end
         -- Keep model_id and model_name as extracted_name
       end
-    elseif model.provider == "OpenAI" then
+    elseif provider_key == "OpenAI" then
       -- Check if this standard-looking line corresponds to a loaded custom model ID
       custom_model_info = custom_openai.custom_openai_models[extracted_name]
       if custom_model_info then
@@ -369,19 +371,7 @@ function M.generate_models_list()
           vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
             vim.log.levels.DEBUG)
         end
-      else
-        provider_key = "OpenAI"
       end
-    elseif model.provider == "Anthropic" then
-      provider_key = "Anthropic"
-    elseif model.provider == "Mistral" then
-      provider_key = "Mistral"
-    elseif model.provider == "Gemini" then
-      provider_key = "Gemini"
-    elseif model.provider == "Groq" then
-      provider_key = "Groq"
-    elseif model.provider == "gguf" or model.provider == "ollama" or model.provider == "local" then
-      provider_key = "Local Models"
     end
 
     -- Create the entry for this model
@@ -391,7 +381,8 @@ function M.generate_models_list()
       full_line = model.id, -- The original line from `llm models` or constructed for custom
       is_default = false,
       is_custom = is_custom,
-      aliases = model_to_aliases[model_id] or {} -- Check aliases ONLY by model_id
+      aliases = model_to_aliases[model_id] or {}, -- Check aliases ONLY by model_id
+      provider = provider_key
     }
 
     -- Check if this model is the default ONLY by model_id
@@ -413,6 +404,9 @@ function M.generate_models_list()
       end
     end
 
+    if not providers[provider_key] then
+        providers[provider_key] = {}
+    end
     table.insert(providers[provider_key], entry)
 
     ::next_model_line::
@@ -491,10 +485,10 @@ end
 
 -- Populate the buffer with model management content
 function M.populate_models_buffer(bufnr)
-  local ui = require('llm.ui.ui')
+  local ui = require('llm.core.utils.ui')
   local data = M.generate_models_list()
 
-  ui.display_in_buffer(bufnr, data.lines)
+  ui.create_buffer_with_content(table.concat(data.lines, "\n"), "Model Management", "markdown")
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Store lookup tables in buffer variables for keymaps
@@ -593,7 +587,7 @@ end
 
 -- Sets the model under the cursor as the default LLM model.
 function M.set_model_under_cursor(bufnr)
-  local ui = require('llm.ui.ui')
+  local ui = require('llm.core.utils.ui')
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
   local result = M.set_default_model_logic(model_id, model_info)
 
