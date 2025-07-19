@@ -713,5 +713,3 @@ end
 M.__name = 'llm.managers.models_manager'
 
 return M
-
-[end of lua/llm/managers/models_manager.lua]
