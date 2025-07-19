@@ -17,15 +17,18 @@ function M.get_available_plugins()
         return cached_plugins
     end
 
-    local plugins_output = llm_cli.run_llm_command('plugins --all')
-    if not plugins_output then return {} end
+    local plugins_html = vim.fn.system('curl -s https://llm.datasette.io/en/stable/plugins/directory.html')
+    if not plugins_html or plugins_html == "" then return {} end
+
     local plugins = {}
-    for line in plugins_output:gmatch("[^\r\n]+") do
-        local plugin_name, description = line:match("^(%S+)%s*-%s*(.*)")
-        if plugin_name and description then
-            table.insert(plugins, { name = plugin_name, description = description })
+    for line in plugins_html:gmatch("[^\r\n]+") do
+        local plugin_name = line:match('<li><a href="https://github.com/[^/]+/[^/]+">([^<]+)</a>')
+        if plugin_name then
+            local description = line:match('</a>: (.*)')
+            table.insert(plugins, { name = plugin_name, description = description or "" })
         end
     end
+
     cache.set('available_plugins', plugins)
     return plugins
 end
