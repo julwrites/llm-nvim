@@ -572,15 +572,14 @@ end
 
 -- Sets the model under the cursor as the default LLM model.
 function M.set_model_under_cursor(bufnr)
-  local ui = require('llm.core.utils.ui')
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
   local result = M.set_default_model_logic(model_id, model_info)
 
   if result.success then
-    ui.notify(result.message, vim.log.levels.INFO)
+    vim.notify(result.message, vim.log.levels.INFO)
     require('llm.ui.unified_manager').switch_view("Models") -- Refresh view
   else
-    ui.notify(result.message, vim.log.levels.ERROR)
+    vim.notify(result.message, vim.log.levels.ERROR)
   end
 end
 
