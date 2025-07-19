@@ -39,7 +39,7 @@ end
 
 function M.create_split_buffer()
   local buf = api.nvim_create_buf(false, true)
-  api.nvim_open_win(buf, true, {})
+  api.nvim_open_win(buf, true, {relative = 'editor', width = 1, height = 1, row = 0, col = 0})
   return buf
 end
 
