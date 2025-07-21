@@ -6,6 +6,7 @@ local M = {}
 local api = vim.api
 local ui = require('llm.core.utils.ui')
 local styles = require('llm.ui.styles')
+local text = require('llm.core.utils.text')
 
 -- Manager modules
 local models_manager = require('llm.managers.models_manager')
@@ -194,13 +195,17 @@ function M.open(initial_view)
 end
 
 -- Toggle the unified window
-function M.toggle(initial_view)
+function M.toggle(view_name)
+  if not view_name or view_name == "" then
+    view_name = state.last_view or "Models"
+  else
+    view_name = text.capitalize(view_name)
+  end
+
   if state.winid and api.nvim_win_is_valid(state.winid) then
     close_window()
   else
-    -- Use initial_view if provided, otherwise last_view, otherwise default to Models
-    local view_to_open = initial_view or state.last_view or "Models"
-    M.open(view_to_open)
+    M.open(view_name)
   end
 end
 
@@ -221,6 +226,15 @@ function M.open_specific_manager(view_name)
     state.last_view = state.current_view
   end
   M.open(view_name)
+end
+
+-- Get all available view names for completion
+function M.get_views()
+  local view_names = {}
+  for name, _ in pairs(views) do
+    table.insert(view_names, name:lower())
+  end
+  return view_names
 end
 
 return M

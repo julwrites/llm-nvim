@@ -46,8 +46,8 @@ M.highlights = {
   -- Checkbox and status states
   CheckboxInstalled = { fg = M.colors.success, style = "bold" },
   CheckboxAvailable = { fg = M.colors.error },
-  Installed = { fg = M.colors.success },
-  NotInstalled = { fg = M.colors.error },
+  Installed = { fg = M.colors.success, style = "bold", bg = "#333333" },
+  NotInstalled = { fg = M.colors.error, style = "bold", bg = "#1a1a1a" },
   
   -- Model-specific highlights
   ModelOpenAI = { fg = M.colors.cyan },
@@ -135,13 +135,9 @@ M.syntax_patterns = {
   header = "syntax match LLMHeader /^#.*/",
   subheader = "syntax match LLMSubHeader /^##.*/",
   
-  -- Checkboxes
-  checkbox_installed = "syntax match LLMCheckboxInstalled /\\[✓\\]/",
-  checkbox_available = "syntax match LLMCheckboxAvailable /\\[ \\]/",
   
-  -- Installed/not installed items
-  installed = "syntax match LLMInstalled /\\[✓\\].*/",
-  not_installed = "syntax match LLMNotInstalled /\\[ \\].*/",
+  
+  
   
   -- Action text
   action = "syntax match LLMAction /Press.*$/",

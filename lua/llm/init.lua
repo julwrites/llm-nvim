@@ -14,8 +14,7 @@ function M.setup(opts)
   -- Initialize styles
   require('llm.ui.styles').setup_highlights()
 
-  -- Initialize facade with managers
-  facade.init()
+  
 
   -- Load all data
   loaders.load_all()
@@ -56,6 +55,14 @@ function M.setup(opts)
       end, 100) -- Short delay to not block startup critical path
     end
   end
+
+  -- Defer the plugin refresh to avoid circular dependencies
+  vim.defer_fn(function()
+    local plugins_manager = require('llm.managers.plugins_manager')
+    plugins_manager.refresh_available_plugins()
+  end, 100)
+
+  
 
   return M
 end

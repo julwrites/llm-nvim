@@ -18,11 +18,11 @@ local models_io = require('llm.managers.models_io')
 local models_view = require('llm.ui.views.models_view')
 
 function M.set_custom_openai(new_custom_openai)
-    custom_openai = new_custom_openai
+  custom_openai = new_custom_openai
 end
 
 function M.set_models_io(new_models_io)
-    models_io = new_models_io
+  models_io = new_models_io
 end
 
 -- Add pattern escape function to vim namespace if it doesn't exist
@@ -109,27 +109,54 @@ end
 
 -- Get available models from llm CLI
 function M.get_available_models()
-    local cached_models = cache.get('models')
-    if cached_models then
-        return cached_models
-    end
+  local cached_models = cache.get('models')
+  if cached_models then
+    vim.notify("DEBUG: Cache hit for models at " .. os.time(), vim.log.levels.DEBUG)
+    return cached_models
+  end
 
-    local models_json = llm_cli.run_llm_command('models list')
-    if not models_json then return {} end
-    local models = {}
-    for line in models_json:gmatch("[^\r\n]+") do
-        if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
-            local provider, model_id = line:match("([^:]+):%s*(.+)")
-            if provider and model_id then
-                table.insert(models, { provider = provider, id = model_id, name = model_id })
-            else
-                -- Handle lines without a provider
-                table.insert(models, { provider = "Other", id = line, name = line })
-            end
-        end
+  vim.notify("DEBUG: Cache miss for models. Running llm models list at " .. os.time(), vim.log.levels.DEBUG)
+  local models_json = llm_cli.run_llm_command('models list')
+  vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if not models_json then return {} end
+  local models = {}
+  for line in models_json:gmatch("[^]+") do
+    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
+      local provider, model_id
+      -- Try to match known prefixes first
+      if line:match("^OpenAI Chat: ") then
+        provider = "OpenAI Chat"
+        model_id = line:gsub("^OpenAI Chat: ", "")
+      elseif line:match("^OpenAI Completion: ") then
+        provider = "OpenAI Completion"
+        model_id = line:gsub("^OpenAI Completion: ", "")
+      elseif line:match("^Anthropic Messages: ") then
+        provider = "Anthropic Messages"
+        model_id = line:gsub("^Anthropic Messages: ", "")
+      elseif line:match("^DeepSeek: ") then
+        provider = "DeepSeek"
+        model_id = line:gsub("^DeepSeek: ", "")
+      elseif line:match("^GeminiPro: ") then
+        provider = "GeminiPro"
+        model_id = line:gsub("^GeminiPro: ", "")
+      elseif line:match("^Ollama: ") then
+        provider = "Ollama"
+        model_id = line:gsub("^Ollama: ", "")
+      else
+        -- Fallback to generic provider: model_id parsing
+        provider, model_id = line:match("([^:]+):%s*(.+)")
+      end
+
+      if provider and model_id then
+        table.insert(models, { provider = provider, id = model_id, name = model_id })
+      else
+        -- Handle lines without a provider or unparseable lines
+        table.insert(models, { provider = "Other", id = line, name = line })
+      end
     end
-    cache.set('models', models)
-    return models
+  end
+  cache.set('models', models)
+  return models
 end
 
 -- Extract model name from the full model line
@@ -198,16 +225,19 @@ end
 
 -- Get model aliases from llm CLI
 function M.get_model_aliases()
-    local cached_aliases = cache.get('aliases')
-    if cached_aliases then
-        return cached_aliases
-    end
+  local cached_aliases = cache.get('aliases')
+  if cached_aliases then
+    vim.notify("DEBUG: Cache hit for aliases at " .. os.time(), vim.log.levels.DEBUG)
+    return cached_aliases
+  end
 
-    local aliases_json = llm_cli.run_llm_command('aliases list --json')
-    if not aliases_json then return {} end
-    local aliases = vim.fn.json_decode(aliases_json)
-    cache.set('aliases', aliases)
-    return aliases
+  vim.notify("DEBUG: Cache miss for aliases. Running llm aliases list --json at " .. os.time(), vim.log.levels.DEBUG)
+  local aliases_json = llm_cli.run_llm_command('aliases list --json')
+  vim.notify("DEBUG: llm aliases list --json command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if not aliases_json then return {} end
+  local aliases = vim.fn.json_decode(aliases_json)
+  cache.set('aliases', aliases)
+  return aliases
 end
 
 -- Set a model alias using llm CLI
@@ -232,7 +262,6 @@ function M.set_model_alias(alias, model)
   end
 
   local result = llm_cli.run_llm_command('alias set ' .. alias .. ' ' .. model)
-  cache.invalidate('aliases')
   return result ~= nil
 end
 
@@ -249,7 +278,6 @@ function M.remove_model_alias(alias)
   end
 
   local result = llm_cli.run_llm_command('alias remove ' .. alias)
-  cache.invalidate('aliases')
   return result ~= nil
 end
 
@@ -307,21 +335,22 @@ function M.generate_models_list()
   }
   -- Create reverse lookup and group models
   local providers = {
-    ["OpenAI"] = {},
+    ["OpenAI Chat"] = {},
+    ["OpenAI Completion"] = {},
     ["Custom OpenAI"] = {},
-    ["Anthropic"] = {},
+    ["Anthropic Messages"] = {},
     ["Mistral"] = {},
-    ["Gemini"] = {},
+    ["GeminiPro"] = {},
+    ["DeepSeek"] = {},
     ["Groq"] = {},
     ["Local Models"] = {},
+    ["Ollama"] = {},
     ["Other"] = {}
   }
   local processed_custom_model_ids = {} -- Set to track added custom model IDs
 
-  -- Pre-load custom OpenAI models if not already loaded
-  if vim.tbl_isempty(custom_openai.custom_openai_models) then
-    custom_openai.load_custom_openai_models()
-  end
+  -- Ensure custom OpenAI models are loaded before processing
+  custom_openai.load_custom_openai_models()
   local model_to_aliases = {}
   for alias, model in pairs(aliases) do
     if not model_to_aliases[model] then model_to_aliases[model] = {} end
@@ -330,8 +359,8 @@ function M.generate_models_list()
 
   for _, model in ipairs(models) do
     local extracted_name = model.id -- This is the name/id part of the line
-    local model_id = model.id                         -- Default model_id to extracted name
-    local model_name = model.name                       -- Default model_name to extracted name
+    local model_id = model.id       -- Default model_id to extracted name
+    local model_name = model.name   -- Default model_name to extracted name
     local is_custom = false
     local custom_model_info = nil
 
@@ -350,8 +379,7 @@ function M.generate_models_list()
         for id, info in pairs(custom_openai.custom_openai_models) do
           if info.model_name == extracted_name then
             custom_model_info = info
-            model_id = info.model_id -- Use the correct model_id from the found info
-            model_name = info.model_name
+            found_custom = true
             break
           end
         end
@@ -365,12 +393,29 @@ function M.generate_models_list()
       end
     elseif provider_key == "OpenAI" then
       -- Check if this standard-looking line corresponds to a loaded custom model ID
-      custom_model_info = custom_openai.custom_openai_models[extracted_name]
-      if custom_model_info then
+      -- We need to check both by extracted_name (which is model.id) and by model_name from custom_openai_models
+      local found_custom = false
+      if custom_openai.custom_openai_models[extracted_name] then
+        custom_model_info = custom_openai.custom_openai_models[extracted_name]
+        found_custom = true
+      else
+        -- Iterate through custom models to find a match by model_name if ID didn't match directly
+        for id, info in pairs(custom_openai.custom_openai_models) do
+          if info.model_name == extracted_name then
+            custom_model_info = info
+            found_custom = true
+            break
+          end
+        end
+      end
+
+      if found_custom then
         provider_key = "Custom OpenAI"
         is_custom = true
         model_id = custom_model_info.model_id
         model_name = custom_model_info.model_name
+        -- Ensure full_line reflects the custom nature for display
+        entry.full_line = "Custom OpenAI: " .. model_name .. " (" .. model_id .. ")"
         if config.get("debug") then
           vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
             vim.log.levels.DEBUG)
@@ -382,7 +427,7 @@ function M.generate_models_list()
     local entry = {
       model_id = model_id,
       model_name = model_name,
-      full_line = model.id, -- The original line from `llm models` or constructed for custom
+      full_line = is_custom and ("Custom OpenAI: " .. model_name .. " (" .. model_id .. ")") or model.id, -- The original line from `llm models` or constructed for custom
       is_default = false,
       is_custom = is_custom,
       aliases = model_to_aliases[model_id] or {}, -- Check aliases ONLY by model_id
@@ -407,7 +452,7 @@ function M.generate_models_list()
     end
 
     if not providers[provider_key] then
-        providers[provider_key] = {}
+      providers[provider_key] = {}
     end
     table.insert(providers[provider_key], entry)
 
@@ -438,7 +483,7 @@ function M.generate_models_list()
         local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
             ""
         -- Display model_name in the list
-        local display_line_part = model_entry.full_line
+        local display_line_part = model_entry.model_name
         local provider_prefix = model_entry.provider .. ":"
         local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 
@@ -559,7 +604,11 @@ function M.set_default_model_logic(model_id, model_info)
     elseif model_info.full_line:match("ollama") then
       provider = "Ollama"
     end
-    return { success = false, message = "Cannot set as default: " .. provider .. " requirements not met (API key/plugin/config)" }
+    return {
+      success = false,
+      message = "Cannot set as default: " ..
+          provider .. " requirements not met (API key/plugin/config)"
+    }
   end
 
   if M.set_default_model(model_id) then
@@ -620,16 +669,16 @@ function M.remove_alias_for_model_under_cursor(bufnr)
   end
 
   models_view.select_alias_to_remove(model_info.aliases, function(alias)
-      if not alias then return end
-      models_view.confirm_remove_alias(alias, function()
-        if M.remove_model_alias(alias) then
-            vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
-            require('llm.ui.unified_manager').switch_view("Models")
-        else
-            vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
-        end
-      end)
-    end
+    if not alias then return end
+    models_view.confirm_remove_alias(alias, function()
+      if M.remove_model_alias(alias) then
+        vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
+        require('llm.ui.unified_manager').switch_view("Models")
+      else
+        vim.notify("Failed to remove alias '" .. alias .. "'", vim.log.levels.ERROR)
+      end
+    end)
+  end
   )
 end
 

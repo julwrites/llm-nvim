@@ -3,54 +3,91 @@
 describe("plugins_manager", function()
   local plugins_manager
   local spy
-  local mock_utils
+  local mock_llm_cli
+  local mock_cache
   local mock_plugins_view
+  local mock_styles
+  local mock_shell
 
   before_each(function()
     spy = require('luassert.spy')
-    mock_utils = {
-      safe_shell_command = spy.new(function() return "", 0 end),
-      check_llm_installed = function() return true end,
+
+    mock_llm_cli = {
+      run_llm_command = spy.new(function() return "", 0 end),
+    }
+    mock_cache = {
+      get = spy.new(function() return nil end),
+      set = spy.new(function() end),
+      invalidate = spy.new(function() end),
     }
     mock_plugins_view = {
-        confirm_uninstall = function(plugin_name, callback) callback(true) end
+      confirm_uninstall = spy.new(function(plugin_name, callback) callback(true) end)
     }
-    package.loaded['llm.utils'] = mock_utils
-    package.loaded['llm.plugins.plugins_view'] = mock_plugins_view
-    package.loaded['llm.plugins.plugins_loader'] = {
-      get_all_plugin_names = function() return { 'plugin1', 'plugin2' } end,
-      get_plugins_with_descriptions = function()
-        return {
-          plugin1 = { description = 'description1' },
-          plugin2 = { description = 'description2' },
-        }
-      end,
-      get_plugins_by_category = function()
-        return {
-          category1 = { 'plugin1' },
-          category2 = { 'plugin2' },
-        }
-      end,
-      refresh_plugins_cache = function() end,
+    mock_styles = {
+      setup_buffer_syntax = spy.new(function() end),
+      setup_highlights = spy.new(function() end),
     }
-    package.loaded['llm.unified_manager'] = {
-      switch_view = function() end,
+    mock_shell = {
+      safe_shell_command = spy.new(function() return "", 0 end),
+      check_llm_installed = spy.new(function() return true end),
     }
-    plugins_manager = require('llm.plugins.plugins_manager')
+    local mock_unified_manager = {
+      switch_view = spy.new(function() end),
+      open_specific_manager = spy.new(function() end),
+    }
 
-    plugins_manager.get_plugin_info_under_cursor = function()
-        return "plugin1", { installed = true }
-    end
+    package.loaded['llm.core.data.llm_cli'] = mock_llm_cli
+    package.loaded['llm.core.data.cache'] = mock_cache
+    package.loaded['llm.ui.views.plugins_view'] = mock_plugins_view
+    package.loaded['llm.ui.styles'] = mock_styles
+    package.loaded['llm.core.utils.shell'] = mock_shell
+    package.loaded['llm.ui.unified_manager'] = mock_unified_manager
 
+    -- Mock vim.api functions used by plugins_manager
+    vim.api.nvim_buf_set_lines = spy.new(function() end)
+    vim.api.nvim_buf_add_highlight = spy.new(function() end)
+    vim.api.nvim_win_get_cursor = spy.new(function() return {1, 0} end)
+
+    -- Mock vim.fn functions used by plugins_manager
+    vim.fn.system = spy.new(function() return "" end)
+    vim.fn.bufexists = spy.new(function() return 0 end)
+    vim.fn.buflisted = spy.new(function() return 0 end)
+
+    -- Mock vim.notify
+    vim.notify = spy.new(function() end)
+
+    -- Mock vim.schedule and vim.defer_fn
     vim.schedule = function(fn) fn() end
+    vim.defer_fn = function(fn, delay) fn() end
+
+    -- Load the actual module after setting up mocks
+    plugins_manager = require('llm.managers.plugins_manager')
+
+    -- Override get_plugin_info_under_cursor for specific tests
+    plugins_manager.get_plugin_info_under_cursor = function()
+      return "plugin1", { installed = true }
+    end
   end)
 
   after_each(function()
-    package.loaded['llm.plugins.plugins_loader'] = nil
-    package.loaded['llm.plugins.plugins_manager'] = nil
-    package.loaded['llm.plugins.plugins_view'] = nil
-    package.loaded['llm.utils'] = nil
+    package.loaded['llm.managers.plugins_manager'] = nil
+    package.loaded['llm.core.data.llm_cli'] = nil
+    package.loaded['llm.core.data.cache'] = nil
+    package.loaded['llm.ui.views.plugins_view'] = nil
+    package.loaded['llm.ui.styles'] = nil
+    package.loaded['llm.core.utils.shell'] = nil
+    package.loaded['llm.ui.unified_manager'] = nil
+
+    -- Clean up vim mocks
+    vim.api.nvim_buf_set_lines = nil
+    vim.api.nvim_buf_add_highlight = nil
+    vim.api.nvim_win_get_cursor = nil
+    vim.fn.system = nil
+    vim.fn.bufexists = nil
+    vim.fn.buflisted = nil
+    vim.notify = nil
     vim.schedule = nil
+    vim.defer_fn = nil
   end)
 
   it("should be a table", function()
@@ -76,14 +113,66 @@ describe("plugins_manager", function()
   describe("install_plugin", function()
     it("should call safe_shell_command with the correct arguments", function()
       plugins_manager.install_plugin("plugin1")
-      assert.spy(mock_utils.safe_shell_command).was.called_with('llm install plugin1', 'Failed to install plugin: plugin1')
+      assert.spy(mock_utils.safe_shell_command).was.called_with('llm install plugin1')
     end)
   end)
 
   describe("uninstall_plugin_under_cursor", function()
     it("should call safe_shell_command with the correct arguments", function()
         plugins_manager.uninstall_plugin_under_cursor(1)
-        assert.spy(mock_utils.safe_shell_command).was.called_with('llm uninstall plugin1 -y', 'Failed to uninstall plugin: plugin1')
+        assert.spy(mock_utils.safe_shell_command).was.called_with('llm uninstall plugin1 -y')
+    end)
+  end)
+
+  describe("populate_plugins_buffer", function()
+    local captured_lines
+    local mock_api
+
+    before_each(function()
+      captured_lines = {}
+      mock_api = {
+        nvim_buf_set_lines = spy.new(function(_, _, _, _, lines) captured_lines = lines end),
+        nvim_buf_add_highlight = spy.new(function() end),
+      }
+      vim.api = mock_api
+
+      -- Mock llm_cli.run_llm_command to return installed plugins
+      package.loaded['llm.core.data.llm_cli'].run_llm_command = function(cmd)
+        if cmd == 'plugins' then
+          return '[{"name": "llm-installed-plugin"}]'
+        end
+        return ""
+      end
+
+      -- Mock get_available_plugins to return a mix of installed and uninstalled
+      plugins_manager.get_available_plugins = function()
+        return {
+          { name = "llm-installed-plugin", description = "An installed plugin" },
+          { name = "llm-uninstalled-plugin", description = "An uninstalled plugin" },
+        }
+      end
+
+      -- Mock cache functions
+      package.loaded['llm.core.data.cache'] = {
+        get = function() return nil end,
+        set = function() end,
+        invalidate = function() end,
+      }
+
+      -- Mock styles.setup_buffer_syntax
+      package.loaded['llm.ui.styles'].setup_buffer_syntax = function() end
+    end)
+
+    it("should correctly display installed and uninstalled plugins", function()
+      plugins_manager.populate_plugins_buffer(1) -- Dummy bufnr
+
+      -- Assert that nvim_buf_set_lines was called with the correct content
+      assert.spy(mock_api.nvim_buf_set_lines).was.called()
+
+      -- Check the lines for the expected format
+      -- Skip the header lines (first 5 lines + 1 empty line)
+      assert.are.equal("[✓] llm-installed-plugin - An installed plugin", captured_lines[7])
+      assert.are.equal("[ ] llm-uninstalled-plugin - An uninstalled plugin", captured_lines[8])
     end)
   end)
 end)

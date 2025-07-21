@@ -124,18 +124,6 @@ end
 
 -- Command to toggle the unified manager with an optional initial view
 -- Usage: :LLMToggle [view] where view is one of: models, plugins, keys, fragments, templates, schemas
-vim.api.nvim_create_user_command("LLMToggle", function(opts)
-  llm.toggle_unified_manager(validate_view_name(opts.args))
-end, {
-  nargs = "?", -- Accepts 0 or 1 argument
-  complete = function(ArgLead, CmdLine, CursorPos)
-    -- Only complete the first argument
-    if #vim.split(CmdLine, "%s+") > 2 then return {} end
-
-    local views = { "models", "plugins", "keys", "fragments", "templates", "schemas" }
-    return vim.tbl_filter(function(view)
-      return view:find(ArgLead, 1, true) == 1
-    end, views)
-  end,
-  desc = "Toggle LLM Unified Manager (optional view: models|plugins|keys|fragments|templates|schemas)"
-})
+vim.api.nvim_create_user_command('LLMToggle', function(opts)
+  require('llm.commands').dispatch_command('toggle', opts.fargs[1])
+end, { nargs = '?' })

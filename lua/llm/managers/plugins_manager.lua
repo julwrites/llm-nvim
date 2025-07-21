@@ -10,49 +10,92 @@ local cache = require('llm.core.data.cache')
 local plugins_view = require('llm.ui.views.plugins_view')
 local styles = require('llm.ui.styles')
 
+local function parse_plugins_html(html)
+  local plugins = {}
+  vim.notify("Parsing HTML content of length: " .. #html, vim.log.levels.INFO)
+  local sections = html:gmatch('<section id="([%w-]+)">(.-)</section>')
+
+  for id, content in sections do
+    local h2 = content:match('<h2>(.-)</h2>')
+    if h2 then
+      -- vim.notify("Found section: " .. h2, vim.log.levels.INFO) -- Removed per-section log
+      local list_items = content:gmatch('<li>(.-)</li>')
+      for item in list_items do
+        local url, name, description
+        local link_match = item:match('<a.->(.-)</a>')
+        if link_match then
+          name = link_match:match('<strong>(.-)</strong>') or link_match
+          url = item:match('href="(.-)"')
+          description = item:gsub('<[^>]+>', ''):gsub(name, '', 1):match('^:%s*(.*)') or ''
+          table.insert(plugins, { name = name, url = url, description = description })
+          -- vim.notify("Parsed plugin: " .. name, vim.log.levels.INFO) -- Removed per-plugin log
+        end
+      end
+    end
+  end
+  vim.notify("Finished parsing, found " .. #plugins .. " plugins.", vim.log.levels.INFO)
+  return plugins
+end
+
 -- Get available plugins from the plugin directory
 function M.get_available_plugins()
-    local cached_plugins = cache.get('available_plugins')
-    if cached_plugins then
-        return cached_plugins
-    end
+  vim.notify("Getting available plugins...", vim.log.levels.INFO)
+  local cached_plugins = cache.get('available_plugins')
+  if cached_plugins then
+    vim.notify("Returning cached plugins.", vim.log.levels.INFO)
+    return cached_plugins
+  end
 
-    local plugins_html = vim.fn.system('curl -s https://llm.datasette.io/en/stable/plugins/directory.html')
-    if not plugins_html or plugins_html == "" then return {} end
+  vim.notify("Fetching plugins from URL...", vim.log.levels.INFO)
+  local plugins_html = vim.fn.system('curl -s https://llm.datasette.io/en/stable/plugins/directory.html')
+  if not plugins_html or plugins_html == "" then
+    vim.notify("Failed to fetch HTML from URL.", vim.log.levels.ERROR)
+    return {}
+  end
+  vim.notify("Fetched HTML content, length: " .. #plugins_html, vim.log.levels.INFO)
 
-    local plugins = {}
-    for line in plugins_html:gmatch("[^\r\n]+") do
-        local plugin_name = line:match('<li><a href="https://github.com/[^/]+/[^/]+">([^<]+)</a>')
-        if plugin_name then
-            local description = line:match('</a>: (.*)')
-            table.insert(plugins, { name = plugin_name, description = description or "" })
-        end
-    end
+  local plugins = parse_plugins_html(plugins_html)
+  vim.notify("Parsed " .. #plugins .. " plugins from HTML.", vim.log.levels.INFO)
 
-    cache.set('available_plugins', plugins)
-    return plugins
+  cache.set('available_plugins', plugins)
+  return plugins
 end
 
 -- Get installed plugins from llm CLI
 function M.get_installed_plugins()
-    local cached_plugins = cache.get('installed_plugins')
-    if cached_plugins then
-        return cached_plugins
-    end
+  vim.notify("Getting installed plugins...", vim.log.levels.INFO)
+  local cached_plugins = cache.get('installed_plugins')
+  if cached_plugins then
+    vim.notify("Returning cached installed plugins.", vim.log.levels.INFO)
+    return cached_plugins
+  end
 
-    local plugins_output = llm_cli.run_llm_command('plugins')
-    if not plugins_output then return {} end
-    local plugins = {}
-    for line in plugins_output:gmatch("[^\r\n]+") do
-        if not line:match("^%-%-") and line ~= "" and not line:match("^Plugins:") then
-            local plugin_name = line:match("%S+")
-            if plugin_name then
-                table.insert(plugins, { name = plugin_name })
-            end
-        end
+  vim.notify("Running 'llm plugins' command...", vim.log.levels.INFO)
+  local plugins_output = llm_cli.run_llm_command('plugins')
+  if not plugins_output then
+    vim.notify("'llm plugins' command returned no output.", vim.log.levels.WARN)
+    return {}
+  end
+  vim.notify("Raw 'llm plugins' output:\n" .. plugins_output, vim.log.levels.INFO)
+
+  local plugins = {}
+  local ok, decoded_plugins = pcall(vim.json.decode, plugins_output)
+  if not ok then
+    vim.notify("Failed to decode JSON from 'llm plugins' command: " .. decoded_plugins, vim.log.levels.ERROR)
+    return {}
+  end
+
+  if type(decoded_plugins) == 'table' then
+    for _, plugin_data in ipairs(decoded_plugins) do
+      if plugin_data and plugin_data.name then
+        table.insert(plugins, { name = plugin_data.name })
+        vim.notify("Parsed installed plugin: '" .. plugin_data.name .. "'", vim.log.levels.INFO)
+      end
     end
-    cache.set('installed_plugins', plugins)
-    return plugins
+  end
+  vim.notify("Finished parsing installed plugins, found " .. #plugins .. ".", vim.log.levels.INFO)
+  cache.set('installed_plugins', plugins)
+  return plugins
 end
 
 -- Check if a plugin is installed
@@ -68,29 +111,32 @@ end
 
 -- Install a plugin using llm CLI
 function M.install_plugin(plugin_name)
-    local result = llm_cli.run_llm_command('install ' .. plugin_name)
-    cache.invalidate('installed_plugins')
-    cache.invalidate('available_plugins')
-    return result ~= nil
+  local result = llm_cli.run_llm_command('install ' .. plugin_name)
+  cache.invalidate('installed_plugins')
+  cache.invalidate('available_plugins')
+  return result ~= nil
 end
 
 -- Uninstall a plugin using llm CLI
 function M.uninstall_plugin(plugin_name)
-    local result = llm_cli.run_llm_command('uninstall ' .. plugin_name .. ' -y')
-    cache.invalidate('installed_plugins')
-    cache.invalidate('available_plugins')
-    return result ~= nil
+  local result = llm_cli.run_llm_command('uninstall ' .. plugin_name .. ' -y')
+  cache.invalidate('installed_plugins')
+  cache.invalidate('available_plugins')
+  return result ~= nil
 end
 
 -- Populate the buffer with plugin management content
 function M.populate_plugins_buffer(bufnr)
+  vim.notify("Populating plugins buffer...", vim.log.levels.INFO)
   local available_plugins = M.get_available_plugins()
+  vim.notify("Got " .. #available_plugins .. " available plugins.", vim.log.levels.INFO)
+
   if not available_plugins or #available_plugins == 0 then
+    vim.notify("No available plugins found. Displaying error message.", vim.log.levels.WARN)
     api.nvim_buf_set_lines(bufnr, 0, -1, false, {
       "# Plugin Management - Error",
       "",
       "No plugins found. Make sure llm is properly configured and plugin cache is up-to-date.",
-      "Try running :LLMRefreshPlugins",
       "",
       "Press [q]uit or use navigation keys ([M]odels, [K]eys, etc.)"
     })
@@ -99,7 +145,18 @@ function M.populate_plugins_buffer(bufnr)
 
   local installed_plugins = M.get_installed_plugins()
   local installed_set = {}
-  for _, plugin in ipairs(installed_plugins) do installed_set[plugin.name] = true end
+  vim.notify("--- INSTALLED PLUGINS (" .. #installed_plugins .. ") ---", vim.log.levels.INFO)
+  for _, plugin in ipairs(installed_plugins) do
+    installed_set[plugin.name] = true
+    -- vim.notify("Installed: '" .. plugin.name .. "' (added to set)", vim.log.levels.INFO) -- Removed per-plugin log
+  end
+
+  local available_plugin_names = {}
+  for _, plugin in ipairs(available_plugins) do
+    table.insert(available_plugin_names, plugin.name)
+  end
+  vim.notify("--- AVAILABLE PLUGINS (" .. #available_plugins .. ") ---\n" .. table.concat(available_plugin_names, ", "),
+    vim.log.levels.INFO)
 
   local lines = {
     "# Plugin Management",
@@ -117,22 +174,36 @@ function M.populate_plugins_buffer(bufnr)
   for _, plugin in ipairs(available_plugins) do
     local desc = plugin.description or ""
     if #desc > 50 then desc = desc:sub(1, 47) .. "..." end
-    local status = installed_set[plugin.name] and "✓" or " "
+    local is_installed = installed_set[plugin.name]
+    local status = is_installed and "✓" or " "
+    -- vim.notify(string.format("Checking available plugin '%s': is_installed=%s (from installed_set['%s'])", plugin.name, tostring(is_installed), plugin.name), vim.log.levels.DEBUG) -- Removed per-plugin log
     local line = string.format("[%s] %-20s - %s", status, plugin.name, desc)
     table.insert(lines, line)
-    plugin_data[plugin.name] = { line = current_line, installed = installed_set[plugin.name] or false }
+    plugin_data[plugin.name] = { line = current_line, installed = is_installed or false }
     line_to_plugin[current_line] = plugin.name
     current_line = current_line + 1
   end
+  vim.notify("Prepared " .. #lines .. " lines for the buffer.", vim.log.levels.INFO)
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-  -- Apply syntax highlighting
+  -- Apply syntax highlighting and line-specific highlights
   styles.setup_buffer_syntax(bufnr) -- Use styles module
+
+  -- Apply line-specific highlights for installed status
+  for i, plugin in ipairs(available_plugins) do
+    local highlight_group = installed_set[plugin.name] and "LLMInstalled" or "LLMNotInstalled"
+    local header_lines_count = 6                -- Number of fixed header lines
+    local line_idx = header_lines_count + i - 1 -- Calculate the correct 0-based line index
+    local ns_id = api.nvim_create_namespace('LLMPluginsManagerHighlights')
+    api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
+    api.nvim_buf_add_highlight(bufnr, ns_id, highlight_group, line_idx, 0, -1)
+  end
 
   -- Store lookup tables in buffer variables
   vim.b[bufnr].line_to_plugin = line_to_plugin
   vim.b[bufnr].plugin_data = plugin_data
 
+  vim.notify("Finished populating plugins buffer.", vim.log.levels.INFO)
   return line_to_plugin, plugin_data -- Return for direct use if needed
 end
 
@@ -161,21 +232,9 @@ function M.setup_plugins_keymaps(bufnr, manager_module)
 end
 
 -- Action functions called by keymaps (now accept bufnr)
-function M.install_plugin_under_cursor(bufnr)
-  local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
-  if not plugin_name then return end
-  if plugin_info.installed then
-    vim.notify("Plugin " .. plugin_name .. " is already installed", vim.log.levels.INFO)
-    return
-  end
-  vim.notify("Installing plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
-  vim.schedule(function()
-    if M.install_plugin(plugin_name) then
-      vim.notify("Plugin installed: " .. plugin_name, vim.log.levels.INFO)
-      require('llm.ui.unified_manager').switch_view("Plugins")
-    else
-      vim.notify("Failed to install plugin: " .. plugin_name, vim.log.levels.ERROR)
-    end
+function M.refresh_plugin_list(bufnr)
+  M.refresh_available_plugins(function()
+    require('llm.ui.unified_manager').switch_view("Plugins")
   end)
 end
 
@@ -207,10 +266,17 @@ function M.uninstall_plugin_under_cursor(bufnr)
   end)
 end
 
-function M.refresh_plugin_list(bufnr)
-    cache.invalidate('available_plugins')
-    cache.invalidate('installed_plugins')
-    require('llm.ui.unified_manager').switch_view("Plugins")
+function M.refresh_available_plugins(callback)
+  vim.notify("Refreshing available plugins...", vim.log.levels.INFO)
+  cache.invalidate('available_plugins')
+  -- Fetch in the background
+  vim.defer_fn(function()
+    local plugins = M.get_available_plugins()
+    vim.notify("Finished refreshing plugins: " .. #plugins .. " found.", vim.log.levels.INFO)
+    if callback then
+      callback()
+    end
+  end, 0)
 end
 
 -- Helper to get plugin info from buffer variables

@@ -203,14 +203,20 @@ end
 -- Unified command dispatcher
 function M.dispatch_command(subcmd, ...)
   local args = { ... }
-  if subcmd == "selection" then
-    return M.prompt_with_selection(args[1] or "", args[2] or {})
-  elseif subcmd == "toggle" then
-    local unified_manager = require('llm.ui.unified_manager')
-    return unified_manager.toggle(args[1] or "")
-  else
-    -- Default case: treat as direct prompt
-    return M.prompt(subcmd, args[1] or {})
+  local success, err = pcall(function()
+    if subcmd == "selection" then
+      return M.prompt_with_selection(args[1] or "", args[2] or {})
+    elseif subcmd == "toggle" then
+      local unified_manager = require('llm.ui.unified_manager')
+      return unified_manager.toggle(args[1] or "")
+    else
+      -- Default case: treat as direct prompt
+      return M.prompt(subcmd, args[1] or {})
+    end
+  end)
+
+  if not success then
+    vim.notify("Error dispatching command: " .. tostring(err), vim.log.levels.ERROR)
   end
 end
 
@@ -233,8 +239,6 @@ function M.prompt(prompt, fragment_paths)
   vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
 
   local result = M.run_llm_command(cmd)
-  vim.notify("Command result: " .. (result and string.sub(result, 1, 100) or "nil"), vim.log.levels.DEBUG)
-
   if result then
     M.create_response_buffer(result)
   else

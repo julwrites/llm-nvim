@@ -6,7 +6,9 @@ local M = {}
 local shell = require('llm.core.utils.shell')
 
 function M.run_llm_command(command)
-    return shell.safe_shell_command('llm ' .. command)
+    local full_command = 'llm ' .. command
+    
+    return shell.safe_shell_command(full_command)
 end
 
 return M
