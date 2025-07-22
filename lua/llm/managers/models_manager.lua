@@ -220,6 +220,9 @@ function M.set_default_model(model_name)
   end
 
   local result = llm_cli.run_llm_command('models default ' .. model_name)
+  if result then
+    cache.invalidate('models')
+  end
   return result ~= nil
 end
 
@@ -263,6 +266,9 @@ function M.set_model_alias(alias, model)
 
   local cmd = string.format("aliases set %s %s", vim.fn.shellescape(alias), vim.fn.shellescape(model))
   local result = llm_cli.run_llm_command(cmd)
+  if result then
+    cache.invalidate('aliases')
+  end
   return result ~= nil
 end
 
