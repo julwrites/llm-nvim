@@ -187,6 +187,7 @@ function M.populate_plugins_buffer(bufnr)
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
   -- Apply syntax highlighting and line-specific highlights
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Apply line-specific highlights for installed status

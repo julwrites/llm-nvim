@@ -519,6 +519,7 @@ function M.populate_models_buffer(bufnr)
   local data = M.generate_models_list()
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, data.lines)
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Store lookup tables in buffer variables for keymaps
