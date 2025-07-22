@@ -175,8 +175,9 @@ function M.populate_plugins_buffer(bufnr)
     local desc = plugin.description or ""
     if #desc > 50 then desc = desc:sub(1, 47) .. "..." end
     local is_installed = installed_set[plugin.name]
+    local status_char = is_installed and "x" or " "
     local status_text = is_installed and "Installed" or "Not Installed"
-    local line = string.format("%-15s %-20s - %s", status_text, plugin.name, desc)
+    local line = string.format("[%s] %-20s - %s", status_char, plugin.name, status_text)
     table.insert(lines, line)
     plugin_data[plugin.name] = { line = current_line, installed = is_installed or false }
     line_to_plugin[current_line] = plugin.name
@@ -191,7 +192,7 @@ function M.populate_plugins_buffer(bufnr)
 
   -- Apply line-specific highlights for installed status
   for i, plugin in ipairs(available_plugins) do
-    local highlight_group = installed_set[plugin.name] and "LLMInstalled" or "LLMNotInstalled"
+    local highlight_group = installed_set[plugin.name] and "LLMPluginInstalled" or "LLMPluginNotInstalled"
     local header_lines_count = 6                -- Number of fixed header lines
     local line_idx = header_lines_count + i - 1 -- Calculate the correct 0-based line index
     local ns_id = api.nvim_create_namespace('LLMPluginsManagerHighlights')
