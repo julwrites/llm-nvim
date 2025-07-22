@@ -335,8 +335,7 @@ function M.generate_models_list()
   }
   -- Create reverse lookup and group models
   local providers = {
-    ["OpenAI Chat"] = {},
-    ["OpenAI Completion"] = {},
+    ["OpenAI"] = {},
     ["Custom OpenAI"] = {},
     ["Anthropic Messages"] = {},
     ["Mistral"] = {},
@@ -366,8 +365,13 @@ function M.generate_models_list()
 
     -- Determine provider and potentially find custom model info
     local provider_key = model.provider or "Other"
-    if provider_key == "Custom OpenAI" then
+    if provider_key == "OpenAI Chat" or provider_key == "OpenAI Completion" then
+      provider_key = "OpenAI"
+    end
+
+    if provider_key == "Custom OpenAI" or custom_openai.is_custom_openai_model_valid(model_id) then
       is_custom = true
+      provider_key = "Custom OpenAI"
       -- Find the corresponding custom model data using the extracted name/id
       -- Prioritize matching the extracted name directly to a model_id first
       if custom_openai.custom_openai_models[extracted_name] then
@@ -379,7 +383,6 @@ function M.generate_models_list()
         for id, info in pairs(custom_openai.custom_openai_models) do
           if info.model_name == extracted_name then
             custom_model_info = info
-            found_custom = true
             break
           end
         end
@@ -391,36 +394,6 @@ function M.generate_models_list()
         end
         -- Keep model_id and model_name as extracted_name
       end
-    elseif provider_key == "OpenAI" then
-      -- Check if this standard-looking line corresponds to a loaded custom model ID
-      -- We need to check both by extracted_name (which is model.id) and by model_name from custom_openai_models
-      local found_custom = false
-      if custom_openai.custom_openai_models[extracted_name] then
-        custom_model_info = custom_openai.custom_openai_models[extracted_name]
-        found_custom = true
-      else
-        -- Iterate through custom models to find a match by model_name if ID didn't match directly
-        for id, info in pairs(custom_openai.custom_openai_models) do
-          if info.model_name == extracted_name then
-            custom_model_info = info
-            found_custom = true
-            break
-          end
-        end
-      end
-
-      if found_custom then
-        provider_key = "Custom OpenAI"
-        is_custom = true
-        model_id = custom_model_info.model_id
-        model_name = custom_model_info.model_name
-        -- Ensure full_line reflects the custom nature for display
-        entry.full_line = "Custom OpenAI: " .. model_name .. " (" .. model_id .. ")"
-        if config.get("debug") then
-          vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
-            vim.log.levels.DEBUG)
-        end
-      end
     end
 
     -- Create the entry for this model
@@ -428,16 +401,11 @@ function M.generate_models_list()
       model_id = model_id,
       model_name = model_name,
       full_line = is_custom and ("Custom OpenAI: " .. model_name .. " (" .. model_id .. ")") or model.id, -- The original line from `llm models` or constructed for custom
-      is_default = false,
+      is_default = (model_id == default_model),
       is_custom = is_custom,
       aliases = model_to_aliases[model_id] or {}, -- Check aliases ONLY by model_id
       provider = provider_key
     }
-
-    -- Check if this model is the default ONLY by model_id
-    if model_id == default_model then
-      entry.is_default = true
-    end
 
     -- Check for duplicates before adding to the provider list
     if is_custom then
@@ -636,7 +604,16 @@ end
 -- Sets an alias for the model under the cursor.
 function M.set_alias_for_model_under_cursor(bufnr)
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
-  if not model_id or not model_info then return end
+  if not model_id or not model_info then
+    if config.get("debug") then
+      vim.notify("set_alias_for_model_under_cursor: no model_id or model_info", vim.log.levels.DEBUG)
+    end
+    return
+  end
+
+  if config.get("debug") then
+    vim.notify("set_alias_for_model_under_cursor: model_id=" .. model_id, vim.log.levels.DEBUG)
+  end
 
   local display_name = model_info.model_name or model_id
 
