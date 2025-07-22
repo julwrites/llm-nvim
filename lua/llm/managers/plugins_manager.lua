@@ -175,9 +175,8 @@ function M.populate_plugins_buffer(bufnr)
     local desc = plugin.description or ""
     if #desc > 50 then desc = desc:sub(1, 47) .. "..." end
     local is_installed = installed_set[plugin.name]
-    local status = is_installed and "✓" or " "
-    -- vim.notify(string.format("Checking available plugin '%s': is_installed=%s (from installed_set['%s'])", plugin.name, tostring(is_installed), plugin.name), vim.log.levels.DEBUG) -- Removed per-plugin log
-    local line = string.format("[%s] %-20s - %s", status, plugin.name, desc)
+    local status_text = is_installed and "Installed" or "Not Installed"
+    local line = string.format("%-15s %-20s - %s", status_text, plugin.name, desc)
     table.insert(lines, line)
     plugin_data[plugin.name] = { line = current_line, installed = is_installed or false }
     line_to_plugin[current_line] = plugin.name

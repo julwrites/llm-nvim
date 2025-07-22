@@ -161,7 +161,6 @@ M.syntax_patterns = {
   model_mistral = "syntax match LLMModelMistral /^Mistral.*$\\|\\[ \\] Mistral.*/",
   model_gemini = "syntax match LLMModelGemini /^Gemini.*$\\|\\[ \\] Gemini.*/",
   model_groq = "syntax match LLMModelGroq /^Groq.*$\\|\\[ \\] Groq.*/",
-  model_local = "syntax match LLMModelLocal /^Local Models.*$\\|\\[ \\] .*gguf.*\\|\\[ \\] .*ollama.*/",
   model_default = "syntax match LLMModelDefault /\\[✓\\].*/",
   
   -- Fragment-specific patterns
