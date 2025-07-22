@@ -261,7 +261,7 @@ function M.set_model_alias(alias, model)
     return false
   end
 
-  local cmd = string.format("alias set %s %s", vim.fn.shellescape(alias), vim.fn.shellescape(model))
+  local cmd = string.format("aliases set %s %s", vim.fn.shellescape(alias), vim.fn.shellescape(model))
   local result = llm_cli.run_llm_command(cmd)
   return result ~= nil
 end
@@ -384,6 +384,8 @@ function M.generate_models_list()
         for id, info in pairs(custom_openai.custom_openai_models) do
           if info.model_name == extracted_name then
             custom_model_info = info
+            model_id = info.model_id
+            model_name = info.model_name
             break
           end
         end
