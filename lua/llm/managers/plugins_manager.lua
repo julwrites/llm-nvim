@@ -175,7 +175,7 @@ function M.populate_plugins_buffer(bufnr)
     local desc = plugin.description or ""
     if #desc > 50 then desc = desc:sub(1, 47) .. "..." end
     local is_installed = installed_set[plugin.name]
-    local status_char = is_installed and "x" or " "
+    local status_char = is_installed and "✓" or " "
     local status_text = is_installed and "Installed" or "Not Installed"
     local line = string.format("[%s] %-30s - %s", status_char, plugin.name, status_text)
     table.insert(lines, line)
