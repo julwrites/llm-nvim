@@ -284,7 +284,7 @@ function M.remove_model_alias(alias)
     return false
   end
 
-  local result = llm_cli.run_llm_command('aliases remove ' .. alias)
+  local result = llm_cli.run_llm_command('aliases remove ' .. vim.fn.shellescape(alias))
   if result then
     cache.invalidate('aliases')
   end
@@ -332,7 +332,7 @@ function M.generate_models_list()
   local default_model_output = llm_cli.run_llm_command('default')
   local default_model = ""
   if default_model_output and default_model_output ~= "" then
-    default_model = default_model_output:match("Default model: (.+)") or default_model_output
+    default_model = default_model_output:match("Default model: (.+)") or default_model_output:match("(.+)")
   end
 
   local lines = {
