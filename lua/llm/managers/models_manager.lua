@@ -329,7 +329,7 @@ function M.generate_models_list()
   end
 
   local aliases = M.get_model_aliases()
-  local default_model_output = llm_cli.run_llm_command('default')
+  local default_model_output = llm_cli.run_llm_command('models default')
   local default_model = ""
   if default_model_output and default_model_output ~= "" then
     default_model = default_model_output:match("Default model: (.+)") or default_model_output:match("(.+)")
