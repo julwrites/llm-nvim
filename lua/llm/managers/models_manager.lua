@@ -261,7 +261,8 @@ function M.set_model_alias(alias, model)
     return false
   end
 
-  local result = llm_cli.run_llm_command('alias set ' .. alias .. ' ' .. model)
+  local cmd = string.format("alias set %s %s", vim.fn.shellescape(alias), vim.fn.shellescape(model))
+  local result = llm_cli.run_llm_command(cmd)
   return result ~= nil
 end
 
