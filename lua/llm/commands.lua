@@ -9,6 +9,7 @@ local config = require('llm.config')
 local ui = require('llm.core.utils.ui')
 local text = require('llm.core.utils.text')
 local shell = require('llm.core.utils.shell')
+local llm_cli = require('llm.core.data.llm_cli')
 
 ---------------------
 -- Helper Functions
@@ -73,13 +74,6 @@ function M.get_system_fragment_args(fragment_list)
 end
 
 -- Run an llm command and return the result
-function M.run_llm_command(cmd)
-  if not shell.check_llm_installed() then
-    return ""
-  end
-
-  return shell.safe_shell_command(cmd, "Failed to execute LLM command")
-end
 
 function M.get_pre_response_message(source, prompt, fragment_paths)
   local message_parts = {}
@@ -151,7 +145,7 @@ function M.write_context_to_temp_file(context)
 end
 
 function M.llm_command_and_display_response(buf, cmd)
-  local result = M.run_llm_command(cmd)
+  local result = llm_cli.run_llm_command(cmd)
   if result then
     local buf = M.fill_response_buffer(buf, result)
     -- Focus the new response buffer
@@ -240,7 +234,7 @@ function M.prompt(prompt, fragment_paths)
   local cmd = table.concat(cmd_parts, " ")
   vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
 
-  local result = M.run_llm_command(cmd)
+  local result = llm_cli.run_llm_command(cmd)
   if result then
     M.create_response_buffer(result)
   else
