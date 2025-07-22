@@ -108,59 +108,55 @@ function M.is_model_available(model_line)
 end
 
 -- Get available models from llm CLI
-function M.get_available_models(callback)
-    local cached_models = cache.get('models')
-    if cached_models then
-        vim.notify("DEBUG: Cache hit for models at " .. os.time(), vim.log.levels.DEBUG)
-        callback(cached_models)
-        return
+function M.get_available_models()
+  local cached_models = cache.get('models')
+  if cached_models then
+    vim.notify("DEBUG: Cache hit for models at " .. os.time(), vim.log.levels.DEBUG)
+    return cached_models
+  end
+
+  vim.notify("DEBUG: Cache miss for models. Running llm models list at " .. os.time(), vim.log.levels.DEBUG)
+  local models_json = llm_cli.run_llm_command('models list')
+  vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if not models_json then return {} end
+  local models = {}
+  for line in models_json:gmatch("[^]+") do
+    if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
+      local provider, model_id
+      -- Try to match known prefixes first
+      if line:match("^OpenAI Chat: ") then
+        provider = "OpenAI Chat"
+        model_id = line:gsub("^OpenAI Chat: ", "")
+      elseif line:match("^OpenAI Completion: ") then
+        provider = "OpenAI Completion"
+        model_id = line:gsub("^OpenAI Completion: ", "")
+      elseif line:match("^Anthropic Messages: ") then
+        provider = "Anthropic Messages"
+        model_id = line:gsub("^Anthropic Messages: ", "")
+      elseif line:match("^DeepSeek: ") then
+        provider = "DeepSeek"
+        model_id = line:gsub("^DeepSeek: ", "")
+      elseif line:match("^GeminiPro: ") then
+        provider = "GeminiPro"
+        model_id = line:gsub("^GeminiPro: ", "")
+      elseif line:match("^Ollama: ") then
+        provider = "Ollama"
+        model_id = line:gsub("^Ollama: ", "")
+      else
+        -- Fallback to generic provider: model_id parsing
+        provider, model_id = line:match("([^:]+):%s*(.+)")
+      end
+
+      if provider and model_id then
+        table.insert(models, { provider = provider, id = model_id, name = model_id })
+      else
+        -- Handle lines without a provider or unparseable lines
+        table.insert(models, { provider = "Other", id = line, name = line })
+      end
     end
-
-    vim.notify("DEBUG: Cache miss for models. Running llm models list at " .. os.time(), vim.log.levels.DEBUG)
-    llm_cli.run_llm_command_async('models list', function(models_json, err)
-        vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
-        if err or not models_json then
-            errors.handle(errors.categories.CLI, "Failed to get available models: " .. (err or "Empty response"), nil, errors.levels.ERROR)
-            callback({})
-            return
-        end
-
-        local models = {}
-        for line in models_json:gmatch("[^\n]+") do
-            if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
-                local provider, model_id
-                if line:match("^OpenAI Chat: ") then
-                    provider = "OpenAI Chat"
-                    model_id = line:gsub("^OpenAI Chat: ", "")
-                elseif line:match("^OpenAI Completion: ") then
-                    provider = "OpenAI Completion"
-                    model_id = line:gsub("^OpenAI Completion: ", "")
-                elseif line:match("^Anthropic Messages: ") then
-                    provider = "Anthropic Messages"
-                    model_id = line:gsub("^Anthropic Messages: ", "")
-                elseif line:match("^DeepSeek: ") then
-                    provider = "DeepSeek"
-                    model_id = line:gsub("^DeepSeek: ", "")
-                elseif line:match("^GeminiPro: ") then
-                    provider = "GeminiPro"
-                    model_id = line:gsub("^GeminiPro: ", "")
-                elseif line:match("^Ollama: ") then
-                    provider = "Ollama"
-                    model_id = line:gsub("^Ollama: ", "")
-                else
-                    provider, model_id = line:match("([^:]+):%s*(.+)")
-                end
-
-                if provider and model_id then
-                    table.insert(models, { provider = provider, id = model_id, name = model_id })
-                else
-                    table.insert(models, { provider = "Other", id = line, name = line })
-                end
-            end
-        end
-        cache.set('models', models)
-        callback(models)
-    end)
+  end
+  cache.set('models', models)
+  return models
 end
 
 -- Extract model name from the full model line
@@ -228,27 +224,20 @@ function M.set_default_model(model_name)
 end
 
 -- Get model aliases from llm CLI
-function M.get_model_aliases(callback)
-    local cached_aliases = cache.get('aliases')
-    if cached_aliases then
-        vim.notify("DEBUG: Cache hit for aliases at " .. os.time(), vim.log.levels.DEBUG)
-        callback(cached_aliases)
-        return
-    end
+function M.get_model_aliases()
+  local cached_aliases = cache.get('aliases')
+  if cached_aliases then
+    vim.notify("DEBUG: Cache hit for aliases at " .. os.time(), vim.log.levels.DEBUG)
+    return cached_aliases
+  end
 
-    vim.notify("DEBUG: Cache miss for aliases. Running llm aliases list --json at " .. os.time(),
-        vim.log.levels.DEBUG)
-    llm_cli.run_llm_command_async('aliases list --json', function(aliases_json, err)
-        vim.notify("DEBUG: llm aliases list --json command finished at " .. os.time(), vim.log.levels.DEBUG)
-        if err or not aliases_json then
-            errors.handle(errors.categories.CLI, "Failed to get model aliases: " .. (err or "Empty response"), nil, errors.levels.ERROR)
-            callback({})
-            return
-        end
-        local aliases = vim.fn.json_decode(aliases_json)
-        cache.set('aliases', aliases)
-        callback(aliases)
-    end)
+  vim.notify("DEBUG: Cache miss for aliases. Running llm aliases list --json at " .. os.time(), vim.log.levels.DEBUG)
+  local aliases_json = llm_cli.run_llm_command('aliases list --json')
+  vim.notify("DEBUG: llm aliases list --json command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if not aliases_json then return {} end
+  local aliases = vim.fn.json_decode(aliases_json)
+  cache.set('aliases', aliases)
+  return aliases
 end
 
 -- Set a model alias using llm CLI
@@ -293,197 +282,250 @@ function M.remove_model_alias(alias)
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
+function M.select_model()
+  local models = M.get_available_models()
+
+  if #models == 0 then
+    api.nvim_err_writeln("No models found. Make sure llm is properly configured.")
+    return
+  end
+
+  models_view.select_model(models, function(choice)
+    if not choice then return end
+    local model_name = M.extract_model_name(choice.id)
+    config.options.model = model_name
+    vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
+  end)
+end
 
 -- Populate the buffer with model management content
 -- Generate the list of models for the management buffer
-function M.generate_models_list(callback)
-    M.get_available_models(function(models)
-        if #models == 0 then
-            callback({
-                lines = {
-                    "# Model Management - No Models Found",
-                    "",
-                    "No models found. Make sure llm CLI is properly installed and configured.",
-                    "Use the [K]eys manager to set up API keys for your providers.",
-                    "Or use the [P]lugins manager to install required plugins.",
-                    "",
-                    "Press [q]uit or use navigation keys ([P]lugins, [K]eys, etc.)"
-                },
-                line_to_model_id = {},
-                model_data = {}
-            })
-            return
+function M.generate_models_list()
+  local models = M.get_available_models()
+  if #models == 0 then
+    return {
+      lines = {
+        "# Model Management - No Models Found",
+        "",
+        "No models found. Make sure llm CLI is properly installed and configured.",
+        "Use the [K]eys manager to set up API keys for your providers.",
+        "Or use the [P]lugins manager to install required plugins.",
+        "",
+        "Press [q]uit or use navigation keys ([P]lugins, [K]eys, etc.)"
+      },
+      line_to_model_id = {},
+      model_data = {}
+    }
+  end
+
+  local aliases = M.get_model_aliases()
+  local default_model_output = llm_cli.run_llm_command('default')
+  local default_model = ""
+  if default_model_output then
+    default_model = default_model_output:match("Default model: (.+)")
+  end
+
+  local lines = {
+    "# Model Management",
+    "",
+    "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
+    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit", -- Updated actions
+    "──────────────────────────────────────────────────────────────",
+    ""
+  }
+  -- Create reverse lookup and group models
+  local providers = {
+    ["OpenAI Chat"] = {},
+    ["OpenAI Completion"] = {},
+    ["Custom OpenAI"] = {},
+    ["Anthropic Messages"] = {},
+    ["Mistral"] = {},
+    ["GeminiPro"] = {},
+    ["DeepSeek"] = {},
+    ["Groq"] = {},
+    ["Local Models"] = {},
+    ["Ollama"] = {},
+    ["Other"] = {}
+  }
+  local processed_custom_model_ids = {} -- Set to track added custom model IDs
+
+  -- Ensure custom OpenAI models are loaded before processing
+  custom_openai.load_custom_openai_models()
+  local model_to_aliases = {}
+  for alias, model in pairs(aliases) do
+    if not model_to_aliases[model] then model_to_aliases[model] = {} end
+    table.insert(model_to_aliases[model], alias)
+  end
+
+  for _, model in ipairs(models) do
+    local extracted_name = model.id -- This is the name/id part of the line
+    local model_id = model.id       -- Default model_id to extracted name
+    local model_name = model.name   -- Default model_name to extracted name
+    local is_custom = false
+    local custom_model_info = nil
+
+    -- Determine provider and potentially find custom model info
+    local provider_key = model.provider or "Other"
+    if provider_key == "Custom OpenAI" then
+      is_custom = true
+      -- Find the corresponding custom model data using the extracted name/id
+      -- Prioritize matching the extracted name directly to a model_id first
+      if custom_openai.custom_openai_models[extracted_name] then
+        custom_model_info = custom_openai.custom_openai_models[extracted_name]
+        model_id = custom_model_info.model_id
+        model_name = custom_model_info.model_name
+      else
+        -- Fallback: Iterate to find match by model_name if ID didn't match
+        for id, info in pairs(custom_openai.custom_openai_models) do
+          if info.model_name == extracted_name then
+            custom_model_info = info
+            found_custom = true
+            break
+          end
         end
+      end
+      -- If still no match, something is wrong, but proceed with extracted values
+      if not custom_model_info then
+        if config.get("debug") then
+          vim.notify("Could not find custom model info for: " .. extracted_name, vim.log.levels.WARN)
+        end
+        -- Keep model_id and model_name as extracted_name
+      end
+    elseif provider_key == "OpenAI" then
+      -- Check if this standard-looking line corresponds to a loaded custom model ID
+      -- We need to check both by extracted_name (which is model.id) and by model_name from custom_openai_models
+      local found_custom = false
+      if custom_openai.custom_openai_models[extracted_name] then
+        custom_model_info = custom_openai.custom_openai_models[extracted_name]
+        found_custom = true
+      else
+        -- Iterate through custom models to find a match by model_name if ID didn't match directly
+        for id, info in pairs(custom_openai.custom_openai_models) do
+          if info.model_name == extracted_name then
+            custom_model_info = info
+            found_custom = true
+            break
+          end
+        end
+      end
 
-        M.get_model_aliases(function(aliases)
-            llm_cli.run_llm_command_async('default', function(default_model_output, err)
-                local default_model = ""
-                if not err and default_model_output then
-                    default_model = default_model_output:match("Default model: (.+)")
-                end
+      if found_custom then
+        provider_key = "Custom OpenAI"
+        is_custom = true
+        model_id = custom_model_info.model_id
+        model_name = custom_model_info.model_name
+        -- Ensure full_line reflects the custom nature for display
+        entry.full_line = "Custom OpenAI: " .. model_name .. " (" .. model_id .. ")"
+        if config.get("debug") then
+          vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
+            vim.log.levels.DEBUG)
+        end
+      end
+    end
 
-                local lines = {
-                    "# Model Management",
-                    "",
-                    "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
-                    "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit",
-                    "──────────────────────────────────────────────────────────────",
-                    ""
-                }
-                local providers = {
-                    ["OpenAI Chat"] = {},
-                    ["OpenAI Completion"] = {},
-                    ["Custom OpenAI"] = {},
-                    ["Anthropic Messages"] = {},
-                    ["Mistral"] = {},
-                    ["GeminiPro"] = {},
-                    ["DeepSeek"] = {},
-                    ["Groq"] = {},
-                    ["Local Models"] = {},
-                    ["Ollama"] = {},
-                    ["Other"] = {}
-                }
-                local processed_custom_model_ids = {}
+    -- Create the entry for this model
+    local entry = {
+      model_id = model_id,
+      model_name = model_name,
+      full_line = is_custom and ("Custom OpenAI: " .. model_name .. " (" .. model_id .. ")") or model.id, -- The original line from `llm models` or constructed for custom
+      is_default = false,
+      is_custom = is_custom,
+      aliases = model_to_aliases[model_id] or {}, -- Check aliases ONLY by model_id
+      provider = provider_key
+    }
 
-                custom_openai.load_custom_openai_models()
-                local model_to_aliases = {}
-                for alias, model in pairs(aliases) do
-                    if not model_to_aliases[model] then model_to_aliases[model] = {} end
-                    table.insert(model_to_aliases[model], alias)
-                end
+    -- Check if this model is the default ONLY by model_id
+    if model_id == default_model then
+      entry.is_default = true
+    end
 
-                for _, model in ipairs(models) do
-                    local extracted_name = model.id
-                    local model_id = model.id
-                    local model_name = model.name
-                    local is_custom = false
-                    local custom_model_info = nil
-                    local provider_key = model.provider or "Other"
+    -- Check for duplicates before adding to the provider list
+    if is_custom then
+      if processed_custom_model_ids[model_id] then
+        if config.get("debug") then
+          vim.notify("Skipping duplicate custom model entry for ID: " .. model_id, vim.log.levels.DEBUG)
+        end
+        goto next_model_line                        -- Skip adding this duplicate entry
+      else
+        processed_custom_model_ids[model_id] = true -- Mark this ID as processed
+      end
+    end
 
-                    if provider_key == "Custom OpenAI" then
-                        is_custom = true
-                        if custom_openai.custom_openai_models[extracted_name] then
-                            custom_model_info = custom_openai.custom_openai_models[extracted_name]
-                            model_id = custom_model_info.model_id
-                            model_name = custom_model_info.model_name
-                        end
-                    elseif provider_key == "OpenAI" then
-                        local found_custom = false
-                        if custom_openai.custom_openai_models[extracted_name] then
-                            custom_model_info = custom_openai.custom_openai_models[extracted_name]
-                            found_custom = true
-                        else
-                            for id, info in pairs(custom_openai.custom_openai_models) do
-                                if info.model_name == extracted_name then
-                                    custom_model_info = info
-                                    found_custom = true
-                                    break
-                                end
-                            end
-                        end
+    if not providers[provider_key] then
+      providers[provider_key] = {}
+    end
+    table.insert(providers[provider_key], entry)
 
-                        if found_custom then
-                            provider_key = "Custom OpenAI"
-                            is_custom = true
-                            model_id = custom_model_info.model_id
-                            model_name = custom_model_info.model_name
-                        end
-                    end
+    ::next_model_line::
+  end
 
-                    local entry = {
-                        model_id = model_id,
-                        model_name = model_name,
-                        full_line = is_custom and ("Custom OpenAI: " .. model_name .. " (" .. model_id .. ")") or model.id,
-                        is_default = (model_id == default_model),
-                        is_custom = is_custom,
-                        aliases = model_to_aliases[model_id] or {},
-                        provider = provider_key
-                    }
+  local model_data = {}       -- Stores detailed info keyed by model_id
+  local line_to_model_id = {} -- Maps buffer line number to model_id
+  local current_line = #lines + 1
+  -- Add content to buffer
+  local provider_keys = {}
+  for key, _ in pairs(providers) do
+    table.insert(provider_keys, key)
+  end
+  table.sort(provider_keys)
 
-                    if is_custom then
-                        if not processed_custom_model_ids[model_id] then
-                            processed_custom_model_ids[model_id] = true
-                            if not providers[provider_key] then providers[provider_key] = {} end
-                            table.insert(providers[provider_key], entry)
-                        end
-                    else
-                        if not providers[provider_key] then providers[provider_key] = {} end
-                        table.insert(providers[provider_key], entry)
-                    end
-                end
+  for _, provider in ipairs(provider_keys) do
+    local provider_models = providers[provider]
+    if #provider_models > 0 then
+      table.insert(lines, provider)
+      table.insert(lines, string.rep("─", #provider))
+      current_line = current_line + 2
+      -- Sort models within the provider group based on the display name (model_name)
+      table.sort(provider_models, function(a, b) return a.model_name < b.model_name end)
 
-                local model_data = {}
-                local line_to_model_id = {}
-                local current_line = #lines + 1
-                local provider_keys = {}
-                for key, _ in pairs(providers) do
-                    table.insert(provider_keys, key)
-                end
-                table.sort(provider_keys)
+      for _, model_entry in ipairs(provider_models) do
+        local status = model_entry.is_default and "✓" or " "
+        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
+            ""
+        -- Display model_name in the list
+        local display_line_part = model_entry.model_name
+        local provider_prefix = model_entry.provider .. ":"
+        local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 
-                for _, provider in ipairs(provider_keys) do
-                    local provider_models = providers[provider]
-                    if #provider_models > 0 then
-                        table.insert(lines, provider)
-                        table.insert(lines, string.rep("─", #provider))
-                        current_line = current_line + 2
-                        table.sort(provider_models, function(a, b) return a.model_name < b.model_name end)
+        table.insert(lines, line)
+        -- Store data keyed by model_id
+        model_data[model_entry.model_id] = {
+          line = current_line,
+          is_default = model_entry.is_default,
+          is_custom = model_entry.is_custom,
+          full_line = model_entry.full_line,   -- Store original line for context if needed
+          model_name = model_entry.model_name, -- Store model name
+          aliases = model_entry.aliases
+        }
+        -- Map buffer line number to model_id
+        line_to_model_id[current_line] = model_entry.model_id
+        current_line = current_line + 1
+      end
+      table.insert(lines, "")
+      current_line = current_line + 1
+    end
+  end
+  table.insert(lines, "")
 
-                        for _, model_entry in ipairs(provider_models) do
-                            local status = model_entry.is_default and "✓" or " "
-                            local alias_text = #model_entry.aliases > 0 and " (aliases: " ..
-                                table.concat(model_entry.aliases, ", ") .. ")" or ""
-                            local display_line_part = model_entry.model_name
-                            local provider_prefix = model_entry.provider .. ":"
-                            local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
-
-                            table.insert(lines, line)
-                            model_data[model_entry.model_id] = {
-                                line = current_line,
-                                is_default = model_entry.is_default,
-                                is_custom = model_entry.is_custom,
-                                full_line = model_entry.full_line,
-                                model_name = model_entry.model_name,
-                                aliases = model_entry.aliases
-                            }
-                            line_to_model_id[current_line] = model_entry.model_id
-                            current_line = current_line + 1
-                        end
-                        table.insert(lines, "")
-                        current_line = current_line + 1
-                    end
-                end
-                table.insert(lines, "")
-
-                callback({
-                    lines = lines,
-                    line_to_model_id = line_to_model_id,
-                    model_data = model_data
-                })
-            end)
-        end)
-    end)
+  return {
+    lines = lines,
+    line_to_model_id = line_to_model_id,
+    model_data = model_data
+  }
 end
 
 -- Populate the buffer with model management content
 function M.populate_models_buffer(bufnr)
-    -- Set loading message
-    api.nvim_buf_set_lines(bufnr, 0, -1, false, { "Loading models..." })
-    styles.setup_buffer_syntax(bufnr)
+  local data = M.generate_models_list()
 
-    M.generate_models_list(function(data)
-        -- Check if the buffer is still valid
-        if not api.nvim_buf_is_valid(bufnr) then
-            return
-        end
+  api.nvim_buf_set_lines(bufnr, 0, -1, false, data.lines)
+  styles.setup_buffer_syntax(bufnr) -- Use styles module
 
-        api.nvim_buf_set_lines(bufnr, 0, -1, false, data.lines)
-        styles.setup_buffer_syntax(bufnr) -- Re-apply syntax for the new content
+  -- Store lookup tables in buffer variables for keymaps
+  vim.b[bufnr].line_to_model_id = data.line_to_model_id
+  vim.b[bufnr].model_data = data.model_data
 
-        -- Store lookup tables in buffer variables for keymaps
-        vim.b[bufnr].line_to_model_id = data.line_to_model_id
-        vim.b[bufnr].model_data = data.model_data
-    end)
+  return data.line_to_model_id, data.model_data -- Return for direct use if needed
 end
 
 -- Setup keymaps for the model management buffer
