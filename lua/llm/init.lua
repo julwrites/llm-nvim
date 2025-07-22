@@ -16,8 +16,6 @@ function M.setup(opts)
 
   
 
-  -- Load all data
-  loaders.load_all()
 
   -- Auto-update LLM CLI check
   local auto_update_cli = M.config.get('auto_update_cli')

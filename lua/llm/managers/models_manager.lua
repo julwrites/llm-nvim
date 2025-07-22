@@ -293,21 +293,6 @@ function M.remove_model_alias(alias)
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
-function M.select_model()
-    M.get_available_models(function(models)
-        if #models == 0 then
-            api.nvim_err_writeln("No models found. Make sure llm is properly configured.")
-            return
-        end
-
-        models_view.select_model(models, function(choice)
-            if not choice then return end
-            local model_name = M.extract_model_name(choice.id)
-            config.options.model = model_name
-            vim.notify("Model set to: " .. model_name, vim.log.levels.INFO)
-        end)
-    end)
-end
 
 -- Populate the buffer with model management content
 -- Generate the list of models for the management buffer
