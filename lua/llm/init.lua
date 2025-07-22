@@ -2,6 +2,7 @@
 -- License: Apache 2.0
 
 local M = {}
+local facade = require('llm.facade')
 local loaders = require('llm.core.loaders')
 
 -- Setup function for configuration
@@ -13,11 +14,7 @@ function M.setup(opts)
   -- Initialize styles
   require('llm.ui.styles').setup_highlights()
 
-  -- Defer loading facade to prevent circular dependency
-  local facade = require('llm.facade')
-  for k, v in pairs(facade) do
-    M[k] = v
-  end
+
 
   -- Load all data
   loaders.load_all()
@@ -65,7 +62,14 @@ function M.setup(opts)
     plugins_manager.refresh_available_plugins()
   end, 100)
 
+
+
   return M
+end
+
+-- Expose facade functions
+for k, v in pairs(facade) do
+  M[k] = v
 end
 
 -- Expose functions to global scope for testing purposes only
