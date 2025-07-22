@@ -120,6 +120,39 @@ function M.run_update_command(cmd)
   return output, exit_code
 end
 
+function M.run_async_shell_command(cmd, on_exit)
+    debug_log("Executing async command: " .. cmd)
+    local stdout = vim.api.nvim_create_buf(false, true)
+    local stderr = vim.api.nvim_create_buf(false, true)
+
+    local function on_exit_wrapper(_, exit_code, _)
+        local stdout_content = table.concat(vim.api.nvim_buf_get_lines(stdout, 0, -1, false), "\n")
+        local stderr_content = table.concat(vim.api.nvim_buf_get_lines(stderr, 0, -1, false), "\n")
+
+        vim.schedule(function()
+            vim.api.nvim_buf_delete(stdout, { force = true })
+            vim.api.nvim_buf_delete(stderr, { force = true })
+        end)
+
+        debug_log("Async command finished with exit code " .. exit_code)
+        if exit_code ~= 0 then
+            debug_log("Stderr: " .. stderr_content, vim.log.levels.WARN)
+            on_exit(nil, stderr_content)
+        else
+            debug_log("Stdout: " .. (stdout_content:len() > 200 and stdout_content:sub(1, 200) .. "..." or stdout_content))
+            on_exit(stdout_content, nil)
+        end
+    end
+
+    vim.fn.jobstart(cmd, {
+        on_exit = on_exit_wrapper,
+        stdout_buffered = true,
+        stderr_buffered = true,
+        stdout_writeto = stdout,
+        stderr_writeto = stderr,
+    })
+end
+
 -- Attempt to update the LLM CLI
 function M.update_llm_cli()
   M.set_last_update_timestamp()
