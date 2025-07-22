@@ -120,7 +120,7 @@ function M.get_available_models()
   vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
   if not models_json then return {} end
   local models = {}
-  for line in models_json:gmatch("[^]+") do
+  for line in models_json:gmatch("[^\n]+") do
     if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
       local provider, model_id
       -- Try to match known prefixes first
@@ -284,7 +284,10 @@ function M.remove_model_alias(alias)
     return false
   end
 
-  local result = llm_cli.run_llm_command('alias remove ' .. alias)
+  local result = llm_cli.run_llm_command('aliases remove ' .. alias)
+  if result then
+    cache.invalidate('aliases')
+  end
   return result ~= nil
 end
 
