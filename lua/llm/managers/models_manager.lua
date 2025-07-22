@@ -321,8 +321,8 @@ function M.generate_models_list()
   local aliases = M.get_model_aliases()
   local default_model_output = llm_cli.run_llm_command('default')
   local default_model = ""
-  if default_model_output then
-    default_model = default_model_output:match("Default model: (.+)")
+  if default_model_output and default_model_output ~= "" then
+    default_model = default_model_output:match("Default model: (.+)") or default_model_output
   end
 
   local lines = {
@@ -448,10 +448,12 @@ function M.generate_models_list()
 
       for _, model_entry in ipairs(provider_models) do
         local status = model_entry.is_default and "✓" or " "
-        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
-            ""
+        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or ""
         -- Display model_name in the list
         local display_line_part = model_entry.model_name
+        if model_entry.is_custom then
+          display_line_part = display_line_part .. " (custom)"
+        end
         local provider_prefix = model_entry.provider .. ":"
         local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 

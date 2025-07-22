@@ -232,7 +232,9 @@ function M.prompt(prompt, fragment_paths)
   vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
 
   -- Add the main prompt, escaped
-  table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  if prompt and prompt ~= "" then
+    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  end
 
   -- Construct the final command string
   local cmd = table.concat(cmd_parts, " ")
@@ -336,7 +338,9 @@ function M.execute_prompt_with_file(buffer, prompt, filepath, fragment_paths)
   -- Add the file
   table.insert(cmd_parts, "-f " .. vim.fn.shellescape(filepath))
   -- Add the prompt
-  table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  if prompt and prompt ~= "" then
+    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  end
 
   local cmd = table.concat(cmd_parts, " ")
 
