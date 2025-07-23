@@ -118,7 +118,7 @@ describe("llm.core.utils.shell", function()
 
     it("should return an error if the command fails", function()
       local original_system = vim.fn.system
-      vim.fn.system = function() return "error" end
+      vim.fn.system = function() return "" end
       vim.v = { shell_error = 1 }
       local result, err = shell.safe_shell_command("invalid_command", "Command failed")
       assert.is_nil(result)
