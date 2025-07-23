@@ -48,6 +48,8 @@ M.highlights = {
   CheckboxAvailable = { fg = M.colors.error },
   Installed = { fg = M.colors.success, style = "bold", bg = "#333333" },
   NotInstalled = { fg = M.colors.error, style = "bold", bg = "#1a1a1a" },
+  PluginInstalled = { fg = M.colors.green },
+  PluginNotInstalled = { fg = M.colors.red },
   
   -- Model-specific highlights
   ModelOpenAI = { fg = M.colors.cyan },
@@ -161,7 +163,6 @@ M.syntax_patterns = {
   model_mistral = "syntax match LLMModelMistral /^Mistral.*$\\|\\[ \\] Mistral.*/",
   model_gemini = "syntax match LLMModelGemini /^Gemini.*$\\|\\[ \\] Gemini.*/",
   model_groq = "syntax match LLMModelGroq /^Groq.*$\\|\\[ \\] Groq.*/",
-  model_local = "syntax match LLMModelLocal /^Local Models.*$\\|\\[ \\] .*gguf.*\\|\\[ \\] .*ollama.*/",
   model_default = "syntax match LLMModelDefault /\\[✓\\].*/",
   
   -- Fragment-specific patterns

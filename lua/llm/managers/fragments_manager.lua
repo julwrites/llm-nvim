@@ -88,6 +88,7 @@ function M.populate_fragments_buffer(bufnr)
   end
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr)
   vim.b[bufnr].line_to_fragment = line_to_fragment
   vim.b[bufnr].fragment_data = fragment_data

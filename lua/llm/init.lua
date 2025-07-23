@@ -14,7 +14,7 @@ function M.setup(opts)
   -- Initialize styles
   require('llm.ui.styles').setup_highlights()
 
-  
+
 
   -- Load all data
   loaders.load_all()
@@ -62,7 +62,7 @@ function M.setup(opts)
     plugins_manager.refresh_available_plugins()
   end, 100)
 
-  
+
 
   return M
 end

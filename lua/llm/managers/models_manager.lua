@@ -120,7 +120,7 @@ function M.get_available_models()
   vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
   if not models_json then return {} end
   local models = {}
-  for line in models_json:gmatch("[^]+") do
+  for line in models_json:gmatch("[^\n]+") do
     if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
       local provider, model_id
       -- Try to match known prefixes first
@@ -209,18 +209,11 @@ end
 
 -- Set the default model using llm CLI
 function M.set_default_model(model_name)
-  if not model_name or model_name == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Model name cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
+  local result = models_io.set_default_model_in_cli(model_name)
+  if result then
+    cache.invalidate('models')
   end
-
-  local result = llm_cli.run_llm_command('models default ' .. model_name)
-  return result ~= nil
+  return result
 end
 
 -- Get model aliases from llm CLI
@@ -242,43 +235,20 @@ end
 
 -- Set a model alias using llm CLI
 function M.set_model_alias(alias, model)
-  if not alias or alias == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Alias cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
+  local result = models_io.set_alias_in_cli(alias, model)
+  if result then
+    cache.invalidate('aliases')
   end
-  if not model or model == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Model cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
-  end
-
-  local result = llm_cli.run_llm_command('alias set ' .. alias .. ' ' .. model)
-  return result ~= nil
+  return result
 end
 
 -- Remove a model alias by directly modifying the aliases.json file
 function M.remove_model_alias(alias)
-  if not alias or alias == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Alias cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
+  local result = models_io.remove_alias_in_cli(alias)
+  if result then
+    cache.invalidate('aliases')
   end
-
-  local result = llm_cli.run_llm_command('alias remove ' .. alias)
-  return result ~= nil
+  return result
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
@@ -319,10 +289,10 @@ function M.generate_models_list()
   end
 
   local aliases = M.get_model_aliases()
-  local default_model_output = llm_cli.run_llm_command('default')
+  local default_model_output = llm_cli.run_llm_command('models default')
   local default_model = ""
-  if default_model_output then
-    default_model = default_model_output:match("Default model: (.+)")
+  if default_model_output and default_model_output ~= "" then
+    default_model = default_model_output:match("Default model: (.+)") or default_model_output:match("(.+)")
   end
 
   local lines = {
@@ -335,8 +305,7 @@ function M.generate_models_list()
   }
   -- Create reverse lookup and group models
   local providers = {
-    ["OpenAI Chat"] = {},
-    ["OpenAI Completion"] = {},
+    ["OpenAI"] = {},
     ["Custom OpenAI"] = {},
     ["Anthropic Messages"] = {},
     ["Mistral"] = {},
@@ -366,8 +335,13 @@ function M.generate_models_list()
 
     -- Determine provider and potentially find custom model info
     local provider_key = model.provider or "Other"
-    if provider_key == "Custom OpenAI" then
+    if provider_key == "OpenAI Chat" or provider_key == "OpenAI Completion" then
+      provider_key = "OpenAI"
+    end
+
+    if provider_key == "Custom OpenAI" or custom_openai.is_custom_openai_model_valid(model_id) then
       is_custom = true
+      provider_key = "Custom OpenAI"
       -- Find the corresponding custom model data using the extracted name/id
       -- Prioritize matching the extracted name directly to a model_id first
       if custom_openai.custom_openai_models[extracted_name] then
@@ -379,7 +353,8 @@ function M.generate_models_list()
         for id, info in pairs(custom_openai.custom_openai_models) do
           if info.model_name == extracted_name then
             custom_model_info = info
-            found_custom = true
+            model_id = info.model_id
+            model_name = info.model_name
             break
           end
         end
@@ -391,36 +366,6 @@ function M.generate_models_list()
         end
         -- Keep model_id and model_name as extracted_name
       end
-    elseif provider_key == "OpenAI" then
-      -- Check if this standard-looking line corresponds to a loaded custom model ID
-      -- We need to check both by extracted_name (which is model.id) and by model_name from custom_openai_models
-      local found_custom = false
-      if custom_openai.custom_openai_models[extracted_name] then
-        custom_model_info = custom_openai.custom_openai_models[extracted_name]
-        found_custom = true
-      else
-        -- Iterate through custom models to find a match by model_name if ID didn't match directly
-        for id, info in pairs(custom_openai.custom_openai_models) do
-          if info.model_name == extracted_name then
-            custom_model_info = info
-            found_custom = true
-            break
-          end
-        end
-      end
-
-      if found_custom then
-        provider_key = "Custom OpenAI"
-        is_custom = true
-        model_id = custom_model_info.model_id
-        model_name = custom_model_info.model_name
-        -- Ensure full_line reflects the custom nature for display
-        entry.full_line = "Custom OpenAI: " .. model_name .. " (" .. model_id .. ")"
-        if config.get("debug") then
-          vim.notify("Identified standard line as custom model: " .. model_name .. " (ID: " .. model_id .. ")",
-            vim.log.levels.DEBUG)
-        end
-      end
     end
 
     -- Create the entry for this model
@@ -428,16 +373,11 @@ function M.generate_models_list()
       model_id = model_id,
       model_name = model_name,
       full_line = is_custom and ("Custom OpenAI: " .. model_name .. " (" .. model_id .. ")") or model.id, -- The original line from `llm models` or constructed for custom
-      is_default = false,
+      is_default = (model_id == default_model),
       is_custom = is_custom,
       aliases = model_to_aliases[model_id] or {}, -- Check aliases ONLY by model_id
       provider = provider_key
     }
-
-    -- Check if this model is the default ONLY by model_id
-    if model_id == default_model then
-      entry.is_default = true
-    end
 
     -- Check for duplicates before adding to the provider list
     if is_custom then
@@ -480,8 +420,7 @@ function M.generate_models_list()
 
       for _, model_entry in ipairs(provider_models) do
         local status = model_entry.is_default and "✓" or " "
-        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or
-            ""
+        local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or ""
         -- Display model_name in the list
         local display_line_part = model_entry.model_name
         local provider_prefix = model_entry.provider .. ":"
@@ -519,6 +458,7 @@ function M.populate_models_buffer(bufnr)
   local data = M.generate_models_list()
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, data.lines)
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr) -- Use styles module
 
   -- Store lookup tables in buffer variables for keymaps
@@ -635,7 +575,16 @@ end
 -- Sets an alias for the model under the cursor.
 function M.set_alias_for_model_under_cursor(bufnr)
   local model_id, model_info = M.get_model_info_under_cursor(bufnr)
-  if not model_id or not model_info then return end
+  if not model_id or not model_info then
+    if config.get("debug") then
+      vim.notify("set_alias_for_model_under_cursor: no model_id or model_info", vim.log.levels.DEBUG)
+    end
+    return
+  end
+
+  if config.get("debug") then
+    vim.notify("set_alias_for_model_under_cursor: model_id=" .. model_id, vim.log.levels.DEBUG)
+  end
 
   local display_name = model_info.model_name or model_id
 

@@ -516,6 +516,7 @@ function M.populate_templates_buffer(bufnr)
   end
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr)
   vim.b[bufnr].line_to_template = line_to_template
   vim.b[bufnr].template_data = template_data

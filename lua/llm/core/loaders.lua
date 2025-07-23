@@ -12,8 +12,7 @@ function M.load_models()
   
   if models_output then
     local models = {}
-    for line in models_output:gmatch("[^
-]+") do
+    for line in models_output:gmatch("[^\n]+") do
       if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
         local provider, model_id = line:match("([^:]+):%s*(.+)")
         if provider and model_id then
@@ -32,8 +31,7 @@ function M.load_available_plugins()
   
   if plugins_output then
     local plugins = {}
-    for line in plugins_output:gmatch("[^
-]+") do
+    for line in plugins_output:gmatch("[^\n]+") do
       local plugin_name, description = line:match("^(%S+)%s*-%s*(.*)")
       if plugin_name and description then
         table.insert(plugins, { name = plugin_name, description = description })
@@ -50,8 +48,7 @@ function M.load_keys()
   
   if keys_output then
     local keys = {}
-    for line in keys_output:gmatch("[^
-]+") do
+    for line in keys_output:gmatch("[^\n]+") do
       if line ~= "Stored keys:" and line ~= "------------------" and line ~= "" then
         table.insert(keys, { name = line })
       end
@@ -68,8 +65,7 @@ function M.load_fragments()
   if fragments_output then
     local fragments = {}
     local current_fragment = nil
-    for line in fragments_output:gmatch("[^
-]+") do
+    for line in fragments_output:gmatch("[^\n]+") do
       local hash = line:match("^%s*-%s+hash:%s+([0-9a-f]+)")
       if hash then
         if current_fragment then
@@ -111,8 +107,7 @@ function M.load_templates()
   
   if templates_output then
     local templates = {}
-    for line in templates_output:gmatch("[^
-]+") do
+    for line in templates_output:gmatch("[^\n]+") do
       local name, description = line:match("^(%S+)%s*-%s*(.*)")
       if name and description then
         table.insert(templates, { name = name, description = description })
@@ -129,8 +124,7 @@ function M.load_schemas()
   
   if schemas_output then
     local schemas = {}
-    for line in schemas_output:gmatch("[^
-]+") do
+    for line in schemas_output:gmatch("[^\n]+") do
       local id, description = line:match("^(%S+)%s*-%s*(.*)")
       if id and description then
         table.insert(schemas, { id = id, description = description })

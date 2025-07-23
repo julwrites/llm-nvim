@@ -126,4 +126,9 @@ end
 -- Usage: :LLMToggle [view] where view is one of: models, plugins, keys, fragments, templates, schemas
 vim.api.nvim_create_user_command('LLMToggle', function(opts)
   require('llm.commands').dispatch_command('toggle', opts.fargs[1])
-end, { nargs = '?' })
+end, {
+  nargs = '?',
+  complete = function()
+    return { "Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas" }
+  end
+})

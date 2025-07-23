@@ -343,6 +343,7 @@ function M.populate_schemas_buffer(bufnr)
   local schema_data, line_to_schema = M.build_schema_data(schemas_to_show, #lines + 1)
 
   api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr)
   vim.b[bufnr].line_to_schema = line_to_schema
   vim.b[bufnr].schema_data = schema_data
