@@ -209,21 +209,11 @@ end
 
 -- Set the default model using llm CLI
 function M.set_default_model(model_name)
-  if not model_name or model_name == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Model name cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
-  end
-
-  local result = llm_cli.run_llm_command('models default ' .. model_name)
+  local result = models_io.set_default_model_in_cli(model_name)
   if result then
     cache.invalidate('models')
   end
-  return result ~= nil
+  return result
 end
 
 -- Get model aliases from llm CLI
@@ -245,50 +235,20 @@ end
 
 -- Set a model alias using llm CLI
 function M.set_model_alias(alias, model)
-  if not alias or alias == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Alias cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
-  end
-  if not model or model == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Model cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
-  end
-
-  local cmd = string.format("aliases set %s %s", vim.fn.shellescape(alias), vim.fn.shellescape(model))
-  local result = llm_cli.run_llm_command(cmd)
+  local result = models_io.set_alias_in_cli(alias, model)
   if result then
     cache.invalidate('aliases')
   end
-  return result ~= nil
+  return result
 end
 
 -- Remove a model alias by directly modifying the aliases.json file
 function M.remove_model_alias(alias)
-  if not alias or alias == "" then
-    errors.handle(
-      errors.categories.MODEL,
-      "Alias cannot be empty",
-      nil,
-      errors.levels.ERROR
-    )
-    return false
-  end
-
-  local result = llm_cli.run_llm_command('aliases remove ' .. vim.fn.shellescape(alias))
+  local result = models_io.remove_alias_in_cli(alias)
   if result then
     cache.invalidate('aliases')
   end
-  return result ~= nil
+  return result
 end
 
 -- Select a model to use (now primarily for direct selection, not management)
@@ -463,9 +423,6 @@ function M.generate_models_list()
         local alias_text = #model_entry.aliases > 0 and " (aliases: " .. table.concat(model_entry.aliases, ", ") .. ")" or ""
         -- Display model_name in the list
         local display_line_part = model_entry.model_name
-        if model_entry.is_custom then
-          display_line_part = display_line_part .. " (custom)"
-        end
         local provider_prefix = model_entry.provider .. ":"
         local line = string.format("[%s] %s %s%s", status, provider_prefix, display_line_part, alias_text)
 
