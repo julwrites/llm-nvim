@@ -1,7 +1,7 @@
 -- test/spec/utils_spec.lua
 
-describe("llm.utils.validate", function()
-  local validate = require("llm.utils.validate")
+describe("llm.core.utils.validate", function()
+  local validate = require("llm.core.utils.validate")
 
   describe("convert", function()
     it("should convert string to boolean", function()
@@ -52,8 +52,9 @@ end)
 
 
 -- describe("llm.utils.text", function()
-describe("llm.utils.text", function()
-  local text = require("llm.utils.text")
+-- describe("llm.core.utils.text", function()
+describe("llm.core.utils.text", function()
+  local text = require("llm.core.utils.text")
 
   describe("get_visual_selection", function()
     it("should return the visual selection", function()
@@ -95,8 +96,8 @@ describe("llm.utils.text", function()
   end)
 end)
 
-describe("llm.utils.shell", function()
-  local shell = require("llm.utils.shell")
+describe("llm.core.utils.shell", function()
+  local shell = require("llm.core.utils.shell")
 
   describe("safe_shell_command", function()
     it("should return the result of the command", function()
@@ -189,8 +190,8 @@ describe("llm.utils.shell", function()
 end)
 
 
-describe("llm.utils.file_utils", function()
-  local file_utils = require("llm.utils.file_utils")
+describe("llm.core.utils.file_utils", function()
+  local file_utils = require("llm.core.utils.file_utils")
 
   describe("ensure_config_dir_exists", function()
     it("should create a directory if it does not exist", function()
