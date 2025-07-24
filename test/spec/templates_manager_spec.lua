@@ -56,15 +56,15 @@ describe("templates_manager", function()
 
     vim.notify = function() end
 
-    package.loaded['llm.templates.templates_loader'] = mock_templates_loader
-    package.loaded['llm.templates.templates_view'] = mock_templates_view
-    package.loaded['llm.unified_manager'] = {
+    package.loaded['llm.core.loaders'] = mock_templates_loader
+    package.loaded['llm.ui.views.templates_view'] = mock_templates_view
+    package.loaded['llm.ui.unified_manager'] = {
       switch_view = function() end,
       close = function() end,
     }
-    package.loaded['llm.utils'] = mock_utils
+    package.loaded['llm.core.utils'] = mock_utils
 
-    templates_manager = require('llm.templates.templates_manager')
+    templates_manager = require('llm.managers.templates_manager')
   end)
 
   after_each(function()

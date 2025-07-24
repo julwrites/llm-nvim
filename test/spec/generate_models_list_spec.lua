@@ -20,12 +20,12 @@ describe("generate_models_list", function()
     }
 
     -- Load models_manager with mocked dependencies
-    package.loaded['llm.models.models_io'] = mock_models_io
-    package.loaded['llm.models.custom_openai'] = mock_custom_openai
-    package.loaded['llm.unified_manager'] = {
+    package.loaded['llm.managers.models_io'] = mock_models_io
+    package.loaded['llm.managers.custom_openai'] = mock_custom_openai
+    package.loaded['llm.ui.unified_manager'] = {
       switch_view = function() end,
     }
-    models_manager = require('llm.models.models_manager')
+    models_manager = require('llm.managers.models_manager')
     models_manager.set_custom_openai(mock_custom_openai)
   end)
 

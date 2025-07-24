@@ -17,9 +17,9 @@ describe("keys_manager", function()
         check_llm_installed = function() return true end,
         get_config_path = function() return "", "/tmp/keys.json" end,
     }
-    package.loaded['llm.keys.keys_view'] = mock_keys_view
-    package.loaded['llm.utils'] = mock_utils
-    package.loaded['llm.unified_manager'] = {
+    package.loaded['llm.ui.views.keys_view'] = mock_keys_view
+    package.loaded['llm.core.utils'] = mock_utils
+    package.loaded['llm.ui.unified_manager'] = {
         switch_view = function() end
     }
 
@@ -34,7 +34,7 @@ describe("keys_manager", function()
     os.execute = function() end
 
 
-    keys_manager = require('llm.keys.keys_manager')
+    keys_manager = require('llm.managers.keys_manager')
     keys_manager.get_provider_info_under_cursor = function()
         return "openai", {}
     end
