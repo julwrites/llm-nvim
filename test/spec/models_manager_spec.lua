@@ -61,6 +61,9 @@ describe("models_manager", function()
             })
         end
     }
+    vim.ui.select = function(items, opts, on_choice)
+        on_choice("alias1")
+    end
 
     mock_utils = {
         check_llm_installed = function() return true end,
