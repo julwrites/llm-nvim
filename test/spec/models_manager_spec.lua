@@ -72,7 +72,7 @@ describe("models_manager", function()
     package.loaded['llm.unified_manager'] = mock_unified_manager
 
 
-    models_manager = require('llm.models.models_manager')
+    models_manager = require('llm.managers.models_manager')
     models_manager.get_model_info_under_cursor = function()
         return "gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "alias1" } }
     end
