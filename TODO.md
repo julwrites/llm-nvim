@@ -1,18 +1,5 @@
 # TODO
 
-## plugins_manager_spec.lua
-- [ ] plugins_manager install_plugin should call safe_shell_command with the correct arguments
-- [ ] plugins_manager uninstall_plugin_under_cursor should call safe_shell_command with the correct arguments
-- [ ] plugins_manager populate_plugins_buffer should correctly display installed and uninstalled plugins
-
-## generate_models_list_spec.lua
-- [ ] generate_models_list should return a list of formatted models
-
-## models_io_spec.lua
-- [ ] models_io get_default_model_from_cli should call safe_shell_command with the correct arguments
-- [ ] models_io set_default_model_in_cli should call safe_shell_command with the correct arguments
-- [ ] models_io remove_alias_in_cli should call safe_shell_command with the correct arguments
-
 ## models_manager_spec.lua
 - [ ] models_manager get_available_models should return a list of models from the cli
 - [ ] models_manager get_model_aliases should return a table of aliases from the cli
