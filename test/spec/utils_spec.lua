@@ -214,8 +214,8 @@ describe("llm.core.utils.file_utils", function()
 
   describe("get_config_path", function()
     before_each(function()
-      package.loaded['llm.utils.file_utils'] = nil
-      file_utils = require("llm.utils.file_utils")
+      package.loaded['llm.core.utils.file_utils'] = nil
+      file_utils = require("llm.core.utils.file_utils")
     end)
 
     it("should return the config path", function()
