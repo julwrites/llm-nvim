@@ -40,6 +40,8 @@ describe("fragments_manager", function()
       end,
       set_fragment_alias = spy.new(function() return true end),
       remove_fragment_alias = spy.new(function() return true end),
+      select_file_as_fragment = spy.new(function() return true end),
+      add_github_fragment = spy.new(function() return true end),
     }
 
     mock_fragments_view = {
@@ -119,14 +121,14 @@ describe("fragments_manager", function()
   describe("prompt_with_fragment_under_cursor", function()
     it("should prompt with a fragment", function()
         fragments_manager.prompt_with_fragment_under_cursor(1)
-        assert.spy(package.loaded['llm.facade'].prompt).was.called_with("test prompt", { "alias1" })
+        assert.spy(package.loaded['llm.facade'].prompt).was.called_with("test prompt", { "hash1" })
     end)
   end)
 
   describe("view_fragment_under_cursor", function()
     it("should view a fragment", function()
       fragments_manager.view_fragment_under_cursor(1)
-      assert.spy(mock_fragments_view.view_fragment).was.called()
+      assert.spy(mock_fragments_view.view_fragment).was.called_with('content1', 'source1')
     end)
   end)
 end)
