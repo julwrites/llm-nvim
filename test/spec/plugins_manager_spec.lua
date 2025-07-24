@@ -96,16 +96,16 @@ describe("plugins_manager", function()
 
   describe("is_plugin_installed", function()
     it("should return true if the plugin is installed", function()
-      mock_shell.safe_shell_command = spy.new(function()
-        return '[{"name": "plugin1"}]', 0
-      end)
+        plugins_manager.get_installed_plugins = function()
+            return { "plugin1" }
+        end
       assert.is_true(plugins_manager.is_plugin_installed("plugin1"))
     end)
 
     it("should return false if the plugin is not installed", function()
-        mock_shell.safe_shell_command = spy.new(function()
-            return '[{"name": "plugin2"}]', 0
-        end)
+        plugins_manager.get_installed_plugins = function()
+            return { "plugin2" }
+        end
       assert.is_false(plugins_manager.is_plugin_installed("plugin1"))
     end)
   end)
@@ -113,14 +113,14 @@ describe("plugins_manager", function()
   describe("install_plugin", function()
     it("should call safe_shell_command with the correct arguments", function()
       plugins_manager.install_plugin("plugin1")
-      assert.spy(mock_shell.safe_shell_command).was.called_with('llm install plugin1')
+      assert.spy(mock_llm_cli.run_llm_command).was.called_with('install plugin1')
     end)
   end)
 
   describe("uninstall_plugin_under_cursor", function()
     it("should call safe_shell_command with the correct arguments", function()
         plugins_manager.uninstall_plugin_under_cursor(1)
-        assert.spy(mock_shell.safe_shell_command).was.called_with('llm uninstall plugin1 -y')
+        assert.spy(mock_llm_cli.run_llm_command).was.called_with('uninstall plugin1 -y')
     end)
   end)
 
@@ -145,8 +145,8 @@ describe("plugins_manager", function()
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
       local lines = vim.api.nvim_buf_set_lines.calls[1].refs[5]
 
-      assert.are.equal("[✓] llm-installed-plugin - An installed plugin", lines[9])
-      assert.are.equal("[ ] llm-uninstalled-plugin - An uninstalled plugin", lines[10])
+      assert.are.equal("[✓] llm-installed-plugin - An installed plugin ", lines[9])
+      assert.are.equal("[ ] llm-uninstalled-plugin - An uninstalled plugin ", lines[10])
     end)
   end)
 end)

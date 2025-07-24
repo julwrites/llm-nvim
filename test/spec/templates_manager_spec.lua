@@ -172,7 +172,7 @@ describe("templates_manager", function()
       mock_templates_view.get_fragment_choice = function(callback) callback("No fragments") end
       mock_templates_view.get_option_choice = function(callback) callback("No options") end
       mock_templates_view.confirm_extract = function(callback) callback(true) end
-      mock_templates_view.get_schema_choice = function(callback)
+      mock_templates_view.get_schema_choice = function(_, callback)
           -- This is the key to breaking the recursion
           if callback then callback("No schema") end
       end
@@ -204,7 +204,7 @@ describe("templates_manager", function()
       mock_templates_view.get_fragment_choice = function(callback) callback("No fragments") end
       mock_templates_view.get_option_choice = function(callback) callback("No options") end
       mock_templates_view.confirm_extract = function(callback) callback(false) end
-      mock_templates_view.get_schema_choice = function(callback)
+      mock_templates_view.get_schema_choice = function(_, callback)
           -- This is the key to breaking the recursion
           if callback then callback("No schema") end
       end

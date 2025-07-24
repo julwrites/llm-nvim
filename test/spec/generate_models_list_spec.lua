@@ -37,7 +37,7 @@ describe("generate_models_list", function()
 
   it("should return a list of formatted models", function()
     models_manager.get_available_models = function()
-        return { "OpenAI: gpt-3.5-turbo", "Anthropic: claude-2" }
+        return { { id = "gpt-3.5-turbo", provider = "OpenAI" }, { id = "claude-2", provider = "Anthropic" } }
     end
     mock_models_io.get_default_model_from_cli = function()
       return "gpt-3.5-turbo", nil
