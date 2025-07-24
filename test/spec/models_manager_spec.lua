@@ -40,10 +40,18 @@ describe("models_manager", function()
     }
 
     mock_models_view = {
-        select_model = function(models, callback) callback("OpenAI: gpt-3.5-turbo") end,
-        get_alias = function(name, callback) callback("my-alias") end,
-        select_alias_to_remove = function(aliases, callback) callback("alias1") end,
-        confirm_remove_alias = function(alias, callback) callback() end,
+        select_model = function(models, callback)
+            callback("OpenAI: gpt-3.5-turbo")
+        end,
+        get_alias = function(name, callback)
+            callback("my-alias")
+        end,
+        select_alias_to_remove = function(aliases, callback)
+            callback("alias1")
+        end,
+        confirm_remove_alias = function(alias, callback)
+            callback()
+        end,
         get_custom_model_details = function(callback)
             callback({
                 model_id = "my-custom-model",
