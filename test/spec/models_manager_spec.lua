@@ -85,7 +85,7 @@ describe("models_manager", function()
 
     models_manager = require('llm.managers.models_manager')
     models_manager.get_model_info_under_cursor = function()
-        return "gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "alias1" } }
+        return "OpenAI: gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "my-alias" } }
     end
 
     vim.b = {
@@ -127,21 +127,20 @@ describe("models_manager", function()
   describe("get_available_models", function()
     it("should return a list of models from the cli", function()
       local models = models_manager.get_available_models()
-      table.sort(models)
-      assert.are.same({ "Anthropic: claude-2", "OpenAI: gpt-3.5-turbo" }, models)
+      assert.are.same({ "gpt-3.5-turbo", "claude-2" }, models)
     end)
   end)
 
   describe("get_model_aliases", function()
     it("should return a table of aliases from the cli", function()
       local aliases = models_manager.get_model_aliases()
-      assert.are.same({ alias1 = "model1", alias2 = "model2" }, aliases)
+      assert.are.equal({ alias1 = "model1", alias2 = "model2" }, aliases)
     end)
   end)
 
   describe("set_default_model", function()
     it("should call models_io.set_default_model_in_cli with the correct model name", function()
-      models_manager.set_default_model("gpt-3.5-turbo")
+      models_manager.set_default_model(1)
       assert.spy(mock_models_io.set_default_model_in_cli).was.called_with("gpt-3.5-turbo")
     end)
   end)
@@ -163,7 +162,12 @@ describe("models_manager", function()
   describe("add_custom_openai_model_interactive", function()
     it("should call custom_openai.add_custom_openai_model with the correct details", function()
         models_manager.add_custom_openai_model_interactive(1)
-        assert.spy(mock_custom_openai.add_custom_openai_model).was.called()
+        assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with({
+            model_id = "my-custom-model",
+            model_name = "My Custom Model",
+            api_base = "http://localhost:8080",
+            api_key_name = "custom_key"
+        })
     end)
   end)
 end)

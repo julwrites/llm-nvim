@@ -10,7 +10,7 @@ describe("generate_models_list", function()
     mock_models_io = {
       get_models_from_cli = function() return "", nil end,
       get_default_model_from_cli = function() return "", nil end,
-      get_aliases_from_cli = function() return '{"gpt3": "gpt-3.5-turbo"}', nil end,
+      get_aliases_from_cli = function() return '{"gpt3": "gpt-3.5-turbo", "chatgpt": "gpt-3.5-turbo", "3.5": "gpt-3.5-turbo"}', nil end,
     }
 
     mock_custom_openai = {

@@ -1,7 +1,8 @@
 # TODO
 
 ## plugins_manager_spec.lua
-- [ ] plugins_manager is_plugin_installed should return true if the plugin is installed
+- [ ] plugins_manager install_plugin should call safe_shell_command with the correct arguments
+- [ ] plugins_manager uninstall_plugin_under_cursor should call safe_shell_command with the correct arguments
 - [ ] plugins_manager populate_plugins_buffer should correctly display installed and uninstalled plugins
 
 ## generate_models_list_spec.lua

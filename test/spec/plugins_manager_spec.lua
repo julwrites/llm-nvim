@@ -113,14 +113,14 @@ describe("plugins_manager", function()
   describe("install_plugin", function()
     it("should call safe_shell_command with the correct arguments", function()
       plugins_manager.install_plugin("plugin1")
-      assert.spy(mock_llm_cli.run_llm_command).was.called_with('plugins install plugin1')
+      assert.spy(mock_llm_cli.run_llm_command).was.called_with('install plugin1')
     end)
   end)
 
   describe("uninstall_plugin_under_cursor", function()
     it("should call safe_shell_command with the correct arguments", function()
         plugins_manager.uninstall_plugin_under_cursor(1)
-        assert.spy(mock_llm_cli.run_llm_command).was.called_with('plugins uninstall plugin1')
+        assert.spy(mock_llm_cli.run_llm_command).was.called_with('uninstall plugin1 -y')
     end)
   end)
 
@@ -143,10 +143,19 @@ describe("plugins_manager", function()
       plugins_manager.populate_plugins_buffer(1)
 
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      local lines = vim.api.nvim_buf_set_lines.calls[1].refs[5]
+      local lines = vim.api.nvim_buf_set_lines.calls[1].refs[2]
 
-      assert.are.equal("[✓] llm-installed-plugin - An installed plugin ", lines[9])
-      assert.are.equal("[ ] llm-uninstalled-plugin - An uninstalled plugin ", lines[10])
+      assert.are.same({
+        "",
+        "# Installed Plugins",
+        "────────────────",
+        "[✓] llm-installed-plugin - An installed plugin ",
+        "",
+        "# Available Plugins",
+        "────────────────",
+        "[ ] llm-uninstalled-plugin - An uninstalled plugin ",
+        "",
+      }, lines)
     end)
   end)
 end)
