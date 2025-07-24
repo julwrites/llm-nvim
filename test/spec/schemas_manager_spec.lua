@@ -42,14 +42,14 @@ describe("schemas_manager", function()
       show_details = spy.new(function() end),
     }
 
-    package.loaded['llm.schemas.schemas_loader'] = mock_schemas_loader
-    package.loaded['llm.schemas.schemas_view'] = mock_schemas_view
-    package.loaded['llm.unified_manager'] = {
+    package.loaded['llm.core.loaders'] = mock_schemas_loader
+    package.loaded['llm.ui.views.schemas_view'] = mock_schemas_view
+    package.loaded['llm.ui.unified_manager'] = {
       switch_view = function() end,
       close = function() end,
       open_specific_manager = function() end,
     }
-    package.loaded['llm.utils'] = {
+    package.loaded['llm.core.utils'] = {
         check_llm_installed = function() return true end,
         create_buffer_with_content = function() end,
         get_config_path = function() return "", "" end,
@@ -57,7 +57,7 @@ describe("schemas_manager", function()
 
     vim.schedule = function(fn) fn() end
 
-    schemas_manager = require('llm.schemas.schemas_manager')
+    schemas_manager = require('llm.managers.schemas_manager')
 
     -- Mock the get_schema_info_under_cursor function
     schemas_manager.get_schema_info_under_cursor = function()

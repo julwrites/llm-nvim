@@ -52,16 +52,16 @@ describe("fragments_manager", function()
         get_prompt = function(callback) callback("test prompt") end,
     }
 
-    package.loaded['llm.fragments.fragments_loader'] = mock_fragments_loader
-    package.loaded['llm.fragments.fragments_view'] = mock_fragments_view
-    package.loaded['llm.unified_manager'] = {
+    package.loaded['llm.core.loaders'] = mock_fragments_loader
+    package.loaded['llm.ui.views.fragments_view'] = mock_fragments_view
+    package.loaded['llm.ui.unified_manager'] = {
       switch_view = function() end,
     }
-    package.loaded['llm'] = {
+    package.loaded['llm.facade'] = {
         prompt = spy.new(function() end)
     }
 
-    fragments_manager = require('llm.fragments.fragments_manager')
+    fragments_manager = require('llm.managers.fragments_manager')
 
     fragments_manager.get_fragment_info_under_cursor = function()
         return "hash1", {

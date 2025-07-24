@@ -15,9 +15,9 @@ describe("custom_openai", function()
     mock_keys_manager = {
       is_key_set = function() return true end,
     }
-    package.loaded['llm.utils'] = mock_utils
-    package.loaded['llm.keys.keys_manager'] = mock_keys_manager
-    custom_openai = require('llm.models.custom_openai')
+    package.loaded['llm.core.utils'] = mock_utils
+    package.loaded['llm.managers.keys_manager'] = mock_keys_manager
+    custom_openai = require('llm.managers.custom_openai')
 
     -- Mock io functions
     io.open = function()

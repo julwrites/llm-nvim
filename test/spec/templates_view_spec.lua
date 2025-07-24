@@ -8,23 +8,23 @@ describe("templates_view", function()
     spy = require('luassert.spy')
 
     -- Keep a reference to the original functions
-    local original_floating_input = require('llm.utils').floating_input
-    local original_floating_confirm = require('llm.utils').floating_confirm
+    local original_floating_input = require('llm.core.utils.ui').floating_input
+    local original_floating_confirm = require('llm.core.utils.ui').floating_confirm
 
     -- Spy on the functions
-    spy.on(require('llm.utils'), 'floating_input')
-    spy.on(require('llm.utils'), 'floating_confirm')
+    spy.on(require('llm.core.utils.ui'), 'floating_input')
+    spy.on(require('llm.core.utils.ui'), 'floating_confirm')
 
     vim.ui.select = spy.new(function() end)
     vim.ui.input = spy.new(function() end)
     vim.notify = spy.new(function() end)
 
-    templates_view = require('llm.templates.templates_view')
+    templates_view = require('llm.ui.views.templates_view')
 
     -- Restore the original functions after each test
     after_each(function()
-      require('llm.utils').floating_input = original_floating_input
-      require('llm.utils').floating_confirm = original_floating_confirm
+      require('llm.core.utils.ui').floating_input = original_floating_input
+      require('llm.core.utils.ui').floating_confirm = original_floating_confirm
       vim.ui.select = nil
       vim.ui.input = nil
       vim.notify = nil

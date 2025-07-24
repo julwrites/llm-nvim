@@ -10,13 +10,13 @@ describe("models_io", function()
     mock_utils = {
       safe_shell_command = spy.new(function() return "", 0 end)
     }
-    package.loaded['llm.utils'] = mock_utils
-    models_io = require('llm.models.models_io')
+    package.loaded['llm.core.utils'] = mock_utils
+    models_io = require('llm.managers.models_io')
   end)
 
   after_each(function()
-    package.loaded['llm.utils'] = nil
-    package.loaded['llm.models.models_io'] = nil
+    package.loaded['llm.core.utils'] = nil
+    package.loaded['llm.managers.models_io'] = nil
   end)
 
   it("should be a table", function()

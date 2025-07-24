@@ -40,10 +40,18 @@ describe("models_manager", function()
     }
 
     mock_models_view = {
-        select_model = function(models, callback) callback("OpenAI: gpt-3.5-turbo") end,
-        get_alias = function(name, callback) callback("my-alias") end,
-        select_alias_to_remove = function(aliases, callback) callback("alias1") end,
-        confirm_remove_alias = function(alias, callback) callback() end,
+        select_model = function(models, callback)
+            callback("OpenAI: gpt-3.5-turbo")
+        end,
+        get_alias = function(name, callback)
+            callback("my-alias")
+        end,
+        select_alias_to_remove = function(aliases, callback)
+            callback("alias1")
+        end,
+        confirm_remove_alias = function(alias, callback)
+            callback()
+        end,
         get_custom_model_details = function(callback)
             callback({
                 model_id = "my-custom-model",
@@ -53,6 +61,9 @@ describe("models_manager", function()
             })
         end
     }
+    vim.ui.select = function(items, opts, on_choice)
+        on_choice("alias1")
+    end
 
     mock_utils = {
         check_llm_installed = function() return true end,
@@ -72,7 +83,7 @@ describe("models_manager", function()
     package.loaded['llm.unified_manager'] = mock_unified_manager
 
 
-    models_manager = require('llm.models.models_manager')
+    models_manager = require('llm.managers.models_manager')
     models_manager.get_model_info_under_cursor = function()
         return "gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "alias1" } }
     end
