@@ -7,15 +7,15 @@ describe("models_io", function()
 
   before_each(function()
     spy = require('luassert.spy')
-    mock_utils = {
+    mock_shell = {
       safe_shell_command = spy.new(function() return "", 0 end)
     }
-    package.loaded['llm.core.utils'] = mock_utils
+    package.loaded['llm.core.utils.shell'] = mock_shell
     models_io = require('llm.managers.models_io')
   end)
 
   after_each(function()
-    package.loaded['llm.core.utils'] = nil
+    package.loaded['llm.core.utils.shell'] = nil
     package.loaded['llm.managers.models_io'] = nil
   end)
 
@@ -26,42 +26,42 @@ describe("models_io", function()
   describe("get_models_from_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.get_models_from_cli()
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm models")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm models list --json")
     end)
   end)
 
   describe("get_default_model_from_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.get_default_model_from_cli()
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm models default")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm models default")
     end)
   end)
 
   describe("set_default_model_in_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.set_default_model_in_cli("gpt-3.5-turbo")
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm models default gpt-3.5-turbo")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm models default gpt-3.5-turbo")
     end)
   end)
 
   describe("get_aliases_from_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.get_aliases_from_cli()
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm aliases --json")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm aliases list --json")
     end)
   end)
 
   describe("set_alias_in_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.set_alias_in_cli("alias1", "model1")
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm aliases set alias1 model1")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm aliases set alias1 model1")
     end)
   end)
 
   describe("remove_alias_in_cli", function()
     it("should call safe_shell_command with the correct arguments", function()
       models_io.remove_alias_in_cli("alias1")
-      assert.spy(mock_utils.safe_shell_command).was.called_with("llm aliases remove 'alias1'")
+      assert.spy(mock_shell.safe_shell_command).was.called_with("llm aliases remove alias1")
     end)
   end)
 end)

@@ -40,8 +40,6 @@ describe("fragments_manager", function()
       end,
       set_fragment_alias = spy.new(function() return true end),
       remove_fragment_alias = spy.new(function() return true end),
-      select_file_as_fragment = spy.new(function() end),
-      add_github_fragment = spy.new(function() end),
     }
 
     mock_fragments_view = {
@@ -50,6 +48,8 @@ describe("fragments_manager", function()
         select_alias_to_remove = function(aliases, callback) callback("alias1") end,
         confirm_remove_alias = function(alias, callback) callback(true) end,
         get_prompt = function(callback) callback("test prompt") end,
+        select_file = spy.new(function(callback) callback("/path/to/file") end),
+        get_github_url = spy.new(function(callback) callback("https://github.com/owner/repo") end),
     }
 
     package.loaded['llm.core.loaders'] = mock_fragments_loader
@@ -90,36 +90,38 @@ describe("fragments_manager", function()
 
   describe("set_alias_for_fragment_under_cursor", function()
     it("should set an alias for a fragment", function()
+      local set_alias_spy = spy.on(fragments_manager, 'set_alias')
       fragments_manager.set_alias_for_fragment_under_cursor(1)
-      assert.spy(mock_fragments_loader.set_fragment_alias).was.called_with("hash1", "test")
+      assert.spy(set_alias_spy).was.called_with("hash1", "test")
     end)
   end)
 
   describe("remove_alias_from_fragment_under_cursor", function()
     it("should remove an alias from a fragment", function()
+        local remove_alias_spy = spy.on(fragments_manager, 'remove_alias')
         fragments_manager.remove_alias_from_fragment_under_cursor(1)
-        assert.spy(mock_fragments_loader.remove_fragment_alias).was.called_with("alias1")
+        assert.spy(remove_alias_spy).was.called_with("alias1")
     end)
   end)
 
   describe("add_file_fragment", function()
     it("should add a file fragment", function()
       fragments_manager.add_file_fragment(1)
-      assert.spy(mock_fragments_loader.select_file_as_fragment).was.called()
+      assert.spy(mock_fragments_view.select_file).was.called()
     end)
   end)
 
   describe("add_github_fragment_from_manager", function()
     it("should add a github fragment", function()
       fragments_manager.add_github_fragment_from_manager(1)
-      assert.spy(mock_fragments_loader.add_github_fragment).was.called()
+      assert.spy(mock_fragments_view.get_github_url).was.called()
     end)
   end)
 
   describe("prompt_with_fragment_under_cursor", function()
     it("should prompt with a fragment", function()
         fragments_manager.prompt_with_fragment_under_cursor(1)
-        assert.spy(package.loaded['llm'].prompt).was.called_with("test prompt", { "alias1" })
+        assert.spy(package.loaded['llm.facade'].prompt).was.called_with("test prompt", { frags = { "alias1" } })
     end)
   end)
 

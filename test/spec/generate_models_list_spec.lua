@@ -42,6 +42,14 @@ describe("generate_models_list", function()
     mock_models_io.get_default_model_from_cli = function()
       return "gpt-3.5-turbo", nil
     end
+    models_manager.get_model_provider = function(model_id)
+        if string.match(model_id, "gpt-3.5-turbo") then
+            return "OpenAI"
+        elseif string.match(model_id, "claude-2") then
+            return "Anthropic"
+        end
+        return "Unknown"
+    end
 
     local data = models_manager.generate_models_list()
 
@@ -49,14 +57,6 @@ describe("generate_models_list", function()
     assert.is_table(data.lines)
     assert.is_table(data.line_to_model_id)
     assert.is_table(data.model_data)
-    models_manager.get_model_name = function(line)
-        if string.match(line, "gpt-3.5-turbo") then
-            return "gpt-3.5-turbo"
-        elseif string.match(line, "claude-2") then
-            return "claude-2"
-        end
-        return nil
-    end
 
     local expected_lines = {
         '# Model Management',
@@ -67,11 +67,11 @@ describe("generate_models_list", function()
         '',
         'Anthropic',
         '─────────',
-        '[ ] Anthropic: claude-2',
+        '[ ] claude-2',
         '',
         'OpenAI',
         '──────',
-        '[✓] OpenAI: gpt-3.5-turbo (aliases: gpt3)',
+        '[✓] gpt-3.5-turbo (aliases: gpt3)',
         '',
         ''
     }
