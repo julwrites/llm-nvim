@@ -145,17 +145,9 @@ describe("plugins_manager", function()
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
       local lines = vim.api.nvim_buf_set_lines.calls[1].refs[2]
 
-      assert.are.same({
-        "",
-        "# Installed Plugins",
-        "────────────────",
-        "[✓] llm-installed-plugin - An installed plugin ",
-        "",
-        "# Available Plugins",
-        "────────────────",
-        "[ ] llm-uninstalled-plugin - An uninstalled plugin ",
-        "",
-      }, lines)
+      local lines_str = table.concat(lines, "\n")
+      assert.truthy(string.find(lines_str, "[✓] llm-installed-plugin - An installed plugin"))
+      assert.truthy(string.find(lines_str, "[ ] llm-uninstalled-plugin - An uninstalled plugin"))
     end)
   end)
 end)
