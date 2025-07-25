@@ -85,7 +85,7 @@ describe("models_manager", function()
 
     models_manager = require('llm.managers.models_manager')
     models_manager.get_model_info_under_cursor = function()
-        return "gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "alias1" } }
+        return "OpenAI: gpt-3.5-turbo", { model_name = "gpt-3.5-turbo", aliases = { "my-alias" } }
     end
 
     vim.b = {
@@ -148,21 +148,21 @@ describe("models_manager", function()
 
   describe("set_alias_for_model_under_cursor", function()
     it("should call set_model_alias with the correct alias and model", function()
-        models_manager.set_alias_for_model_under_cursor()
+        models_manager.set_alias_for_model_under_cursor(1)
         assert.spy(mock_models_io.set_alias_in_cli).was.called_with("my-alias", "gpt-3.5-turbo")
     end)
   end)
 
   describe("remove_alias_for_model_under_cursor", function()
     it("should call remove_model_alias with the correct alias", function()
-        models_manager.remove_alias_for_model_under_cursor()
+        models_manager.remove_alias_for_model_under_cursor(1)
         assert.spy(mock_models_io.remove_alias_in_cli).was.called_with("alias1")
     end)
   end)
 
   describe("add_custom_openai_model_interactive", function()
     it("should call custom_openai.add_custom_openai_model with the correct details", function()
-        models_manager.add_custom_openai_model_interactive()
+        models_manager.add_custom_openai_model_interactive(1)
         assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with({
             model_id = "my-custom-model",
             model_name = "My Custom Model",
