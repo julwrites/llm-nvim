@@ -40,9 +40,9 @@ describe("models_manager", function()
     }
 
     mock_models_view = {
-        select_model = function(models, callback)
+        select_model = spy.new(function(models, callback)
             callback("OpenAI: gpt-3.5-turbo")
-        end,
+        end),
         get_alias = function(name, callback)
             callback("my-alias")
         end,
@@ -140,28 +140,29 @@ describe("models_manager", function()
 
   describe("set_default_model", function()
     it("should call models_io.set_default_model_in_cli with the correct model name", function()
-      models_manager.set_default_model(1)
+      models_manager.set_default_model()
+      assert.spy(mock_models_view.select_model).was.called()
       assert.spy(mock_models_io.set_default_model_in_cli).was.called_with("gpt-3.5-turbo")
     end)
   end)
 
   describe("set_alias_for_model_under_cursor", function()
     it("should call set_model_alias with the correct alias and model", function()
-        models_manager.set_alias_for_model_under_cursor(1)
+        models_manager.set_alias_for_model_under_cursor()
         assert.spy(mock_models_io.set_alias_in_cli).was.called_with("my-alias", "gpt-3.5-turbo")
     end)
   end)
 
   describe("remove_alias_for_model_under_cursor", function()
     it("should call remove_model_alias with the correct alias", function()
-        models_manager.remove_alias_for_model_under_cursor(1)
+        models_manager.remove_alias_for_model_under_cursor()
         assert.spy(mock_models_io.remove_alias_in_cli).was.called_with("alias1")
     end)
   end)
 
   describe("add_custom_openai_model_interactive", function()
     it("should call custom_openai.add_custom_openai_model with the correct details", function()
-        models_manager.add_custom_openai_model_interactive(1)
+        models_manager.add_custom_openai_model_interactive()
         assert.spy(mock_custom_openai.add_custom_openai_model).was.called_with({
             model_id = "my-custom-model",
             model_name = "My Custom Model",
