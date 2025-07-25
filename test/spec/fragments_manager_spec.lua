@@ -5,8 +5,10 @@ describe("fragments_manager", function()
   local spy
   local mock_fragments_loader
   local mock_fragments_view
+  local mock_llm_cli
 
   before_each(function()
+    print("Before each")
     spy = require('luassert.spy')
     mock_fragments_loader = {
       get_fragments = function()
@@ -50,14 +52,27 @@ describe("fragments_manager", function()
         select_alias_to_remove = function(aliases, callback) callback("alias1") end,
         confirm_remove_alias = function(alias, callback) callback(true) end,
         get_prompt = function(callback) callback("test prompt") end,
-        select_file = spy.new(function(callback) callback("/path/to/file") end),
-        get_github_url = spy.new(function(callback) callback("https://github.com/owner/repo") end),
+        select_file = spy.new(function(callback)
+            if callback then
+                callback("/path/to/file")
+            end
+        end),
+        get_github_url = spy.new(function(callback)
+            if callback then
+                callback("https://github.com/owner/repo")
+            end
+        end),
+    }
+
+    mock_llm_cli = {
+        run_llm_command = spy.new(function() return true end)
     }
 
     package.loaded['llm.core.loaders'] = mock_fragments_loader
     package.loaded['llm.ui.views.fragments_view'] = mock_fragments_view
+    package.loaded['llm.core.data.llm_cli'] = mock_llm_cli
     package.loaded['llm.ui.unified_manager'] = {
-      switch_view = function() end,
+      switch_view = function() return true end,
     }
     package.loaded['llm.facade'] = {
         prompt = spy.new(function() end)
@@ -93,28 +108,28 @@ describe("fragments_manager", function()
   describe("set_alias_for_fragment_under_cursor", function()
     it("should set an alias for a fragment", function()
       fragments_manager.set_alias_for_fragment_under_cursor(1)
-      assert.spy(mock_fragments_loader.set_fragment_alias).was.called_with("hash1", "test")
+      assert.spy(mock_llm_cli.run_llm_command).was.called_with("fragments alias set hash1 test")
     end)
   end)
 
   describe("remove_alias_from_fragment_under_cursor", function()
     it("should remove an alias from a fragment", function()
         fragments_manager.remove_alias_from_fragment_under_cursor(1)
-        assert.spy(mock_fragments_loader.remove_fragment_alias).was.called_with("alias1")
+        assert.spy(mock_llm_cli.run_llm_command).was.called_with("fragments alias remove alias1")
     end)
   end)
 
   describe("add_file_fragment", function()
     it("should add a file fragment", function()
       fragments_manager.add_file_fragment(1)
-      assert.spy(mock_fragments_loader.select_file_as_fragment).was.called()
+      assert.spy(mock_llm_cli.run_llm_command).was.called_with("fragments store /path/to/file")
     end)
   end)
 
   describe("add_github_fragment_from_manager", function()
     it("should add a github fragment", function()
       fragments_manager.add_github_fragment_from_manager(1)
-      assert.spy(mock_fragments_loader.add_github_fragment).was.called()
+      assert.spy(mock_llm_cli.run_llm_command).was.called_with("fragments store https://github.com/owner/repo")
     end)
   end)
 
