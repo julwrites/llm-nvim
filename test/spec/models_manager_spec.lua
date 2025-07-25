@@ -15,7 +15,7 @@ describe("models_manager", function()
     spy = require('luassert.spy')
     -- Mock models_io
     mock_models_io = {
-      get_models_from_cli = function() return '[{"id": "gpt-3.5-turbo", "name": "gpt-3.5-turbo", "provider": "OpenAI"}, {"id": "claude-2", "name": "claude-2", "provider": "Anthropic"}]', nil end,
+      get_models_from_cli = function() return '[{"id": "gpt-3.5-turbo", "provider": "OpenAI"}, {"id": "claude-2", "provider": "Anthropic"}]', nil end,
       get_default_model_from_cli = function() return "gpt-3.5-turbo", nil end,
       set_default_model_in_cli = spy.new(function(_) return "success", nil end),
       get_aliases_from_cli = function() return '{"alias1": "model1", "alias2": "model2"}', nil end,
