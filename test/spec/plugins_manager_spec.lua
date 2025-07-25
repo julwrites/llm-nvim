@@ -143,7 +143,7 @@ describe("plugins_manager", function()
       plugins_manager.populate_plugins_buffer(1)
 
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      local lines = vim.api.nvim_buf_set_lines.calls[1].refs[2]
+      local lines = vim.api.nvim_buf_set_lines.calls[1].refs[5]
 
       local lines_str = table.concat(lines, "\n")
       assert.truthy(string.find(lines_str, "[✓] llm-installed-plugin - An installed plugin"))
