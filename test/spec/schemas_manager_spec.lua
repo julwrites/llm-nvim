@@ -8,26 +8,29 @@ describe("schemas_manager", function()
 
   before_each(function()
     spy = require('luassert.spy')
-    mock_schemas_loader = {
-      get_schemas = function()
-        return {
-          schema1 = 'description1',
-          schema2 = 'description2',
-        }
-      end,
-      get_schema = function(name)
-        if name == 'schema1' then
-          return { name = 'schema1', content = '{}' }
-        else
-          return nil
+
+    local mock_llm_cli = {
+      run_llm_command = spy.new(function(command)
+        if command == 'schemas list --json' then
+          return vim.fn.json_encode({
+            { id = 'id1', name = 'schema1', description = 'description1' },
+            { id = 'id2', name = 'schema2', description = 'description2' },
+          })
+        elseif command == 'schemas get id1' then
+          return vim.fn.json_encode({ id = 'id1', name = 'schema1', content = '{}' })
+        elseif command == 'schemas alias set id1 new_alias' then
+          return "Alias set"
+        elseif command == 'schemas alias remove schema1' then
+          return "Alias removed"
         end
-      end,
-      set_schema_alias = spy.new(function() return true end),
-      remove_schema_alias = spy.new(function() return true end),
-      save_schema = spy.new(function() return true end),
-      run_schema = spy.new(function() return "{}" end),
-      validate_json_schema = spy.new(function() return true end),
-      create_schema_from_dsl = spy.new(function() return "{}" end)
+        return ""
+      end)
+    }
+
+    local mock_cache = {
+      get = spy.new(function() return nil end),
+      set = spy.new(function() end),
+      invalidate = spy.new(function() end),
     }
 
     mock_schemas_view = {
@@ -42,7 +45,8 @@ describe("schemas_manager", function()
       show_details = spy.new(function() end),
     }
 
-    package.loaded['llm.core.loaders'] = mock_schemas_loader
+    package.loaded['llm.core.data.llm_cli'] = mock_llm_cli
+    package.loaded['llm.core.data.cache'] = mock_cache
     package.loaded['llm.ui.views.schemas_view'] = mock_schemas_view
     package.loaded['llm.ui.unified_manager'] = {
       switch_view = function() end,
@@ -66,11 +70,12 @@ describe("schemas_manager", function()
   end)
 
   after_each(function()
-    package.loaded['llm.schemas.schemas_loader'] = nil
-    package.loaded['llm.schemas.schemas_view'] = nil
-    package.loaded['llm.schemas.schemas_manager'] = nil
-    package.loaded['llm.unified_manager'] = nil
-    package.loaded['llm.utils'] = nil
+    package.loaded['llm.core.data.llm_cli'] = nil
+    package.loaded['llm.core.data.cache'] = nil
+    package.loaded['llm.ui.views.schemas_view'] = nil
+    package.loaded['llm.managers.schemas_manager'] = nil
+    package.loaded['llm.ui.unified_manager'] = nil
+    package.loaded['llm.core.utils'] = nil
     vim.schedule = nil
   end)
 
@@ -81,9 +86,10 @@ describe("schemas_manager", function()
   describe("get_schemas", function()
     it("should return the loaded schemas", function()
       local schemas = schemas_manager.get_schemas()
+      assert.spy(package.loaded['llm.core.data.llm_cli'].run_llm_command).was.called_with('schemas list --json')
       assert.are.same({
-        schema1 = 'description1',
-        schema2 = 'description2',
+        { id = 'id1', name = 'schema1', description = 'description1' },
+        { id = 'id2', name = 'schema2', description = 'description2' },
       }, schemas)
     end)
   end)
@@ -91,14 +97,14 @@ describe("schemas_manager", function()
   describe("set_alias_for_schema_under_cursor", function()
       it("should set an alias for a schema", function()
           schemas_manager.set_alias_for_schema_under_cursor(1)
-          assert.spy(mock_schemas_loader.set_schema_alias).was.called_with("id1", "new_alias")
+          assert.spy(package.loaded['llm.core.data.llm_cli'].run_llm_command).was.called_with('schemas alias set id1 new_alias')
       end)
   end)
 
   describe("delete_alias_for_schema_under_cursor", function()
     it("should delete an alias for a schema", function()
         schemas_manager.delete_alias_for_schema_under_cursor(1)
-        assert.spy(mock_schemas_loader.remove_schema_alias).was.called_with("id1", "schema1")
+        assert.spy(package.loaded['llm.core.data.llm_cli'].run_llm_command).was.called_with('schemas alias remove schema1')
     end)
   end)
 

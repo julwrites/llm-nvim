@@ -83,9 +83,10 @@ describe("templates_manager", function()
   describe("get_templates", function()
     it("should return the loaded templates", function()
       local templates = templates_manager.get_templates()
+      table.sort(templates, function(a, b) return a.name < b.name end)
       assert.are.same({
-        template1 = 'description1',
-        template2 = 'description2',
+        { name = 'template1', description = 'description1' },
+        { name = 'template2', description = 'description2' },
       }, templates)
     end)
   end)
@@ -172,7 +173,10 @@ describe("templates_manager", function()
       mock_templates_view.get_fragment_choice = function(callback) callback("No fragments") end
       mock_templates_view.get_option_choice = function(callback) callback("No options") end
       mock_templates_view.confirm_extract = function(callback) callback(true) end
-      mock_templates_view.get_schema_choice = function(callback) callback("No schema") end
+      mock_templates_view.get_schema_choice = function(_, callback)
+          -- This is the key to breaking the recursion
+          if callback then callback("No schema") end
+      end
 
       templates_manager.create_template()
 
@@ -201,7 +205,10 @@ describe("templates_manager", function()
       mock_templates_view.get_fragment_choice = function(callback) callback("No fragments") end
       mock_templates_view.get_option_choice = function(callback) callback("No options") end
       mock_templates_view.confirm_extract = function(callback) callback(false) end
-      mock_templates_view.get_schema_choice = function(callback) callback("No schema") end
+      mock_templates_view.get_schema_choice = function(_, callback)
+          -- This is the key to breaking the recursion
+          if callback then callback("No schema") end
+      end
 
       templates_manager.create_template()
 

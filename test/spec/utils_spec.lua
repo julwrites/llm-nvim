@@ -219,7 +219,7 @@ describe("llm.core.utils.file_utils", function()
     end)
 
     it("should return the config path", function()
-      local shell = require("llm.utils.shell")
+      local shell = require("llm.core.utils.shell")
       local original_safe_shell_command = shell.safe_shell_command
       shell.safe_shell_command = function(cmd, _)
         if cmd == "llm logs path" then
@@ -238,7 +238,7 @@ describe("llm.core.utils.file_utils", function()
     end)
 
     it("should handle trailing whitespace in paths", function()
-      local shell = require("llm.utils.shell")
+      local shell = require("llm.core.utils.shell")
       local original_safe_shell_command = shell.safe_shell_command
       shell.safe_shell_command = function(cmd, _)
         if cmd == "llm logs path" then

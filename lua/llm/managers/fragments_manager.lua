@@ -116,16 +116,20 @@ end
 function M.view_fragment_under_cursor(bufnr)
   local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
-  fragments_view.view_fragment(fragment_hash, fragment_info)
+  fragments_view.view_fragment(fragment_info.content, fragment_info.source)
 end
 
 function M.set_alias_for_fragment_under_cursor(bufnr)
+  print("Setting alias")
   local fragment_hash, _ = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
+  print("Got fragment hash")
 
   fragments_view.get_alias(function(alias)
     if not alias or alias == "" then return end
+    print("Got alias")
     if llm_cli.run_llm_command('fragments alias set ' .. fragment_hash .. ' ' .. alias) then
+      print("Alias set")
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
       cache.invalidate('fragments')
       require('llm.ui.unified_manager').switch_view("Fragments")
@@ -218,9 +222,6 @@ function M.prompt_with_fragment_under_cursor(bufnr)
   end
 
   local fragment_identifier = fragment_hash
-  if fragment_info.aliases and #fragment_info.aliases > 0 then
-    fragment_identifier = fragment_info.aliases[1]
-  end
 
   api.nvim_win_close(0, true)
 

@@ -8,14 +8,17 @@ describe("custom_openai", function()
 
   before_each(function()
     spy = require('luassert.spy')
-    mock_utils = {
-      get_config_path = function() return "", "/tmp/extra-openai-models.yaml" end,
+    mock_utils_text = {
       parse_simple_yaml = function() return {} end,
+    }
+    mock_utils_file = {
+      get_config_path = function() return "", "/tmp/extra-openai-models.yaml" end,
     }
     mock_keys_manager = {
       is_key_set = function() return true end,
     }
-    package.loaded['llm.core.utils'] = mock_utils
+    package.loaded['llm.core.utils.text'] = mock_utils_text
+    package.loaded['llm.core.utils.file'] = mock_utils_file
     package.loaded['llm.managers.keys_manager'] = mock_keys_manager
     custom_openai = require('llm.managers.custom_openai')
 
@@ -32,9 +35,10 @@ describe("custom_openai", function()
   end)
 
   after_each(function()
-    package.loaded['llm.utils'] = nil
-    package.loaded['llm.keys.keys_manager'] = nil
-    package.loaded['llm.models.custom_openai'] = nil
+    package.loaded['llm.core.utils.text'] = nil
+    package.loaded['llm.core.utils.file'] = nil
+    package.loaded['llm.managers.keys_manager'] = nil
+    package.loaded['llm.managers.custom_openai'] = nil
     io.open = nil
     os.rename = nil
     vim.notify = nil
@@ -46,7 +50,7 @@ describe("custom_openai", function()
 
   describe("load_custom_openai_models", function()
     it("should load custom models from a yaml file", function()
-      mock_utils.parse_simple_yaml = function()
+      package.loaded['llm.core.utils.text'].parse_simple_yaml = function()
         return {
           {
             model_id = "my-custom-model",
@@ -60,6 +64,7 @@ describe("custom_openai", function()
         return {
             read = function() return "- model_id: my-custom-model" end,
             close = function() end,
+            lines = function() return {"- model_id: my-custom-model"} end,
         }
       end
       custom_openai.load_custom_openai_models()
@@ -115,7 +120,7 @@ describe("custom_openai", function()
 
   describe("delete_custom_openai_model", function()
     it("should delete a custom model from the yaml file", function()
-        mock_utils.parse_simple_yaml = function()
+        package.loaded['llm.core.utils.text'].parse_simple_yaml = function()
             return {
                 {
                     model_id = "my-custom-model",

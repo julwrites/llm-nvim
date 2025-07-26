@@ -10,7 +10,7 @@ describe("generate_models_list", function()
     mock_models_io = {
       get_models_from_cli = function() return "", nil end,
       get_default_model_from_cli = function() return "", nil end,
-      get_aliases_from_cli = function() return '{"gpt3": "gpt-3.5-turbo"}', nil end,
+      get_aliases_from_cli = function() return '{"gpt3": "gpt-3.5-turbo", "chatgpt": "gpt-3.5-turbo", "3.5": "gpt-3.5-turbo"}', nil end,
     }
 
     mock_custom_openai = {
@@ -37,10 +37,18 @@ describe("generate_models_list", function()
 
   it("should return a list of formatted models", function()
     models_manager.get_available_models = function()
-        return { "OpenAI: gpt-3.5-turbo", "Anthropic: claude-2" }
+        return { { id = "gpt-3.5-turbo", provider = "OpenAI" }, { id = "claude-2", provider = "Anthropic" } }
     end
     mock_models_io.get_default_model_from_cli = function()
       return "gpt-3.5-turbo", nil
+    end
+    models_manager.get_model_provider = function(model_id)
+        if string.match(model_id, "gpt-3.5-turbo") then
+            return "OpenAI"
+        elseif string.match(model_id, "claude-2") then
+            return "Anthropic"
+        end
+        return "Unknown"
     end
 
     local data = models_manager.generate_models_list()
@@ -49,14 +57,6 @@ describe("generate_models_list", function()
     assert.is_table(data.lines)
     assert.is_table(data.line_to_model_id)
     assert.is_table(data.model_data)
-    models_manager.get_model_name = function(line)
-        if string.match(line, "gpt-3.5-turbo") then
-            return "gpt-3.5-turbo"
-        elseif string.match(line, "claude-2") then
-            return "claude-2"
-        end
-        return nil
-    end
 
     local expected_lines = {
         '# Model Management',
@@ -67,11 +67,11 @@ describe("generate_models_list", function()
         '',
         'Anthropic',
         '─────────',
-        '[ ] Anthropic: claude-2',
+        '[ ] claude-2',
         '',
         'OpenAI',
         '──────',
-        '[✓] OpenAI: gpt-3.5-turbo (aliases: gpt3)',
+        '[✓] gpt-3.5-turbo (aliases: gpt3)',
         '',
         ''
     }
