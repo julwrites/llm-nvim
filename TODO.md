@@ -69,25 +69,51 @@ This section covers the low-level data and utility modules.
 #### Utility Modules (`lua/llm/core/utils/`)
 
 *   **`file_utils.lua`**
-    *   **Description:** Test file-related utility functions.
-    *   **Expected Behavior:** Functions should correctly perform file operations (e.g., read, write, check existence).
-    *   **Test Implementation:** Use temporary files to test the utility functions. For example, create a temp file, write to it using the utility, then read it back and assert the content is correct.
+    *   **Test:** `read_file()`
+        *   **Description:** Test reading content from a file.
+        *   **Expected Behavior:** Should return the content of a given file path. Handle errors for non-existent files.
+        *   **Test Implementation:** Create a temporary file with known content, read it using the function, and assert the content matches. Test with a non-existent file path and assert it returns `nil` or an error.
+    *   **Test:** `write_file()`
+        *   **Description:** Test writing content to a file.
+        *   **Expected Behavior:** A file should be created with the specified content.
+        *   **Test Implementation:** Write to a temporary file path, then read the file to assert its content.
+*   **`notify.lua`**
+    *   **Test:** `notify()`
+        *   **Description:** Test the notification wrapper.
+        *   **Expected Behavior:** It should call `vim.notify` with the correct message, level, and title.
+        *   **Test Implementation:** Mock `vim.notify` and call the function with different parameters. Assert that the mock was called with the expected arguments.
 *   **`shell.lua`**
-    *   **Description:** Test shell command execution utilities.
-    *   **Expected Behavior:** Functions should correctly execute shell commands and return the expected output.
-    *   **Test Implementation:** Mock `io.popen` or similar functions to simulate shell commands and test that the functions in `shell.lua` handle the output correctly.
+    *   **Test:** `check_llm_installed()`
+        *   **Description:** Verify it correctly checks for the `llm` executable.
+        *   **Expected Behavior:** Return `true` if the executable exists, `false` otherwise.
+        *   **Test Implementation:** Mock `vim.fn.executable` to return `1` and `0` in different tests and assert the function's return value.
+    *   **Test:** `update_llm_cli()`
+        *   **Description:** Test the CLI update command.
+        *   **Expected Behavior:** It should execute the `pip install --upgrade llm` command.
+        *   **Test Implementation:** Mock the shell command execution and assert that the correct command string is passed.
 *   **`text.lua`**
-    *   **Description:** Test text manipulation functions.
-    *   **Expected Behavior:** Functions should correctly format, trim, or otherwise manipulate strings.
-    *   **Test Implementation:** Provide sample strings to the text utility functions and assert that the returned strings are correct.
+    *   **Test:** `get_visual_selection()`
+        *   **Description:** Test the retrieval of the visual selection.
+        *   **Expected Behavior:** Should return the text selected in visual mode.
+        *   **Test Implementation:** Mock `vim.api.nvim_buf_get_text` to return a sample selection and assert the function's output.
+    *   **Test:** `capitalize()`
+        *   **Description:** Test the capitalization of a string.
+        *   **Expected Behavior:** The first letter of the string should be capitalized.
+        *   **Test Implementation:** Pass various strings (all lowercase, mixed case) and assert the output.
 *   **`ui.lua`**
-    *   **Description:** Test UI-related utility functions.
-    *   **Expected Behavior:** Functions should correctly create and manage UI elements like floating windows and input prompts.
-    *   **Test Implementation:** Mock `vim.api` functions related to windows and buffers. Call the UI utility functions and assert that the `vim.api` mocks were called with the expected parameters.
+    *   **Test:** `create_floating_window()`
+        *   **Description:** Test the creation of a floating window.
+        *   **Expected Behavior:** It should call `vim.api.nvim_open_win` with the correct buffer and configuration.
+        *   **Test Implementation:** Mock `vim.api.nvim_open_win` and assert it's called with the expected arguments.
+    *   **Test:** `create_buffer_with_content()` and `replace_buffer_with_content()`
+        *   **Description:** Test buffer creation and content replacement.
+        *   **Expected Behavior:** A new buffer should be created, or an existing one modified, with the given content.
+        *   **Test Implementation:** Mock `vim.api.nvim_create_buf` and `vim.api.nvim_buf_set_lines`. Call the functions and assert that the mocks are called with the right content.
 *   **`validate.lua`**
-    *   **Description:** Test the validation and type conversion functions.
-    *   **Expected Behavior:** The `convert` function should correctly convert values between types (e.g., string to boolean).
-    *   **Test Implementation:** Call `convert` with various inputs and assert that the output is of the correct type and value.
+    *   **Test:** `convert()`
+        *   **Description:** Test type conversion for configuration values.
+        *   **Expected Behavior:** Should correctly convert strings to booleans, numbers, etc.
+        *   **Test Implementation:** Call `convert` with various input strings (`"true"`, `"false"`, `"123"`) and target types, then assert the output's type and value.
 
 ### Managers (`lua/llm/managers/`)
 
