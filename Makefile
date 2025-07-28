@@ -1,7 +1,11 @@
 .PHONY: test test-deps
 
-test: test-deps
-	busted tests/spec/
+test:
+	@if [ -n "${file}" ]; then \
+		busted tests/spec/${file}; \
+	else \
+		busted tests/spec/; \
+	fi
 
 test-deps:
 	@if ! command -v busted &> /dev/null; then \

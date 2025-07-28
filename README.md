@@ -218,6 +218,9 @@ Then, you can run the tests:
 ```bash
 # Run all tests
 make test
+
+# Run a specific test file
+make test file=init_spec.lua
 ```
 
 Tests cover:

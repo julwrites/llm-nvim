@@ -17,6 +17,7 @@ To implement these tests, the following tools are required:
 #### `init.lua`
 
 *   **Test:** `M.setup()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify the main setup function initializes the configuration, styles, loaders, and auto-update mechanism correctly.
     *   **Expected Behavior:** `config.setup`, `styles.setup_highlights`, `loaders.load_all`, and `shell.update_llm_cli` should be called under the correct conditions.
     *   **Test Implementation:** Mock the required modules (`config`, `styles`, `loaders`, `shell`). Call `M.setup` with various options (e.g., `auto_update_cli = true/false`) and assert that the mocked functions are called with the expected arguments.
