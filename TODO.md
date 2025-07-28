@@ -12,7 +12,9 @@ To implement these tests, the following tools are required:
 
 ## Test Plan by Module
 
-### Core Functionality (`lua/llm/core/`)
+### Common Functionality (`lua/llm/`)
+
+This section covers the core, non-manager-specific modules.
 
 #### `config.lua`
 
@@ -42,6 +44,50 @@ To implement these tests, the following tools are required:
     *   **Description:** Test that each loader function correctly parses the mock `llm` CLI output and stores the data in the cache.
     *   **Expected Behavior:** The cache should be populated with the correctly structured data.
     *   **Test Implementation:** Mock `llm.core.data.llm_cli.run_llm_command` to return sample JSON output. Call the loader function and then use `cache.get` to assert the stored data's structure and content.
+
+### Core Functionality (`lua/llm/core/`)
+
+This section covers the low-level data and utility modules.
+
+#### Data Modules (`lua/llm/core/data/`)
+
+*   **`cache.lua`**
+    *   **Test:** `set()` and `get()`.
+        *   **Description:** Verify that data can be stored and retrieved from the cache.
+        *   **Expected Behavior:** `get` should return the same data that was `set`.
+        *   **Test Implementation:** Set a value with a key, then get it and assert they are equal.
+    *   **Test:** `invalidate()`.
+        *   **Description:** Test that a cache key can be invalidated.
+        *   **Expected Behavior:** After invalidating a key, `get` should return `nil`.
+        *   **Test Implementation:** Set a value, invalidate its key, then get it and assert the result is `nil`.
+*   **`llm_cli.lua`**
+    *   **Test:** `run_llm_command()`.
+        *   **Description:** Ensure it correctly constructs and executes the shell command.
+        *   **Expected Behavior:** `vim.fn.system` should be called with the correct `llm` command string.
+        *   **Test Implementation:** Mock `vim.fn.system` and call `run_llm_command` with a sample command. Assert that the mock was called with the expected string.
+
+#### Utility Modules (`lua/llm/core/utils/`)
+
+*   **`file_utils.lua`**
+    *   **Description:** Test file-related utility functions.
+    *   **Expected Behavior:** Functions should correctly perform file operations (e.g., read, write, check existence).
+    *   **Test Implementation:** Use temporary files to test the utility functions. For example, create a temp file, write to it using the utility, then read it back and assert the content is correct.
+*   **`shell.lua`**
+    *   **Description:** Test shell command execution utilities.
+    *   **Expected Behavior:** Functions should correctly execute shell commands and return the expected output.
+    *   **Test Implementation:** Mock `io.popen` or similar functions to simulate shell commands and test that the functions in `shell.lua` handle the output correctly.
+*   **`text.lua`**
+    *   **Description:** Test text manipulation functions.
+    *   **Expected Behavior:** Functions should correctly format, trim, or otherwise manipulate strings.
+    *   **Test Implementation:** Provide sample strings to the text utility functions and assert that the returned strings are correct.
+*   **`ui.lua`**
+    *   **Description:** Test UI-related utility functions.
+    *   **Expected Behavior:** Functions should correctly create and manage UI elements like floating windows and input prompts.
+    *   **Test Implementation:** Mock `vim.api` functions related to windows and buffers. Call the UI utility functions and assert that the `vim.api` mocks were called with the expected parameters.
+*   **`validate.lua`**
+    *   **Description:** Test the validation and type conversion functions.
+    *   **Expected Behavior:** The `convert` function should correctly convert values between types (e.g., string to boolean).
+    *   **Test Implementation:** Call `convert` with various inputs and assert that the output is of the correct type and value.
 
 ### Managers (`lua/llm/managers/`)
 
