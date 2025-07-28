@@ -1,0 +1,18 @@
+return {
+  run = {
+    ["_G"] = {
+      "describe",
+      "it",
+      "pending",
+      "before_each",
+      "after_each",
+      "assert"
+    },
+    verbose = true,
+    lua = "lua5.1"
+  },
+  ["default"] = {
+    coverage = false,
+    lpath = "./lua/?.lua;~/.luarocks/share/lua/5.1/?.lua"
+  }
+}
