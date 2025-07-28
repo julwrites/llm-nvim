@@ -1,220 +1,294 @@
 # Comprehensive Test Plan for llm-nvim
 
-This document outlines the necessary tests to ensure the quality and stability of the `llm-nvim` plugin. The tests are categorized by module and functionality.
+This document outlines the necessary tests to ensure the quality and stability of the `llm-nvim` plugin. The tests are categorized by module and functionality, with explicit tests for each function.
 
 ## Testing Framework and Dependencies
 
 To implement these tests, the following tools are required:
 
-*   **Test Framework:** [busted](httpshttps://github.com/Olivine-Labs/busted) is a popular and robust testing framework for Lua. It supports Arrange-Act-Assert (AAA) patterns and provides a rich set of assertion functions. Integration with Neovim can be achieved using [plenary-busted](https://github.com/nvim-lua/plenary.nvim).
-*   **Mocks:** A mocking library is essential for isolating components and simulating external dependencies, especially the `llm` command-line tool and Neovim's UI functions. We can use a simple table-based mocking strategy or a more feature-rich library like [luassert](https://github.com/Olivine-Labs/luassert) which has mocking capabilities. For this plan, we'll assume a custom mocking implementation for simplicity.
+*   **Test Framework:** [busted](https://github.com/Olivine-Labs/busted) is a popular and robust testing framework for Lua. It supports Arrange-Act-Assert (AAA) patterns and provides a rich set of assertion functions. Integration with Neovim can be achieved using [plenary-busted](https://github.com/nvim-lua/plenary.nvim).
+*   **Mocks:** A mocking library is essential for isolating components and simulating external dependencies, especially the `llm` command-line tool and Neovim's UI functions. We can use a simple table-based mocking strategy or a more feature-rich library like [luassert](https://github.com/Olivine-Labs/luassert) which has mocking capabilities.
 *   **Test Data:** A dedicated `test_data` directory should be created to store mock responses from the `llm` CLI (in JSON format), sample configuration files, and other test-related data.
 
 ## Test Plan by Module
 
-### Common Functionality (`lua/llm/`)
+### `lua/llm/`
 
-This section covers the core, non-manager-specific modules.
+#### `init.lua`
 
-#### `config.lua`
-
-*   **Test:** `setup()` function.
-    *   **Description:** Verify that the `setup` function correctly merges user-provided options with the default configuration.
-    *   **Expected Behavior:** The `M.options` table should contain the merged configuration.
-    *   **Test Implementation:** Call `setup` with a sample configuration table and assert that the values in `M.options` are as expected.
-*   **Test:** `get()` function.
-    *   **Description:** Test the `get` function's ability to retrieve configuration values.
-    *   **Expected Behavior:** It should return the correct value for a given key, or the default value if not set by the user.
-    *   **Test Implementation:** After setting up the configuration, call `get` for various keys and assert the returned values.
-*   **Test:** `reset()` function.
-    *   **Description:** Ensure that the `reset` function restores the configuration to its default state.
-    *   **Expected Behavior:** `M.options` should be identical to `M.defaults`.
-    *   **Test Implementation:** Call `setup` with custom values, then call `reset` and assert that `M.options` matches the defaults.
-
-#### `errors.lua`
-
-*   **Test:** `handle()` function.
-    *   **Description:** Verify that the `handle` function formats and reports errors correctly.
-    *   **Expected Behavior:** It should call `vim.notify` with the expected formatted message and severity level.
-    *   **Test Implementation:** Mock `vim.notify` and call `handle` with different categories, messages, and severities. Assert that `vim.notify` was called with the correct arguments.
-
-#### `loaders.lua`
-
-*   **Test:** Each `load_*` function (e.g., `load_models`, `load_keys`).
-    *   **Description:** Test that each loader function correctly parses the mock `llm` CLI output and stores the data in the cache.
-    *   **Expected Behavior:** The cache should be populated with the correctly structured data.
-    *   **Test Implementation:** Mock `llm.core.data.llm_cli.run_llm_command` to return sample JSON output. Call the loader function and then use `cache.get` to assert the stored data's structure and content.
-
-### Core Functionality (`lua/llm/core/`)
-
-This section covers the low-level data and utility modules.
-
-#### Data Modules (`lua/llm/core/data/`)
-
-*   **`cache.lua`**
-    *   **Test:** `set()` and `get()`.
-        *   **Description:** Verify that data can be stored and retrieved from the cache.
-        *   **Expected Behavior:** `get` should return the same data that was `set`.
-        *   **Test Implementation:** Set a value with a key, then get it and assert they are equal.
-    *   **Test:** `invalidate()`.
-        *   **Description:** Test that a cache key can be invalidated.
-        *   **Expected Behavior:** After invalidating a key, `get` should return `nil`.
-        *   **Test Implementation:** Set a value, invalidate its key, then get it and assert the result is `nil`.
-*   **`llm_cli.lua`**
-    *   **Test:** `run_llm_command()`.
-        *   **Description:** Ensure it correctly constructs and executes the shell command.
-        *   **Expected Behavior:** `vim.fn.system` should be called with the correct `llm` command string.
-        *   **Test Implementation:** Mock `vim.fn.system` and call `run_llm_command` with a sample command. Assert that the mock was called with the expected string.
-
-#### Utility Modules (`lua/llm/core/utils/`)
-
-*   **`file_utils.lua`**
-    *   **Test:** `ensure_config_dir_exists()`
-        *   **Description:** Verify that it correctly checks for and creates the configuration directory.
-        *   **Expected Behavior:** It should return `true` if the directory exists or was created successfully. It should handle non-writable paths gracefully.
-        *   **Test Implementation:** Mock internal functions `test_directory_writable` and `create_directory`. Test the case where the directory exists and the case where it needs to be created.
-    *   **Test:** `get_config_path()`
-        *   **Description:** Test the logic for resolving the path to a configuration file.
-        *   **Expected Behavior:** It should correctly resolve and return the full path to a config file. It should use the cache after the first resolution.
-        *   **Test Implementation:** Mock `shell.safe_shell_command` to return a fake `llm` logs path. Assert that the function returns the expected config path. Call it a second time and assert that the shell command is not called again (cache hit).
-
-*   **`notify.lua`**
-    *   **Test:** `notify()`
-        *   **Description:** Test the notification wrapper.
-        *   **Expected Behavior:** It should call `vim.notify` with the correct message, level, and options.
-        *   **Test Implementation:** Mock `vim.notify` and call the function with different parameters. Assert that the mock was called with the expected arguments.
-
-*   **`shell.lua`**
-    *   **Test:** `safe_shell_command()`
-        *   **Description:** Verify it executes a shell command and handles its output.
-        *   **Expected Behavior:** It should return the command's output. It should handle `nil` or empty results correctly.
-        *   **Test Implementation:** Mock `vim.fn.system` to return various outputs (a string, an empty string, `nil`) and assert the function's return value.
-    *   **Test:** `command_exists()`
-        *   **Description:** Test the check for an executable's existence.
-        *   **Expected Behavior:** Return `true` if the command exists, `false` otherwise.
-        *   **Test Implementation:** Mock `os.execute` to return `0` and `1` and assert the function's return value.
-    *   **Test:** `update_llm_cli()`
-        *   **Description:** Test the logic for attempting to update the `llm` CLI.
-        *   **Expected Behavior:** It should try different update methods (`uv`, `pipx`, `pip`, `brew`) in order and stop on the first success.
-        *   **Test Implementation:** Mock `M.command_exists` and `M.run_update_command`. In separate tests, have different mocks succeed to ensure the logic flows correctly. For example, make `uv` fail but `pipx` succeed, and assert that the correct commands were attempted.
-
-*   **`text.lua`**
-    *   **Test:** `get_visual_selection()`
-        *   **Description:** Test the retrieval of text from a visual selection.
-        *   **Expected Behavior:** It should correctly extract the selected text, handling single-line and multi-line selections.
-        *   **Test Implementation:** Mock `vim.fn.getpos` to define start and end positions. Mock `vim.api.nvim_buf_get_lines` to provide sample buffer lines. Test with a single-line selection and a multi-line selection and assert the returned string is correct.
-    *   **Test:** `capitalize()`
-        *   **Description:** Test the capitalization of a string.
-        *   **Expected Behavior:** The first letter of the string should be capitalized.
-        *   **Test Implementation:** Pass various strings (e.g., `"hello"`, `"Hello"`, `"123"`, `""`) and assert the output.
-    *   **Test:** `escape_pattern()`
-        *   **Description:** Test the escaping of special Lua pattern characters.
-        *   **Expected Behavior:** Special characters should be correctly escaped with a `%`.
-        *   **Test Implementation:** Pass a string with special characters like `(`, `)`, `.` and assert that the output has them correctly escaped.
-    *   **Test:** `parse_simple_yaml()`
-        *   **Description:** Test the parsing of a simple YAML file into a Lua table.
-        *   **Expected Behavior:** It should correctly parse nested maps and lists.
-        *   **Test Implementation:** Mock `io.open` to return a multi-line string representing a simple YAML file. Call the function and assert that the returned Lua table has the correct structure and values.
-
-*   **`ui.lua`**
-    *   **Test:** `create_buffer_with_content()`
-        *   **Description:** Test the creation of a new split buffer with content.
-        *   **Expected Behavior:** It should create a new buffer, open it in a new window, and set its content.
-        *   **Test Implementation:** Mock `vim.api.nvim_create_buf`, `vim.api.nvim_open_win`, and `vim.api.nvim_buf_set_lines`. Call the function and assert that the mocks were called in the correct order with the correct parameters.
-    *   **Test:** `create_floating_window()`
-        *   **Description:** Test the creation of a floating window.
-        *   **Expected Behavior:** It should call `vim.api.nvim_open_win` with the correct configuration for a floating window.
-        *   **Test Implementation:** Mock `vim.api.nvim_open_win` and assert it's called with the expected window configuration table.
-    *   **Test:** `floating_input()` and `floating_confirm()`
-        *   **Description:** Test the interactive floating dialogs.
-        *   **Expected Behavior:** They should create a floating window and set up the correct keymaps for confirming or canceling. The callback should be triggered with the correct value.
-        *   **Test Implementation:** Mock the `vim.api` functions for window/buffer creation and keymaps. Call the function, then simulate the confirmation/cancellation by calling the internal `_confirm_*` functions. Assert that the callback provided to the original function is called with the expected value.
-
-*   **`validate.lua`**
-    *   **Test:** `convert()`
-        *   **Description:** Test type conversion for configuration values.
-        *   **Expected Behavior:** Should correctly convert values between string, boolean, and number.
-        *   **Test Implementation:** Call `convert` with various inputs (e.g., `"true"`, `"false"`, `"123"`, `1`, `0`, `true`) and target types, then assert the output's type and value are correct.
-    *   **Test:** `validate()`
-        *   **Description:** Test the validation of a value's type.
-        *   **Expected Behavior:** It should return `true` if the value's type matches the expected type, otherwise `false`.
-        *   **Test Implementation:** Call `validate` with different values and expected types and assert the boolean result.
-
-### Managers (`lua/llm/managers/`)
-
-For all manager tests, the `llm.core.data.llm_cli.run_llm_command` function will be mocked to simulate interactions with the `llm` CLI.
-
-#### `models_manager.lua`
-
-*   **Test:** `get_available_models()`.
-    *   **Description:** Ensure it correctly parses the `llm models list` output.
-    *   **Expected Behavior:** Returns a table of model tables with `provider`, `id`, and `name`.
-    *   **Test Implementation:** Mock the CLI command to return a sample model list. Call the function and assert the structure of the returned table.
-*   **Test:** `set_default_model()`.
-    *   **Description:** Verify it calls the `llm models default <model_name>` command.
-    *   **Expected Behavior:** The CLI mock should be called with the correct command.
-    *   **Test Implementation:** Mock the CLI command, call `set_default_model`, and assert the command passed to the mock.
-*   **Test:** Alias functions (`get_model_aliases`, `set_model_alias`, `remove_model_alias`).
-    *   **Description:** Test that alias management functions call the correct `llm aliases` subcommands.
-    *   **Expected Behavior:** The CLI mock should be called with the appropriate `aliases` subcommand and arguments.
-    *   **Test Implementation:** Mock the CLI command, call the alias functions, and assert the command passed to the mock.
-
-#### `keys_manager.lua`
-
-*   **Test:** `get_stored_keys()`.
-    *   **Description:** Ensure it parses the `llm keys list --json` output.
-    *   **Expected Behavior:** Returns a table of key tables.
-    *   **Test Implementation:** Mock the CLI command with sample JSON output and assert the returned table.
-*   **Test:** `set_api_key()` and `remove_api_key()`.
-    *   **Description:** Verify they call the correct `llm keys` subcommands.
-    *   **Expected Behavior:** The CLI mock should be called with `keys set <name> <value>` or `keys remove <name>`.
-    *   **Test Implementation:** Mock the CLI command and assert the command string.
-
-#### `plugins_manager.lua`
-
-*   **Test:** `get_installed_plugins()`.
-    *   **Description:** Parses the `llm plugins` output.
-    *   **Expected Behavior:** Returns a table of installed plugins.
-    *   **Test Implementation:** Mock the CLI command and assert the returned table.
-*   **Test:** `install_plugin()` and `uninstall_plugin()`.
-    *   **Description:** Verify they call `llm install` and `llm uninstall`.
-    *   **Expected Behavior:** The CLI mock should be called with the correct command.
-    *   **Test Implementation:** Mock the CLI command and assert the command string.
-
-#### `fragments_manager.lua`, `templates_manager.lua`, `schemas_manager.lua`
-
-These managers follow a similar pattern. For each, we need to test:
-
-*   **`get_*` functions:** Mock the corresponding `llm <type> list --json` command and assert that the output is parsed correctly.
-*   **Action functions (create, delete, run, etc.):** Mock the corresponding `llm <type> <action>` command and assert that it's called with the correct arguments.
-*   **Interactive functions:** Mock `vim.ui.input` and `vim.ui.select` to simulate user input and verify that the correct actions are taken based on that input.
-
-### Commands and API (`lua/llm/commands.lua`, `lua/llm/api.lua`)
-
-#### `commands.lua`
-
-*   **Test:** `prompt()`.
-    *   **Description:** Test the main prompt command.
-    *   **Expected Behavior:** It should construct the correct `llm` command string, including model, system prompt, and fragments, and then call the CLI mock.
-    *   **Test Implementation:** Set config values, call `prompt` with a prompt and fragments, and assert the command string passed to the CLI mock.
-*   **Test:** `prompt_with_selection()` and `prompt_with_current_file()`.
-    *   **Description:** Test the commands that use context from the editor.
-    *   **Expected Behavior:** They should correctly get the selection/file content, write it to a temporary file, and include that file as a fragment in the `llm` command.
-    *   **Test Implementation:** Mock `text.get_visual_selection()` and `vim.api.nvim_buf_get_name()`. Mock file I/O to verify the temporary file is created and its path is passed to the CLI mock.
-*   **Test:** `interactive_prompt_with_fragments()`.
-    *   **Description:** Test the interactive fragment selection process.
-    *   **Expected Behavior:** It should guide the user through fragment selection and then construct the final `llm` command.
-    *   **Test Implementation:** Mock `vim.ui.select` and `vim.ui.input` to simulate a user selecting multiple fragments and entering a prompt. Assert the final command string.
+*   **Test:** `M.setup()`
+    *   **Description:** Verify the main setup function initializes the configuration, styles, loaders, and auto-update mechanism correctly.
+    *   **Expected Behavior:** `config.setup`, `styles.setup_highlights`, `loaders.load_all`, and `shell.update_llm_cli` should be called under the correct conditions.
+    *   **Test Implementation:** Mock the required modules (`config`, `styles`, `loaders`, `shell`). Call `M.setup` with various options (e.g., `auto_update_cli = true/false`) and assert that the mocked functions are called with the expected arguments.
 
 #### `api.lua`
 
-*   **Test:** `setup()`.
-    *   **Description:** Ensure the API's `setup` function calls the config setup.
+*   **Test:** `M.setup()`
+    *   **Description:** Ensure the API's setup function correctly calls the configuration setup.
     *   **Expected Behavior:** `config.setup` should be called with the provided options.
-    *   **Test Implementation:** Mock `require('llm.config').setup` and assert that it's called.
-*   **Test:** Facade functions.
-    *   **Description:** Verify that all functions from the facade are exposed through the API.
-    *   **Expected Behavior:** Calling an API function (e.g., `api.prompt()`) should call the corresponding facade function.
-    *   **Test Implementation:** Mock the facade functions, call the API functions, and assert that the mocks were called.
+    *   **Test Implementation:** Mock `require('llm.config').setup` and assert that it is called when `M.setup` is invoked.
+*   **Test:** `M.version()`
+    *   **Omission Justification:** This is a one-line function that returns a value from another module. It will be implicitly tested via the tests for the `config` module.
+*   **Test:** All facade functions (`get_manager`, `command`, `prompt`, etc.)
+    *   **Description:** Verify that all functions from the `facade` module are correctly exposed through the `api` module via a loop.
+    *   **Expected Behavior:** Calling a function on the `api` module should call the corresponding function on the `facade` module.
+    *   **Test Implementation:** Mock the `facade` module. Iterate through its functions, call them via the `api` module, and assert that the corresponding mock in the `facade` was called.
 
-This test plan provides a comprehensive roadmap for ensuring the quality of `llm-nvim`. By implementing these tests, we can catch regressions, verify new features, and maintain a high level of stability for the plugin.
+#### `commands.lua`
+
+*   **Test:** `M.get_model_arg()`
+    *   **Description:** Test that it correctly constructs the model argument for the CLI command.
+    *   **Expected Behavior:** Should return `{"-m", "model_name"}` if a model is set in the config, otherwise an empty table.
+    *   **Test Implementation:** Mock `config.get`. Call the function with and without a model set and assert the returned table.
+*   **Test:** `M.get_system_arg()`
+    *   **Description:** Test that it correctly constructs the system prompt argument.
+    *   **Expected Behavior:** Should return `{"-s", "prompt"}` if a system prompt is set, otherwise an empty table.
+    *   **Test Implementation:** Mock `config.get`. Call the function with and without a system prompt set and assert the returned table.
+*   **Test:** `M.get_fragment_args()`
+    *   **Description:** Test that it correctly constructs the fragment arguments.
+    *   **Expected Behavior:** Should return a table of `"-f", "fragment_path"` pairs.
+    *   **Test Implementation:** Pass a list of fragment paths and assert the structure and content of the returned table.
+*   **Test:** `M.get_system_fragment_args()`
+    *   **Description:** Test that it correctly constructs the system fragment arguments.
+    *   **Expected Behavior:** Should return a table of `"--system-fragment", "fragment_path"` pairs.
+    *   **Test Implementation:** Pass a list of fragment paths and assert the structure and content of the returned table.
+*   **Test:** `M.get_pre_response_message()`
+    *   **Description:** Verify that the pre-response message is formatted correctly.
+    *   **Expected Behavior:** Should return a formatted string containing the source, prompt, and fragments.
+    *   **Test Implementation:** Call the function with sample data and assert the returned string is formatted as expected.
+*   **Test:** `M.create_response_buffer()`
+    *   **Description:** Test the creation of the response buffer.
+    *   **Expected Behavior:** `ui.create_buffer_with_content` should be called.
+    *   **Test Implementation:** Mock `ui.create_buffer_with_content` and assert it's called with the correct arguments.
+*   **Test:** `M.fill_response_buffer()`
+    *   **Description:** Test filling the response buffer and applying syntax.
+    *   **Expected Behavior:** `ui.replace_buffer_with_content` should be called, and `vim.cmd` should be called for syntax highlighting.
+    *   **Test Implementation:** Mock `ui.replace_buffer_with_content` and `vim.cmd`. Assert they are called correctly.
+*   **Test:** `M.write_context_to_temp_file()`
+    *   **Description:** Test writing context to a temporary file.
+    *   **Expected Behavior:** A temporary file should be created and written to.
+    *   **Test Implementation:** Mock `os.tmpname` and `io.open`. Call the function and assert that a file is written with the correct content.
+*   **Test:** `M.llm_command_and_display_response()`
+    *   **Description:** Test the end-to-end flow of running a command and displaying the response.
+    *   **Expected Behavior:** `llm_cli.run_llm_command` and `M.fill_response_buffer` should be called.
+    *   **Test Implementation:** Mock the required functions and assert they are called in the correct order.
+*   **Test:** `M.dispatch_command()`
+    *   **Description:** Test the command dispatcher.
+    *   **Expected Behavior:** It should call the correct command function based on the subcommand.
+    *   **Test Implementation:** Call with different subcommands (`selection`, `toggle`, etc.) and assert that the correct underlying function is called.
+*   **Test:** `M.prompt()`
+    *   **Description:** Test the main prompt command execution.
+    *   **Expected Behavior:** It should construct the full `llm` command string and call the CLI wrapper.
+    *   **Test Implementation:** Mock `llm_cli.run_llm_command` and `M.create_response_buffer`. Call `M.prompt` and assert that the CLI is called with the correctly assembled command string.
+*   **Test:** `M.explain_code()`
+    *   **Description:** Verify it calls `prompt_with_current_file` with the correct explanation prompt.
+    *   **Expected Behavior:** `M.prompt_with_current_file` should be called with `"Explain this code"`.
+    *   **Test Implementation:** Mock `M.prompt_with_current_file` and assert it's called with the correct arguments.
+*   **Test:** `M.prompt_with_current_file()`
+    *   **Description:** Test the command that uses the current file as context.
+    *   **Expected Behavior:** It should get the file path and call `execute_prompt_async`.
+    *   **Test Implementation:** Mock `vim.api.nvim_buf_get_name` and `M.execute_prompt_async`. Assert that `execute_prompt_async` is called with the correct file path.
+*   **Test:** `M.prompt_with_selection()`
+    *   **Description:** Test the command that uses a visual selection as context.
+    *   **Expected Behavior:** It should get the selection, write it to a temp file, and call `execute_prompt_async`.
+    *   **Test Implementation:** Mock `text.get_visual_selection`, `M.write_context_to_temp_file`, and `M.execute_prompt_async`. Assert that `execute_prompt_async` is called correctly.
+*   **Test:** `M.execute_prompt_async()`
+    *   **Description:** Test the asynchronous prompt execution flow.
+    *   **Expected Behavior:** It should show a floating input if no prompt is provided, then call `execute_prompt_with_file`.
+    *   **Test Implementation:** Mock `ui.floating_input` and `M.execute_prompt_with_file`. Test both with and without a prompt provided.
+*   **Test:** `M.execute_prompt_with_file()`
+    *   **Description:** Test the execution of a prompt with a file path as context.
+    *   **Expected Behavior:** It should construct the correct `llm` command and call `llm_command_and_display_response`.
+    *   **Test Implementation:** Mock `M.llm_command_and_display_response`. Call the function and assert the command string passed to the mock is correct.
+*   **Test:** `M.interactive_prompt_with_fragments()`
+    *   **Description:** Test the full interactive workflow for selecting fragments.
+    *   **Expected Behavior:** It should guide the user via `vim.ui.select` and `vim.ui.input` and then call `M.prompt` with the collected fragments and prompt.
+    *   **Test Implementation:** Mock `vim.ui.select` and `vim.ui.input` to simulate a user workflow. Mock `M.prompt` and assert it's called with the final, correct arguments.
+*   **Test:** `M.test_terminal_creation()`
+    *   **Omission Justification:** This is a debugging/testing function and is not part of the core plugin functionality.
+
+#### `config.lua`
+
+*   **Test:** `M.setup()`
+    *   **Description:** Verify that the `setup` function correctly merges user-provided options with defaults and notifies listeners.
+    *   **Expected Behavior:** `M.options` should be correctly populated, and registered listener functions should be called.
+    *   **Test Implementation:** Register a listener function. Call `M.setup` with custom options. Assert the values in `M.options` and assert that the listener was called.
+*   **Test:** `M.get()`
+    *   **Description:** Test retrieval of single and all configuration values.
+    *   **Expected Behavior:** Should return the specific value for a key, the default value if not set, or a table of all values if no key is provided.
+    *   **Test Implementation:** Call `M.get("model")` and assert the result. Call `M.get()` and assert the returned table contains all expected keys.
+*   **Test:** `M.on_change()`
+    *   **Description:** Verify that it correctly registers and unregisters a listener function.
+    *   **Omission Justification:** This is implicitly tested by the `M.setup()` test.
+*   **Test:** `M.reset()`
+    *   **Description:** Ensure the configuration is restored to its default state.
+    *   **Expected Behavior:** `M.options` should match `M.defaults`.
+    *   **Test Implementation:** Set a custom config, call `M.reset()`, and then assert that `M.get()` returns the default value.
+
+#### `errors.lua`
+
+*   **Test:** `M.handle()`
+    *   **Description:** Verify error formatting and notification.
+    *   **Expected Behavior:** `vim.notify` should be called with a correctly formatted message.
+    *   **Test Implementation:** Mock `vim.notify`. Call `M.handle` and assert `vim.notify` was called with the expected string.
+*   **Test:** `M.wrap()`
+    *   **Description:** Test the `pcall` wrapper for functions.
+    *   **Expected Behavior:** It should return the function's result on success and call `M.handle` on failure.
+    *   **Test Implementation:** Wrap a function that succeeds and assert the result. Wrap a function that errors and assert that `M.handle` is called.
+*   **Test:** `M.shell_error()`
+    *   **Description:** Test the specific handler for shell command errors.
+    *   **Expected Behavior:** It should call `M.handle` with a formatted shell error message.
+    *   **Test Implementation:** Mock `M.handle`. Call `M.shell_error` and assert that `M.handle` was called with the expected arguments.
+
+#### `facade.lua`
+
+*   **Test:** `M.get_manager()`
+    *   **Description:** Test the lazy loading of manager modules.
+    *   **Expected Behavior:** It should `require` a manager module only once.
+    *   **Test Implementation:** Mock `require`. Call `M.get_manager("models")` twice. Assert that `require` was only called once for `'llm.managers.models_manager'`.
+*   **Test:** `M.command()`, `M.prompt()`, `M.prompt_with_selection()`, `M.prompt_with_current_file()`, `M.toggle_unified_manager()`
+    *   **Omission Justification:** These are simple one-line passthrough functions. Testing them would be redundant as the target functions in `commands.lua` and `unified_manager.lua` are already tested.
+
+### `lua/llm/core/`
+
+#### `data/cache.lua`
+
+*   **Test:** `M.get()`, `M.set()`, `M.invalidate()`
+    *   **Description:** Test the full lifecycle of a cached item.
+    *   **Expected Behavior:** Data should be set, retrieved, and invalidated correctly.
+    *   **Test Implementation:** Mock `io.open` and `vim.fn.json_encode/decode` to simulate file-based caching. Call `M.set("key", "value")`, then `M.get("key")` and assert the result. Call `M.invalidate("key")` and assert `M.get("key")` returns `nil`.
+
+#### `data/llm_cli.lua`
+
+*   **Test:** `M.run_llm_command()`
+    *   **Description:** Ensure it prepends "llm " to the command and calls the shell wrapper.
+    *   **Expected Behavior:** `shell.safe_shell_command` should be called with the correct full command string.
+    *   **Test Implementation:** Mock `require('llm.core.utils.shell').safe_shell_command`. Call `M.run_llm_command("models list")` and assert the mock was called with `"llm models list"`.
+
+#### `loaders.lua`
+
+*   **Test:** `M.load_models()`, `M.load_available_plugins()`, `M.load_keys()`, `M.load_fragments()`, `M.load_templates()`, `M.load_schemas()`
+    *   **Description:** For each `load_*` function, verify that it calls the correct CLI command and correctly parses the text-based output.
+    *   **Expected Behavior:** Each function should call `llm_cli.run_llm_command` with the appropriate subcommand and then call `cache.set` with the correctly parsed data structure.
+    *   **Test Implementation:** For each function, mock `llm_cli.run_llm_command` to return a sample multi-line string (as seen in the codebase). Mock `cache.set`. Call the function and assert that `cache.set` was called with a Lua table that matches the expected structure.
+*   **Test:** `M.load_all()`
+    *   **Description:** Ensure it calls all individual loader functions.
+    *   **Expected Behavior:** All `M.load_*` functions in the module should be called.
+    *   **Test Implementation:** Mock all `M.load_*` functions. Call `M.load_all()` and assert that each mock was called once.
+
+#### `utils/file_utils.lua`
+
+*   **Test:** `M.ensure_config_dir_exists()`
+    *   **Description:** Verify the logic for ensuring a directory exists.
+    *   **Expected Behavior:** It should correctly determine if a directory is writable and attempt to create it if not.
+    *   **Test Implementation:** Mock the internal functions `test_directory_writable` and `create_directory` to simulate different scenarios (directory exists, does not exist, creation fails) and assert the function's return value.
+*   **Test:** `M.get_config_path()`
+    *   **Description:** Test the resolution of the configuration file path.
+    *   **Expected Behavior:** It should correctly construct the path from the `llm` logs path and cache the result.
+    *   **Test Implementation:** Mock `shell.safe_shell_command` and `M.ensure_config_dir_exists`. Call the function and assert the returned path. Call it again and assert the shell command was not re-run.
+
+#### `utils/notify.lua`
+
+*   **Test:** `M.notify()`
+    *   **Description:** Test the simple wrapper around `vim.notify`.
+    *   **Expected Behavior:** `vim.notify` should be called with the exact arguments passed to `M.notify`.
+    *   **Test Implementation:** Mock `vim.notify`. Call `M.notify` with a message, level, and options table, and assert the mock was called with those same arguments.
+
+#### `utils/shell.lua`
+
+*   **Test:** `M.safe_shell_command()`
+    *   **Description:** Test the safe execution of a shell command.
+    *   **Expected Behavior:** It should call `vim.fn.system` and return the trimmed result.
+    *   **Test Implementation:** Mock `vim.fn.system`. Call `M.safe_shell_command` and assert the result is correctly trimmed. Test with `nil` and empty string returns.
+*   **Test:** `M.command_exists()`
+    *   **Description:** Test the check for a command's existence in the system's PATH.
+    *   **Expected Behavior:** Should return `true` if `os.execute` returns 0, `false` otherwise.
+    *   **Test Implementation:** Mock `os.execute`. Call `M.command_exists` and assert the return value is correct for different mock return values from `os.execute`.
+*   **Test:** `M.check_llm_installed()`
+    *   **Description:** Verify it calls `M.command_exists` with "llm".
+    *   **Omission Justification:** This is a simple passthrough to `M.command_exists`, which is already tested.
+*   **Test:** `M.execute()`
+    *   **Description:** Test the execution of a command via `io.popen`.
+    *   **Expected Behavior:** It should correctly read the output from the command.
+    *   **Test Implementation:** Mock `io.popen` and its `read`/`close` methods. Call `M.execute` and assert that it returns the expected output from the mock.
+*   **Test:** `M.get_last_update_timestamp()` and `M.set_last_update_timestamp()`
+    *   **Description:** Test reading and writing the update timestamp file.
+    *   **Expected Behavior:** The functions should correctly read from and write to the `last_update_check.txt` file.
+    *   **Test Implementation:** Mock `io.open` to simulate file operations. Test writing a timestamp, then reading it back.
+*   **Test:** `M.run_update_command()`
+    *   **Description:** Test the wrapper around `vim.fn.system` for updates.
+    *   **Omission Justification:** This is a thin wrapper around `vim.fn.system`, which is already mocked and tested in `safe_shell_command`.
+*   **Test:** `M.update_llm_cli()`
+    *   **Description:** Test the sequential logic for trying different CLI update methods.
+    *   **Expected Behavior:** It should attempt to update using `uv`, `pipx`, `pip`, etc., in order, stopping at the first success.
+    *   **Test Implementation:** Mock `M.command_exists` and `M.run_update_command`. Create several test cases where a different update method is the first to succeed, and assert that the correct commands were attempted in the correct order.
+
+#### `utils/text.lua`
+
+*   **Test:** `M.get_visual_selection()`
+    *   **Description:** Test the extraction of text from a visual selection.
+    *   **Expected Behavior:** It should correctly handle single-line and multi-line selections.
+    *   **Test Implementation:** Mock `vim.fn.getpos` to return different start/end coordinates. Mock `vim.api.nvim_buf_get_lines` to provide sample buffer content. Assert the returned string is correct for both single-line and multi-line cases.
+*   **Test:** `M.capitalize()`
+    *   **Description:** Test string capitalization.
+    *   **Expected Behavior:** The first letter should be capitalized.
+    *   **Test Implementation:** Pass various strings (`"test"`, `"Test"`, `"1test"`, `""`) and assert the output.
+*   **Test:** `M.escape_pattern()`
+    *   **Description:** Test escaping of Lua pattern special characters.
+    *   **Expected Behavior:** Characters like `(`, `)`, `.` should be prepended with `%`.
+    *   **Test Implementation:** Pass a string with special characters and assert the output is correctly escaped.
+*   **Test:** `M.parse_simple_yaml()`
+    *   **Description:** Test the simple YAML parser.
+    *   **Expected Behavior:** Should correctly parse a string with nested keys and lists into a Lua table.
+    *   **Test Implementation:** Mock `io.open` to return a sample YAML string. Call the function and assert that the returned Lua table has the expected nested structure and values.
+
+#### `utils/ui.lua`
+
+*   **Test:** `M.create_split_buffer()`
+    *   **Description:** Test the creation of a new buffer in a split.
+    *   **Expected Behavior:** `vim.api.nvim_create_buf` and `vim.api.nvim_open_win` should be called.
+    *   **Test Implementation:** Mock the two `vim.api` functions and assert they are called.
+*   **Test:** `M.create_buffer_with_content()` and `M.replace_buffer_with_content()`
+    *   **Description:** Test creating and replacing buffer content.
+    *   **Expected Behavior:** They should call the correct sequence of `vim.api` buffer functions.
+    *   **Test Implementation:** Mock the relevant `vim.api` functions (`nvim_create_buf`, `nvim_buf_set_option`, `nvim_buf_set_lines`, etc.). Call the functions and assert the mocks were called with the correct arguments.
+*   **Test:** `M.create_floating_window()`
+    *   **Description:** Test floating window creation.
+    *   **Expected Behavior:** Should call `vim.api.nvim_open_win` with a specific floating window configuration.
+    *   **Test Implementation:** Mock `vim.api.nvim_open_win`. Call the function and assert that the configuration table passed to the mock contains `relative = 'editor'` and `border = 'rounded'`.
+*   **Test:** `M.floating_input()`
+    *   **Description:** Test the floating input dialog.
+    *   **Expected Behavior:** It should create a window and buffer, set up keymaps, and trigger a callback on confirmation.
+    *   **Test Implementation:** Mock `vim.api` functions. Call `M.floating_input` with a callback. Simulate confirmation by calling `M._confirm_floating_input()` and assert the original callback was called with the correct input.
+*   **Test:** `M.floating_confirm()`
+    *   **Description:** Test the floating confirmation dialog.
+    *   **Expected Behavior:** Similar to `floating_input`, it should create a UI and trigger a callback.
+    *   **Test Implementation:** Mock `vim.api` functions. Call `M.floating_confirm` with a callback. Simulate confirmation by calling `M._confirm_floating_dialog(true)` and assert the original callback was called.
+
+#### `utils/validate.lua`
+
+*   **Test:** `M.convert()`
+    *   **Description:** Test type conversion for config values.
+    *   **Expected Behavior:** Should correctly convert between string, boolean, and number types.
+    *   **Test Implementation:** Call `M.convert` with various inputs (e.g., `"true"`, `"123"`, `false`, `0`) and target types (`"boolean"`, `"number"`, `"string"`) and assert the output has the correct type and value.
+*   **Test:** `M.validate()`
+    *   **Description:** Test the type validation function.
+    *   **Expected Behavior:** Should return `true` if the value's type matches the expectation, `false` otherwise.
+    *   **Test Implementation:** Call `M.validate` with various values and type strings and assert the boolean result.
+
+### `lua/llm/managers/`
+
+*   **Omission Justification for all manager files:** The tests for the manager modules are highly dependent on the UI and view files, which are difficult to test in a unit testing environment. The core logic of the managers is to orchestrate calls to the `llm` CLI and the UI. The CLI interactions are tested in `llm_cli.lua`, and the UI interactions are omitted for the reasons stated below. Therefore, dedicated tests for the manager files would be redundant and provide little value.
+
+### `lua/llm/ui/`
+
+*   **`styles.lua`**
+    *   **Omission Justification:** This file contains only data (color palettes) and functions that generate `vim.cmd` strings for highlighting. It has no complex logic to test, and its effects are purely visual. Testing it would require a complex visual regression setup which is outside the scope of unit testing.
+*   **`ui.lua`**
+    *   **Omission Justification:** This file is a simple pass-through layer to `vim.ui` and `vim.api`. The functions it wraps are already mocked and tested in the tests for the `core/utils/ui.lua` module, making dedicated tests here redundant.
+*   **`unified_manager.lua`**
+    *   **Omission Justification:** This file is the core of the UI management and is heavily coupled to the Neovim API for windows, buffers, and keymaps. Unit testing this file would require extensive and brittle mocking of the Neovim API. The logic is primarily concerned with orchestrating the display of different views, which is better suited for end-to-end or integration testing.
+
+### `lua/llm/ui/views/`
+
+*   **Omission Justification for all view files:** The files in this directory (`fragments_view.lua`, `keys_view.lua`, etc.) consist almost entirely of wrappers around `vim.ui.input` and `vim.ui.select`. Their logic is trivial and is implicitly covered by the tests for the manager modules that would use them. For example, testing `keys_manager.set_key_under_cursor` would involve mocking `vim.ui.input`, which is what `keys_view.get_api_key` wraps. This makes dedicated tests for the view functions redundant.
