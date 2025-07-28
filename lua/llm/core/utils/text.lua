@@ -91,11 +91,8 @@ function M.parse_simple_yaml(filepath)
 
   for i, line in ipairs(lines) do
     -- Skip empty lines and comments
-    if line:match("^%s*$") or line:match("^%s*#") then
-      goto continue
-    end
-
-    local indent = get_indent(line)
+    if not (line:match("^%s*$") or line:match("^%s*#")) then
+      local indent = get_indent(line)
     local content = trim(line)
 
     -- Adjust stack based on indentation
@@ -131,9 +128,7 @@ function M.parse_simple_yaml(filepath)
             vim.notify(
               "YAML Parse Warning: List item found directly under map without key at line " .. i, vim.log.levels.WARN)
           end
-          goto continue -- Skip this line for now
         end
-      end
 
       -- Check for key-value pair within the list item
       local key, value = item_content:match("^([^:]+):%s*(.+)")
@@ -148,6 +143,7 @@ function M.parse_simple_yaml(filepath)
         local simple_value = parse_value(item_content)
         table.insert(current_data, simple_value)
         -- Don't push simple values onto the stack
+      end
       end
 
       -- Detect key-value pair
@@ -198,19 +194,22 @@ function M.parse_simple_yaml(filepath)
             current_level.type = 'list'                  -- Change type on stack
             current_level.pending_key = nil              -- Key resolved
             -- Re-process the line now that the list is created
-            goto reprocess_line                          -- Need to handle the list item itself
-          elseif content:match("^([^:]+):") then         -- Nested map starts
-            parent_map[pending_key] = {}
-            current_level.data = parent_map[pending_key] -- Update stack entry's data target
-            current_level.type = 'map'                   -- Still a map
-            current_level.pending_key = nil              -- Key resolved
-            -- Re-process the line now that the map is created
-            goto reprocess_line
-          else
-            if debug_mode then
-              vim.notify(
+            -- Need to handle the list item itself
+            local should_reprocess = true
+            if not should_reprocess then
+              if content:match("^([^:]+):") then         -- Nested map starts
+                parent_map[pending_key] = {}
+                current_level.data = parent_map[pending_key] -- Update stack entry's data target
+                current_level.type = 'map'                   -- Still a map
+                current_level.pending_key = nil              -- Key resolved
+                -- Re-process the line now that the map is created
+                should_reprocess = true
+              else
+                if debug_mode then
+                  vim.notify(
                 "YAML Parse Warning: Unexpected content under key '" .. pending_key .. "' at line " .. i,
                 vim.log.levels.WARN)
+                end
             end
             -- Maybe treat as string continuation? Simple parser won't handle this well.
           end
@@ -221,9 +220,7 @@ function M.parse_simple_yaml(filepath)
         end
       end
     end
-
-    ::reprocess_line::
-    ::continue::
+    end
   end
 
   if debug_mode then
@@ -231,6 +228,7 @@ function M.parse_simple_yaml(filepath)
   end
 
   return data
+end
 end
 
 return M
