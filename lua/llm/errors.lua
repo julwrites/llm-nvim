@@ -3,7 +3,7 @@
 
 local M = {}
 local config = require('llm.config')
-local notify = require('llm.utils.notify')
+local notify = require('llm.core.utils.notify')
 
 -- Error severity levels
 M.levels = {
@@ -38,9 +38,9 @@ end
 function M.handle(category, message, details, severity)
   severity = severity or M.levels.ERROR
   category = category or M.categories.INTERNAL
-  
+
   local formatted = format_message(category, message, details)
-  
+
   -- Log based on severity
   if severity >= M.levels.ERROR then
     vim.notify(formatted, vim.log.levels.ERROR)
@@ -49,7 +49,7 @@ function M.handle(category, message, details, severity)
   else
     vim.notify(formatted, vim.log.levels.INFO)
   end
-  
+
   -- Return structured error for programmatic handling
   return {
     category = category,

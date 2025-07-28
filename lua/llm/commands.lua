@@ -5,8 +5,11 @@ local M = {}
 
 -- Forward declarations
 local api = vim.api
-local utils = require('llm.utils')
 local config = require('llm.config')
+local ui = require('llm.core.utils.ui')
+local text = require('llm.core.utils.text')
+local shell = require('llm.core.utils.shell')
+local llm_cli = require('llm.core.data.llm_cli')
 
 ---------------------
 -- Helper Functions
@@ -71,13 +74,6 @@ function M.get_system_fragment_args(fragment_list)
 end
 
 -- Run an llm command and return the result
-function M.run_llm_command(cmd)
-  if not utils.check_llm_installed() then
-    return ""
-  end
-
-  return utils.safe_shell_command(cmd, "Failed to execute LLM command")
-end
 
 function M.get_pre_response_message(source, prompt, fragment_paths)
   local message_parts = {}
@@ -89,7 +85,7 @@ function M.get_pre_response_message(source, prompt, fragment_paths)
   table.insert(message_parts, "Prompt: " .. prompt)
   table.insert(message_parts, "Source: " .. source)
   if fragment_paths and #fragment_paths > 0 then
-    table.insert(message_parts, "Fragments: " .. fragment_paths)
+    table.insert(message_parts, "Fragments: " .. table.concat(fragment_paths, ", "))
   end
   table.insert(message_parts, " ")
   table.insert(message_parts, "---")
@@ -103,7 +99,7 @@ end
 
 -- Create a new buffer with the LLM response
 function M.create_response_buffer(content)
-  local buf = utils.create_buffer_with_content(content, "LLM Response", "markdown")
+  local buf = ui.create_buffer_with_content(content, "LLM Response", "markdown")
 
   vim.notify("Response buffer is created")
 
@@ -111,7 +107,7 @@ function M.create_response_buffer(content)
 end
 
 function M.fill_response_buffer(buffer, content)
-  local buf = utils.replace_buffer_with_content(content, buffer, "markdown")
+  local buf = ui.replace_buffer_with_content(content, buffer, "markdown")
 
   -- Add custom highlighting for the response buffer
   vim.cmd([[
@@ -149,7 +145,7 @@ function M.write_context_to_temp_file(context)
 end
 
 function M.llm_command_and_display_response(buf, cmd)
-  local result = M.run_llm_command(cmd)
+  local result = llm_cli.run_llm_command(cmd)
   if result then
     local buf = M.fill_response_buffer(buf, result)
     -- Focus the new response buffer
@@ -163,8 +159,8 @@ end
 
 -- Helper function to select an existing fragment alias
 local function select_existing_fragment(callback)
-  local fragments_loader = require('llm.fragments.fragments_loader')
-  local existing_fragments = fragments_loader.get_fragments() -- Get fragments with aliases
+  local fragments_manager = require('llm.managers.fragments_manager')
+  local existing_fragments = fragments_manager.get_fragments() -- Get fragments with aliases
 
   if not existing_fragments or #existing_fragments == 0 then
     vim.notify("No existing fragments with aliases found.", vim.log.levels.WARN)
@@ -201,14 +197,20 @@ end
 -- Unified command dispatcher
 function M.dispatch_command(subcmd, ...)
   local args = { ... }
-  if subcmd == "selection" then
-    return M.prompt_with_selection(args[1] or "", args[2] or {})
-  elseif subcmd == "toggle" then
-    local unified_manager = require('llm.unified_manager')
-    return unified_manager.toggle(args[1] or "")
-  else
-    -- Default case: treat as direct prompt
-    return M.prompt(subcmd, args[1] or {})
+  local success, err = pcall(function()
+    if subcmd == "selection" then
+      return M.prompt_with_selection(args[1] or "", args[2] or {})
+    elseif subcmd == "toggle" then
+      local unified_manager = require('llm.ui.unified_manager')
+      return unified_manager.toggle(args[1] or "")
+    else
+      -- Default case: treat as direct prompt
+      return M.prompt(subcmd, args[1] or {})
+    end
+  end)
+
+  if not success then
+    vim.notify("Error dispatching command: " .. tostring(err), vim.log.levels.ERROR)
   end
 end
 
@@ -224,15 +226,15 @@ function M.prompt(prompt, fragment_paths)
   vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
 
   -- Add the main prompt, escaped
-  table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  if prompt and prompt ~= "" then
+    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  end
 
   -- Construct the final command string
   local cmd = table.concat(cmd_parts, " ")
   vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
 
-  local result = M.run_llm_command(cmd)
-  vim.notify("Command result: " .. (result and string.sub(result, 1, 100) or "nil"), vim.log.levels.DEBUG)
-
+  local result = llm_cli.run_llm_command(cmd)
   if result then
     M.create_response_buffer(result)
   else
@@ -259,7 +261,7 @@ end
 function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode)
   local selection
   if from_visual_mode then
-    selection = utils.get_visual_selection()
+    selection = text.get_visual_selection()
   else
     -- For non-visual mode calls, get the current line
     selection = vim.api.nvim_get_current_line()
@@ -281,7 +283,7 @@ end
 function M.execute_prompt_async(source, prompt, filepath, fragment_paths, cleanup_callback)
   -- If no prompt provided, show floating input
   if not prompt or prompt == "" then
-    utils.floating_input(
+    ui.floating_input(
     -- opts
       { prompt = "Enter prompt for current file:" },
       -- on_confirm
@@ -330,7 +332,9 @@ function M.execute_prompt_with_file(buffer, prompt, filepath, fragment_paths)
   -- Add the file
   table.insert(cmd_parts, "-f " .. vim.fn.shellescape(filepath))
   -- Add the prompt
-  table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  if prompt and prompt ~= "" then
+    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  end
 
   local cmd = table.concat(cmd_parts, " ")
 
@@ -350,14 +354,14 @@ end
 -- Interactive prompt allowing selection of multiple fragments
 function M.interactive_prompt_with_fragments(opts)
   opts = opts or {}
-  local fragments_loader = require('llm.fragments.fragments_loader') -- Load here to avoid circular dependency issues at top level
+  local fragments_manager = require('llm.managers.fragments_manager') -- Load here to avoid circular dependency issues at top level
   local fragments_list = {}
   local visual_selection_text = nil
   local visual_selection_temp_file = nil
 
   -- Check for visual selection
   if opts.range and opts.range > 0 then
-    visual_selection_text = utils.get_visual_selection()
+    visual_selection_text = text.get_visual_selection()
     if visual_selection_text and visual_selection_text ~= "" then
       -- Save selection to a temporary file to treat it like a fragment source
       visual_selection_temp_file = os.tmpname()
@@ -413,7 +417,7 @@ function M.interactive_prompt_with_fragments(opts)
       if choice == "Select existing fragment (alias/hash)" then
         select_existing_fragment(handle_fragment_added)
       elseif choice == "Select file as fragment" then
-        fragments_loader.select_file_as_fragment(handle_fragment_added, true) -- Force manual input for consistency
+        fragments_manager.add_file_fragment(nil)
       elseif choice == "Enter fragment path/URL" then
         vim.ui.input({ prompt = "Enter fragment path/URL: " }, function(input)
           if input and input ~= "" then
@@ -423,7 +427,7 @@ function M.interactive_prompt_with_fragments(opts)
           end
         end)
       elseif choice == "Use GitHub repository" then
-        fragments_loader.add_github_fragment(handle_fragment_added)
+        fragments_manager.add_github_fragment_from_manager(nil)
       elseif choice == "Done - continue with prompt" then
         if #fragments_list == 0 then
           vim.notify("No fragments selected.", vim.log.levels.WARN)

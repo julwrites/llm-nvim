@@ -3,7 +3,7 @@
 
 local M = {}
 local listeners = {}
-local validate = require('llm.utils.validate')
+local validate = require('llm.core.utils.validate')
 
 -- Default configuration with metadata
 M.defaults = {
@@ -59,7 +59,7 @@ local function process_config(opts)
         processed[k] = {value = v}
       end
     else
-      require('llm.errors').handle('config', 
+      require('llm.errors').handle('config',
         "Ignoring unknown config option: "..k, nil, 'warning')
     end
   end
@@ -69,13 +69,13 @@ end
 -- Initialize configuration
 function M.setup(opts)
   opts = opts or {}
-  
+
   -- Process and validate new config
   local new_config = process_config(opts)
-  
+
   -- Merge with defaults
   M.options = vim.tbl_deep_extend("force", {}, M.defaults, new_config)
-  
+
   -- Notify listeners
   for _, listener in ipairs(listeners) do
     listener(M.options)
