@@ -25,12 +25,14 @@ To implement these tests, the following tools are required:
 #### `api.lua`
 
 *   **Test:** `M.setup()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Ensure the API's setup function correctly calls the configuration setup.
     *   **Expected Behavior:** `config.setup` should be called with the provided options.
     *   **Test Implementation:** Mock `require('llm.config').setup` and assert that it is called when `M.setup` is invoked.
 *   **Test:** `M.version()`
     *   **Omission Justification:** This is a one-line function that returns a value from another module. It will be implicitly tested via the tests for the `config` module.
 *   **Test:** All facade functions (`get_manager`, `command`, `prompt`, etc.)
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify that all functions from the `facade` module are correctly exposed through the `api` module via a loop.
     *   **Expected Behavior:** Calling a function on the `api` module should call the corresponding function on the `facade` module.
     *   **Test Implementation:** Mock the `facade` module. Iterate through its functions, call them via the `api` module, and assert that the corresponding mock in the `facade` was called.
