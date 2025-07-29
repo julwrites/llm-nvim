@@ -21,9 +21,39 @@ _G.vim = {
     end
     return a
   end,
+  tbl_isempty = function(tbl)
+    return next(tbl) == nil
+  end,
   fn = {
     system = function() end,
     executable = function() return 1 end,
     stdpath = function() return '/tmp' end,
+    json_encode = function(tbl)
+      -- A simple json encoder for testing purposes
+      local json = '{'
+      local first = true
+      for k, v in pairs(tbl) do
+        if not first then
+          json = json .. ','
+        end
+        first = false
+        json = json .. '"' .. tostring(k) .. '":'
+        if type(v) == 'string' then
+          json = json .. '"' .. v .. '"'
+        else
+          json = json .. tostring(v)
+        end
+      end
+      json = json .. '}'
+      return json
+    end,
+    json_decode = function(json)
+      -- A simple json decoder for testing purposes
+      local tbl = {}
+      for k, v in json:gmatch('"([^"]+)":"([^"]+)"') do
+        tbl[k] = v
+      end
+      return tbl
+    end,
   },
 }
