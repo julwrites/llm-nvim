@@ -2,6 +2,10 @@ local M = {}
 
 local api = vim.api
 
+function M.set_api(new_api)
+  api = new_api
+end
+
 -- Common buffer configuration
 local DEFAULT_BUFFER_OPTS = {
   buftype = 'nofile',

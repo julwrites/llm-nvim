@@ -1,0 +1,32 @@
+require('tests.spec.spec_helper')
+
+describe('llm.core.utils.validate', function()
+  local validate_utils = require('llm.core.utils.validate')
+
+  describe('convert()', function()
+    it('should convert string to boolean', function()
+      assert.is_true(validate_utils.convert('true', 'boolean'))
+      assert.is_false(validate_utils.convert('false', 'boolean'))
+    end)
+
+    it('should convert string to number', function()
+      assert.are.equal(123, validate_utils.convert('123', 'number'))
+    end)
+
+    it('should return the original value for other types', function()
+      assert.are.equal('hello', validate_utils.convert('hello', 'string'))
+      assert.are.equal(456, validate_utils.convert(456, 'number'))
+    end)
+  end)
+
+  describe('validate()', function()
+    it('should validate types correctly', function()
+      assert.is_true(validate_utils.validate('hello', 'string'))
+      assert.is_true(validate_utils.validate(123, 'number'))
+      assert.is_true(validate_utils.validate(true, 'boolean'))
+      assert.is_false(validate_utils.validate('hello', 'number'))
+      assert.is_false(validate_utils.validate(123, 'boolean'))
+      assert.is_false(validate_utils.validate(false, 'string'))
+    end)
+  end)
+end)
