@@ -199,3 +199,4 @@ By implementing this testing strategy, we can significantly improve the test cov
 #### 2. `ui/views/*.lua`
 
 *   **Omission Explanation:** The `views` modules are primarily responsible for interacting with `vim.ui`, which is a part of the Neovim API that is not easily mockable. Testing these modules would require a more complex integration testing setup that is beyond the scope of this initial testing effort. The focus should be on testing the manager modules that *use* these views. The logic within the manager modules that prepares data for the views can and should be tested.
+
