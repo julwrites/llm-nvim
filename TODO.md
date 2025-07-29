@@ -52,25 +52,7 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 #### 1. `facade.lua` (`tests/spec/facade_spec.lua`) - Done
 
-#### 2. `managers/custom_openai.lua` (`tests/spec/managers/custom_openai_spec.lua`)
-
-*   **`load_custom_openai_models()`**
-    *   **Test:** should load models from a valid YAML file.
-        *   **Implementation:** Create a dummy `extra-openai-models.yaml` file. Mock `file_utils.get_config_path` to return the path to the dummy file. Call `load_custom_openai_models` and assert that `M.custom_openai_models` is populated correctly.
-    *   **Test:** should handle a missing or empty YAML file.
-        *   **Implementation:** Mock `io.open` to return `nil`. Call `load_custom_openai_models` and assert that `M.custom_openai_models` is an empty table.
-    *   **Test:** should handle an invalid YAML file.
-        *   **Implementation:** Create a dummy YAML file with invalid syntax. Mock `text_utils.parse_simple_yaml` to return `nil`. Call `load_custom_openai_models` and assert that it returns an empty table and that `os.rename` was called to back up the file.
-*   **`is_custom_openai_model_valid(model_identifier_or_data)`**
-    *   **Test:** should return `true` for a valid model with an API key.
-        *   **Implementation:** Mock `keys_manager.is_key_set` to return `true`. Call `is_custom_openai_model_valid` with a model that requires auth and assert that it returns `true`.
-    *   **Test:** should return `false` for a valid model without an API key.
-        *   **Implementation:** Mock `keys_manager.is_key_set` to return `false`. Call `is_custom_openai_model_valid` with a model that requires auth and assert that it returns `false`.
-    *   **Test:** should return `true` for a model that does not require auth.
-        *   **Implementation:** Call `is_custom_openai_model_valid` with a model where `needs_auth` is `false` and assert that it returns `true`.
-*   **`add_custom_openai_model(model_details)` & `delete_custom_openai_model(model_id)`**
-    *   **Test:** should correctly add/remove a model from the YAML file.
-        *   **Implementation:** Create a dummy YAML file. Call the function and then read the file to assert that the content has been updated correctly.
+#### 2. `managers/custom_openai.lua` (`tests/spec/managers/custom_openai_spec.lua`) - Done
 
 #### 3. `managers/models_io.lua` (`tests/spec/managers/models_io_spec.lua`)
 
