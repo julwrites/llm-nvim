@@ -50,38 +50,40 @@ function M.populate_fragments_buffer(bufnr)
     table.insert(lines, "Use 'n' to add a new fragment from a file.")
   else
     for i, fragment in ipairs(fragments) do
-      if show_all or #fragment.aliases > 0 then
-        local aliases = #fragment.aliases > 0 and table.concat(fragment.aliases, ", ") or "none"
-        local source = fragment.source or "unknown"
-        local first_line = fragment.content:match("^[^\r\n]*") or ""
-        local content_preview = first_line
-        if #content_preview > 50 then
-          content_preview = content_preview:sub(1, 47) .. "..."
-        elseif #fragment.content > #content_preview then
-          content_preview = content_preview .. "..."
+        if not show_all and (#fragment.aliases == 0) then
+            goto continue
         end
-
-        local entry_lines = {
-          string.format("Fragment %d: %s", i, fragment.hash),
-          string.format("  Source: %s", source),
-          string.format("  Aliases: %s", aliases),
-          string.format("  Date: %s", fragment.datetime or "unknown"),
-          string.format("  Content: %s", content_preview),
-          ""
-        }
-        for _, line in ipairs(entry_lines) do table.insert(lines, line) end
-
-        fragment_data[fragment.hash] = {
-          index = i,
-          aliases = fragment.aliases,
-          source = fragment.source,
-          content = fragment.content,
-          datetime = fragment.datetime,
-          start_line = current_line,
-        }
-        for j = 0, 5 do line_to_fragment[current_line + j] = fragment.hash end
-        current_line = current_line + 6
+      local aliases = #fragment.aliases > 0 and table.concat(fragment.aliases, ", ") or "none"
+      local source = fragment.source or "unknown"
+      local first_line = fragment.content:match("^[^\r\n]*") or ""
+      local content_preview = first_line
+      if #content_preview > 50 then
+        content_preview = content_preview:sub(1, 47) .. "..."
+      elseif #fragment.content > #content_preview then
+        content_preview = content_preview .. "..."
       end
+
+      local entry_lines = {
+        string.format("Fragment %d: %s", i, fragment.hash),
+        string.format("  Source: %s", source),
+        string.format("  Aliases: %s", aliases),
+        string.format("  Date: %s", fragment.datetime or "unknown"),
+        string.format("  Content: %s", content_preview),
+        ""
+      }
+      for _, line in ipairs(entry_lines) do table.insert(lines, line) end
+
+      fragment_data[fragment.hash] = {
+        index = i,
+        aliases = fragment.aliases,
+        source = fragment.source,
+        content = fragment.content,
+        datetime = fragment.datetime,
+        start_line = current_line,
+      }
+      for j = 0, 5 do line_to_fragment[current_line + j] = fragment.hash end
+      current_line = current_line + 6
+      ::continue::
     end
   end
 
