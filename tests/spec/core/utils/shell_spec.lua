@@ -35,6 +35,13 @@ describe('llm.core.utils.shell', function()
       assert.is_nil(err)
     end)
 
+    it('should handle multi-line results', function()
+      vim.fn.system = function() return 'line1\nline2\n' end
+      local result, err = shell.safe_shell_command('ls', 'error')
+      assert.are.equal('line1\nline2', result)
+      assert.is_nil(err)
+    end)
+
     it('should return an error if the command returns nil', function()
       vim.fn.system = function() return nil end
       local result, err = shell.safe_shell_command('ls', 'error')

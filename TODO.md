@@ -231,6 +231,7 @@ To implement these tests, the following tools are required:
 #### `utils/shell.lua`
 
 *   **Test:** `M.safe_shell_command()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the safe execution of a shell command.
     *   **Expected Behavior:** It should call `vim.fn.system` and return the trimmed result.
     *   **Test Implementation:** Mock `vim.fn.system`. Call `M.safe_shell_command` and assert the result is correctly trimmed. Test with `nil` and empty string returns.
