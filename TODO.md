@@ -197,10 +197,12 @@ To implement these tests, the following tools are required:
 #### `loaders.lua`
 
 *   **Test:** `M.load_models()`, `M.load_available_plugins()`, `M.load_keys()`, `M.load_fragments()`, `M.load_templates()`, `M.load_schemas()`
+    *   **Status:** ✅ Implemented
     *   **Description:** For each `load_*` function, verify that it calls the correct CLI command and correctly parses the text-based output.
     *   **Expected Behavior:** Each function should call `llm_cli.run_llm_command` with the appropriate subcommand and then call `cache.set` with the correctly parsed data structure.
     *   **Test Implementation:** For each function, mock `llm_cli.run_llm_command` to return a sample multi-line string (as seen in the codebase). Mock `cache.set`. Call the function and assert that `cache.set` was called with a Lua table that matches the expected structure.
 *   **Test:** `M.load_all()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Ensure it calls all individual loader functions.
     *   **Expected Behavior:** All `M.load_*` functions in the module should be called.
     *   **Test Implementation:** Mock all `M.load_*` functions. Call `M.load_all()` and assert that each mock was called once.

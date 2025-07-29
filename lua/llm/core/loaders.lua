@@ -14,7 +14,7 @@ function M.load_models()
     local models = {}
     for line in models_output:gmatch("[^\n]+") do
       if not line:match("^%-%-") and line ~= "" and not line:match("^Models:") and not line:match("^Default:") then
-        local provider, model_id = line:match("([^:]+):%s*(.+)")
+        local provider, model_id = line:match("([^:]+): (.*)")
         if provider and model_id then
           table.insert(models, { provider = provider, id = model_id, name = model_id })
         end
