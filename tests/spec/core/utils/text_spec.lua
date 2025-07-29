@@ -1,3 +1,5 @@
+require('tests.spec.spec_helper')
+
 describe('llm.core.utils.text', function()
   local text_utils = require('llm.core.utils.text')
 

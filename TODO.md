@@ -210,10 +210,12 @@ To implement these tests, the following tools are required:
 #### `utils/file_utils.lua`
 
 *   **Test:** `M.ensure_config_dir_exists()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify the logic for ensuring a directory exists.
     *   **Expected Behavior:** It should correctly determine if a directory is writable and attempt to create it if not.
     *   **Test Implementation:** Mock the internal functions `test_directory_writable` and `create_directory` to simulate different scenarios (directory exists, does not exist, creation fails) and assert the function's return value.
 *   **Test:** `M.get_config_path()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the resolution of the configuration file path.
     *   **Expected Behavior:** It should correctly construct the path from the `llm` logs path and cache the result.
     *   **Test Implementation:** Mock `shell.safe_shell_command` and `M.ensure_config_dir_exists`. Call the function and assert the returned path. Call it again and assert the shell command was not re-run.
@@ -221,6 +223,7 @@ To implement these tests, the following tools are required:
 #### `utils/notify.lua`
 
 *   **Test:** `M.notify()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the simple wrapper around `vim.notify`.
     *   **Expected Behavior:** `vim.notify` should be called with the exact arguments passed to `M.notify`.
     *   **Test Implementation:** Mock `vim.notify`. Call `M.notify` with a message, level, and options table, and assert the mock was called with those same arguments.
