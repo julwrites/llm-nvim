@@ -1,0 +1,3 @@
+- model_id: existing-model
+- model_id: new-model
+  model_name: new-model

@@ -95,52 +95,50 @@ function M.load_custom_openai_models()
         if config.get("debug") then
           vim.notify("Skipping model definition at index " .. i .. " due to missing 'model_id'", vim.log.levels.WARN)
         end
-        goto next_model -- Skip this entry
-      end
+      else
+        local model_data = {
+          model_id = primary_id,
+          model_name = model_def.model_name or primary_id,
+          api_base = model_def.api_base or DEFAULT_MODEL_PROPERTIES.api_base,
+          api_key_name = model_def.api_key_name or DEFAULT_MODEL_PROPERTIES.api_key_name,
+          headers = DEFAULT_MODEL_PROPERTIES.headers, -- Default to nil
+          needs_auth = (model_def.needs_auth == nil) and DEFAULT_MODEL_PROPERTIES.needs_auth or model_def.needs_auth,
+          supports_functions = (model_def.supports_functions == nil) and DEFAULT_MODEL_PROPERTIES.supports_functions or model_def.supports_functions,
+          supports_system_prompt = (model_def.supports_system_prompt == nil) and DEFAULT_MODEL_PROPERTIES.supports_system_prompt or model_def.supports_system_prompt,
+          is_valid = false -- Will be set by M.is_custom_openai_model_valid
+        }
 
-      local model_data = {
-        model_id = primary_id,
-        model_name = model_def.model_name or primary_id,
-        api_base = model_def.api_base or DEFAULT_MODEL_PROPERTIES.api_base,
-        api_key_name = model_def.api_key_name or DEFAULT_MODEL_PROPERTIES.api_key_name,
-        headers = DEFAULT_MODEL_PROPERTIES.headers, -- Default to nil
-        needs_auth = (model_def.needs_auth == nil) and DEFAULT_MODEL_PROPERTIES.needs_auth or model_def.needs_auth,
-        supports_functions = (model_def.supports_functions == nil) and DEFAULT_MODEL_PROPERTIES.supports_functions or model_def.supports_functions,
-        supports_system_prompt = (model_def.supports_system_prompt == nil) and DEFAULT_MODEL_PROPERTIES.supports_system_prompt or model_def.supports_system_prompt,
-        is_valid = false -- Will be set by M.is_custom_openai_model_valid
-      }
-
-      -- Handle headers (string or table)
-      if model_def.headers then
-        if type(model_def.headers) == 'string' then
-          local success, decoded_headers = pcall(vim.fn.json_decode, model_def.headers)
-          if success then
-            model_data.headers = decoded_headers
-          else
-            if config.get("debug") then
-              vim.notify("Failed to parse JSON string for headers for model " .. primary_id .. ": " .. model_def.headers, vim.log.levels.WARN)
+        -- Handle headers (string or table)
+        if model_def.headers then
+          if type(model_def.headers) == 'string' then
+            local success, decoded_headers = pcall(vim.fn.json_decode, model_def.headers)
+            if success then
+              model_data.headers = decoded_headers
+            else
+              if config.get("debug") then
+                vim.notify("Failed to parse JSON string for headers for model " .. primary_id .. ": " .. model_def.headers, vim.log.levels.WARN)
+              end
             end
+          elseif type(model_def.headers) == 'table' then
+            model_data.headers = model_def.headers
           end
-        elseif type(model_def.headers) == 'table' then
-          model_data.headers = model_def.headers
         end
-      end
 
-      -- Validate the model (sets model_data.is_valid)
-      M.is_custom_openai_model_valid(model_data) -- Pass the whole model_data for validation context
+        -- Validate the model (sets model_data.is_valid)
+        M.is_custom_openai_model_valid(model_data) -- Pass the whole model_data for validation context
 
-      M.custom_openai_models[primary_id] = model_data
-      if config.get("debug") then
-        vim.notify(string.format("Loaded custom model: ID=%s, Name=%s, Valid=%s, Auth=%s, Funcs=%s, SysPrompt=%s, Headers=%s",
-          primary_id, model_data.model_name, tostring(model_data.is_valid), tostring(model_data.needs_auth),
-          tostring(model_data.supports_functions), tostring(model_data.supports_system_prompt), vim.inspect(model_data.headers)), vim.log.levels.DEBUG)
+        M.custom_openai_models[primary_id] = model_data
+        if config.get("debug") then
+          vim.notify(string.format("Loaded custom model: ID=%s, Name=%s, Valid=%s, Auth=%s, Funcs=%s, SysPrompt=%s, Headers=%s",
+            primary_id, model_data.model_name, tostring(model_data.is_valid), tostring(model_data.needs_auth),
+            tostring(model_data.supports_functions), tostring(model_data.supports_system_prompt), vim.inspect(model_data.headers)), vim.log.levels.DEBUG)
+        end
       end
     else
       if config.get("debug") then
         vim.notify("Skipping non-table entry in parsed YAML data at index " .. i, vim.log.levels.WARN)
       end
     end
-    ::next_model::
   end
   return M.custom_openai_models
 end
@@ -308,7 +306,7 @@ function M.create_sample_yaml_file()
 end
 
 -- Helper function to serialize a list of models to YAML
-local function serialize_to_yaml(models_list)
+function M.serialize_to_yaml(models_list)
   local yaml_lines = {}
   if not models_list or #models_list == 0 then
     return ""
@@ -434,7 +432,7 @@ function M.add_custom_openai_model(model_details)
   end
 
   table.insert(models_list, new_model_entry)
-  local yaml_content = serialize_to_yaml(models_list)
+  local yaml_content = M.serialize_to_yaml(models_list)
 
   local out_file = io.open(yaml_path, "w")
   if not out_file then
@@ -501,7 +499,7 @@ function M.delete_custom_openai_model(model_id)
     end
   end
 
-  local yaml_content = serialize_to_yaml(new_models_list)
+  local yaml_content = M.serialize_to_yaml(new_models_list)
 
   local out_file = io.open(yaml_path, "w")
   if not out_file then
