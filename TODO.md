@@ -50,24 +50,7 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 ### Phase 1: Core Logic and Managers
 
-#### 1. `facade.lua` (`tests/spec/facade_spec.lua`)
-
-*   **`get_manager(name)`**
-    *   **Test:** should return the correct manager instance for a valid name.
-        *   **Implementation:** Mock `require` to return a dummy table for each manager. Call `get_manager` with a valid name (e.g., "models") and assert that the returned value is the dummy table.
-    *   **Test:** should cache manager instances.
-        *   **Implementation:** Mock `require` and call `get_manager` twice with the same name. Assert that `require` was only called once.
-    *   **Test:** should return `nil` for an invalid manager name.
-        *   **Implementation:** Call `get_manager` with an invalid name and assert that the returned value is `nil`.
-*   **`command(subcmd, ...)`**
-    *   **Test:** should call `llm.commands.dispatch_command` with the correct arguments.
-        *   **Implementation:** Mock `require('llm.commands').dispatch_command`. Call `facade.command` with a subcommand and arguments, and assert that the mock was called with the same arguments.
-*   **Prompt Functions (`prompt`, `prompt_with_selection`, `prompt_with_current_file`)**
-    *   **Test:** should call the corresponding function in `llm.commands` with the correct arguments.
-        *   **Implementation:** Mock the corresponding function in `require('llm.commands')`. Call the facade function and assert that the mock was called with the expected arguments.
-*   **`toggle_unified_manager(initial_view)`**
-    *   **Test:** should call `unified_manager.toggle` with the correct initial view.
-        *   **Implementation:** Mock `require('llm.ui.unified_manager').toggle`. Call `facade.toggle_unified_manager` and assert that the mock was called with the correct view name.
+#### 1. `facade.lua` (`tests/spec/facade_spec.lua`) - Done
 
 #### 2. `managers/custom_openai.lua` (`tests/spec/managers/custom_openai_spec.lua`)
 

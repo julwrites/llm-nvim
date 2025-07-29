@@ -32,6 +32,12 @@ function M.get_manager(name)
   return managers[name]
 end
 
+if vim.env.NVIM_LLM_TEST then
+  function M._get_managers()
+    return managers
+  end
+end
+
 -- Unified LLM command handler
 function M.command(subcmd, ...)
   return require('llm.commands').dispatch_command(subcmd, ...)

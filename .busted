@@ -13,6 +13,6 @@ return {
   },
   ["default"] = {
     coverage = false,
-    lpath = "./lua/?.lua;~/.luarocks/share/lua/5.1/?.lua"
+    lpath = "./lua/?.lua;./tests/spec/?.lua;~/.luarocks/share/lua/5.1/?.lua"
   }
 }

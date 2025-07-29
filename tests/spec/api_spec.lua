@@ -1,3 +1,4 @@
+require('spec_helper')
 local spy = require('luassert.spy')
 
 describe('llm.api', function()
