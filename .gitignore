@@ -42,4 +42,7 @@ luac.out
 # Test dependencies
 test/plenary.nvim/
 
+# Temp files
+*.tmp
+
 .aider*

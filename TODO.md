@@ -326,3 +326,16 @@ To implement these tests, the following tools are required:
 ### `lua/llm/ui/views/`
 
 *   **Omission Justification for all view files:** The files in this directory (`fragments_view.lua`, `keys_view.lua`, etc.) consist almost entirely of wrappers around `vim.ui.input` and `vim.ui.select`. Their logic is trivial and is implicitly covered by the tests for the manager modules that would use them. For example, testing `keys_manager.set_key_under_cursor` would involve mocking `vim.ui.input`, which is what `keys_view.get_api_key` wraps. This makes dedicated tests for the view functions redundant.
+
+## Known Issues
+
+### Test Suite Fragility
+
+The test suite is very fragile and sensitive to the order in which the tests are run. This is because some tests modify the global state (e.g., the `vim` and `io` tables) and don't clean up after themselves.
+
+To mitigate this issue, the following measures have been taken:
+
+*   The `shell_spec.lua` file has been modified to restore the original `vim.fn` and `io.popen` functions after each test.
+*   The `file_utils_spec.lua` file has been modified to use a mock shell object that is injected into the `file_utils` module before each test.
+
+These changes have made the test suite more stable, but it is still possible that new tests will introduce new issues. It is recommended to run the tests in isolation when debugging and to be careful about modifying the global state.

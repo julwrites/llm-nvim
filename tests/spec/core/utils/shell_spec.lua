@@ -114,6 +114,12 @@ describe('llm.core.utils.shell', function()
     end)
   end)
 
+  -- describe('timestamps', function()
+  --   before_each(function()
+  --     vim.fn.isdirectory = function() return 1 end
+  --     vim.fn.mkdir = function() end
+  --   end)
+  --
   describe('timestamps', function()
     before_each(function()
       vim.fn.isdirectory = function() return 1 end
@@ -121,21 +127,32 @@ describe('llm.core.utils.shell', function()
     end)
 
     it('should get and set last update timestamp', function()
-      local read_mock = spy.new(function() return '123' end)
-      local write_mock = spy.new(function() end)
-      local close_mock = spy.new(function() end)
+      local was_read = false
+      local was_written = false
+      local original_io_open = io.open
 
       io.open = function(path, mode)
         if mode == 'r' then
-          return { read = read_mock, close = close_mock }
+          was_read = true
+          return {
+            read = function() return '123' end,
+            close = function() end,
+          }
         elseif mode == 'w' then
-          return { write = write_mock, close = close_mock }
+          was_written = true
+          return {
+            write = function() end,
+            close = function() end,
+          }
         end
       end
 
       assert.are.equal(123, shell.get_last_update_timestamp())
       shell.set_last_update_timestamp()
-      assert.spy(write_mock).was.called()
+      assert.is_true(was_read)
+      assert.is_true(was_written)
+
+      io.open = original_io_open
     end)
   end)
 
