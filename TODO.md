@@ -40,70 +40,87 @@ To implement these tests, the following tools are required:
 #### `commands.lua`
 
 *   **Test:** `M.get_model_arg()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test that it correctly constructs the model argument for the CLI command.
     *   **Expected Behavior:** Should return `{"-m", "model_name"}` if a model is set in the config, otherwise an empty table.
     *   **Test Implementation:** Mock `config.get`. Call the function with and without a model set and assert the returned table.
 *   **Test:** `M.get_system_arg()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test that it correctly constructs the system prompt argument.
     *   **Expected Behavior:** Should return `{"-s", "prompt"}` if a system prompt is set, otherwise an empty table.
     *   **Test Implementation:** Mock `config.get`. Call the function with and without a system prompt set and assert the returned table.
 *   **Test:** `M.get_fragment_args()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test that it correctly constructs the fragment arguments.
     *   **Expected Behavior:** Should return a table of `"-f", "fragment_path"` pairs.
     *   **Test Implementation:** Pass a list of fragment paths and assert the structure and content of the returned table.
 *   **Test:** `M.get_system_fragment_args()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test that it correctly constructs the system fragment arguments.
     *   **Expected Behavior:** Should return a table of `"--system-fragment", "fragment_path"` pairs.
     *   **Test Implementation:** Pass a list of fragment paths and assert the structure and content of the returned table.
 *   **Test:** `M.get_pre_response_message()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify that the pre-response message is formatted correctly.
     *   **Expected Behavior:** Should return a formatted string containing the source, prompt, and fragments.
     *   **Test Implementation:** Call the function with sample data and assert the returned string is formatted as expected.
 *   **Test:** `M.create_response_buffer()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the creation of the response buffer.
     *   **Expected Behavior:** `ui.create_buffer_with_content` should be called.
     *   **Test Implementation:** Mock `ui.create_buffer_with_content` and assert it's called with the correct arguments.
 *   **Test:** `M.fill_response_buffer()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test filling the response buffer and applying syntax.
     *   **Expected Behavior:** `ui.replace_buffer_with_content` should be called, and `vim.cmd` should be called for syntax highlighting.
     *   **Test Implementation:** Mock `ui.replace_buffer_with_content` and `vim.cmd`. Assert they are called correctly.
 *   **Test:** `M.write_context_to_temp_file()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test writing context to a temporary file.
     *   **Expected Behavior:** A temporary file should be created and written to.
     *   **Test Implementation:** Mock `os.tmpname` and `io.open`. Call the function and assert that a file is written with the correct content.
 *   **Test:** `M.llm_command_and_display_response()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the end-to-end flow of running a command and displaying the response.
     *   **Expected Behavior:** `llm_cli.run_llm_command` and `M.fill_response_buffer` should be called.
     *   **Test Implementation:** Mock the required functions and assert they are called in the correct order.
 *   **Test:** `M.dispatch_command()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the command dispatcher.
     *   **Expected Behavior:** It should call the correct command function based on the subcommand.
     *   **Test Implementation:** Call with different subcommands (`selection`, `toggle`, etc.) and assert that the correct underlying function is called.
 *   **Test:** `M.prompt()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the main prompt command execution.
     *   **Expected Behavior:** It should construct the full `llm` command string and call the CLI wrapper.
     *   **Test Implementation:** Mock `llm_cli.run_llm_command` and `M.create_response_buffer`. Call `M.prompt` and assert that the CLI is called with the correctly assembled command string.
 *   **Test:** `M.explain_code()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify it calls `prompt_with_current_file` with the correct explanation prompt.
     *   **Expected Behavior:** `M.prompt_with_current_file` should be called with `"Explain this code"`.
     *   **Test Implementation:** Mock `M.prompt_with_current_file` and assert it's called with the correct arguments.
 *   **Test:** `M.prompt_with_current_file()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the command that uses the current file as context.
     *   **Expected Behavior:** It should get the file path and call `execute_prompt_async`.
     *   **Test Implementation:** Mock `vim.api.nvim_buf_get_name` and `M.execute_prompt_async`. Assert that `execute_prompt_async` is called with the correct file path.
 *   **Test:** `M.prompt_with_selection()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the command that uses a visual selection as context.
     *   **Expected Behavior:** It should get the selection, write it to a temp file, and call `execute_prompt_async`.
     *   **Test Implementation:** Mock `text.get_visual_selection`, `M.write_context_to_temp_file`, and `M.execute_prompt_async`. Assert that `execute_prompt_async` is called correctly.
 *   **Test:** `M.execute_prompt_async()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the asynchronous prompt execution flow.
     *   **Expected Behavior:** It should show a floating input if no prompt is provided, then call `execute_prompt_with_file`.
     *   **Test Implementation:** Mock `ui.floating_input` and `M.execute_prompt_with_file`. Test both with and without a prompt provided.
 *   **Test:** `M.execute_prompt_with_file()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the execution of a prompt with a file path as context.
     *   **Expected Behavior:** It should construct the correct `llm` command and call `llm_command_and_display_response`.
     *   **Test Implementation:** Mock `M.llm_command_and_display_response`. Call the function and assert the command string passed to the mock is correct.
 *   **Test:** `M.interactive_prompt_with_fragments()`
+    *   **Status:** ⚠️ Omitted
     *   **Description:** Test the full interactive workflow for selecting fragments.
     *   **Expected Behavior:** It should guide the user via `vim.ui.select` and `vim.ui.input` and then call `M.prompt` with the collected fragments and prompt.
     *   **Test Implementation:** Mock `vim.ui.select` and `vim.ui.input` to simulate a user workflow. Mock `M.prompt` and assert it's called with the final, correct arguments.
