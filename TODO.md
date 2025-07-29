@@ -236,6 +236,7 @@ To implement these tests, the following tools are required:
     *   **Expected Behavior:** It should call `vim.fn.system` and return the trimmed result.
     *   **Test Implementation:** Mock `vim.fn.system`. Call `M.safe_shell_command` and assert the result is correctly trimmed. Test with `nil` and empty string returns.
 *   **Test:** `M.command_exists()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the check for a command's existence in the system's PATH.
     *   **Expected Behavior:** Should return `true` if `os.execute` returns 0, `false` otherwise.
     *   **Test Implementation:** Mock `os.execute`. Call `M.command_exists` and assert the return value is correct for different mock return values from `os.execute`.
@@ -243,10 +244,12 @@ To implement these tests, the following tools are required:
     *   **Description:** Verify it calls `M.command_exists` with "llm".
     *   **Omission Justification:** This is a simple passthrough to `M.command_exists`, which is already tested.
 *   **Test:** `M.execute()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the execution of a command via `io.popen`.
     *   **Expected Behavior:** It should correctly read the output from the command.
     *   **Test Implementation:** Mock `io.popen` and its `read`/`close` methods. Call `M.execute` and assert that it returns the expected output from the mock.
 *   **Test:** `M.get_last_update_timestamp()` and `M.set_last_update_timestamp()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test reading and writing the update timestamp file.
     *   **Expected Behavior:** The functions should correctly read from and write to the `last_update_check.txt` file.
     *   **Test Implementation:** Mock `io.open` to simulate file operations. Test writing a timestamp, then reading it back.
@@ -254,6 +257,7 @@ To implement these tests, the following tools are required:
     *   **Description:** Test the wrapper around `vim.fn.system` for updates.
     *   **Omission Justification:** This is a thin wrapper around `vim.fn.system`, which is already mocked and tested in `safe_shell_command`.
 *   **Test:** `M.update_llm_cli()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the sequential logic for trying different CLI update methods.
     *   **Expected Behavior:** It should attempt to update using `uv`, `pipx`, `pip`, etc., in order, stopping at the first success.
     *   **Test Implementation:** Mock `M.command_exists` and `M.run_update_command`. Create several test cases where a different update method is the first to succeed, and assert that the correct commands were attempted in the correct order.
@@ -261,18 +265,22 @@ To implement these tests, the following tools are required:
 #### `utils/text.lua`
 
 *   **Test:** `M.get_visual_selection()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the extraction of text from a visual selection.
     *   **Expected Behavior:** It should correctly handle single-line and multi-line selections.
     *   **Test Implementation:** Mock `vim.fn.getpos` to return different start/end coordinates. Mock `vim.api.nvim_buf_get_lines` to provide sample buffer content. Assert the returned string is correct for both single-line and multi-line cases.
 *   **Test:** `M.capitalize()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test string capitalization.
     *   **Expected Behavior:** The first letter should be capitalized.
     *   **Test Implementation:** Pass various strings (`"test"`, `"Test"`, `"1test"`, `""`) and assert the output.
 *   **Test:** `M.escape_pattern()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test escaping of Lua pattern special characters.
     *   **Expected Behavior:** Characters like `(`, `)`, `.` should be prepended with `%`.
     *   **Test Implementation:** Pass a string with special characters and assert the output is correctly escaped.
 *   **Test:** `M.parse_simple_yaml()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the simple YAML parser.
     *   **Expected Behavior:** Should correctly parse a string with nested keys and lists into a Lua table.
     *   **Test Implementation:** Mock `io.open` to return a sample YAML string. Call the function and assert that the returned Lua table has the expected nested structure and values.
@@ -280,22 +288,27 @@ To implement these tests, the following tools are required:
 #### `utils/ui.lua`
 
 *   **Test:** `M.create_split_buffer()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the creation of a new buffer in a split.
     *   **Expected Behavior:** `vim.api.nvim_create_buf` and `vim.api.nvim_open_win` should be called.
     *   **Test Implementation:** Mock the two `vim.api` functions and assert they are called.
 *   **Test:** `M.create_buffer_with_content()` and `M.replace_buffer_with_content()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test creating and replacing buffer content.
     *   **Expected Behavior:** They should call the correct sequence of `vim.api` buffer functions.
     *   **Test Implementation:** Mock the relevant `vim.api` functions (`nvim_create_buf`, `nvim_buf_set_option`, `nvim_buf_set_lines`, etc.). Call the functions and assert the mocks were called with the correct arguments.
 *   **Test:** `M.create_floating_window()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test floating window creation.
     *   **Expected Behavior:** Should call `vim.api.nvim_open_win` with a specific floating window configuration.
     *   **Test Implementation:** Mock `vim.api.nvim_open_win`. Call the function and assert that the configuration table passed to the mock contains `relative = 'editor'` and `border = 'rounded'`.
 *   **Test:** `M.floating_input()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the floating input dialog.
     *   **Expected Behavior:** It should create a window and buffer, set up keymaps, and trigger a callback on confirmation.
     *   **Test Implementation:** Mock `vim.api` functions. Call `M.floating_input` with a callback. Simulate confirmation by calling `M._confirm_floating_input()` and assert the original callback was called with the correct input.
 *   **Test:** `M.floating_confirm()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the floating confirmation dialog.
     *   **Expected Behavior:** Similar to `floating_input`, it should create a UI and trigger a callback.
     *   **Test Implementation:** Mock `vim.api` functions. Call `M.floating_confirm` with a callback. Simulate confirmation by calling `M._confirm_floating_dialog(true)` and assert the original callback was called.
@@ -303,10 +316,12 @@ To implement these tests, the following tools are required:
 #### `utils/validate.lua`
 
 *   **Test:** `M.convert()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test type conversion for config values.
     *   **Expected Behavior:** Should correctly convert between string, boolean, and number types.
     *   **Test Implementation:** Call `M.convert` with various inputs (e.g., `"true"`, `"123"`, `false`, `0`) and target types (`"boolean"`, `"number"`, `"string"`) and assert the output has the correct type and value.
 *   **Test:** `M.validate()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the type validation function.
     *   **Expected Behavior:** Should return `true` if the value's type matches the expectation, `false` otherwise.
     *   **Test Implementation:** Call `M.validate` with various values and type strings and assert the boolean result.
