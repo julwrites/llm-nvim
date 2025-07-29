@@ -1,5 +1,7 @@
 -- Mock the Neovim API
 _G.vim = {
+  g = {},
+  env = {},
   log = {
     levels = {
       DEBUG = 0,
