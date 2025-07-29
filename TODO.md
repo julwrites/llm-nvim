@@ -181,6 +181,7 @@ To implement these tests, the following tools are required:
 #### `data/cache.lua`
 
 *   **Test:** `M.get()`, `M.set()`, `M.invalidate()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the full lifecycle of a cached item.
     *   **Expected Behavior:** Data should be set, retrieved, and invalidated correctly.
     *   **Test Implementation:** Mock `io.open` and `vim.fn.json_encode/decode` to simulate file-based caching. Call `M.set("key", "value")`, then `M.get("key")` and assert the result. Call `M.invalidate("key")` and assert `M.get("key")` returns `nil`.
