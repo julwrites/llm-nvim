@@ -152,14 +152,17 @@ To implement these tests, the following tools are required:
 #### `errors.lua`
 
 *   **Test:** `M.handle()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify error formatting and notification.
     *   **Expected Behavior:** `vim.notify` should be called with a correctly formatted message.
     *   **Test Implementation:** Mock `vim.notify`. Call `M.handle` and assert `vim.notify` was called with the expected string.
 *   **Test:** `M.wrap()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the `pcall` wrapper for functions.
     *   **Expected Behavior:** It should return the function's result on success and call `M.handle` on failure.
     *   **Test Implementation:** Wrap a function that succeeds and assert the result. Wrap a function that errors and assert that `M.handle` is called.
 *   **Test:** `M.shell_error()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test the specific handler for shell command errors.
     *   **Expected Behavior:** It should call `M.handle` with a formatted shell error message.
     *   **Test Implementation:** Mock `M.handle`. Call `M.shell_error` and assert that `M.handle` was called with the expected arguments.
