@@ -3,6 +3,10 @@ local M = {}
 local config = require('llm.config')
 local shell = require('llm.core.utils.shell')
 
+function M.set_shell(new_shell)
+  shell = new_shell
+end
+
 -- Pure path utilities --------------------------------------------------------
 
 local function trim_path(path)
@@ -45,11 +49,11 @@ local function with_directory(dir, action)
   return success and err ~= false
 end
 
-local function test_directory_writable(dir)
+function M._test_directory_writable(dir)
   return with_directory(dir, "test")
 end
 
-local function create_directory(dir)
+function M._create_directory(dir)
   if with_directory(dir, "create") then
     debug_log("Created directory: " .. dir)
     return true
@@ -60,7 +64,7 @@ local function create_directory(dir)
 end
 
 function M.ensure_config_dir_exists(dir)
-  return dir and (test_directory_writable(dir) or create_directory(dir))
+  return dir and (M._test_directory_writable(dir) or M._create_directory(dir))
 end
 
 -- Config path resolution -----------------------------------------------------
