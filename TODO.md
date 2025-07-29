@@ -189,7 +189,8 @@ To implement these tests, the following tools are required:
 #### `data/llm_cli.lua`
 
 *   **Test:** `M.run_llm_command()`
-    *   **Description:** Ensure it prepends "llm " to the command and calls the shell wrapper.
+    *   **Status:** ✅ Implemented
+    *   **Description:** Ensure it prepends "llm " to the command and calls the shell wrapper. Handles empty and special character commands.
     *   **Expected Behavior:** `shell.safe_shell_command` should be called with the correct full command string.
     *   **Test Implementation:** Mock `require('llm.core.utils.shell').safe_shell_command`. Call `M.run_llm_command("models list")` and assert the mock was called with `"llm models list"`.
 
