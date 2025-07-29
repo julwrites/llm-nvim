@@ -130,17 +130,21 @@ To implement these tests, the following tools are required:
 #### `config.lua`
 
 *   **Test:** `M.setup()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify that the `setup` function correctly merges user-provided options with defaults and notifies listeners.
     *   **Expected Behavior:** `M.options` should be correctly populated, and registered listener functions should be called.
     *   **Test Implementation:** Register a listener function. Call `M.setup` with custom options. Assert the values in `M.options` and assert that the listener was called.
 *   **Test:** `M.get()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Test retrieval of single and all configuration values.
     *   **Expected Behavior:** Should return the specific value for a key, the default value if not set, or a table of all values if no key is provided.
     *   **Test Implementation:** Call `M.get("model")` and assert the result. Call `M.get()` and assert the returned table contains all expected keys.
 *   **Test:** `M.on_change()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Verify that it correctly registers and unregisters a listener function.
     *   **Omission Justification:** This is implicitly tested by the `M.setup()` test.
 *   **Test:** `M.reset()`
+    *   **Status:** ✅ Implemented
     *   **Description:** Ensure the configuration is restored to its default state.
     *   **Expected Behavior:** `M.options` should match `M.defaults`.
     *   **Test Implementation:** Set a custom config, call `M.reset()`, and then assert that `M.get()` returns the default value.
