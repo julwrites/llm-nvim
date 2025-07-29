@@ -352,6 +352,7 @@ end
 ---------------------
 
 -- Interactive prompt allowing selection of multiple fragments
+-- NOTE: This function is not fully tested due to the complexity of mocking the interactive UI.
 function M.interactive_prompt_with_fragments(opts)
   opts = opts or {}
   local fragments_manager = require('llm.managers.fragments_manager') -- Load here to avoid circular dependency issues at top level
