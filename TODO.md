@@ -54,11 +54,7 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 #### 2. `managers/custom_openai.lua` (`tests/spec/managers/custom_openai_spec.lua`) - Done
 
-#### 3. `managers/models_io.lua` (`tests/spec/managers/models_io_spec.lua`)
-
-*   **All functions**
-    *   **Test:** should call `llm_cli.run_llm_command` with the correct command string.
-        *   **Implementation:** Mock `llm_cli.run_llm_command`. Call each function in `models_io.lua` and assert that the mock was called with the expected command string.
+#### 3. `managers/models_io.lua` (`tests/spec/managers/models_io_spec.lua`) - Done
 
 #### 4. `managers/models_manager.lua` (`tests/spec/managers/models_manager_spec.lua`)
 
