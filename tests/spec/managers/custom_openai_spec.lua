@@ -38,22 +38,22 @@ describe("llm.managers.custom_openai", function()
   end)
 
   describe("load_custom_openai_models()", function()
+    before_each(function()
+      local template_file = io.open("tests/templates/extra-openai-models.yaml.template", "r")
+      local content = template_file:read("*a")
+      template_file:close()
+      local temp_file = io.open("tests/spec/extra-openai-models.yaml", "w")
+      temp_file:write(content)
+      temp_file:close()
+    end)
+
+    after_each(function()
+      os.remove("tests/spec/extra-openai-models.yaml")
+    end)
+
     it("should load models from a valid YAML file", function()
       -- Mock dependencies
       file_utils.get_config_path = function() return "tests/spec", "tests/spec/extra-openai-models.yaml" end
-      io.open = function(filepath, mode)
-        if filepath == "tests/spec/extra-openai-models.yaml" and mode == "r" then
-          local file_content = "- model_id: test-model-1\n  model_name: Test Model 1\n  needs_auth: true\n  api_key_name: test_key_1\n\n- model_id: test-model-2\n  model_name: Test Model 2\n  needs_auth: false"
-          local file = {
-            read = function() return file_content end,
-            lines = function() return file_content:gmatch("[^\n]+") end,
-            close = function() end
-          }
-          return file
-        else
-          return nil
-        end
-      end
       text_utils.parse_simple_yaml = function()
         return {
           { model_id = "test-model-1", model_name = "Test Model 1", needs_auth = true, api_key_name = "test_key_1" },
@@ -92,19 +92,9 @@ describe("llm.managers.custom_openai", function()
     it("should handle an invalid YAML file", function()
       -- Mock dependencies
       file_utils.get_config_path = function() return "tests/spec", "tests/spec/extra-openai-models.yaml" end
-      io.open = function(filepath, mode)
-        if filepath == "tests/spec/extra-openai-models.yaml" and mode == "r" then
-          local file_content = "invalid: yaml:"
-          local file = {
-            read = function() return file_content end,
-            lines = function() return file_content:gmatch("[^\n]+") end,
-            close = function() end
-          }
-          return file
-        else
-          return nil
-        end
-      end
+      local temp_file = io.open("tests/spec/extra-openai-models.yaml", "w")
+      temp_file:write("invalid: yaml:")
+      temp_file:close()
       text_utils.parse_simple_yaml = function() return nil end
       os.rename = function() end
 

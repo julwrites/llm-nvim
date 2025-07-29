@@ -50,3 +50,4 @@ test/plenary.nvim/
 /lua
 /lua_modules
 /.luarocks
+app-dev-1.rockspec
