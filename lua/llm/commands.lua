@@ -144,17 +144,30 @@ function M.write_context_to_temp_file(context)
   return temp_file
 end
 
-function M.llm_command_and_display_response(buf, cmd)
-  local result = llm_cli.run_llm_command(cmd)
-  if result then
-    local buf = M.fill_response_buffer(buf, result)
-    -- Focus the new response buffer
-    vim.api.nvim_set_current_buf(buf)
-    -- Ensure we're in normal mode
-    vim.cmd('stopinsert')
-  else
-    vim.notify("The llm command failed")
-  end
+function M.llm_stream_and_display_response(buf, cmd)
+    local response_chunks = {}
+    llm_cli.run_llm_command(
+        cmd,
+        function(chunk)
+            table.insert(response_chunks, chunk)
+            local partial_response = table.concat(response_chunks, "")
+            vim.schedule(function()
+                M.fill_response_buffer(buf, partial_response)
+            end)
+        end,
+        function(stderr)
+            vim.notify("Error from llm command: " .. stderr, vim.log.levels.ERROR)
+        end,
+        function(code)
+            if code ~= 0 then
+                vim.notify("llm command failed with code: " .. code, vim.log.levels.ERROR)
+            end
+            vim.schedule(function()
+                vim.api.nvim_set_current_buf(buf)
+                vim.cmd('stopinsert')
+            end)
+        end
+    )
 end
 
 -- Helper function to select an existing fragment alias
@@ -194,11 +207,41 @@ end
 -- LLM Prompt Commands
 ---------------------
 
+function M.open_chat_scratchpad()
+    local models_manager = require('llm.managers.models_manager')
+    local default_model = models_manager.get_default_model()
+    local content = "Welcome to the LLM chat scratchpad.\n\nModel: " .. (default_model or "default") .. "\n\n"
+    local buf = ui.create_buffer_with_content(content, "LLM Chat", "markdown")
+
+    vim.api.nvim_buf_set_option(buf, 'buftype', 'prompt')
+    vim.api.nvim_buf_set_option(buf, 'bufhidden', 'hide')
+
+    vim.api.nvim_buf_set_keymap(buf, 'n', '<CR>', '<Cmd>lua require("llm.commands").send_chat_prompt(' .. buf .. ')<CR>', { noremap = true, silent = true })
+
+    vim.api.nvim_set_current_buf(buf)
+    vim.cmd('startinsert')
+end
+
+function M.send_chat_prompt(buf)
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+    local prompt = lines[#lines]
+
+    local cmd_parts = { "llm" }
+    vim.list_extend(cmd_parts, M.get_model_arg())
+    vim.list_extend(cmd_parts, M.get_system_arg())
+    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+    local cmd = table.concat(cmd_parts, " ")
+
+    M.llm_stream_and_display_response(buf, cmd)
+end
+
 -- Unified command dispatcher
 function M.dispatch_command(subcmd, ...)
   local args = { ... }
   local success, err = pcall(function()
-    if subcmd == "selection" then
+    if subcmd == nil or subcmd == "" then
+      return M.open_chat_scratchpad()
+    elseif subcmd == "selection" then
       return M.prompt_with_selection(args[1] or "", args[2] or {})
     elseif subcmd == "toggle" then
       local unified_manager = require('llm.ui.unified_manager')
@@ -216,30 +259,26 @@ end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths)
-  local cmd_parts = { "llm" }
+    local cmd_parts = { "llm" }
 
-  -- Add model args (returns a table)
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  -- Add system args (returns a table)
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  -- Add fragment args (returns a table)
-  vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+    -- Add model args (returns a table)
+    vim.list_extend(cmd_parts, M.get_model_arg())
+    -- Add system args (returns a table)
+    vim.list_extend(cmd_parts, M.get_system_arg())
+    -- Add fragment args (returns a table)
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
 
-  -- Add the main prompt, escaped
-  if prompt and prompt ~= "" then
-    table.insert(cmd_parts, vim.fn.shellescape(prompt))
-  end
+    -- Add the main prompt, escaped
+    if prompt and prompt ~= "" then
+        table.insert(cmd_parts, vim.fn.shellescape(prompt))
+    end
 
-  -- Construct the final command string
-  local cmd = table.concat(cmd_parts, " ")
-  vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
+    -- Construct the final command string
+    local cmd = table.concat(cmd_parts, " ")
+    vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
 
-  local result = llm_cli.run_llm_command(cmd)
-  if result then
-    M.create_response_buffer(result)
-  else
-    vim.notify("No response received from LLM. Check your fragment identifier and API key.", vim.log.levels.ERROR)
-  end
+    local buf = M.create_response_buffer("Processing, please wait...")
+    M.llm_stream_and_display_response(buf, cmd)
 end
 
 -- Explain the current buffer or selection
@@ -318,33 +357,33 @@ function M.execute_prompt_async(source, prompt, filepath, fragment_paths, cleanu
 end
 
 function M.execute_prompt_with_file(buffer, prompt, filepath, fragment_paths)
-  vim.notify("DEBUG: _execute_prompt_with_file called", vim.log.levels.DEBUG)
-  vim.notify("Prompt: " .. prompt, vim.log.levels.DEBUG)
-  vim.notify("Filepath: " .. filepath, vim.log.levels.DEBUG)
+    vim.notify("DEBUG: _execute_prompt_with_file called", vim.log.levels.DEBUG)
+    vim.notify("Prompt: " .. prompt, vim.log.levels.DEBUG)
+    vim.notify("Filepath: " .. filepath, vim.log.levels.DEBUG)
 
-  local cmd_parts = { "llm" }
-  -- Add model args
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  -- Add system args
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  -- Add fragment args
-  vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
-  -- Add the file
-  table.insert(cmd_parts, "-f " .. vim.fn.shellescape(filepath))
-  -- Add the prompt
-  if prompt and prompt ~= "" then
-    table.insert(cmd_parts, vim.fn.shellescape(prompt))
-  end
+    local cmd_parts = { "llm" }
+    -- Add model args
+    vim.list_extend(cmd_parts, M.get_model_arg())
+    -- Add system args
+    vim.list_extend(cmd_parts, M.get_system_arg())
+    -- Add fragment args
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+    -- Add the file
+    table.insert(cmd_parts, "-f " .. vim.fn.shellescape(filepath))
+    -- Add the prompt
+    if prompt and prompt ~= "" then
+        table.insert(cmd_parts, vim.fn.shellescape(prompt))
+    end
 
-  local cmd = table.concat(cmd_parts, " ")
+    local cmd = table.concat(cmd_parts, " ")
 
-  -- Debug output
-  local config = require('llm.config')
-  if config.get('debug') then
-    vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
-  end
+    -- Debug output
+    local config = require('llm.config')
+    if config.get('debug') then
+        vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+    end
 
-  M.llm_command_and_display_response(buffer, cmd)
+    M.llm_stream_and_display_response(buffer, cmd)
 end
 
 ---------------------

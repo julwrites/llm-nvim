@@ -1,6 +1,6 @@
 -- tests/spec/managers/custom_openai_spec.lua
 
-require("mock_vim")
+local mock_vim = require('tests.spec.mock_vim')
 
 describe("llm.managers.custom_openai", function()
   local custom_openai
@@ -10,6 +10,8 @@ describe("llm.managers.custom_openai", function()
   local config
 
   before_each(function()
+    mock_vim.setup()
+
     _G.io_open = io.open
     package.loaded["llm.managers.custom_openai"] = nil
     package.loaded["llm.core.utils.file_utils"] = nil
@@ -30,6 +32,7 @@ describe("llm.managers.custom_openai", function()
   end)
 
   after_each(function()
+    mock_vim.teardown()
     package.loaded["llm.managers.custom_openai"] = nil
     package.loaded["llm.core.utils.file_utils"] = nil
     package.loaded["llm.core.utils.text"] = nil

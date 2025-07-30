@@ -1,12 +1,26 @@
 -- tests/spec/managers/fragments_manager_spec.lua
-require('spec_helper')
-local fragments_manager = require('llm.managers.fragments_manager')
-local llm_cli = require('llm.core.data.llm_cli')
-local cache = require('llm.core.data.cache')
-local fragments_view = require('llm.ui.views.fragments_view')
-local unified_manager = require('llm.ui.unified_manager')
+local mock_vim = require('tests.spec.mock_vim')
 
 describe('fragments_manager', function()
+  local fragments_manager
+  local llm_cli
+  local cache
+  local fragments_view
+  local unified_manager
+
+  before_each(function()
+    mock_vim.setup()
+    fragments_manager = require('llm.managers.fragments_manager')
+    llm_cli = require('llm.core.data.llm_cli')
+    cache = require('llm.core.data.cache')
+    fragments_view = require('llm.ui.views.fragments_view')
+    unified_manager = require('llm.ui.unified_manager')
+  end)
+
+  after_each(function()
+    mock_vim.teardown()
+  end)
+
   describe('get_fragments', function()
     local cache_data
     before_each(function()

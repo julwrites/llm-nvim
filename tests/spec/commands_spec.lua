@@ -1,43 +1,13 @@
 local spy = require('luassert.spy')
 
+local mock_vim = require('tests.spec.mock_vim')
+
 describe('llm.commands', function()
   local commands
   local config_mock
 
   before_each(function()
-    -- Mock the vim object
-    _G.vim = {
-      fn = {
-        shellescape = spy.new(function(str)
-          return str
-        end),
-        stdpath = spy.new(function()
-          return '/tmp'
-        end),
-      },
-      api = {
-        nvim_set_current_buf = spy.new(function() end),
-      },
-      log = {
-        levels = {
-          ERROR = 1,
-        },
-      },
-      notify = spy.new(function() end),
-      schedule = spy.new(function(cb)
-        cb()
-      end),
-      list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-          table.insert(t1, v)
-        end
-      end,
-      cmd = spy.new(function() end),
-      defer_fn = spy.new(function(fn, _)
-        fn()
-      end),
-      wait = spy.new(function() end),
-    }
+    mock_vim.setup()
 
     package.loaded['llm.config'] = nil
     package.loaded['llm.commands'] = nil
@@ -57,8 +27,9 @@ describe('llm.commands', function()
   end)
 
   after_each(function()
+    mock_vim.teardown()
     package.loaded['llm.config'] = nil
-    _G.vim = nil
+    package.loaded['llm.commands'] = nil
   end)
 
   describe('get_model_arg', function()
@@ -219,26 +190,25 @@ describe('llm.commands', function()
     end)
   end)
 
-  describe('llm_command_and_display_response', function()
+  describe('llm_stream_and_display_response', function()
     it('should call llm_cli.run_llm_command and fill_response_buffer', function()
-      local llm_cli_mock = {
-        run_llm_command = spy.new(function()
-          return 'test result'
-        end),
-      }
-      package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
-      _G.vim.api.nvim_set_current_buf = spy.new(function() end)
-      _G.vim.cmd = spy.new(function() end)
-      package.loaded['llm.commands'] = nil
-      commands = require('llm.commands')
-      local fill_spy = spy.on(commands, 'fill_response_buffer')
+        local llm_cli_mock = {
+            run_llm_command = spy.new(function(cmd, on_stdout, on_stderr, on_exit)
+                on_stdout('test result')
+                on_exit(0)
+            end),
+        }
+        package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
+        package.loaded['llm.commands'] = nil
+        commands = require('llm.commands')
+        local fill_spy = spy.on(commands, 'fill_response_buffer')
 
-      commands.llm_command_and_display_response(1, 'test command')
+        commands.llm_stream_and_display_response(1, 'test command')
 
-      assert.spy(llm_cli_mock.run_llm_command).was.called_with('test command')
-      assert.spy(fill_spy).was.called_with(1, 'test result')
-      assert.spy(_G.vim.api.nvim_set_current_buf).was.called()
-      assert.spy(_G.vim.cmd).was.called_with('stopinsert')
+        assert.spy(llm_cli_mock.run_llm_command).was.called()
+        assert.spy(fill_spy).was.called_with(1, 'test result')
+        assert.spy(_G.vim.api.nvim_set_current_buf).was.called()
+        assert.spy(_G.vim.cmd).was.called_with('stopinsert')
     end)
   end)
 
@@ -273,28 +243,23 @@ describe('llm.commands', function()
 
   describe('prompt', function()
     it('should construct and run the correct llm command', function()
-      local llm_cli_mock = {
-        run_llm_command = spy.new(function()
-          return 'test result'
-        end),
-      }
-      package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
-      _G.vim.list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-          table.insert(t1, v)
-        end
-      end
-      local ui_mock = {
-        create_buffer_with_content = spy.new(function() end),
-      }
-      package.loaded['llm.core.utils.ui'] = ui_mock
-      package.loaded['llm.commands'] = nil
-      commands = require('llm.commands')
+        local llm_cli_mock = {
+            run_llm_command = spy.new(function() end),
+        }
+        package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
+        local ui_mock = {
+            create_buffer_with_content = spy.new(function()
+                return 1
+            end),
+        }
+        package.loaded['llm.core.utils.ui'] = ui_mock
+        package.loaded['llm.commands'] = nil
+        commands = require('llm.commands')
+        local stream_spy = spy.on(commands, 'llm_stream_and_display_response')
 
-      commands.prompt('test prompt', { 'frag1' })
+        commands.prompt('test prompt', { 'frag1' })
 
-      assert.spy(llm_cli_mock.run_llm_command).was.called_with('llm -m test-model -f frag1 test prompt')
-      assert.spy(ui_mock.create_buffer_with_content).was.called_with('test result', 'LLM Response', 'markdown')
+        assert.spy(stream_spy).was.called_with(1, 'llm -m test-model -f frag1 test prompt')
     end)
   end)
 
@@ -384,13 +349,13 @@ describe('llm.commands', function()
 
   describe('execute_prompt_with_file', function()
     it('should construct and run the correct llm command', function()
-      package.loaded['llm.commands'] = nil
-      commands = require('llm.commands')
-      local llm_spy = spy.on(commands, 'llm_command_and_display_response')
+        package.loaded['llm.commands'] = nil
+        commands = require('llm.commands')
+        local llm_spy = spy.on(commands, 'llm_stream_and_display_response')
 
-      commands.execute_prompt_with_file(1, 'test prompt', 'test_file', { 'frag1' })
+        commands.execute_prompt_with_file(1, 'test prompt', 'test_file', { 'frag1' })
 
-      assert.spy(llm_spy).was.called_with(1, 'llm -m test-model -f frag1 -f test_file test prompt')
+        assert.spy(llm_spy).was.called_with(1, 'llm -m test-model -f frag1 -f test_file test prompt')
     end)
   end)
 

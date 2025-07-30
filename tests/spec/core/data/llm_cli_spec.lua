@@ -1,15 +1,17 @@
 -- tests/spec/core/data/llm_cli_spec.lua
+local mock_vim = require('tests.spec.mock_vim')
 
 describe("llm.core.data.llm_cli", function()
   local llm_cli
-  local shell
+  local stream_mock
 
   before_each(function()
-    -- Create a mock for the shell module
-    shell = {
-      safe_shell_command = function() end,
+    mock_vim.setup()
+
+    stream_mock = {
+      stream_command = spy.new(function() end),
     }
-    package.loaded['llm.core.utils.shell'] = shell
+    package.loaded['llm.core.utils.stream'] = stream_mock
 
     -- Reload the llm_cli module to use the mock
     package.loaded['llm.core.data.llm_cli'] = nil
@@ -17,33 +19,28 @@ describe("llm.core.data.llm_cli", function()
   end)
 
   after_each(function()
-    -- Restore original modules
-    package.loaded['llm.core.utils.shell'] = nil
+    mock_vim.teardown()
+    package.loaded['llm.core.utils.stream'] = nil
     package.loaded['llm.core.data.llm_cli'] = nil
   end)
 
-  it("should prepend 'llm ' to the command and call shell.safe_shell_command", function()
-    -- Spy on the safe_shell_command function
-    local spy = spy.on(shell, "safe_shell_command")
-
-    -- Call the function to be tested
-    local command = "models list"
-    llm_cli.run_llm_command(command)
-
-    -- Assert that the spy was called with the correct argument
-    assert.spy(spy).was.called_with("llm " .. command)
+  it("should prepend 'llm ' to the command and call stream.stream_command", function()
+      local command = "models list"
+      local on_stdout = function() end
+      local on_stderr = function() end
+      local on_exit = function() end
+      llm_cli.run_llm_command(command, on_stdout, on_stderr, on_exit)
+      assert.spy(stream_mock.stream_command).was.called_with("llm " .. command, on_stdout, on_stderr, on_exit)
   end)
 
   it("should handle an empty command", function()
-    local spy = spy.on(shell, "safe_shell_command")
-    llm_cli.run_llm_command("")
-    assert.spy(spy).was.called_with("llm ")
+      llm_cli.run_llm_command("")
+      assert.spy(stream_mock.stream_command).was.called_with("llm ", nil, nil, nil)
   end)
 
   it("should handle a command with special characters", function()
-    local spy = spy.on(shell, "safe_shell_command")
-    local command = "prompt 'hello world'"
-    llm_cli.run_llm_command(command)
-    assert.spy(spy).was.called_with("llm " .. command)
+      local command = "prompt 'hello world'"
+      llm_cli.run_llm_command(command)
+      assert.spy(stream_mock.stream_command).was.called_with("llm " .. command, nil, nil, nil)
   end)
 end)

@@ -1,12 +1,13 @@
 -- tests/spec/managers/models_io_spec.lua
 
-require("spec_helper")
+local mock_vim = require('tests.spec.mock_vim')
 
 describe("llm.managers.models_io", function()
   local models_io
   local llm_cli
 
   before_each(function()
+    mock_vim.setup()
     _G.package = require('package')
     package.loaded["llm.managers.models_io"] = nil
     package.loaded["llm.core.data.llm_cli"] = nil
@@ -16,6 +17,7 @@ describe("llm.managers.models_io", function()
   end)
 
   after_each(function()
+    mock_vim.teardown()
     package.loaded["llm.managers.models_io"] = nil
     package.loaded["llm.core.data.llm_cli"] = nil
     _G.package = nil

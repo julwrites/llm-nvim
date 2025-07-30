@@ -216,6 +216,14 @@ function M.set_default_model(model_name)
   return result
 end
 
+function M.get_default_model()
+  local default_model_output = llm_cli.run_llm_command('models default')
+  if default_model_output and default_model_output ~= "" then
+    return default_model_output:match("Default model: (.+)") or default_model_output:match("(.+)")
+  end
+  return nil
+end
+
 -- Get model aliases from llm CLI
 function M.get_model_aliases()
   local cached_aliases = cache.get('aliases')

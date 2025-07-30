@@ -1,24 +1,32 @@
 -- tests/spec/managers/keys_manager_spec.lua
-require('spec_helper')
+local mock_vim = require('tests.spec.mock_vim')
 local mock = require('luassert.mock')
 local stub = require('luassert.stub')
 
-local llm_cli = require('llm.core.data.llm_cli')
-local KeysManager = require('llm.managers.keys_manager')
-local cache = require('llm.core.data.cache')
-local config = require('llm.config')
-
 describe('llm.managers.keys_manager', function()
+  local llm_cli
+  local KeysManager
+  local cache
+  local config
+
   before_each(function()
-    stub(cache, 'get')
-    stub(cache, 'set')
-    stub(cache, 'invalidate')
-    stub(config, 'get')
+    mock_vim.setup()
+    llm_cli = require('llm.core.data.llm_cli')
+    KeysManager = require('llm.managers.keys_manager')
+    cache = require('llm.core.data.cache')
+    config = require('llm.config')
+    stub(cache, 'get', function() end)
+    stub(cache, 'set', function() end)
+    stub(cache, 'invalidate', function() end)
+    stub(config, 'get', function() end)
   end)
 
   after_each(function()
-    mock.revert(cache)
-    mock.revert(config)
+    mock_vim.teardown()
+    mock.revert(cache.get)
+    mock.revert(cache.set)
+    mock.revert(cache.invalidate)
+    mock.revert(config.get)
   end)
 
   describe('get_stored_keys', function()
