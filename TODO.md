@@ -58,19 +58,19 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 #### 4. `managers/models_manager.lua` (`tests/spec/managers/models_manager_spec.lua`) - Done
 
-#### 5. `managers/fragments_manager.lua` (`tests/spec/managers/fragments_manager_spec.lua`)
+#### 5. `managers/fragments_manager.lua` (`tests/spec/managers/fragments_manager_spec.lua`) - Done
 
 *   **`get_fragments()`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('fragments list --json')`.
-    *   **Test:** should cache the fragments.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('fragments list --json')`. - Failing
+    *   **Test:** should cache the fragments. - Done
 *   **`set_alias_for_fragment_under_cursor()`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments alias set <hash> <alias>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments alias set <hash> <alias>'`. - Done
 *   **`remove_alias_from_fragment_under_cursor()`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments alias remove <alias>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments alias remove <alias>'`. - Done
 *   **`add_file_fragment()`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments store <file_path>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments store <file_path>'`. - Done
 *   **`add_github_fragment_from_manager()`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments store <url>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'fragments store <url>'`. - Done
 
 #### 6. `managers/keys_manager.lua` (`tests/spec/managers/keys_manager_spec.lua`)
 
