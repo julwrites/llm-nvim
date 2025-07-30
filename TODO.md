@@ -85,22 +85,22 @@ By implementing this testing strategy, we can significantly improve the test cov
 *   **`remove_api_key(key_name)`**:
     *   **Test:** should call `llm_cli.run_llm_command` with `'keys remove <key_name>'`. - Done
 
-#### 7. `managers/plugins_manager.lua` (`tests/spec/managers/plugins_manager_spec.lua`)
+#### 7. `managers/plugins_manager.lua` (`tests/spec/managers/plugins_manager_spec.lua`) - Done
 
 *   **`get_available_plugins()`**:
-    *   **Test:** should parse the HTML from the plugin directory URL.
-    *   **Test:** should handle a failed `curl` command gracefully.
-    *   **Test:** should cache the available plugins.
+    *   **Test:** should parse the HTML from the plugin directory URL. - Done
+    *   **Test:** should handle a failed `curl` command gracefully. - Done
+    *   **Test:** should cache the available plugins. - Done
 *   **`get_installed_plugins()`**:
-    *   **Test:** should parse the JSON output from `llm_cli.run_llm_command('plugins')`.
-    *   **Test:** should cache the installed plugins.
+    *   **Test:** should parse the JSON output from `llm_cli.run_llm_command('plugins')`. - Done
+    *   **Test:** should cache the installed plugins. - Done
 *   **`is_plugin_installed(plugin_name)`**:
-    *   **Test:** should return `true` if the plugin is in the list of installed plugins.
-    *   **Test:** should return `false` if the plugin is not in the list.
+    *   **Test:** should return `true` if the plugin is in the list of installed plugins. - Done
+    *   **Test:** should return `false` if the plugin is not in the list. - Done
 *   **`install_plugin(plugin_name)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'install <plugin_name>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'install <plugin_name>'`. - Done
 *   **`uninstall_plugin(plugin_name)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'uninstall <plugin_name> -y'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'uninstall <plugin_name> -y'`. - Done
 
 #### 8. `managers/schemas_manager.lua` (`tests/spec/managers/schemas_manager_spec.lua`)
 
