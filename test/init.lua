@@ -48,7 +48,8 @@ function M.mock_llm_command(expected_cmd, return_value)
     if expected_cmd and expected_cmd ~= "" then
       -- Skip the check for "which llm" command
       if not cmd:match("which llm") then
-        assert(cmd:match(expected_cmd),
+        -- Use string.find for more flexible matching
+        assert(string.find(cmd, expected_cmd, 1, true),
           string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
       end
     end
@@ -70,7 +71,8 @@ function M.mock_llm_command(expected_cmd, return_value)
     if expected_cmd and expected_cmd ~= "" then
       -- Skip the check for "which llm" command
       if type(cmd) == "string" and not cmd:match("which llm") then
-        assert(cmd:match(expected_cmd),
+        -- Use string.find for more flexible matching
+        assert(string.find(cmd, expected_cmd, 1, true),
           string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
       end
     end
@@ -82,6 +84,48 @@ function M.mock_llm_command(expected_cmd, return_value)
     io.popen = original_popen
     vim.fn.system = original_system
   end
+end
+
+-- Mock vim.fn.system
+vim.fn.system = function(cmd)
+  -- Only assert if the expected command is provided
+  if expected_cmd and expected_cmd ~= "" then
+    -- Skip the check for "which llm" command
+    if type(cmd) == "string" and not cmd:match("which llm") then
+      -- Use string.find for more flexible matching
+      assert(string.find(cmd, expected_cmd, 1, true),
+        string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+    end
+  end
+  return return_value
+end
+
+-- Mock vim.fn.system
+vim.fn.system = function(cmd)
+  -- Only assert if the expected command is provided
+  if expected_cmd and expected_cmd ~= "" then
+    -- Skip the check for "which llm" command
+    if type(cmd) == "string" and not cmd:match("which llm") then
+      -- Use string.find for more flexible matching
+      assert(string.find(cmd, expected_cmd, 1, true),
+        string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+    end
+  end
+  return return_value
+end
+
+-- Mock vim.fn.system
+vim.fn.system = function(cmd)
+  -- Only assert if the expected command is provided
+  if expected_cmd and expected_cmd ~= "" then
+    -- Skip the check for "which llm" command
+    if type(cmd) == "string" and not cmd:match("which llm") then
+      -- Use string.find for more flexible matching
+      assert(string.find(cmd, expected_cmd, 1, true),
+        string.format("Expected command to match '%s', got '%s'", expected_cmd, cmd))
+    end
+  end
+  return return_value
 end
 
 -- Helper function to expose module functions for testing

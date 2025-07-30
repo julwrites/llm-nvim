@@ -114,6 +114,7 @@ vim.keymap.set('n', '<leader>lm', '<Plug>(llm-models)') -- Note: <Plug>(llm-sele
 ### Commands
 
 #### Unified LLM Command
+- `:LLM` - Open an interactive chat buffer
 - `:LLM {prompt}` - Send prompt to LLM
 - `:LLM file [{prompt}]` - Send current file's content with optional prompt  
 - `:LLM selection [{prompt}]` - Send visual selection with optional prompt

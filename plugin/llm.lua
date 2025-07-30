@@ -50,6 +50,8 @@ vim.api.nvim_create_user_command("LLM", function(opts)
     require('llm.templates.templates_manager').select_template()
   elseif subcmd == "fragments" then
     llm.interactive_prompt_with_fragments()
+  elseif opts.args == "" then
+    require('llm.chat').start_chat()
   else
     -- Default case: treat as direct prompt
     llm.prompt(opts.args)
@@ -62,7 +64,7 @@ end, {
     local args = vim.split(CmdLine, "%s+")
 
     -- If we're completing the first argument after LLM
-    if #args == 2 then
+    if #args == 2 and CmdLine:sub(-1) ~= " " then
       return {
         "file",      -- :LLM file
         "selection", -- :LLM selection
