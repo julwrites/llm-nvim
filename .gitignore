@@ -42,4 +42,12 @@ luac.out
 # Test dependencies
 test/plenary.nvim/
 
+# Temp files
+*.tmp
+
 .aider*
+/luarocks
+/lua
+/lua_modules
+/.luarocks
+app-dev-1.rockspec

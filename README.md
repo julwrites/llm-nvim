@@ -206,14 +206,21 @@ vim.keymap.set('n', '<leader>lf', '<Cmd>LLM fragments<CR>', { desc = "LLM with F
 
 ### Testing
 
-The plugin includes a test suite using [plenary.nvim](https://github.com/nvim-lua/plenary.nvim). To run the tests:
+The plugin includes a test suite using [busted](https://github.com/Olivine-Labs/busted). To run the tests, you first need to install the test dependencies:
+
+```bash
+sudo luarocks install busted
+sudo luarocks install luassert
+```
+
+Then, you can run the tests:
 
 ```bash
 # Run all tests
-./test/run.sh
+make test
 
-# Or using the Lua test runner
-nvim --headless -l test/run_tests.lua
+# Run a specific test file
+make test file=init_spec.lua
 ```
 
 Tests cover:

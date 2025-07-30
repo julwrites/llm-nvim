@@ -3,7 +3,7 @@
 
 local M = {}
 local config = require('llm.config')
-local notify = require('llm.utils.notify')
+local notify_util = require('llm.core.utils.notify')
 
 -- Error severity levels
 M.levels = {
@@ -35,21 +35,22 @@ local function format_message(category, message, details)
 end
 
 -- Handle and report error
-function M.handle(category, message, details, severity)
+function M.handle(category, message, details, severity, notify_fn)
+  local notify = notify_fn or vim.notify
   severity = severity or M.levels.ERROR
   category = category or M.categories.INTERNAL
-  
+
   local formatted = format_message(category, message, details)
-  
+
   -- Log based on severity
   if severity >= M.levels.ERROR then
-    vim.notify(formatted, vim.log.levels.ERROR)
+    notify(formatted, vim.log.levels.ERROR)
   elseif severity == M.levels.WARNING then
-    vim.notify(formatted, vim.log.levels.WARN)
+    notify(formatted, vim.log.levels.WARN)
   else
-    vim.notify(formatted, vim.log.levels.INFO)
+    notify(formatted, vim.log.levels.INFO)
   end
-  
+
   -- Return structured error for programmatic handling
   return {
     category = category,
@@ -72,9 +73,13 @@ function M.wrap(fn, category)
 end
 
 -- Shell command specific handler
-function M.shell_error(command, code, output)
+function M.shell_error(command, code, stdout, stderr)
+  local output = stdout
+  if stderr and #stderr > 0 then
+    output = output .. "\n" .. stderr
+  end
   return M.handle(
-    M.categories.SHELL,
+    'shell',
     string.format('Command failed: %s (exit code %d)', command, code),
     output,
     M.levels.ERROR
