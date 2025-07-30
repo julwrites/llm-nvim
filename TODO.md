@@ -102,17 +102,17 @@ By implementing this testing strategy, we can significantly improve the test cov
 *   **`uninstall_plugin(plugin_name)`**:
     *   **Test:** should call `llm_cli.run_llm_command` with `'uninstall <plugin_name> -y'`. - Done
 
-#### 8. `managers/schemas_manager.lua` (`tests/spec/managers/schemas_manager_spec.lua`)
+#### 8. `managers/schemas_manager.lua` (`tests/spec/managers/schemas_manager_spec.lua`) - Done
 
 *   **`get_schemas()`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('schemas list --json')`.
-    *   **Test:** should cache the schemas.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('schemas list --json')`. - Done
+    *   **Test:** should cache the schemas. - Done
 *   **`get_schema(schema_id)`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('schemas get <schema_id>')`.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('schemas get <schema_id>')`. - Done
 *   **`save_schema(name, content)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'schemas save <name> <temp_file_path>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'schemas save <name> <temp_file_path>'`. - Done
 *   **`run_schema(schema_id, input, is_multi)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with the correct arguments, including the `--multi` flag.
+    *   **Test:** should call `llm_cli.run_llm_command` with the correct arguments, including the `--multi` flag. - Done
 
 #### 9. `managers/templates_manager.lua` (`tests/spec/managers/templates_manager_spec.lua`)
 
