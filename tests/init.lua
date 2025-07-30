@@ -1,2 +1,1 @@
--- This file is intentionally left empty.
--- It's presence is required for Neovim to recognize this as a plugin's test directory.
+package.path = package.path .. ';./lua/?.lua'
