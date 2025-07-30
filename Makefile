@@ -1,7 +1,7 @@
 .PHONY: test test-deps
 
 test:
-	@LUA_PATH="lua/?.lua;;" busted tests/spec/$(file)
+	@LUA_PATH="lua/?.lua;;" busted tests/spec
 
 test-deps:
 	@if ! command -v busted &> /dev/null; then \
