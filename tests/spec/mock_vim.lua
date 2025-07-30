@@ -66,6 +66,7 @@ function M.setup()
           return obj
         end
       end),
+      system = spy.new(function() end)
     },
     api = {
       nvim_set_current_buf = spy.new(function() end),

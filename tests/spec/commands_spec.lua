@@ -191,9 +191,9 @@ describe('llm.commands', function()
   end)
 
   describe('llm_stream_and_display_response', function()
-    it('should call llm_cli.run_llm_command and fill_response_buffer', function()
+    it('should call llm_cli.stream_llm_command and fill_response_buffer', function()
         local llm_cli_mock = {
-            run_llm_command = spy.new(function(cmd, on_stdout, on_stderr, on_exit)
+            stream_llm_command = spy.new(function(cmd, on_stdout, on_stderr, on_exit)
                 on_stdout('test result')
                 on_exit(0)
             end),
@@ -205,7 +205,7 @@ describe('llm.commands', function()
 
         commands.llm_stream_and_display_response(1, 'test command')
 
-        assert.spy(llm_cli_mock.run_llm_command).was.called()
+        assert.spy(llm_cli_mock.stream_llm_command).was.called()
         assert.spy(fill_spy).was.called_with(1, 'test result')
         assert.spy(_G.vim.api.nvim_set_current_buf).was.called()
         assert.spy(_G.vim.cmd).was.called_with('stopinsert')
@@ -244,6 +244,7 @@ describe('llm.commands', function()
   describe('prompt', function()
     it('should construct and run the correct llm command', function()
         local llm_cli_mock = {
+            stream_llm_command = spy.new(function() end),
             run_llm_command = spy.new(function() end),
         }
         package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
@@ -260,6 +261,7 @@ describe('llm.commands', function()
         commands.prompt('test prompt', { 'frag1' })
 
         assert.spy(stream_spy).was.called_with(1, 'llm -m test-model -f frag1 test prompt')
+        assert.spy(llm_cli_mock.run_llm_command).was_not_called()
     end)
   end)
 

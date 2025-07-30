@@ -146,7 +146,7 @@ end
 
 function M.llm_stream_and_display_response(buf, cmd)
     local response_chunks = {}
-    llm_cli.run_llm_command(
+    llm_cli.stream_llm_command(
         cmd,
         function(chunk)
             table.insert(response_chunks, chunk)
