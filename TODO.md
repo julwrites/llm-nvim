@@ -72,18 +72,18 @@ By implementing this testing strategy, we can significantly improve the test cov
 *   **`add_github_fragment_from_manager()`**:
     *   **Test:** should call `llm_cli.run_llm_command` with `'fragments store <url>'`. - Done
 
-#### 6. `managers/keys_manager.lua` (`tests/spec/managers/keys_manager_spec.lua`)
+#### 6. `managers/keys_manager.lua` (`tests/spec/managers/keys_manager_spec.lua`) - Done
 
 *   **`get_stored_keys()`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('keys list --json')`.
-    *   **Test:** should cache the keys.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('keys list --json')`. - Done
+    *   **Test:** should cache the keys. - Done
 *   **`is_key_set(key_name)`**:
-    *   **Test:** should return `true` if the key is in the list of stored keys.
-    *   **Test:** should return `false` if the key is not in the list.
+    *   **Test:** should return `true` if the key is in the list of stored keys. - Done
+    *   **Test:** should return `false` if the key is not in the list. - Done
 *   **`set_api_key(key_name, key_value)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'keys set <key_name> <key_value>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'keys set <key_name> <key_value>'`. - Done
 *   **`remove_api_key(key_name)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'keys remove <key_name>'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'keys remove <key_name>'`. - Done
 
 #### 7. `managers/plugins_manager.lua` (`tests/spec/managers/plugins_manager_spec.lua`)
 
