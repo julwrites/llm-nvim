@@ -26,9 +26,41 @@ if not _G.vim then
       return next(tbl) == nil
     end,
     fn = {
-      system = function() end,
+      system = function(cmd)
+        if type(cmd) == 'table' then
+          cmd = table.concat(cmd, ' ')
+        end
+        if cmd:match('^llm templates save') then
+          return 'Template saved'
+        elseif cmd:match('^llm templates show') then
+          local name = cmd:match('^llm templates show (.-) 2>&1')
+          return '{"name": "' .. name .. '", "prompt": "Test prompt"}'
+        elseif cmd:match('^llm templates delete') then
+          return ''
+        elseif cmd:match('^llm templates list --json') then
+          return '[]'
+        end
+      end,
       executable = function() return 1 end,
       stdpath = function() return '/tmp' end,
+      shellescape = function(s) return "'" .. tostring(s):gsub("'", "'\\''") .. "'" end,
+    },
+    o = {
+      columns = 80,
+      lines = 24,
+    },
+    api = {
+      nvim_buf_set_keymap = function() end,
+      nvim_win_close = function() end,
+      nvim_buf_set_name = function() end,
+      nvim_win_set_config = function() end,
+      nvim_create_buf = function() return 1 end,
+      nvim_buf_set_lines = function() end,
+      nvim_win_get_cursor = function() return { 1, 1 } end,
+      nvim_buf_set_option = function() end,
+      nvim_open_win = function() return 1 end,
+      nvim_buf_set_var = function() end,
+      nvim_command = function() end,
     },
   }
 end
@@ -54,30 +86,18 @@ if not _G.vim.fn.json_encode or not _G.vim.fn.json_decode then
     return json
   end
   _G.vim.fn.json_decode = function(json)
-    if not json then return {} end
-    -- A simple json decoder for testing purposes
-    local list = {}
-    if type(json) == 'string' then
-        for item in json:gmatch('{([^}]+)}') do
-            local item_tbl = {}
-            for k, v in item:gmatch('"([^"]+)":("([^"]+)"|true|false)') do
-                if v == "true" then
-                    item_tbl[k] = true
-                elseif v == "false" then
-                    item_tbl[k] = false
-                else
-                    item_tbl[k] = v
-                end
-            end
-            for k, v in item:gmatch('"([^"]+)":true') do
-                item_tbl[k] = true
-            end
-            for k, v in item:gmatch('"([^"]+)":false') do
-                item_tbl[k] = false
-            end
-            table.insert(list, item_tbl)
-        end
+    if not json or json == '[]' then return {} end
+    local result = {}
+    local text = json
+    if json:sub(1, 1) == '[' then
+      text = json:sub(2, -2)
     end
-    return list
+    for k, v in text:gmatch('"([^"]+)": ?"([^"]*)"') do
+      result[k] = v
+    end
+    if json:sub(1, 1) == '[' then
+      return { result }
+    end
+    return result
   end
 end

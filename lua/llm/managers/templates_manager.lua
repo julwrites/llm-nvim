@@ -31,7 +31,8 @@ function M.get_template_details(template_name)
 end
 
 -- Create a template
-function M.create_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
+-- Save a template
+function M.save_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
     local cmd = 'templates save ' .. name
     if prompt then
         cmd = cmd .. ' --prompt ' .. vim.fn.shellescape(prompt)
@@ -237,7 +238,7 @@ function M.run_template_with_input(template_name, params)
 end
 
 -- Create a template with guided flow
-function M.create_template()
+function M.create_template_guided()
   templates_view.get_user_input("Enter template name:", nil, function(name)
     if not name or name == "" then
       vim.notify("Template name cannot be empty", vim.log.levels.WARN)
@@ -438,7 +439,7 @@ end
 
 function M.finalize_template_creation(template)
   vim.notify("Creating template '" .. template.name .. "'...", vim.log.levels.INFO)
-  local success = M.create_template(
+  local success = M.save_template(
     template.name,
     template.prompt,
     template.system,
