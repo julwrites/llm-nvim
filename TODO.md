@@ -114,19 +114,19 @@ By implementing this testing strategy, we can significantly improve the test cov
 *   **`run_schema(schema_id, input, is_multi)`**:
     *   **Test:** should call `llm_cli.run_llm_command` with the correct arguments, including the `--multi` flag. - Done
 
-#### 9. `managers/templates_manager.lua` (`tests/spec/managers/templates_manager_spec.lua`)
+#### 9. `managers/templates_manager.lua` (`tests/spec/managers/templates_manager_spec.lua`) - Done
 
 *   **`get_templates()`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('templates list --json')`.
-    *   **Test:** should cache the templates.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('templates list --json')`. - Done
+    *   **Test:** should cache the templates. - Done
 *   **`get_template_details(template_name)`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('templates show <template_name>')`.
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('templates show <template_name>')`. - Done
 *   **`create_template(...)`**:
-    *   **Test:** should construct the correct `llm_cli.run_llm_command` string with all the provided arguments.
+    *   **Test:** should construct the correct `llm_cli.run_llm_command` string with all the provided arguments. - Done
 *   **`delete_template(template_name)`**:
-    *   **Test:** should call `llm_cli.run_llm_command` with `'templates delete <template_name> -y'`.
+    *   **Test:** should call `llm_cli.run_llm_command` with `'templates delete <template_name> -y'`. - Done
 *   **`run_template(template_name, input, params)`**:
-    *   **Test:** should construct the correct `llm_cli.run_llm_command` string with the template name, input, and parameters.
+    *   **Test:** should construct the correct `llm_cli.run_llm_command` string with the template name, input, and parameters. - Done
 
 ### Phase 2: UI Components
 
