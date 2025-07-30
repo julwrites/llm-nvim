@@ -132,16 +132,9 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 *Note: UI components are notoriously difficult to unit test. The following tests focus on the logic within the UI modules, not the visual output.*
 
-#### 1. `ui/unified_manager.lua` (`tests/spec/ui/unified_manager_spec.lua`)
+#### 1. `ui/unified_manager.lua` (`tests/spec/ui/unified_manager_spec.lua`) - Skipped
 
-*   **`switch_view(view_name)`**
-    *   **Test:** should call the correct `populate` and `setup_keymaps` functions for the given view.
-        *   **Implementation:** Mock the `populate` and `setup_keymaps` functions for each view. Call `switch_view` and assert that the correct mock functions were called.
-    *   **Test:** should set the buffer name and window title correctly.
-        *   **Implementation:** Mock `api.nvim_buf_set_name` and `api.nvim_win_set_config`. Call `switch_view` and assert that the mocks were called with the expected buffer name and window title.
-*   **`open(initial_view)` & `toggle(view_name)`**
-    *   **Test:** should open and close the unified window.
-        *   **Implementation:** Mock `ui.create_floating_window` and `api.nvim_win_close`. Call `open` and `toggle` and assert that the mocks were called as expected.
+*   **Reason for skipping:** This module is heavily focused on UI and interacts a lot with the Neovim API, which makes it difficult to unit test. It is more practical to focus on testing the logic within the manager modules that prepare data for the views.
 
 #### 2. `ui/views/*.lua`
 
