@@ -56,21 +56,7 @@ By implementing this testing strategy, we can significantly improve the test cov
 
 #### 3. `managers/models_io.lua` (`tests/spec/managers/models_io_spec.lua`) - Done
 
-#### 4. `managers/models_manager.lua` (`tests/spec/managers/models_manager_spec.lua`)
-
-*   **`get_available_models()`**
-    *   **Test:** should parse the output from `llm-cli` correctly.
-        *   **Implementation:** Mock `llm_cli.run_llm_command` to return a sample output string. Call `get_available_models` and assert that the returned table is structured correctly.
-    *   **Test:** should cache the models.
-        *   **Implementation:** Mock `llm_cli.run_llm_command` and `cache.get`/`cache.set`. Call `get_available_models` twice and assert that `llm_cli.run_llm_command` was only called once.
-*   **`is_model_available(model_line)`**
-    *   **Test:** should return `true` for an available model.
-        *   **Implementation:** Mock `get_available_providers` to return a table indicating that the provider is available. Call `is_model_available` with a model from that provider and assert that it returns `true`.
-    *   **Test:** should return `false` for an unavailable model.
-        *   **Implementation:** Mock `get_available_providers` to return a table indicating that the provider is *not* available. Call `is_model_available` with a model from that provider and assert that it returns `false`.
-*   **`set_default_model(model_name)`, `set_model_alias(alias, model)`, `remove_model_alias(alias)`**
-    *   **Test:** should call the corresponding function in `models_io.lua`.
-        *   **Implementation:** Mock the corresponding function in `models_io.lua`. Call the `models_manager` function and assert that the mock was called with the correct arguments.
+#### 4. `managers/models_manager.lua` (`tests/spec/managers/models_manager_spec.lua`) - Done
 
 #### 5. `managers/fragments_manager.lua` (`tests/spec/managers/fragments_manager_spec.lua`)
 

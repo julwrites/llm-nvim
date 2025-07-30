@@ -43,7 +43,7 @@ function M.reload_custom_openai_models()
 end
 
 -- Get available providers with valid API keys
-local function get_available_providers()
+function M.get_available_providers()
   local keys_manager = require('llm.managers.keys_manager')
   local plugins_manager = require('llm.managers.plugins_manager')
 
@@ -62,7 +62,7 @@ end
 
 -- Check if a specific model is available (used when setting default)
 function M.is_model_available(model_line)
-  local providers = get_available_providers()
+  local providers = M.get_available_providers()
   local model_name = M.extract_model_name(model_line)
 
   if config.get("debug") then
@@ -380,23 +380,18 @@ function M.generate_models_list()
     }
 
     -- Check for duplicates before adding to the provider list
-    if is_custom then
-      if processed_custom_model_ids[model_id] then
-        if config.get("debug") then
-          vim.notify("Skipping duplicate custom model entry for ID: " .. model_id, vim.log.levels.DEBUG)
-        end
-        goto next_model_line                        -- Skip adding this duplicate entry
-      else
+    if not (is_custom and processed_custom_model_ids[model_id]) then
+      if is_custom then
         processed_custom_model_ids[model_id] = true -- Mark this ID as processed
       end
-    end
 
-    if not providers[provider_key] then
-      providers[provider_key] = {}
+      if not providers[provider_key] then
+        providers[provider_key] = {}
+      end
+      table.insert(providers[provider_key], entry)
+    elseif config.get("debug") then
+      vim.notify("Skipping duplicate custom model entry for ID: " .. model_id, vim.log.levels.DEBUG)
     end
-    table.insert(providers[provider_key], entry)
-
-    ::next_model_line::
   end
 
   local model_data = {}       -- Stores detailed info keyed by model_id
