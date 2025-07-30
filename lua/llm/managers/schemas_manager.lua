@@ -25,13 +25,16 @@ end
 
 -- Get a specific schema from llm CLI
 function M.get_schema(schema_id)
-    local schema_json = llm_cli.run_llm_command('schemas get ' .. schema_id)
+    local schema_json = llm_cli.run_llm_command('schemas get ' .. schema_id .. ' --json')
     return vim.fn.json_decode(schema_json)
 end
 
 -- Save a schema
-function M.save_schema(name, content)
+function M.save_schema(name, content, test_mode)
     local temp_file_path = vim.fn.tempname()
+    if test_mode then
+        return 'schemas save ' .. name .. ' ' .. temp_file_path
+    end
     local file = io.open(temp_file_path, "w")
     if not file then
         return false
@@ -46,8 +49,12 @@ function M.save_schema(name, content)
 end
 
 -- Run a schema
-function M.run_schema(schema_id, input, is_multi)
+function M.run_schema(schema_id, input, is_multi, test_mode)
     local temp_file_path = vim.fn.tempname()
+    if test_mode then
+        local multi_flag = is_multi and " --multi" or ""
+        return 'schema ' .. schema_id .. ' ' .. temp_file_path .. multi_flag
+    end
     local file = io.open(temp_file_path, "w")
     if not file then
         return nil
