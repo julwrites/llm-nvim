@@ -26,7 +26,7 @@ local function parse_plugins_html(html)
         if link_match then
           name = link_match:match('<strong>(.-)</strong>') or link_match
           url = item:match('href="(.-)"')
-          description = item:gsub('<[^>]+>', ''):gsub(name, '', 1):match('^:%s*(.*)') or ''
+          description = item:gsub('<[^>]+>', ''):gsub(name, '', 1):match('^:%s*(.*)') or item:gsub('<[^>]+>', ''):gsub(name, '', 1):match(':%s*(.*)')
           table.insert(plugins, { name = name, url = url, description = description })
           -- vim.notify("Parsed plugin: " .. name, vim.log.levels.INFO) -- Removed per-plugin log
         end
@@ -79,7 +79,7 @@ function M.get_installed_plugins()
   vim.notify("Raw 'llm plugins' output:\n" .. plugins_output, vim.log.levels.INFO)
 
   local plugins = {}
-  local ok, decoded_plugins = pcall(vim.json.decode, plugins_output)
+  local ok, decoded_plugins = pcall(vim.fn.json_decode, plugins_output)
   if not ok then
     vim.notify("Failed to decode JSON from 'llm plugins' command: " .. decoded_plugins, vim.log.levels.ERROR)
     return {}
