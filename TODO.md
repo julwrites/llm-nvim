@@ -61,7 +61,7 @@ By implementing this testing strategy, we can significantly improve the test cov
 #### 5. `managers/fragments_manager.lua` (`tests/spec/managers/fragments_manager_spec.lua`) - Done
 
 *   **`get_fragments()`**:
-    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('fragments list --json')`. - Failing
+    *   **Test:** should parse JSON output from `llm_cli.run_llm_command('fragments list --json')`. - Done
     *   **Test:** should cache the fragments. - Done
 *   **`set_alias_for_fragment_under_cursor()`**:
     *   **Test:** should call `llm_cli.run_llm_command` with `'fragments alias set <hash> <alias>'`. - Done
