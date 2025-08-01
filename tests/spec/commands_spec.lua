@@ -165,29 +165,21 @@ describe('llm.commands', function()
 
   describe('create_response_buffer', function()
     it('should call ui.create_buffer_with_content with correct arguments', function()
-      _G.vim.api = {
-        nvim_create_buf = spy.new(function()
-          return 1
-        end),
-        nvim_open_win = spy.new(function() end),
-        nvim_buf_set_option = spy.new(function() end),
-        nvim_buf_set_name = spy.new(function() end),
-        nvim_buf_set_lines = spy.new(function() end),
-        nvim_get_current_buf = spy.new(function() end),
-        nvim_create_augroup = spy.new(function() end),
-        nvim_create_autocmd = spy.new(function() end),
-        nvim_create_buf = spy.new(function() end),
-        nvim_open_win = spy.new(function() end),
+      -- Mock the ui function
+      local mock_ui = {
+        create_buffer_with_content = spy.new(function() end)
       }
-      _G.vim.notify = spy.new(function() end)
-      -- We need to reload the modules to use the mocked vim object
-      package.loaded['llm.core.utils.ui'] = nil
-      package.loaded['llm.commands'] = nil
-      commands = require('llm.commands')
+      package.loaded['llm.core.utils.ui'] = mock_ui
 
+      -- Reload commands to use the mock
+      package.loaded['llm.commands'] = nil
+      local commands = require('llm.commands')
+
+      -- Call the function
       commands.create_response_buffer('test content')
 
-      assert.spy(_G.vim.cmd).was.called_with('vnew')
+      -- Assert that the function was called with the correct arguments
+      assert.spy(mock_ui.create_buffer_with_content).was.called_with('test content', 'LLM Response', 'markdown')
     end)
   end)
 

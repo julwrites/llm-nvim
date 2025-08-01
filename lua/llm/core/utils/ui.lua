@@ -72,6 +72,32 @@ function M.create_prompt_buffer()
   return buf
 end
 
+function M.create_chat_buffer()
+  -- Create a new vertical split
+  vim.cmd('vnew')
+
+  -- Get the new buffer
+  local buf = api.nvim_get_current_buf()
+
+  -- Configure the buffer
+  configure_buffer(buf, {
+    name = "LLM Chat",
+    filetype = "markdown"
+  })
+
+  -- Set the content of the buffer to a prompt
+  local prompt_text = "Enter your prompt and press <Enter> to submit."
+  api.nvim_buf_set_lines(buf, 0, -1, false, {prompt_text})
+
+  -- Set up keymap for <Enter>
+  api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
+
+  -- Switch to insert mode
+  vim.cmd('startinsert')
+
+  return buf
+end
+
 function M.create_buffer_with_content(content, buffer_name, filetype)
     local buf = api.nvim_create_buf(false, true)
     api.nvim_open_win(buf, true, {relative = 'editor', width = 1, height = 1, row = 0, col = 0})
