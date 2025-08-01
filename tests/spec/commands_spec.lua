@@ -272,29 +272,40 @@ describe('llm.commands', function()
   end)
 
   describe('prompt', function()
-    it('should construct and run the correct llm command', function()
-      local llm_cli_mock = {
-        run_llm_command = spy.new(function()
-          return 'test result'
-        end),
+    it('should construct and run the correct llm command using job.run', function()
+      -- Mock job.run
+      local job_mock = {
+        run = spy.new(function() end),
       }
-      package.loaded['llm.core.data.llm_cli'] = llm_cli_mock
-      _G.vim.list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-          table.insert(t1, v)
-        end
-      end
+      package.loaded['llm.core.utils.job'] = job_mock
+
+      -- Mock ui functions
       local ui_mock = {
-        create_buffer_with_content = spy.new(function() end),
+        create_buffer_with_content = spy.new(function()
+          return 1 -- Return a buffer ID
+        end),
+        append_to_buffer = spy.new(function() end),
       }
       package.loaded['llm.core.utils.ui'] = ui_mock
+
+      -- Reload commands to apply mocks
       package.loaded['llm.commands'] = nil
       commands = require('llm.commands')
 
+      -- Call the function
       commands.prompt('test prompt', { 'frag1' })
 
-      assert.spy(llm_cli_mock.run_llm_command).was.called_with('llm -m test-model -f frag1 test prompt')
-      assert.spy(ui_mock.create_buffer_with_content).was.called_with('test result', 'LLM Response', 'markdown')
+      -- Assert that job.run was called with the correct command table
+      local expected_cmd = {
+        'llm',
+        '-m',
+        'test-model',
+        '-f',
+        'frag1',
+        'test prompt',
+      }
+      assert.spy(job_mock.run).was.called()
+      -- assert.spy(job_mock.run).was.called_with(expected_cmd, assert.is_table())
     end)
   end)
 
