@@ -42,8 +42,19 @@ local function configure_buffer(buf, opts)
 end
 
 function M.create_split_buffer()
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_open_win(buf, true, {relative = 'editor', width = 1, height = 1, row = 0, col = 0})
+  -- Create a new vertical split
+  vim.cmd('vnew')
+
+  -- Get the new buffer
+  local buf = api.nvim_get_current_buf()
+
+  -- Switch to insert mode
+  vim.cmd('startinsert')
+
+  -- Set the content of the buffer to a prompt
+  local prompt_text = "Enter your prompt here and then save and close the buffer to continue."
+  api.nvim_buf_set_lines(buf, 0, -1, false, {prompt_text})
+
   return buf
 end
 

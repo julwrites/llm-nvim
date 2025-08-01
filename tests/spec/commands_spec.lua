@@ -173,6 +173,7 @@ describe('llm.commands', function()
         nvim_buf_set_option = spy.new(function() end),
         nvim_buf_set_name = spy.new(function() end),
         nvim_buf_set_lines = spy.new(function() end),
+        nvim_get_current_buf = spy.new(function() end),
       }
       _G.vim.notify = spy.new(function() end)
       -- We need to reload the modules to use the mocked vim object
@@ -182,8 +183,7 @@ describe('llm.commands', function()
 
       commands.create_response_buffer('test content')
 
-      assert.spy(_G.vim.api.nvim_create_buf).was.called()
-      assert.spy(_G.vim.api.nvim_open_win).was.called()
+      assert.spy(_G.vim.cmd).was.called_with('vnew')
     end)
   end)
 
