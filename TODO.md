@@ -45,8 +45,8 @@ This plan is structured to follow the Red-Green-Refactor cycle for each piece of
 ### Phase 4: Integration and Finalization
 
 **5. Command Dispatch (`plugin/llm.lua`)**
--   **5a. Red:** Write a test (if possible, this might require a more integrated test setup) that calls `:LLM` with no arguments and asserts that `chat.start_chat` is called.
--   **5b. Green:** Modify `plugin/llm.lua` to call `chat.start_chat` when `:LLM` is called with no arguments.
+-   **DONE: 5a. Red:** Write a test (if possible, this might require a more integrated test setup) that calls `:LLM` with no arguments and asserts that `chat.start_chat` is called.
+-   **DONE: 5b. Green:** Modify `plugin/llm.lua` to call `chat.start_chat` when `:LLM` is called with no arguments.
 
 **6. Documentation (`doc/llm.txt`)**
 -   **Action:** After all implementation and refactoring is complete and all tests are passing, update the documentation in `doc/llm.txt` to reflect the new interactive chat feature and the streaming behavior of existing commands.
