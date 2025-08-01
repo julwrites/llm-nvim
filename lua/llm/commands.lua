@@ -191,6 +191,8 @@ function M.dispatch_command(subcmd, ...)
     elseif subcmd == "toggle" then
       local unified_manager = require('llm.ui.unified_manager')
       return unified_manager.toggle(args[1] or "")
+    elseif subcmd == "" then
+        return ui.create_prompt_buffer()
     else
       -- Default case: treat as direct prompt
       return M.prompt(subcmd, args[1] or {})

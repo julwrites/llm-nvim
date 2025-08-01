@@ -173,6 +173,11 @@ describe('llm.commands', function()
         nvim_buf_set_option = spy.new(function() end),
         nvim_buf_set_name = spy.new(function() end),
         nvim_buf_set_lines = spy.new(function() end),
+        nvim_get_current_buf = spy.new(function() end),
+        nvim_create_augroup = spy.new(function() end),
+        nvim_create_autocmd = spy.new(function() end),
+        nvim_create_buf = spy.new(function() end),
+        nvim_open_win = spy.new(function() end),
       }
       _G.vim.notify = spy.new(function() end)
       -- We need to reload the modules to use the mocked vim object
