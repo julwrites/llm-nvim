@@ -10,6 +10,7 @@ local ui = require('llm.core.utils.ui')
 local text = require('llm.core.utils.text')
 local shell = require('llm.core.utils.shell')
 local llm_cli = require('llm.core.data.llm_cli')
+local job = require('llm.core.utils.job')
 
 ---------------------
 -- Helper Functions
@@ -230,16 +231,27 @@ function M.prompt(prompt, fragment_paths)
     table.insert(cmd_parts, vim.fn.shellescape(prompt))
   end
 
-  -- Construct the final command string
-  local cmd = table.concat(cmd_parts, " ")
-  vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
+  local response_buf = ui.create_buffer_with_content("Waiting for response...", "LLM Response", "markdown")
+  local first_line = true
 
-  local result = llm_cli.run_llm_command(cmd)
-  if result then
-    M.create_response_buffer(result)
-  else
-    vim.notify("No response received from LLM. Check your fragment identifier and API key.", vim.log.levels.ERROR)
-  end
+  local callbacks = {
+    on_stdout = function(line)
+      if first_line then
+        ui.replace_buffer_with_content(line, response_buf, "markdown")
+        first_line = false
+      else
+        ui.append_to_buffer(response_buf, line)
+      end
+    end,
+    on_stderr = function(line)
+      vim.notify("Error from llm: " .. line, vim.log.levels.ERROR)
+    end,
+    on_exit = function()
+      vim.notify("LLM command finished.")
+    end,
+  }
+
+  job.run(cmd_parts, callbacks)
 end
 
 -- Explain the current buffer or selection

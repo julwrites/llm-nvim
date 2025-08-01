@@ -32,8 +32,8 @@ This plan is structured to follow the Red-Green-Refactor cycle for each piece of
 ### Phase 3: Refactor Existing Commands for Streaming
 
 **4. Refactor `commands.lua`**
--   **4a. Red:** In `tests/spec/commands_spec.lua`, modify the test for `M.prompt` to assert that `job.run` is called (it will fail as it currently calls the old CLI function).
--   **4b. Green:** Refactor `M.prompt` in `lua/llm/commands.lua` to use `job.run`, making the test pass.
+-   **DONE: 4a. Red:** In `tests/spec/commands_spec.lua`, modify the test for `M.prompt` to assert that `job.run` is called (it will fail as it currently calls the old CLI function).
+-   **DONE: 4b. Green:** Refactor `M.prompt` in `lua/llm/commands.lua` to use `job.run`, making the test pass.
 -   **4c. Red:** Repeat the Red-Green cycle for `M.prompt_with_current_file`.
 -   **4d. Green:** Refactor `M.prompt_with_current_file`.
 -   **4e. Red:** Repeat for `M.prompt_with_selection`.
