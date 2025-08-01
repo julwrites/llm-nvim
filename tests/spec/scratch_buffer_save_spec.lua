@@ -34,6 +34,8 @@ describe('llm.commands', function()
         nvim_create_autocmd = spy.new(function() end),
         nvim_buf_set_option = spy.new(function() end),
         nvim_buf_set_name = spy.new(function() end),
+        nvim_create_buf = spy.new(function() end),
+        nvim_open_win = spy.new(function() end),
       },
       notify = spy.new(function() end),
       cmd = spy.new(function() end),
@@ -70,17 +72,22 @@ describe('llm.commands', function()
   end)
 
   it('should call llm with buffer content on BufWriteCmd', function()
-    -- This is a bit of a hack, but it simulates the BufWriteCmd autocmd
-    commands.prompt = spy.on(commands, 'prompt')
+    local get_lines_spy = spy.new(function()
+        return { "Enter your prompt here and then save and close the buffer to continue.", "test prompt" }
+    end)
+    _G.vim.api.nvim_buf_get_lines = get_lines_spy
 
-    -- To simulate the save, we need to find a way to trigger the prompt
-    -- The plugin doesn't seem to have a direct way to do this, so we'll
-    -- have to assume that some external mechanism will call M.prompt
-    -- with the content of the buffer.
+    local prompt_spy = spy.on(commands, 'prompt')
 
-    -- Let's simulate the call that would be made by the autocmd
-    commands.prompt('test prompt')
+    -- To simulate the save, we need to get the callback from the autocmd
+    local create_autocmd_spy = spy.new(function(event, opts)
+        opts.callback()
+    end)
+    _G.vim.api.nvim_create_autocmd = create_autocmd_spy
 
-    assert.spy(commands.prompt).was.called_with('test prompt')
+    local ui_utils = require('llm.core.utils.ui')
+    ui_utils.create_prompt_buffer()
+
+    assert.spy(prompt_spy).was.called_with('test prompt')
   end)
 end)

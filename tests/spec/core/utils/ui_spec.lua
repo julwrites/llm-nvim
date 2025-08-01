@@ -3,43 +3,46 @@ require('tests.spec.spec_helper')
 describe('llm.core.utils.ui', function()
   local ui_utils = require('llm.core.utils.ui')
 
-  describe('create_split_buffer()', function()
-    it('should create a split buffer', function()
-      local create_buf_spy = spy.new(function() return 1 end)
-      local open_win_spy = spy.new(function() end)
-
+  describe('create_prompt_buffer()', function()
+    it('should create a prompt buffer', function()
       local cmd_spy = spy.new(function() end)
       local get_current_buf_spy = spy.new(function() return 1 end)
       local set_lines_spy = spy.new(function() end)
+      local create_augroup_spy = spy.new(function() return 1 end)
+      local create_autocmd_spy = spy.new(function() end)
 
       -- Mock vim.cmd and vim.api
       vim.cmd = cmd_spy
       ui_utils.set_api({
         nvim_get_current_buf = get_current_buf_spy,
         nvim_buf_set_lines = set_lines_spy,
-        nvim_buf_set_option = function() end,
-        nvim_create_augroup = function() end,
-        nvim_create_autocmd = function() end,
+        nvim_create_augroup = create_augroup_spy,
+        nvim_create_autocmd = create_autocmd_spy,
       })
 
-      ui_utils.create_split_buffer('test')
+      ui_utils.create_prompt_buffer()
 
       assert.spy(cmd_spy).was.called_with('vnew')
       assert.spy(cmd_spy).was.called_with('startinsert')
       assert.spy(get_current_buf_spy).was.called()
+      assert.spy(set_lines_spy).was.called()
+      assert.spy(create_augroup_spy).was.called()
+      assert.spy(create_autocmd_spy).was.called()
     end)
   end)
 
   describe('buffer content', function()
     it('should create a buffer with content', function()
-      local get_current_buf_spy = spy.new(function() return 1 end)
+      local create_buf_spy = spy.new(function() return 1 end)
+      local open_win_spy = spy.new(function() end)
       local set_lines_spy = spy.new(function() end)
       local cmd_spy = spy.new(function() end)
 
       -- Mock vim.cmd and vim.api
       vim.cmd = cmd_spy
       ui_utils.set_api({
-        nvim_get_current_buf = get_current_buf_spy,
+        nvim_create_buf = create_buf_spy,
+        nvim_open_win = open_win_spy,
         nvim_buf_set_option = function() end,
         nvim_buf_set_name = function() end,
         nvim_buf_set_lines = set_lines_spy,
@@ -49,7 +52,8 @@ describe('llm.core.utils.ui', function()
 
       ui_utils.create_buffer_with_content('hello', 'test_buffer', 'markdown')
 
-      assert.spy(get_current_buf_spy).was.called()
+      assert.spy(create_buf_spy).was.called()
+      assert.spy(open_win_spy).was.called()
       assert.spy(set_lines_spy).was.called_with(1, 0, -1, false, { 'hello' })
     end)
 
