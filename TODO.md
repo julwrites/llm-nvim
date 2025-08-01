@@ -1,5 +1,7 @@
 # TODO - TDD-Focused Interactive Chat and Streaming Refactor
 
+**NOTE: Implementation of Phase 2 was blocked by a persistent workspace error that prevented the creation of `lua/llm/chat.lua`. The file could not be saved to the repository, and the agent was unable to proceed.**
+
 This document outlines the tasks required to implement an interactive chat feature and refactor existing commands to support streaming responses in `llm-nvim`, following a strict Test-Driven Development (TDD) methodology.
 
 ## TDD-Focused Implementation Plan
