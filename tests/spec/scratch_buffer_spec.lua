@@ -11,9 +11,14 @@ describe('llm.core.utils.ui', function()
 
         -- Mock vim.cmd and vim.api
         vim.cmd = cmd_spy
+        local create_augroup_spy = spy.new(function() return 1 end)
+        local create_autocmd_spy = spy.new(function() end)
+
         ui_utils.set_api({
             nvim_get_current_buf = get_current_buf_spy,
             nvim_buf_set_lines = set_lines_spy,
+            nvim_create_augroup = create_augroup_spy,
+            nvim_create_autocmd = create_autocmd_spy,
         })
 
         ui_utils.create_split_buffer('test')
@@ -22,6 +27,8 @@ describe('llm.core.utils.ui', function()
         assert.spy(cmd_spy).was.called_with('startinsert')
         assert.spy(get_current_buf_spy).was.called()
         assert.spy(set_lines_spy).was.called()
+        assert.spy(create_augroup_spy).was.called()
+        assert.spy(create_autocmd_spy).was.called()
     end)
   end)
 end)

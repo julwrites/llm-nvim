@@ -18,6 +18,8 @@ describe('llm.core.utils.ui', function()
         nvim_get_current_buf = get_current_buf_spy,
         nvim_buf_set_lines = set_lines_spy,
         nvim_buf_set_option = function() end,
+        nvim_create_augroup = function() end,
+        nvim_create_autocmd = function() end,
       })
 
       ui_utils.create_split_buffer('test')
@@ -41,6 +43,8 @@ describe('llm.core.utils.ui', function()
         nvim_buf_set_option = function() end,
         nvim_buf_set_name = function() end,
         nvim_buf_set_lines = set_lines_spy,
+        nvim_create_augroup = function() end,
+        nvim_create_autocmd = function() end,
       })
 
       ui_utils.create_buffer_with_content('hello', 'test_buffer', 'markdown')
