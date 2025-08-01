@@ -135,4 +135,71 @@ describe('llm.core.utils.ui', function()
       assert.spy(buf_set_var_spy).was.called()
     end)
   end)
+
+  describe('append_to_buffer', function()
+    local orig_bufwinid
+
+    before_each(function()
+      orig_bufwinid = vim.fn.bufwinid
+    end)
+
+    after_each(function()
+      vim.fn.bufwinid = orig_bufwinid
+    end)
+
+    it('should append lines and move cursor', function()
+      local set_lines_spy = spy.new(function() end)
+      local set_cursor_spy = spy.new(function() end)
+      local line_count_spy = spy.new(function() return 5 end)
+      local bufwinid_spy = spy.new(function() return 1 end)
+
+      ui_utils.set_api({
+        nvim_buf_set_lines = set_lines_spy,
+        nvim_win_set_cursor = set_cursor_spy,
+        nvim_buf_line_count = line_count_spy,
+      })
+      vim.fn.bufwinid = bufwinid_spy
+
+      ui_utils.append_to_buffer(123, 'some new content')
+
+      assert.spy(line_count_spy).was.called_with(123)
+      assert.spy(set_lines_spy).was.called_with(123, 5, 5, false, { 'some new content' })
+      assert.spy(bufwinid_spy).was.called_with(123)
+      assert.spy(set_cursor_spy).was.called_with(1, { 6, 0 })
+    end)
+
+    it('should do nothing for empty content', function()
+      local set_lines_spy = spy.new(function() end)
+      ui_utils.set_api({ nvim_buf_set_lines = set_lines_spy })
+
+      ui_utils.append_to_buffer(123, '')
+
+      assert.spy(set_lines_spy).was.not_called()
+    end)
+
+    it('should do nothing for nil content', function()
+      local set_lines_spy = spy.new(function() end)
+      ui_utils.set_api({ nvim_buf_set_lines = set_lines_spy })
+
+      ui_utils.append_to_buffer(123, nil)
+
+      assert.spy(set_lines_spy).was.not_called()
+    end)
+
+    it('should handle invalid buffer handle gracefully', function()
+      local line_count_spy = spy.new(function()
+        error('Invalid buffer id')
+      end)
+      local set_lines_spy = spy.new(function() end)
+      ui_utils.set_api({
+        nvim_buf_line_count = line_count_spy,
+        nvim_buf_set_lines = set_lines_spy,
+      })
+
+      assert.is_not.error(function()
+        ui_utils.append_to_buffer(999, 'content')
+      end)
+      assert.spy(set_lines_spy).was.not_called()
+    end)
+  end)
 end)

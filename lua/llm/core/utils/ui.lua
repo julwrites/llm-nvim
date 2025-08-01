@@ -222,4 +222,23 @@ function M._confirm_floating_dialog(confirmed)
   end
 end
 
+function M.append_to_buffer(bufnr, content)
+  local lines = content_to_lines(content or '')
+  if #lines == 0 then
+    return
+  end
+
+  local ok, last_line = pcall(api.nvim_buf_line_count, bufnr)
+  if not ok then
+    return -- Invalid buffer, do nothing
+  end
+
+  api.nvim_buf_set_lines(bufnr, last_line, last_line, false, lines)
+
+  local win_id = vim.fn.bufwinid(bufnr)
+  if win_id and win_id ~= -1 then
+    api.nvim_win_set_cursor(win_id, { last_line + #lines, 0 })
+  end
+end
+
 return M
