@@ -34,13 +34,13 @@ This plan is structured to follow the Red-Green-Refactor cycle for each piece of
 **4. Refactor `commands.lua`**
 -   **DONE: 4a. Red:** In `tests/spec/commands_spec.lua`, modify the test for `M.prompt` to assert that `job.run` is called (it will fail as it currently calls the old CLI function).
 -   **DONE: 4b. Green:** Refactor `M.prompt` in `lua/llm/commands.lua` to use `job.run`, making the test pass.
--   **4c. Red:** Repeat the Red-Green cycle for `M.prompt_with_current_file`.
--   **4d. Green:** Refactor `M.prompt_with_current_file`.
--   **4e. Red:** Repeat for `M.prompt_with_selection`.
--   **4f. Green:** Refactor `M.prompt_with_selection`.
--   **4g. Red:** Repeat for `M.explain_code`.
--   **4h. Green:** Refactor `M.explain_code`.
--   **4i. Refactor:** Clean up `commands.lua` and its tests. Remove the obsolete `llm_command_and_display_response` function and its corresponding test.
+-   **DONE: 4c. Red:** Repeat the Red-Green cycle for `M.prompt_with_current_file`.
+-   **DONE: 4d. Green:** Refactor `M.prompt_with_current_file`.
+-   **DONE: 4e. Red:** Repeat for `M.prompt_with_selection`.
+-   **DONE: 4f. Green:** Refactor `M.prompt_with_selection`.
+-   **DONE: 4g. Red:** Repeat for `M.explain_code`.
+-   **DONE: 4h. Green:** Refactor `M.explain_code`.
+-   **DONE: 4i. Refactor:** Clean up `commands.lua` and its tests. Remove the obsolete `llm_command_and_display_response` function and its corresponding test.
 
 ### Phase 4: Integration and Finalization
 
