@@ -1,104 +1,52 @@
-# TODO - Interactive Chat and Streaming Refactor
+# TODO - TDD-Focused Interactive Chat and Streaming Refactor
 
-This document outlines the tasks required to implement an interactive chat feature and refactor existing commands to support streaming responses in `llm-nvim`.
+This document outlines the tasks required to implement an interactive chat feature and refactor existing commands to support streaming responses in `llm-nvim`, following a strict Test-Driven Development (TDD) methodology.
 
-## Feature Overview
+## TDD-Focused Implementation Plan
 
-When a user issues the `:LLM` command with no arguments, the plugin will open a special "chat" buffer for interactive conversation with the LLM. All responses from the LLM, both in chat and from other commands, will be streamed into a response buffer.
-
-## Task Breakdown
+This plan is structured to follow the Red-Green-Refactor cycle for each piece of functionality.
 
 ### Phase 1: Core Infrastructure
 
-#### 1. Asynchronous Job Runner (`lua/llm/core/utils/job.lua`)
+**1. Asynchronous Job Runner (`job.lua`)**
+-   **1a. Red:** Write a failing test in a new `tests/spec/job_spec.lua` that calls `job.run` and asserts that `vim.fn.jobstart` is called with the correct parameters.
+-   **1b. Green:** Create `lua/llm/core/utils/job.lua` and implement the `run` function with the minimum code required to make the test pass.
+-   **1c. Refactor:** Refine the `job.run` function and its tests. Add tests for the line-splitting logic in the `on_stdout` callback, ensuring it handles partial lines and different line endings correctly.
 
--   **Goal:** Create a reusable utility for running external commands asynchronously and streaming their output.
--   **File:** `lua/llm/core/utils/job.lua`
--   **Function:** `run(cmd, on_line, on_exit)`
--   **Implementation:** Use `vim.fn.jobstart()` with `pty = true` and `stdout_buffered = false`. Implement a robust line-splitting mechanism.
-
-#### 2. UI Enhancements for Streaming (`lua/llm/core/utils/ui.lua`)
-
--   **Goal:** Add a function to append content to a buffer and ensure it auto-scrolls.
--   **File:** `lua/llm/core/utils/ui.lua`
--   **Function:** `append_to_buffer(bufnr, lines)`
--   **Implementation:** Use `vim.api.nvim_buf_set_lines()` and `vim.api.nvim_win_set_cursor()` to append and scroll.
+**2. UI Enhancements for Streaming (`ui.lua`)**
+-   **2a. Red:** Write a failing test in a new `tests/spec/ui_spec.lua` (or an existing one if appropriate) that calls `ui.append_to_buffer` and asserts that `vim.api.nvim_buf_set_lines` and `vim.api.nvim_win_set_cursor` are called.
+-   **2b. Green:** Implement the `append_to_buffer` function in `lua/llm/core/utils/ui.lua` to make the test pass.
+-   **2c. Refactor:** Clean up the code and add any additional tests for edge cases (e.g., invalid buffer handle).
 
 ### Phase 2: Chat Feature Implementation
 
-#### 3. Core Chat Logic (`lua/llm/chat.lua`)
-
--   **Goal:** Create the main module for the interactive chat feature.
--   **File:** `lua/llm/chat.lua`
--   **`start_chat()` function**: Create a scratch buffer `[LLM Chat]` with a `<leader>s` keymap to send the prompt.
--   **`send_prompt()` function**:
-    -   Get prompt from the input buffer.
-    -   Create a response buffer `LLM Chat Response` if it doesn't exist.
-    -   Clear the response buffer.
-    -   **Visual Separation:** Add "--- Prompt ---" and "--- Response ---" headers.
-    -   Construct the `llm` command *without* `--stream`.
-    -   Call `job.run()` with callbacks to append the response to the buffer.
+**3. Core Chat Logic (`chat.lua`)**
+-   **3a. Red (start_chat):** In a new `tests/spec/chat_spec.lua`, write a test for `chat.start_chat` that asserts a new buffer is created with the correct options and a keymap is set.
+-   **3b. Green (start_chat):** Implement `chat.start_chat` in `lua/llm/chat.lua` to make the test pass.
+-   **3c. Red (send_prompt):** Write a test for `chat.send_prompt` that asserts a `job.run` is called with the correct command. This test will use a mock of the `job` module.
+-   **3d. Green (send_prompt):** Implement `chat.send_prompt` to make the test pass.
+-   **3e. Red (Visual Separation):** Add a test to `send_prompt` that asserts the response buffer is cleared and that headers for "Prompt" and "Response" are appended.
+-   **3f. Green (Visual Separation):** Update `send_prompt` to include the visual separators.
+-   **3g. Refactor:** Refine the `chat.lua` module and its tests.
 
 ### Phase 3: Refactor Existing Commands for Streaming
 
-#### 4. Detailed Migration Plan for `lua/llm/commands.lua`
-
--   **Goal:** Update existing commands to use the new asynchronous job runner and stream responses.
--   **Primary Change:** Replace all calls to `llm_cli.run_llm_command` with the new `job.run` utility.
-
--   **Function `M.prompt(prompt, fragment_paths)`**:
-    -   **Current:** Calls `llm_cli.run_llm_command` and displays the full result in a new buffer.
-    -   **New:**
-        1.  Create a response buffer using `ui.create_buffer_with_content("Waiting for response...", "LLM Response", "markdown")`.
-        2.  Construct the command as a table of strings.
-        3.  Call `job.run` with this command.
-        4.  The `on_line` callback will call `ui.append_to_buffer` to stream the response into the created buffer. The first line received should replace the "Waiting for response..." message.
-        5.  The `on_exit` callback can add a footer to the buffer.
-
--   **Function `M.llm_command_and_display_response(buf, cmd)`**:
-    -   **Action:** This function will be **deleted**. Its logic will be integrated into the functions that call it.
-
--   **Function `M.execute_prompt_with_file(buffer, prompt, filepath, fragment_paths)`**:
-    -   **Current:** Calls `M.llm_command_and_display_response`.
-    -   **New:**
-        1.  This function will now directly use `job.run`.
-        2.  It will receive the response buffer handle `buffer` as an argument.
-        3.  It will construct the `llm` command table, including the file path.
-        4.  It will call `job.run` with callbacks.
-        5.  The `on_line` callback will append the streamed response directly to the `buffer` passed into the function.
-
--   **Function `M.execute_prompt_async(...)`**:
-    -   **Current:** Calls `M.execute_prompt_with_file` after getting user input.
-    -   **New:** No significant changes needed. It will continue to call `M.execute_prompt_with_file`, which will now be streaming internally.
-
-#### 5. Test Updates for `tests/spec/commands_spec.lua`
-
--   **Mocking:** Replace the mock for `llm_cli.run_llm_command` with a mock for `job.run`.
--   **Test `prompt`**:
-    -   Assert that `job.run` is called with the correct command table.
-    -   Simulate `job.run` callbacks.
-    -   Assert that `ui.create_buffer_with_content` and `ui.append_to_buffer` are called.
--   **Test `execute_prompt_with_file`**:
-    -   Assert that `job.run` is called.
-    -   Simulate callbacks and assert that `ui.append_to_buffer` is called on the correct buffer.
--   **Remove Test**: Delete the test for the obsolete `llm_command_and_display_response` function.
+**4. Refactor `commands.lua`**
+-   **4a. Red:** In `tests/spec/commands_spec.lua`, modify the test for `M.prompt` to assert that `job.run` is called (it will fail as it currently calls the old CLI function).
+-   **4b. Green:** Refactor `M.prompt` in `lua/llm/commands.lua` to use `job.run`, making the test pass.
+-   **4c. Red:** Repeat the Red-Green cycle for `M.prompt_with_current_file`.
+-   **4d. Green:** Refactor `M.prompt_with_current_file`.
+-   **4e. Red:** Repeat for `M.prompt_with_selection`.
+-   **4f. Green:** Refactor `M.prompt_with_selection`.
+-   **4g. Red:** Repeat for `M.explain_code`.
+-   **4h. Green:** Refactor `M.explain_code`.
+-   **4i. Refactor:** Clean up `commands.lua` and its tests. Remove the obsolete `llm_command_and_display_response` function and its corresponding test.
 
 ### Phase 4: Integration and Finalization
 
-#### 6. Command Dispatch (`plugin/llm.lua`)
+**5. Command Dispatch (`plugin/llm.lua`)**
+-   **5a. Red:** Write a test (if possible, this might require a more integrated test setup) that calls `:LLM` with no arguments and asserts that `chat.start_chat` is called.
+-   **5b. Green:** Modify `plugin/llm.lua` to call `chat.start_chat` when `:LLM` is called with no arguments.
 
--   **Goal:** Hook the chat feature into the `:LLM` command.
--   **File:** `plugin/llm.lua`
--   **Modification:** If `opts.args` is empty, call `require('llm.chat').start_chat()`.
-
-#### 7. Documentation (`doc/llm.txt`)
-
--   **Goal:** Document the new features.
--   **File:** `doc/llm.txt`
--   **Content:** Document the interactive chat feature and the new streaming behavior of existing commands.
-
-#### 8. Testing
-
--   **Goal:** Ensure all new and refactored functionality is working correctly.
--   **File:** `tests/spec/chat_spec.lua` (new) and `tests/spec/commands_spec.lua` (updated).
--   **Action:** Write tests for `chat.lua` and update tests for `commands.lua` as detailed in the migration plan.
+**6. Documentation (`doc/llm.txt`)**
+-   **Action:** After all implementation and refactoring is complete and all tests are passing, update the documentation in `doc/llm.txt` to reflect the new interactive chat feature and the streaming behavior of existing commands.
