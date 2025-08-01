@@ -9,9 +9,9 @@ This plan is structured to follow the Red-Green-Refactor cycle for each piece of
 ### Phase 1: Core Infrastructure
 
 **1. Asynchronous Job Runner (`job.lua`)**
--   **1a. Red:** Write a failing test in a new `tests/spec/job_spec.lua` that calls `job.run` and asserts that `vim.fn.jobstart` is called with the correct parameters.
--   **1b. Green:** Create `lua/llm/core/utils/job.lua` and implement the `run` function with the minimum code required to make the test pass.
--   **1c. Refactor:** Refine the `job.run` function and its tests. Add tests for the line-splitting logic in the `on_stdout` callback, ensuring it handles partial lines and different line endings correctly.
+-   **DONE: 1a. Red:** Write a failing test in a new `tests/spec/job_spec.lua` that calls `job.run` and asserts that `vim.fn.jobstart` is called with the correct parameters.
+-   **DONE: 1b. Green:** Create `lua/llm/core/utils/job.lua` and implement the `run` function with the minimum code required to make the test pass.
+-   **DONE: 1c. Refactor:** Refine the `job.run` function and its tests. Add tests for the line-splitting logic in the `on_stdout` callback, ensuring it handles partial lines and different line endings correctly.
 
 **2. UI Enhancements for Streaming (`ui.lua`)**
 -   **2a. Red:** Write a failing test in a new `tests/spec/ui_spec.lua` (or an existing one if appropriate) that calls `ui.append_to_buffer` and asserts that `vim.api.nvim_buf_set_lines` and `vim.api.nvim_win_set_cursor` are called.
