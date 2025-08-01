@@ -36,13 +36,18 @@ describe('llm.core.utils.ui', function()
       local create_buf_spy = spy.new(function() return 1 end)
       local open_win_spy = spy.new(function() end)
       local set_lines_spy = spy.new(function() end)
+      local cmd_spy = spy.new(function() end)
 
+      -- Mock vim.cmd and vim.api
+      vim.cmd = cmd_spy
       ui_utils.set_api({
         nvim_create_buf = create_buf_spy,
         nvim_open_win = open_win_spy,
         nvim_buf_set_option = function() end,
         nvim_buf_set_name = function() end,
         nvim_buf_set_lines = set_lines_spy,
+        nvim_create_augroup = function() end,
+        nvim_create_autocmd = function() end,
       })
 
       ui_utils.create_buffer_with_content('hello', 'test_buffer', 'markdown')

@@ -187,8 +187,7 @@ describe('llm.commands', function()
 
       commands.create_response_buffer('test content')
 
-      assert.spy(_G.vim.api.nvim_create_buf).was.called()
-      assert.spy(_G.vim.api.nvim_open_win).was.called()
+      assert.spy(_G.vim.cmd).was.called_with('vnew')
     end)
   end)
 
