@@ -72,6 +72,10 @@ local command_handlers = {
 -- Subcommands: file, selection, explain, schema, template, fragments
 vim.api.nvim_create_user_command("LLM", function(opts)
   local args = vim.split(opts.args or "", "%s+")
+  if #args == 0 then
+    require('llm.chat').start_chat()
+    return
+  end
   local subcmd = args[1]
   local handler = command_handlers[subcmd] or llm.prompt
   handler(table.concat(args, " ", subcmd and 2 or 1), opts.range > 0)

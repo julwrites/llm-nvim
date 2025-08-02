@@ -41,20 +41,72 @@ local function configure_buffer(buf, opts)
   end
 end
 
-function M.create_split_buffer()
-  local buf = api.nvim_create_buf(false, true)
-  api.nvim_open_win(buf, true, {relative = 'editor', width = 1, height = 1, row = 0, col = 0})
+function M.create_prompt_buffer()
+  -- Create a new vertical split
+  vim.cmd('vnew')
+
+  -- Get the new buffer
+  local buf = api.nvim_get_current_buf()
+
+  -- Switch to insert mode
+  vim.cmd('startinsert')
+
+  -- Set the content of the buffer to a prompt
+  local prompt_text = "Enter your prompt here and then save and close the buffer to continue."
+  api.nvim_buf_set_lines(buf, 0, -1, false, {prompt_text})
+
+  local group = api.nvim_create_augroup("LLMSavePrompt", { clear = true })
+  api.nvim_create_autocmd("BufWriteCmd", {
+    group = group,
+    buffer = buf,
+    callback = function()
+      local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+      table.remove(lines, 1)
+      local content = table.concat(lines, "\n")
+      -- The command needs to be loaded to be called.
+      local commands = require('llm.commands')
+      commands.prompt(content)
+    end,
+  })
+
+  return buf
+end
+
+function M.create_chat_buffer()
+  -- Create a new vertical split
+  vim.cmd('vnew')
+
+  -- Get the new buffer
+  local buf = api.nvim_get_current_buf()
+
+  -- Configure the buffer
+  configure_buffer(buf, {
+    name = "LLM Chat",
+    filetype = "markdown"
+  })
+
+  -- Set the content of the buffer to a prompt
+  local prompt_text = "Enter your prompt and press <Enter> to submit."
+  api.nvim_buf_set_lines(buf, 0, -1, false, {prompt_text})
+
+  -- Set up keymap for <Enter>
+  api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
+
+  -- Switch to insert mode
+  vim.cmd('startinsert')
+
   return buf
 end
 
 function M.create_buffer_with_content(content, buffer_name, filetype)
-  local buf = M.create_split_buffer()
-  configure_buffer(buf, {
-    name = buffer_name or 'LLM Output',
-    filetype = filetype,
-    content = content
-  })
-  return buf
+    local buf = api.nvim_create_buf(false, true)
+    api.nvim_open_win(buf, true, {relative = 'editor', width = 1, height = 1, row = 0, col = 0})
+    configure_buffer(buf, {
+        name = buffer_name,
+        filetype = filetype,
+        content = content
+    })
+    return buf
 end
 
 function M.replace_buffer_with_content(content, buffer, filetype)
@@ -219,6 +271,25 @@ function M._confirm_floating_dialog(confirmed)
     callback("Yes")
   else
     callback("No")
+  end
+end
+
+function M.append_to_buffer(bufnr, content)
+  local lines = content_to_lines(content or '')
+  if #lines == 0 then
+    return
+  end
+
+  local ok, last_line = pcall(api.nvim_buf_line_count, bufnr)
+  if not ok then
+    return -- Invalid buffer, do nothing
+  end
+
+  api.nvim_buf_set_lines(bufnr, last_line, last_line, false, lines)
+
+  local win_id = vim.fn.bufwinid(bufnr)
+  if win_id and win_id ~= -1 then
+    api.nvim_win_set_cursor(win_id, { last_line + #lines, 0 })
   end
 end
 
