@@ -137,8 +137,11 @@ Custom mappings:
     Unified command for all LLM operations.                  
     Available subcommands:                                   
                                                              
+    *:LLM*
+        Start an interactive chat session.
+
     *:LLM* {prompt}                                          
-        Send prompt to configured LLM                        
+        Send a one-off prompt to the configured LLM.
                                                              
     *:LLM file* [{prompt}]                                   
         Send current file's content with optional prompt     

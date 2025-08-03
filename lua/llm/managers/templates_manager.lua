@@ -4,7 +4,7 @@
 local M = {}
 
 -- Forward declarations
-local api = vim.api
+local api = require('llm.api')
 local llm_cli = require('llm.core.data.llm_cli')
 local cache = require('llm.core.data.cache')
 local templates_view = require('llm.ui.views.templates_view')
@@ -76,14 +76,16 @@ end
 
 -- Run a template
 function M.run_template(template_name, input, params)
-    local cmd = 'llm -t ' .. template_name
+    local cmd = { llm_cli.get_llm_executable_path(), "-t", template_name }
     if input then
-        cmd = cmd .. ' ' .. vim.fn.shellescape(input)
+        table.insert(cmd, vim.fn.shellescape(input))
     end
     for k, v in pairs(params) do
-        cmd = cmd .. ' -p ' .. k .. ' ' .. vim.fn.shellescape(v)
+        table.insert(cmd, "-p")
+        table.insert(cmd, k)
+        table.insert(cmd, vim.fn.shellescape(v))
     end
-    return llm_cli.run_llm_command(cmd)
+    return cmd
 end
 
 -- Select and run a template
@@ -122,16 +124,24 @@ function M.run_template_with_selection(template_name, selection)
 
   if #param_names > 0 then
     M.collect_params_and_run(template_name, selection, param_names, template.defaults, function(final_params)
-      local result = M.run_template(template_name, selection, final_params)
-      if result then
-        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
-      end
+      local cmd_parts = M.run_template(template_name, selection, final_params)
+      local response_buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      api.nvim_buf_set_option(response_buf, "swapfile", false)
+      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
+      api.run_llm_command_streamed(cmd_parts, response_buf)
     end)
   else
-    local result = M.run_template(template_name, selection, {})
-    if result then
-      require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
-    end
+    local cmd_parts = M.run_template(template_name, selection, {})
+    local response_buf = api.nvim_create_buf(false, true)
+    api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+    api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+    api.nvim_buf_set_option(response_buf, "swapfile", false)
+    api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+    require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
+    api.run_llm_command_streamed(cmd_parts, response_buf)
   end
 end
 
@@ -211,17 +221,25 @@ function M.run_template_with_input(template_name, params)
         vim.notify("No text selected", vim.log.levels.ERROR)
         return
       end
-      local result = M.run_template(template_name, selection, params)
-      if result then
-        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
-      end
+      local cmd_parts = M.run_template(template_name, selection, params)
+      local response_buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      api.nvim_buf_set_option(response_buf, "swapfile", false)
+      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
+      api.run_llm_command_streamed(cmd_parts, response_buf)
     elseif choice == "Current buffer" then
       local lines = api.nvim_buf_get_lines(0, 0, -1, false)
       local content = table.concat(lines, "\n")
-      local result = M.run_template(template_name, content, params)
-      if result then
-        require('llm.core.utils.ui').create_buffer_with_content(result, "Template Result: " .. template_name, "markdown")
-      end
+      local cmd_parts = M.run_template(template_name, content, params)
+      local response_buf = api.nvim_create_buf(false, true)
+      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      api.nvim_buf_set_option(response_buf, "swapfile", false)
+      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
+      api.run_llm_command_streamed(cmd_parts, response_buf)
     elseif choice == "URL (will use curl)" then
       templates_view.get_user_input("Enter URL:", nil, function(url)
         if not url or url == "" then

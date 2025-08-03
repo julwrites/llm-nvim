@@ -4,30 +4,31 @@
 local M = {}
 
 -- Get visual selection
-function M.get_visual_selection()
-  local _, start_row, start_col, _ = unpack(vim.fn.getpos("'<"))
-  local _, end_row, end_col, _ = unpack(vim.fn.getpos("'>"))
-  local lines = vim.api.nvim_buf_get_lines(0, start_row - 1, end_row, false)
+function M.get_visual_selection(bufnr)
+  local buf_to_use = bufnr or 0
+  local start_pos = vim.fn.getpos("'<")
+  local end_pos = vim.fn.getpos("'>")
+  local start_line = start_pos[2]
+  local end_line = end_pos[2]
+  local start_col = start_pos[3]
+  local end_col = end_pos[3]
 
+  if start_line == 0 or end_line == 0 then
+    return ""
+  end
+
+  local lines = vim.api.nvim_buf_get_lines(buf_to_use, start_line - 1, end_line, false)
   if #lines == 0 then
     return ""
   end
 
   if #lines == 1 then
     return string.sub(lines[1], start_col, end_col)
+  else
+    lines[#lines] = string.sub(lines[#lines], 1, end_col)
+    lines[1] = string.sub(lines[1], start_col)
+    return table.concat(lines, "\n")
   end
-
-  local selection = {}
-  -- Add the first line, from the start column
-  table.insert(selection, string.sub(lines[1], start_col))
-  -- Add the lines in between
-  for i = 2, #lines - 1 do
-    table.insert(selection, lines[i])
-  end
-  -- Add the last line, up to the end column
-  table.insert(selection, string.sub(lines[#lines], 1, end_col))
-
-  return table.concat(selection, "\n")
 end
 
 -- Capitalize the first letter of a string
