@@ -53,7 +53,7 @@ function M.create_prompt_buffer()
 
   -- Set the content of the buffer to a prompt
   local prompt_text = "Enter your prompt here and then save and close the buffer to continue."
-  api.nvim_buf_set_lines(buf, 0, -1, false, {prompt_text})
+  api.nvim_buf_set_lines(buf, 0, -1, false, { prompt_text })
 
   local group = api.nvim_create_augroup("LLMSavePrompt", { clear = true })
   api.nvim_create_autocmd("BufWriteCmd", {
@@ -92,46 +92,32 @@ function M.create_chat_buffer()
     filetype = "markdown"
   })
 
-  -- Set the content of the buffer to a prompt
-  local prompt_text = {
-    '--- User Prompt ---',
-    'Enter your prompt below and press <Enter> to submit.',
-    '-------------------',
-    ''
-  }
-  api.nvim_buf_set_lines(buf, 0, -1, false, prompt_text)
-
   -- Set up keymap for <Enter>
-  api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
+  api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>',
+    { noremap = true, silent = true })
   -- Add a keymap for closing the buffer
   api.nvim_buf_set_keymap(buf, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
-
-  -- Move cursor to the end of the buffer
-  api.nvim_win_set_cursor(0, { #prompt_text, 0 })
-
-  -- Switch to insert mode
-  vim.cmd('startinsert')
 
   return buf
 end
 
 function M.create_buffer_with_content(initial_content, buffer_name, filetype)
-    local buf = api.nvim_create_buf(false, true)
-    
-    -- Only set name if provided and buffer doesn't already have one
-    if buffer_name and api.nvim_buf_get_name(buf) == "" then
-      api.nvim_buf_set_name(buf, buffer_name)
-    end
+  local buf = api.nvim_create_buf(false, true)
 
-    if filetype then
-      api.nvim_buf_set_option(buf, 'filetype', filetype)
-    end
+  -- Only set name if provided and buffer doesn't already have one
+  if buffer_name and api.nvim_buf_get_name(buf) == "" then
+    api.nvim_buf_set_name(buf, buffer_name)
+  end
 
-    if initial_content then
-      api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(initial_content))
-    end
+  if filetype then
+    api.nvim_buf_set_option(buf, 'filetype', filetype)
+  end
 
-    return buf
+  if initial_content then
+    api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(initial_content))
+  end
+
+  return buf
 end
 
 function M.replace_buffer_with_content(content, buffer, filetype)
@@ -169,8 +155,8 @@ end
 -- Common keybindings for floating windows
 local function set_floating_keymaps(buf, confirm_cmd, cancel_cmd)
   local keymaps = {
-    { mode = 'i', key = '<CR>', cmd = confirm_cmd },
-    { mode = 'n', key = '<CR>', cmd = confirm_cmd },
+    { mode = 'i', key = '<CR>',  cmd = confirm_cmd },
+    { mode = 'n', key = '<CR>',  cmd = confirm_cmd },
     { mode = '',  key = '<Esc>', cmd = cancel_cmd }
   }
 
@@ -251,7 +237,7 @@ function M.floating_confirm(opts)
   api.nvim_set_hl(0, 'LlmConfirmText', { fg = '#f8f8f2' })
   api.nvim_set_hl(0, 'LlmConfirmButton', { fg = '#50fa7b', bold = true })
   api.nvim_set_hl(0, 'LlmConfirmButtonCancel', { fg = '#ff5555', bold = true })
-  api.nvim_set_hl(0, 'LlmUserPrompt', { fg = '#50fa7b' }) -- Green for user prompts
+  api.nvim_set_hl(0, 'LlmUserPrompt', { fg = '#50fa7b' })    -- Green for user prompts
   api.nvim_set_hl(0, 'LlmModelResponse', { fg = '#bd93f9' }) -- Purple for model responses
 
   local win = api.nvim_open_win(buf, true, win_opts)
@@ -302,7 +288,9 @@ function M._confirm_floating_dialog(confirmed)
 end
 
 function M.append_to_buffer(bufnr, content, highlight_group)
-  vim.notify("append_to_buffer called for bufnr: " .. tostring(bufnr) .. ", content length: " .. tostring(#(content or "")), vim.log.levels.DEBUG)
+  vim.notify(
+    "append_to_buffer called for bufnr: " .. tostring(bufnr) .. ", content length: " .. tostring(#(content or "")),
+    vim.log.levels.DEBUG)
   local lines = content_to_lines(content or '')
   if #lines == 0 then
     vim.notify("append_to_buffer: No lines to append.", vim.log.levels.DEBUG)
@@ -323,7 +311,8 @@ function M.append_to_buffer(bufnr, content, highlight_group)
     end
   end
 
-  vim.notify("append_to_buffer: Appended " .. tostring(#lines) .. " lines to buffer " .. tostring(bufnr), vim.log.levels.DEBUG)
+  vim.notify("append_to_buffer: Appended " .. tostring(#lines) .. " lines to buffer " .. tostring(bufnr),
+    vim.log.levels.DEBUG)
 
   -- Move cursor to the end of the buffer if it's the current buffer
   if api.nvim_get_current_buf() == bufnr then

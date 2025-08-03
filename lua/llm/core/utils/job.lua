@@ -6,7 +6,8 @@ function M.run(cmd, callbacks)
   local stdout_buffer = ""
 
   local function process_output(data, event)
-    vim.notify("job.lua: process_output called for event: " .. event .. ", data: " .. vim.inspect(data), vim.log.levels.DEBUG)
+    vim.notify("job.lua: process_output called for event: " .. event .. ", data: " .. vim.inspect(data),
+      vim.log.levels.DEBUG)
     if not data then return end
 
     local handler = (event == "stdout" and callbacks.on_stdout) or (event == "stderr" and callbacks.on_stderr)
@@ -30,7 +31,9 @@ function M.run(cmd, callbacks)
       end
       -- Keep the incomplete part of the last line in the buffer
       stdout_buffer = stdout_buffer:sub(i)
-      vim.notify("job.lua: stdout_buffer remaining: " .. tostring(#stdout_buffer) .. ", lines to send: " .. tostring(#lines), vim.log.levels.DEBUG)
+      vim.notify(
+        "job.lua: stdout_buffer remaining: " .. tostring(#stdout_buffer) .. ", lines to send: " .. tostring(#lines),
+        vim.log.levels.DEBUG)
 
       if #lines > 0 then
         handler(nil, lines)
@@ -46,7 +49,7 @@ function M.run(cmd, callbacks)
       vim.notify("job.lua: Job " .. tostring(j) .. " exited with code: " .. tostring(exit_code), vim.log.levels.INFO)
       -- Process any remaining buffered stdout before calling the final on_exit callback
       if #stdout_buffer > 0 then
-        process_output({stdout_buffer}, "stdout")
+        process_output({ stdout_buffer }, "stdout")
         stdout_buffer = "" -- Clear buffer after processing
       end
       if callbacks.on_exit then callbacks.on_exit(j, exit_code) end
@@ -55,6 +58,7 @@ function M.run(cmd, callbacks)
     on_stderr = function(j, d, e) process_output(d, e) end,
     stdout_buffered = false,
     stderr_buffered = false,
+    pty = true,
   }
 
   local job_id = vim.fn.jobstart(cmd, options)
