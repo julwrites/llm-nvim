@@ -36,22 +36,17 @@ local config = require("llm.config") -- Load config module
 
 -- Handler function for manually updating the LLM CLI
 local function manual_cli_update()
-  vim.notify("Starting LLM CLI update...", vim.log.levels.INFO)
+  vim.notify("Starting LLM CLI update... Output will stream to a new buffer.", vim.log.levels.INFO)
+  vim.cmd('vnew')
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(bufnr, "LLM CLI Update Log - " .. os.time())
+  vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
+  vim.api.nvim_buf_set_option(bufnr, 'swapfile', false)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "LLM CLI Update Log", "", "Please wait..." })
   vim.defer_fn(function()
-    local result = shell.update_llm_cli()
-
-    if result and result.success then
-      vim.notify("LLM CLI update successful.", vim.log.levels.INFO)
-    elseif result then -- Not nil, but success is false
-      local msg = "LLM CLI update failed."
-      if result.message and type(result.message) == "string" and #result.message > 0 then
-        msg = msg .. " Details:\n" .. result.message
-      end
-      vim.notify(msg, vim.log.levels.WARN)
-    else -- Result itself is nil
-      vim.notify("LLM CLI update command failed to execute.", vim.log.levels.ERROR)
-    end
-  end, 100) -- Short delay to allow the initial notification to display
+    shell.update_llm_cli(bufnr)
+  end, 100)
 end
 
 -- Command handler registry

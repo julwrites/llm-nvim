@@ -1,5 +1,6 @@
 -- llm/utils/shell.lua - Shell command utilities
 local config = require('llm.config')
+local api = require('llm.api')
 -- License: Apache 2.0
 
 local M = {}
@@ -121,12 +122,8 @@ function M.run_update_command(cmd)
 end
 
 -- Attempt to update the LLM CLI
-function M.update_llm_cli()
+function M.update_llm_cli(bufnr)
   M.set_last_update_timestamp()
-  local messages = {}
-  local success = false
-  local final_success_message = ""
-
   local update_methods = {
     {
       cmd_name = "uv",
@@ -160,38 +157,45 @@ function M.update_llm_cli()
     }
   }
 
-  for _, method in ipairs(update_methods) do
-    debug_log("Attempting to update llm CLI using " .. method.cmd_name .. "...")
-    local cmd_to_run = method.command
+  local function run_next_update(index)
+    if index > #update_methods then
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "LLM CLI update process finished." })
+      return
+    end
+
+    local method = update_methods[index]
+    local cmd_parts = vim.split(method.command, ' ')
     local can_run = true
 
     if method.check_exists then
       if not M.command_exists(method.cmd_name) then
-        debug_log(method.cmd_name .. " command not found, skipping.", vim.log.levels.INFO)
-        table.insert(messages, method.cmd_name .. " command not found, skipping.")
+        vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "--- Attempting with " .. method.cmd_name .. " (skipped: command not found) ---" })
         can_run = false
       end
     end
 
     if can_run then
-      local output, exit_code = M.run_update_command(cmd_to_run)
-      table.insert(messages, cmd_to_run .. ":\n" .. output)
-
-      if exit_code == 0 then
-        debug_log(method.success_msg)
-        final_success_message = method.success_msg -- Store the specific success message
-        success = true
-        break -- Exit loop on first success
-      else
-        debug_log(method.cmd_name .. " update failed with exit code " .. exit_code .. ". Output: " .. output, vim.log.levels.WARN)
-      end
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "--- Attempting to update llm CLI using " .. method.cmd_name .. " ---" })
+      api.run_llm_command_streamed(cmd_parts, bufnr, {
+        on_exit = function(job_id, exit_code, event_type)
+          if exit_code == 0 then
+            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", method.success_msg })
+            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "Update successful. Stopping further attempts." })
+          else
+            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", method.cmd_name .. " update failed with exit code " .. exit_code .. "." })
+            run_next_update(index + 1) -- Try next method
+          end
+        end,
+        on_stderr = function(job_id, data, event_type)
+          vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, data)
+        end,
+      })
+    else
+      run_next_update(index + 1) -- Try next method if current one was skipped
     end
   end
 
-  return {
-    success = success,
-    message = success and final_success_message or table.concat(messages, "\n\n") -- If success, only success message, else all attempts
-  }
+  run_next_update(1) -- Start the update process
 end
 
 return M

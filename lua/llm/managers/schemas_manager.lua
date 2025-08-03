@@ -49,7 +49,7 @@ function M.save_schema(name, content, test_mode)
 end
 
 -- Run a schema
-function M.run_schema(schema_id, input, is_multi, test_mode)
+function M.run_schema(schema_id, input, is_multi, bufnr, test_mode)
     local temp_file_path = vim.fn.tempname()
     if test_mode then
         local multi_flag = is_multi and " --multi" or ""
@@ -63,9 +63,21 @@ function M.run_schema(schema_id, input, is_multi, test_mode)
     file:close()
 
     local multi_flag = is_multi and " --multi" or ""
-    local result = llm_cli.run_llm_command('schema ' .. schema_id .. ' ' .. temp_file_path .. multi_flag)
+    local command_str = 'schema ' .. schema_id .. ' ' .. temp_file_path .. multi_flag
+
+    local target_bufnr = bufnr
+    if not target_bufnr then
+        vim.cmd('vnew')
+        target_bufnr = vim.api.nvim_get_current_buf()
+        local buffer_name = "LLM Schema Result - " .. os.time()
+        vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
+        vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'json')
+        vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
+    end
+
+    local job_id = llm_cli.run_llm_command(command_str, target_bufnr)
     os.remove(temp_file_path)
-    return result
+    return job_id
 end
 
 -- Select and run a schema
@@ -86,10 +98,7 @@ function M.select_schema()
       schemas_view.get_schema_type(function(schema_type)
         if not schema_type then return end
         local is_multi = schema_type == "Multi schema (array of items)"
-        local result = M.run_schema(choice.id, selection, is_multi)
-        if result then
-          require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. choice.id, "json")
-        end
+        M.run_schema(choice.id, selection, is_multi)
       end)
     else
       M.run_schema_with_input_source(choice.id)
@@ -115,12 +124,7 @@ function M.run_schema_with_input_source(schema_id)
         local lines = api.nvim_buf_get_lines(0, 0, -1, false)
         local content = table.concat(lines, "\n")
         vim.notify("Running schema on buffer content...", vim.log.levels.INFO)
-        local result = M.run_schema(schema_id, content, is_multi)
-        if result then
-          require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
-        else
-          vim.notify("Failed to run schema on buffer content", vim.log.levels.ERROR)
-        end
+        M.run_schema(schema_id, content, is_multi, bufnr)
       elseif choice == "URL (will use curl)" then
         schemas_view.get_url(function(url)
           if not url or url == "" then
@@ -128,12 +132,7 @@ function M.run_schema_with_input_source(schema_id)
             return
           end
           vim.notify("Running schema on URL content...", vim.log.levels.INFO)
-          local result = M.run_schema(schema_id, url, is_multi)
-          if result then
-            require('llm.core.utils.ui').create_buffer_with_content(result, "Schema Result: " .. schema_id, "json")
-          else
-            vim.notify("Failed to run schema on URL content", vim.log.levels.ERROR)
-          end
+          M.run_schema(schema_id, url, is_multi, bufnr)
         end)
       elseif choice == "Enter text manually" then
         M.handle_manual_text_input(schema_id, is_multi)
