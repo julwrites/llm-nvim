@@ -61,6 +61,14 @@ function M.get_available_plugins()
   return plugins
 end
 
+local function trim(s)
+  return s:match("^%s*(.-)%s*$")
+end
+
+local function trim(s)
+  return s:match("^%s*(.-)%s*$")
+end
+
 -- Get installed plugins from llm CLI
 function M.get_installed_plugins()
   vim.notify("Getting installed plugins...", vim.log.levels.INFO)
@@ -76,22 +84,24 @@ function M.get_installed_plugins()
     vim.notify("'llm plugins' command returned no output.", vim.log.levels.WARN)
     return {}
   end
-  vim.notify("Raw 'llm plugins' output:\n" .. plugins_output, vim.log.levels.INFO)
+  plugins_output = trim(plugins_output)
+  -- Remove any non-printable characters that might interfere with JSON parsing
+  plugins_output = plugins_output:gsub("[^%w%p%s]", "")
 
   local plugins = {}
   local ok, decoded_plugins = pcall(vim.fn.json_decode, plugins_output)
-  if not ok then
-    vim.notify("Failed to decode JSON from 'llm plugins' command: " .. decoded_plugins, vim.log.levels.ERROR)
-    return {}
-  end
 
-  if type(decoded_plugins) == 'table' then
+  if ok and type(decoded_plugins) == 'table' then
+    -- Successfully decoded as JSON
     for _, plugin_data in ipairs(decoded_plugins) do
       if plugin_data and plugin_data.name then
         table.insert(plugins, { name = plugin_data.name })
-        vim.notify("Parsed installed plugin: '" .. plugin_data.name .. "'", vim.log.levels.INFO)
+        vim.notify("Parsed installed plugin (JSON): '" .. plugin_data.name .. "'", vim.log.levels.INFO)
       end
     end
+  else
+    vim.notify("Failed to decode JSON from 'llm plugins' command: " .. tostring(decoded_plugins), vim.log.levels.ERROR)
+    return {}
   end
   vim.notify("Finished parsing installed plugins, found " .. #plugins .. ".", vim.log.levels.INFO)
   cache.set('installed_plugins', plugins)
@@ -144,6 +154,7 @@ function M.populate_plugins_buffer(bufnr)
   end
 
   local installed_plugins = M.get_installed_plugins()
+  vim.notify("DEBUG: Raw installed_plugins: " .. vim.inspect(installed_plugins), vim.log.levels.INFO)
   local installed_set = {}
   vim.notify("--- INSTALLED PLUGINS (" .. #installed_plugins .. ") ---", vim.log.levels.INFO)
   for _, plugin in ipairs(installed_plugins) do
@@ -270,6 +281,7 @@ end
 function M.refresh_available_plugins(callback)
   vim.notify("Refreshing available plugins...", vim.log.levels.INFO)
   cache.invalidate('available_plugins')
+  cache.invalidate('installed_plugins')
   -- Fetch in the background
   vim.defer_fn(function()
     local plugins = M.get_available_plugins()

@@ -199,8 +199,8 @@ function M.prompt(prompt, fragment_paths, bufnr)
   end
   local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
   if job_id and prompt and prompt ~= "" then
-    vim.fn.jobsend(job_id, prompt .. "\n")
-    vim.notify("commands.lua: Sent prompt to job ID: " .. tostring(job_id), vim.log.levels.INFO)
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
   end
 end
 
@@ -245,8 +245,8 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   end
   local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
   if job_id and prompt and prompt ~= "" then
-    vim.fn.jobsend(job_id, prompt .. "\n")
-    vim.notify("commands.lua: Sent prompt to job ID: " .. tostring(job_id), vim.log.levels.INFO)
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
   end
 end
 
@@ -291,8 +291,8 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     end,
   })
   if job_id and prompt and prompt ~= "" then
-    vim.fn.jobsend(job_id, prompt .. "\n")
-    vim.notify("commands.lua: Sent prompt to job ID: " .. tostring(job_id), vim.log.levels.INFO)
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
   end
 end
 

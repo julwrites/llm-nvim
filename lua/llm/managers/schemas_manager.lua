@@ -75,8 +75,13 @@ function M.run_schema(schema_id, input, is_multi, bufnr, test_mode)
         vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
     end
 
-    local job_id = llm_cli.run_llm_command(command_str, target_bufnr)
-    os.remove(temp_file_path)
+    local cmd_parts = { llm_cli.get_llm_executable_path(), command_str }
+
+    local job_id = require('llm.api').run_llm_command_streamed(cmd_parts, target_bufnr, {
+        on_exit = function()
+            vim.defer_fn(function() os.remove(temp_file_path) end, 0)
+        end,
+    })
     return job_id
 end
 

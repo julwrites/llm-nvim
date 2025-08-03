@@ -11,7 +11,7 @@ local llm_cli = require('llm.core.data.llm_cli')
 local cache = require('llm.core.data.cache')
 local config = require('llm.config')
 local styles = require('llm.ui.styles')
-local commands = require('llm.commands')
+
 
 local custom_openai = require('llm.managers.custom_openai')
 local models_io = require('llm.managers.models_io')
