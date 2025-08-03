@@ -68,15 +68,29 @@ local command_handlers = {
 vim.api.nvim_create_user_command("LLM", function(opts)
   local chat_bufnr = require('llm.chat').start_chat()
 
-  if not opts.args or opts.args == "" then
+  if opts.args and opts.args ~= "" then
+    -- Insert the prompt into the chat buffer at line 4
+    vim.api.nvim_buf_set_lines(chat_bufnr, 3, 3, false, { opts.args })
+    -- Call send_prompt to process the inserted prompt
+    vim.api.nvim_set_current_buf(chat_bufnr) -- Switch to the chat buffer
+    require('llm.chat').send_prompt()
+  else
+    -- If no prompt is provided, just open the chat buffer and return
     return
   end
+
   local args = vim.split(opts.args, "%s+")
   local subcmd = args[1]
   local handler = command_handlers[subcmd]
   if handler then
     handler(table.concat(args, " ", 2), opts.range > 0, chat_bufnr)
   else
+    -- This part might need adjustment if 'llm.commands.prompt' is still needed for non-chat scenarios
+    -- For now, assuming all :LLM commands will go through the chat interface if a prompt is provided.
+    -- If the user provides a prompt, it's handled by the chat.send_prompt above.
+    -- If no prompt, the chat buffer is just opened.
+    -- So, this else block might become redundant or need re-evaluation based on desired behavior.
+    -- For now, I'll keep it as is, but it won't be hit if opts.args is not empty.
     require('llm.commands').prompt(opts.args, nil, chat_bufnr)
   end
 end, {
