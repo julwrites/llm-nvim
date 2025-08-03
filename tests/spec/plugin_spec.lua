@@ -38,6 +38,7 @@ describe('plugin/llm.lua', function()
     chat_mock = { start_chat = spy.new() }
     llm_mock = { prompt = spy.new() }
     commands_mock = {
+      prompt = spy.new(),
       prompt_with_current_file = spy.new(),
       prompt_with_selection = spy.new(),
       explain_code = spy.new(),
@@ -91,12 +92,10 @@ describe('plugin/llm.lua', function()
       assert.spy(llm_mock.prompt).was.not_called()
     end)
 
-    it('should call llm.prompt() when called with a prompt', function()
+    it('should call commands.prompt() when called with a prompt', function()
       assert.is_not_nil(command_handler_func)
       command_handler_func({ args = 'hello world', range = 0 })
-      -- There's a bug in the original code that strips the first word if it's not a recognized subcommand.
-      -- The test should reflect the actual behavior of the code under test.
-      assert.spy(llm_mock.prompt).was.called_with('world', false)
+      assert.spy(commands_mock.prompt).was.called_with('hello world')
       assert.spy(chat_mock.start_chat).was.not_called()
     end)
   end)

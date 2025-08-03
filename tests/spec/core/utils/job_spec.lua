@@ -12,18 +12,13 @@ describe('llm.core.utils.job', function()
   describe('on_stdout handling', function()
     before_each(function()
       vim.fn = {
-        split = spy.new(function(str, sep)
+        split = function(str, sep, plain)
           local result = {}
-          local from = 1
-          local delim_from, delim_to = string.find(str, sep, from)
-          while delim_from do
-            table.insert(result, string.sub(str, from, delim_from - 1))
-            from = delim_to + 1
-            delim_from, delim_to = string.find(str, sep, from)
+          for s in str:gmatch("([^" .. sep .. "]*)") do
+            table.insert(result, s)
           end
-          table.insert(result, string.sub(str, from))
           return result
-        end),
+        end,
       }
     end)
     it('should handle multiple lines in one chunk', function()

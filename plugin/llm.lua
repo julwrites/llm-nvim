@@ -56,11 +56,11 @@ end
 
 -- Command handler registry
 local command_handlers = {
-  file = function(prompt) require('llm.commands').prompt_with_current_file(prompt) end,
-  selection = function(prompt, is_range)
-    require('llm.commands').prompt_with_selection(prompt, nil, is_range)
+  file = function(prompt, _, bufnr) require('llm.commands').prompt_with_current_file(prompt, nil, bufnr) end,
+  selection = function(prompt, is_range, bufnr)
+    require('llm.commands').prompt_with_selection(prompt, nil, is_range, bufnr)
   end,
-  explain = function() require('llm.commands').explain_code() end,
+  explain = function(_, _, bufnr) require('llm.commands').explain_code(nil, bufnr) end,
   schema = function() require('llm.managers.schemas_manager').select_schema() end,
   template = function() require('llm.managers.templates_manager').select_template() end,
   fragments = function() llm.interactive_prompt_with_fragments() end,
@@ -71,14 +71,19 @@ local command_handlers = {
 -- Usage: :LLM [subcommand] [prompt]
 -- Subcommands: file, selection, explain, schema, template, fragments
 vim.api.nvim_create_user_command("LLM", function(opts)
-  local args = vim.split(opts.args or "", "%s+")
-  if #args == 0 then
-    require('llm.chat').start_chat()
+  local chat_bufnr = require('llm.chat').start_chat()
+
+  if not opts.args or opts.args == "" then
     return
   end
+  local args = vim.split(opts.args, "%s+")
   local subcmd = args[1]
-  local handler = command_handlers[subcmd] or llm.prompt
-  handler(table.concat(args, " ", subcmd and 2 or 1), opts.range > 0)
+  local handler = command_handlers[subcmd]
+  if handler then
+    handler(table.concat(args, " ", 2), opts.range > 0, chat_bufnr)
+  else
+    require('llm.commands').prompt(opts.args, nil, chat_bufnr)
+  end
 end, {
   nargs = "*",
   range = true,

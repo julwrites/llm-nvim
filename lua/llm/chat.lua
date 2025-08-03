@@ -1,51 +1,48 @@
-local job = require('llm.core.utils.job')
+local api = require('llm.api')
 local ui = require('llm.core.utils.ui')
 local commands = require('llm.commands')
 
 local M = {}
 
 function M.start_chat()
-    ui.create_chat_buffer()
+    local bufnr = ui.create_chat_buffer()
+    return bufnr
 end
 
 function M.send_prompt()
+    vim.notify("DEBUG: send_prompt function called.", vim.log.levels.INFO)
     local bufnr = vim.api.nvim_get_current_buf()
     local prompt_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    -- The first line is the initial prompt, so we skip it.
-    table.remove(prompt_lines, 1)
-    local prompt = table.concat(prompt_lines, "\n")
 
-    -- Clear the buffer
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, {})
+    -- Extract user prompt (from line 4 onwards)
+    local user_prompt_lines = {}
+    -- Iterate from the 4th line to the end of the buffer
+    for i = 4, #prompt_lines do
+        table.insert(user_prompt_lines, prompt_lines[i])
+    end
+    local prompt = table.concat(user_prompt_lines, "\n")
 
-    -- Add the prompt and response sections
+    -- Clear only the user input area (lines 4 onwards)
+    vim.api.nvim_buf_set_lines(bufnr, 3, -1, false, {})
+
+    -- Append the prompt and response sections
     ui.append_to_buffer(bufnr, "--- Prompt ---\n" .. prompt .. "\n")
     ui.append_to_buffer(bufnr, "--- Response ---\n")
 
-    local cmd_parts = { "llm" }
+    local cmd_parts = { commands.get_llm_executable_path(), "chat" }
     vim.list_extend(cmd_parts, commands.get_model_arg())
     vim.list_extend(cmd_parts, commands.get_system_arg())
-    table.insert(cmd_parts, vim.fn.shellescape(prompt))
 
-    local first_line = true
-    local callbacks = {
-        on_stdout = function(line)
-            if first_line then
-                ui.append_to_buffer(bufnr, line)
-                first_line = false
-            else
-                ui.append_to_buffer(bufnr, "\n" .. line)
-            end
-        end,
-        on_stderr = function(line)
-            vim.notify("Error from llm: " .. line, vim.log.levels.ERROR)
-        end,
-        on_exit = function()
-            vim.notify("LLM command finished.")
-        end,
-    }
+    vim.notify("DEBUG: Final command string: " .. table.concat(cmd_parts, " "), vim.log.levels.INFO)
 
-    job.run(cmd_parts, callbacks)
+    local job_id = api.run_llm_command_streamed(cmd_parts, bufnr)
+    if job_id then
+      vim.fn.jobsend(job_id, prompt .. "\n")
+    end
 end
 
+
+
+
 return M
+

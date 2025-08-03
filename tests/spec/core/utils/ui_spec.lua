@@ -3,6 +3,54 @@ require('tests.spec.spec_helper')
 describe('llm.core.utils.ui', function()
   local ui_utils = require('llm.core.utils.ui')
 
+  describe('create_chat_buffer()', function()
+    it('should create and configure the chat buffer correctly', function()
+      -- Spies for API calls
+      local cmd_spy = spy.new(function() end)
+      local get_current_buf_spy = spy.new(function() return 1 end)
+      local set_lines_spy = spy.new(function() end)
+      local set_keymap_spy = spy.new(function() end)
+      local win_set_cursor_spy = spy.new(function() end)
+
+      -- Mock vim.cmd and vim.api
+      vim.cmd = cmd_spy
+      ui_utils.set_api({
+        nvim_get_current_buf = get_current_buf_spy,
+        nvim_buf_set_lines = set_lines_spy,
+        nvim_buf_set_keymap = set_keymap_spy,
+        nvim_win_set_cursor = win_set_cursor_spy,
+        nvim_buf_set_option = function() end, -- Mocked to avoid side-effects
+        nvim_buf_set_name = function() end, -- Mocked to avoid side-effects
+      })
+
+      -- Execute the function
+      ui_utils.create_chat_buffer()
+
+      -- Assertions
+      assert.spy(cmd_spy).was.called_with('vnew')
+      assert.spy(get_current_buf_spy).was.called()
+
+      -- Check that the prompt is set correctly
+      local expected_prompt = {
+        '--- User Prompt ---',
+        'Enter your prompt below and press <Enter> to submit.',
+        '-------------------',
+        ''
+      }
+      assert.spy(set_lines_spy).was.called_with(1, 0, -1, false, expected_prompt)
+
+      -- Check that keymaps are set
+      assert.spy(set_keymap_spy).was.called_with(1, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
+      assert.spy(set_keymap_spy).was.called_with(1, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
+
+      -- Check that the cursor is positioned correctly
+      assert.spy(win_set_cursor_spy).was.called_with(0, { 4, 0 })
+
+      -- Check that Neovim is put into insert mode
+      assert.spy(cmd_spy).was.called_with('startinsert')
+    end)
+  end)
+
   describe('create_prompt_buffer()', function()
     it('should create a prompt buffer', function()
       local cmd_spy = spy.new(function() end)

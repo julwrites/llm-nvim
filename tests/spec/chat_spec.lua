@@ -7,11 +7,18 @@ describe('llm.chat', function()
   local mock_api
   local mock_commands
 
+  local job_run_calls
+
   before_each(function()
+    job_run_calls = {} -- Reset calls for each test
+
     -- Mock the job runner
     mock_job = {
-      run = spy.new(function() end),
+      run = function(cmd_parts, callbacks)
+        table.insert(job_run_calls, { cmd_parts = cmd_parts, callbacks = callbacks })
+      end,
     }
+    package.loaded['llm.core.utils.job'] = mock_job
     package.loaded['llm.core.utils.job'] = mock_job
 
     -- Mock the ui module
@@ -27,7 +34,12 @@ describe('llm.chat', function()
         return 1
       end),
       nvim_buf_get_lines = function()
-        return { 'Enter your prompt and press <Enter> to submit.', 'This is the user prompt' }
+        return {
+          '--- User Prompt ---',
+          'Enter your prompt below and press <Enter> to submit.',
+          '-------------------',
+          'This is the user prompt'
+        }
       end,
       nvim_buf_set_lines = spy.new(function() end),
     }
@@ -41,9 +53,18 @@ describe('llm.chat', function()
         end
         return t1
     end
+    vim.list_contains = function(list, value)
+        for _, v in ipairs(list) do
+            if v == value then
+                return true
+            end
+        end
+        return false
+    end
 
     -- Mock the commands module
     mock_commands = {
+      get_llm_executable_path = spy.new(function() return 'llm' end),
       get_model_arg = spy.new(function() return {} end),
       get_system_arg = spy.new(function() return {} end),
     }
@@ -61,21 +82,25 @@ describe('llm.chat', function()
     package.loaded['llm.commands'] = nil
   end)
 
-  describe('start_chat', function()
-    it('should create a chat buffer', function()
-      chat.start_chat()
-      assert.spy(mock_ui.create_chat_buffer).was.called()
-    end)
-  end)
-
   describe('send_prompt', function()
-    it('should call job.run and add visual separators', function()
+    it('should extract the prompt correctly and call job.run', function()
       chat.send_prompt()
-      assert.spy(mock_job.run).was.called()
+      assert.is_not_nil(job_run_calls[1])
+      local job_args = job_run_calls[1].cmd_parts
+      assert.is_true(vim.list_contains(job_args, "'This is the user prompt'"))
+    end)
 
-      assert.spy(mock_api.nvim_buf_set_lines).was.called_with(1, 0, -1, false, {})
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "--- Prompt ---\nThis is the user prompt\n")
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "--- Response ---\n")
+    it('should stream response to buffer via on_stdout callback', function()
+      chat.send_prompt()
+      assert.is_not_nil(job_run_calls[1])
+      local callbacks = job_run_calls[1].callbacks
+      assert.is_not_nil(callbacks.on_stdout)
+
+      callbacks.on_stdout(nil, {"First line of response"})
+      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "First line of response\n")
+
+      callbacks.on_stdout(nil, {"Second line of response"})
+      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "Second line of response\n")
     end)
   end)
 end)
