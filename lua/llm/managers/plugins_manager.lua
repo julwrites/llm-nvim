@@ -250,6 +250,31 @@ function M.refresh_plugin_list(bufnr)
   end)
 end
 
+function M.install_plugin_under_cursor(bufnr)
+  local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
+  if not plugin_name then
+    vim.notify("No plugin selected", vim.log.levels.WARN)
+    return
+  end
+  if plugin_info.installed then
+    vim.notify("Plugin " .. plugin_name .. " is already installed", vim.log.levels.INFO)
+    return
+  end
+
+  vim.notify("Installing plugin: " .. plugin_name .. "... Please wait.", vim.log.levels.INFO)
+
+  -- Run in schedule to avoid blocking UI
+  vim.schedule(function()
+    local success = M.install_plugin(plugin_name)
+    if success then
+      vim.notify("Successfully installed: " .. plugin_name, vim.log.levels.INFO)
+      require('llm.ui.unified_manager').switch_view("Plugins")
+    else
+      vim.notify("Failed to install " .. plugin_name, vim.log.levels.ERROR)
+    end
+  end)
+end
+
 function M.uninstall_plugin_under_cursor(bufnr)
   local plugin_name, plugin_info = M.get_plugin_info_under_cursor(bufnr)
   if not plugin_name then
@@ -263,7 +288,7 @@ function M.uninstall_plugin_under_cursor(bufnr)
 
   plugins_view.confirm_uninstall(plugin_name, function(confirmed)
     if not confirmed then return end
-    vim.notify("Uninstalling plugin: " .. plugin_name .. "...", vim.log.levels.INFO)
+    vim.notify("Uninstalling plugin: " .. plugin_name .. "... Please wait.", vim.log.levels.INFO)
 
     -- Run in schedule to avoid blocking UI
     vim.schedule(function()
