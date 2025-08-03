@@ -1,6 +1,6 @@
 -- llm/utils/shell.lua - Shell command utilities
 local config = require('llm.config')
-local api = require('llm.api')
+
 -- License: Apache 2.0
 
 local M = {}
@@ -122,7 +122,7 @@ function M.run_update_command(cmd)
 end
 
 -- Attempt to update the LLM CLI
-function M.update_llm_cli(bufnr)
+function M.update_llm_cli(bufnr, api_obj)
   M.set_last_update_timestamp()
   local update_methods = {
     {
@@ -176,7 +176,7 @@ function M.update_llm_cli(bufnr)
 
     if can_run then
       vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "--- Attempting to update llm CLI using " .. method.cmd_name .. " ---" })
-      api.run_llm_command_streamed(cmd_parts, bufnr, {
+      api_obj.run_llm_command_streamed(cmd_parts, bufnr, {
         on_exit = function(job_id, exit_code, event_type)
           if exit_code == 0 then
             vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", method.success_msg })

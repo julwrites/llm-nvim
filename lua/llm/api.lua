@@ -40,7 +40,7 @@ function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
     on_stdout = function(_, data)
       if data then
         for _, line in ipairs(data) do
-          ui.append_to_buffer(bufnr, line .. "\n")
+          ui.append_to_buffer(bufnr, line .. "\n", "LlmModelResponse")
         end
       end
       if opts.on_stdout then opts.on_stdout(_, data) end
@@ -57,6 +57,11 @@ function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
     on_exit = function(_, exit_code)
       vim.notify("LLM command finished with exit code: " .. tostring(exit_code), vim.log.levels.INFO)
       vim.notify("LLM command finished.")
+      -- After the model finishes, indicate user's turn
+      ui.append_to_buffer(bufnr, [[
+--- You ---
+]], "LlmUserPrompt")
+      vim.cmd('startinsert') -- Re-enter insert mode
       if opts.on_exit then opts.on_exit(_, exit_code) end
     end,
   }

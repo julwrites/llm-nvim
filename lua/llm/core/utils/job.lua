@@ -44,6 +44,11 @@ function M.run(cmd, callbacks)
   local options = {
     on_exit = function(j, exit_code)
       vim.notify("job.lua: Job " .. tostring(j) .. " exited with code: " .. tostring(exit_code), vim.log.levels.INFO)
+      -- Process any remaining buffered stdout before calling the final on_exit callback
+      if #stdout_buffer > 0 then
+        process_output({stdout_buffer}, "stdout")
+        stdout_buffer = "" -- Clear buffer after processing
+      end
       if callbacks.on_exit then callbacks.on_exit(j, exit_code) end
     end,
     on_stdout = function(j, d, e) process_output(d, e) end,

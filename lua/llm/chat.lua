@@ -26,8 +26,8 @@ function M.send_prompt()
     vim.api.nvim_buf_set_lines(bufnr, 3, -1, false, {})
 
     -- Append the prompt and response sections
-    ui.append_to_buffer(bufnr, "--- Prompt ---\n" .. prompt .. "\n")
-    ui.append_to_buffer(bufnr, "--- Response ---\n")
+    ui.append_to_buffer(bufnr, "--- You ---\n" .. prompt .. "\n", "LlmUserPrompt")
+    ui.append_to_buffer(bufnr, "--- LLM ---\n", "LlmModelResponse")
 
     local cmd_parts = { commands.get_llm_executable_path(), "chat" }
     vim.list_extend(cmd_parts, commands.get_model_arg())

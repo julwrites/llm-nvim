@@ -251,6 +251,8 @@ function M.floating_confirm(opts)
   api.nvim_set_hl(0, 'LlmConfirmText', { fg = '#f8f8f2' })
   api.nvim_set_hl(0, 'LlmConfirmButton', { fg = '#50fa7b', bold = true })
   api.nvim_set_hl(0, 'LlmConfirmButtonCancel', { fg = '#ff5555', bold = true })
+  api.nvim_set_hl(0, 'LlmUserPrompt', { fg = '#50fa7b' }) -- Green for user prompts
+  api.nvim_set_hl(0, 'LlmModelResponse', { fg = '#bd93f9' }) -- Purple for model responses
 
   local win = api.nvim_open_win(buf, true, win_opts)
 
@@ -299,7 +301,7 @@ function M._confirm_floating_dialog(confirmed)
   end
 end
 
-function M.append_to_buffer(bufnr, content)
+function M.append_to_buffer(bufnr, content, highlight_group)
   vim.notify("append_to_buffer called for bufnr: " .. tostring(bufnr) .. ", content length: " .. tostring(#(content or "")), vim.log.levels.DEBUG)
   local lines = content_to_lines(content or '')
   if #lines == 0 then
@@ -314,14 +316,21 @@ function M.append_to_buffer(bufnr, content)
   end
 
   api.nvim_buf_set_lines(bufnr, last_line, last_line, false, lines)
+
+  if highlight_group then
+    for i = 0, #lines - 1 do
+      api.nvim_buf_add_highlight(bufnr, -1, highlight_group, last_line + i, 0, -1)
+    end
+  end
+
   vim.notify("append_to_buffer: Appended " .. tostring(#lines) .. " lines to buffer " .. tostring(bufnr), vim.log.levels.DEBUG)
 
-  local win_id = vim.fn.bufwinid(bufnr)
-  if win_id and win_id ~= -1 then
-    api.nvim_win_set_cursor(win_id, { last_line + #lines, 0 })
-    vim.notify("append_to_buffer: Cursor moved in window " .. tostring(win_id), vim.log.levels.DEBUG)
+  -- Move cursor to the end of the buffer if it's the current buffer
+  if api.nvim_get_current_buf() == bufnr then
+    api.nvim_win_set_cursor(0, { last_line + #lines, 0 })
+    vim.notify("append_to_buffer: Cursor moved in current window", vim.log.levels.DEBUG)
   else
-    vim.notify("append_to_buffer: No window found for buffer " .. tostring(bufnr), vim.log.levels.DEBUG)
+    vim.notify("append_to_buffer: Not current buffer, cursor not moved.", vim.log.levels.DEBUG)
   end
 end
 
