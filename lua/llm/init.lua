@@ -32,7 +32,7 @@ function M.setup(opts)
     if days_since_last_update >= auto_update_interval_days then
       vim.notify("LLM-Nvim: Checking for LLM CLI updates...", vim.log.levels.INFO)
       vim.defer_fn(function()
-        local result = shell.update_llm_cli()
+        local result = shell.update_llm_cli(nil, M)
         if result and result.success then
           vim.notify("LLM CLI auto-update successful.", vim.log.levels.INFO)
         elseif result then

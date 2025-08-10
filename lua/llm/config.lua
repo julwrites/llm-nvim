@@ -37,6 +37,11 @@ M.defaults = {
     type = "number",
     desc = "Interval in days for checking for updates"
   },
+  llm_executable_path = {
+    default = "llm",
+    type = "string",
+    desc = "Path to the llm executable (e.g., 'llm' or '/usr/local/bin/llm')"
+  },
   -- Add more config options here
 }
 

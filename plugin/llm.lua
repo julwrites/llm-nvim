@@ -36,31 +36,26 @@ local config = require("llm.config") -- Load config module
 
 -- Handler function for manually updating the LLM CLI
 local function manual_cli_update()
-  vim.notify("Starting LLM CLI update...", vim.log.levels.INFO)
+  vim.notify("Starting LLM CLI update... Output will stream to a new buffer.", vim.log.levels.INFO)
+  vim.cmd('vnew')
+  local bufnr = vim.api.nvim_get_current_buf()
+  vim.api.nvim_buf_set_name(bufnr, "LLM CLI Update Log - " .. os.time())
+  vim.api.nvim_buf_set_option(bufnr, 'buftype', 'nofile')
+  vim.api.nvim_buf_set_option(bufnr, 'bufhidden', 'wipe')
+  vim.api.nvim_buf_set_option(bufnr, 'swapfile', false)
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "LLM CLI Update Log", "", "Please wait..." })
   vim.defer_fn(function()
-    local result = shell.update_llm_cli()
-
-    if result and result.success then
-      vim.notify("LLM CLI update successful.", vim.log.levels.INFO)
-    elseif result then -- Not nil, but success is false
-      local msg = "LLM CLI update failed."
-      if result.message and type(result.message) == "string" and #result.message > 0 then
-        msg = msg .. " Details:\n" .. result.message
-      end
-      vim.notify(msg, vim.log.levels.WARN)
-    else -- Result itself is nil
-      vim.notify("LLM CLI update command failed to execute.", vim.log.levels.ERROR)
-    end
-  end, 100) -- Short delay to allow the initial notification to display
+    shell.update_llm_cli(bufnr)
+  end, 100)
 end
 
 -- Command handler registry
 local command_handlers = {
-  file = function(prompt) require('llm.commands').prompt_with_current_file(prompt) end,
+  file = function(prompt, is_range) require('llm.commands').prompt_with_current_file(prompt, nil, nil) end,
   selection = function(prompt, is_range)
-    require('llm.commands').prompt_with_selection(prompt, nil, is_range)
+    require('llm.commands').prompt_with_selection(prompt, nil, is_range, nil)
   end,
-  explain = function() require('llm.commands').explain_code() end,
+  explain = function() require('llm.commands').explain_code(nil, nil) end,
   schema = function() require('llm.managers.schemas_manager').select_schema() end,
   template = function() require('llm.managers.templates_manager').select_template() end,
   fragments = function() llm.interactive_prompt_with_fragments() end,
@@ -69,16 +64,20 @@ local command_handlers = {
 
 -- Main LLM command with subcommands
 -- Usage: :LLM [subcommand] [prompt]
--- Subcommands: file, selection, explain, schema, template, fragments
+-- Subcommands: file, selection, explain, schema, template, fragments, update
 vim.api.nvim_create_user_command("LLM", function(opts)
-  local args = vim.split(opts.args or "", "%s+")
+  local args = vim.split(opts.args, "%s+")
   local subcmd = args[1]
-  local handler = command_handlers[subcmd] or llm.prompt
-  handler(table.concat(args, " ", subcmd and 2 or 1), opts.range > 0)
+  local handler = command_handlers[subcmd]
+  if handler then
+    handler(table.concat(args, " ", 2), opts.range > 0)
+  else
+    vim.notify("Unknown LLM subcommand: " .. (subcmd or "") .. "\nUsage: :LLM [subcommand] [prompt]", vim.log.levels.ERROR)
+  end
 end, {
   nargs = "*",
   range = true,
-  desc = "Send a prompt to llm",
+  desc = "Execute an LLM subcommand",
   complete = function(ArgLead, CmdLine, CursorPos)
     local args = vim.split(CmdLine, "%s+")
 
@@ -97,6 +96,23 @@ end, {
 
     return {}
   end
+})
+
+-- Command to start an LLM chat session or send a prompt to chat
+-- Usage: :LLMChat [prompt]
+vim.api.nvim_create_user_command('LLMChat', function(opts)
+  local chat_bufnr = require('llm.chat').start_chat()
+
+  if opts.args and opts.args ~= "" then
+    -- Insert the prompt into the chat buffer at line 4
+    vim.api.nvim_buf_set_lines(chat_bufnr, 3, 3, false, { opts.args })
+    -- Call send_prompt to process the inserted prompt
+    vim.api.nvim_set_current_buf(chat_bufnr) -- Switch to the chat buffer
+    require('llm.chat').send_prompt()
+  end
+end, {
+  nargs = "*", -- Allow optional prompt argument
+  desc = "Start an LLM chat session or send a prompt to chat",
 })
 
 
@@ -122,13 +138,30 @@ local function validate_view_name(view)
   return view
 end
 
--- Command to toggle the unified manager with an optional initial view
--- Usage: :LLMToggle [view] where view is one of: models, plugins, keys, fragments, templates, schemas
-vim.api.nvim_create_user_command('LLMToggle', function(opts)
+-- Command to open the LLM configuration manager with an optional initial view
+-- Usage: :LLMConfig [view] where view is one of: models, plugins, keys, fragments, templates, schemas
+vim.api.nvim_create_user_command('LLMConfig', function(opts)
   require('llm.commands').dispatch_command('toggle', opts.fargs[1])
 end, {
   nargs = '?',
   complete = function()
     return { "Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas" }
   end
+})
+
+-- Command to start an LLM chat session or send a prompt to chat
+-- Usage: :LLMChat [prompt]
+vim.api.nvim_create_user_command('LLMChat', function(opts)
+  local chat_bufnr = require('llm.chat').start_chat()
+
+  if opts.args and opts.args ~= "" then
+    -- Insert the prompt into the chat buffer at line 4
+    vim.api.nvim_buf_set_lines(chat_bufnr, 3, 3, false, { opts.args })
+    -- Call send_prompt to process the inserted prompt
+    vim.api.nvim_set_current_buf(chat_bufnr) -- Switch to the chat buffer
+    require('llm.chat').send_prompt()
+  end
+end, {
+  nargs = "*", -- Allow optional prompt argument
+  desc = "Start an LLM chat session or send a prompt to chat",
 })

@@ -4,16 +4,23 @@
 local M = {}
 
 -- Forward declarations
-local api = vim.api
+local nvim_api = vim.api
+local api = require('llm.api')
 local config = require('llm.config')
 local ui = require('llm.core.utils.ui')
 local text = require('llm.core.utils.text')
 local shell = require('llm.core.utils.shell')
 local llm_cli = require('llm.core.data.llm_cli')
+local job = require('llm.core.utils.job')
 
 ---------------------
 -- Helper Functions
 ---------------------
+
+-- Get the configured llm executable path
+function M.get_llm_executable_path()
+  return config.get("llm_executable_path")
+end
 
 -- Get the model argument if specified, properly escaped
 function M.get_model_arg()
@@ -97,39 +104,6 @@ function M.get_pre_response_message(source, prompt, fragment_paths)
   return table.concat(message_parts, "\n")
 end
 
--- Create a new buffer with the LLM response
-function M.create_response_buffer(content)
-  local buf = ui.create_buffer_with_content(content, "LLM Response", "markdown")
-
-  vim.notify("Response buffer is created")
-
-  return buf
-end
-
-function M.fill_response_buffer(buffer, content)
-  local buf = ui.replace_buffer_with_content(content, buffer, "markdown")
-
-  -- Add custom highlighting for the response buffer
-  vim.cmd([[
-    highlight default LLMCodeBlock guibg=#2c323c
-    highlight default LLMHeading guifg=#61afef gui=bold
-    highlight default LLMSubHeading guifg=#56b6c2 gui=bold
-    highlight default LLMBold guifg=#e5c07b gui=bold
-    highlight default LLMItalic guifg=#c678dd gui=italic
-    highlight default LLMListItem guifg=#98c379
-
-    " Define syntax regions and matches
-    syntax region LLMCodeBlock start=/```/ end=/```/ contains=@Markdown
-    syntax match LLMHeading /^# .*/
-    syntax match LLMSubHeading /^## .*/
-    syntax match LLMBold /\*\*.\{-}\*\*/
-    syntax match LLMItalic /\*.\{-}\*/
-    syntax match LLMListItem /^- .*/
-  ]])
-
-  return buf
-end
-
 function M.write_context_to_temp_file(context)
   local temp_file = os.tmpname()
   local file = io.open(temp_file, "w")
@@ -142,19 +116,6 @@ function M.write_context_to_temp_file(context)
   file:close()
 
   return temp_file
-end
-
-function M.llm_command_and_display_response(buf, cmd)
-  local result = llm_cli.run_llm_command(cmd)
-  if result then
-    local buf = M.fill_response_buffer(buf, result)
-    -- Focus the new response buffer
-    vim.api.nvim_set_current_buf(buf)
-    -- Ensure we're in normal mode
-    vim.cmd('stopinsert')
-  else
-    vim.notify("The llm command failed")
-  end
 end
 
 -- Helper function to select an existing fragment alias
@@ -203,6 +164,8 @@ function M.dispatch_command(subcmd, ...)
     elseif subcmd == "toggle" then
       local unified_manager = require('llm.ui.unified_manager')
       return unified_manager.toggle(args[1] or "")
+    elseif subcmd == "" then
+      return ui.create_prompt_buffer()
     else
       -- Default case: treat as direct prompt
       return M.prompt(subcmd, args[1] or {})
@@ -215,8 +178,8 @@ function M.dispatch_command(subcmd, ...)
 end
 
 -- Send a prompt to llm
-function M.prompt(prompt, fragment_paths)
-  local cmd_parts = { "llm" }
+function M.prompt(prompt, fragment_paths, bufnr)
+  local cmd_parts = { M.get_llm_executable_path() }
 
   -- Add model args (returns a table)
   vim.list_extend(cmd_parts, M.get_model_arg())
@@ -225,45 +188,74 @@ function M.prompt(prompt, fragment_paths)
   -- Add fragment args (returns a table)
   vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
 
-  -- Add the main prompt, escaped
-  if prompt and prompt ~= "" then
-    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  local target_bufnr = bufnr
+  if not target_bufnr then
+    vim.cmd('vnew')
+    target_bufnr = vim.api.nvim_get_current_buf()
+    local buffer_name = "LLM Response - " .. os.time()
+    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
+    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-
-  -- Construct the final command string
-  local cmd = table.concat(cmd_parts, " ")
-  vim.notify("Final command: " .. cmd, vim.log.levels.DEBUG)
-
-  local result = llm_cli.run_llm_command(cmd)
-  if result then
-    M.create_response_buffer(result)
-  else
-    vim.notify("No response received from LLM. Check your fragment identifier and API key.", vim.log.levels.ERROR)
+  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
+  if job_id and prompt and prompt ~= "" then
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
   end
 end
 
 -- Explain the current buffer or selection
-function M.explain_code(fragment_paths)
-  M.prompt_with_current_file("Explain this code", fragment_paths)
+function M.explain_code(fragment_paths, bufnr)
+  M.prompt_with_current_file("Explain this code", fragment_paths, bufnr)
 end
 
-function M.prompt_with_current_file(prompt, fragment_paths)
-  local filepath = vim.api.nvim_buf_get_name(0)
+function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
+  local filepath = vim.fn.expand('%:p')
+  vim.notify("commands.lua: Current file path: " .. filepath, vim.log.levels.INFO)
   if filepath == "" then
     vim.notify("Current buffer has no file path", vim.log.levels.ERROR)
     return
   end
 
-  M.execute_prompt_async("Current file", prompt, filepath, fragment_paths)
+  local cmd_parts = { M.get_llm_executable_path() }
+
+  -- Add model and system args
+  vim.list_extend(cmd_parts, M.get_model_arg())
+  vim.list_extend(cmd_parts, M.get_system_arg())
+
+  -- Add user-specified fragments
+  if fragment_paths then
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+  end
+
+  -- Add the current file as a fragment
+  table.insert(cmd_parts, "-f")
+  table.insert(cmd_parts, vim.fn.shellescape(filepath))
+
+  vim.notify("commands.lua: cmd_parts for file command: " .. vim.inspect(cmd_parts), vim.log.levels.INFO)
+
+  local target_bufnr = bufnr
+  if not target_bufnr then
+    vim.cmd('vnew')
+    target_bufnr = vim.api.nvim_get_current_buf()
+    local buffer_name = "LLM Response - " .. os.time()
+    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
+    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
+  end
+  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
+  if job_id and prompt and prompt ~= "" then
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
+  end
 end
 
 -- Send selected text with a prompt to llm
-function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode)
+function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr)
   local selection
   if from_visual_mode then
     selection = text.get_visual_selection()
   else
-    -- For non-visual mode calls, get the current line
     selection = vim.api.nvim_get_current_line()
   end
 
@@ -274,77 +266,34 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode)
 
   local temp_file = M.write_context_to_temp_file(selection)
 
-  M.execute_prompt_async("Current selection", prompt, temp_file, fragment_paths,
-    function()
-      os.remove(temp_file)
-    end)
-end
-
-function M.execute_prompt_async(source, prompt, filepath, fragment_paths, cleanup_callback)
-  -- If no prompt provided, show floating input
-  if not prompt or prompt == "" then
-    ui.floating_input(
-    -- opts
-      { prompt = "Enter prompt for current file:" },
-      -- on_confirm
-      function(input_prompt)
-        local msg = M.get_pre_response_message(source, input_prompt, fragment_paths)
-        local buf = M.create_response_buffer(msg)
-
-        if input_prompt and input_prompt ~= "" then
-          -- Close the floating input window before showing response
-          vim.schedule(function()
-            M.execute_prompt_with_file(buf, input_prompt, filepath, fragment_paths)
-            if cleanup_callback then
-              cleanup_callback()
-            end
-          end)
-        else
-          vim.notify("Prompt cannot be empty", vim.log.levels.WARN)
-        end
-      end
-    )
-  else
-    local msg = M.get_pre_response_message(source, prompt, fragment_paths)
-    local buf = M.create_response_buffer(msg)
-    -- Scheduling so that the response buffer gets to be created before the buffer-control gets starved
-    vim.schedule(function()
-      M.execute_prompt_with_file(buf, prompt, filepath, fragment_paths)
-      if cleanup_callback then
-        cleanup_callback()
-      end
-    end)
-  end
-end
-
-function M.execute_prompt_with_file(buffer, prompt, filepath, fragment_paths)
-  vim.notify("DEBUG: _execute_prompt_with_file called", vim.log.levels.DEBUG)
-  vim.notify("Prompt: " .. prompt, vim.log.levels.DEBUG)
-  vim.notify("Filepath: " .. filepath, vim.log.levels.DEBUG)
-
-  local cmd_parts = { "llm" }
-  -- Add model args
+  local cmd_parts = { M.get_llm_executable_path() }
   vim.list_extend(cmd_parts, M.get_model_arg())
-  -- Add system args
   vim.list_extend(cmd_parts, M.get_system_arg())
-  -- Add fragment args
-  vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
-  -- Add the file
-  table.insert(cmd_parts, "-f " .. vim.fn.shellescape(filepath))
-  -- Add the prompt
-  if prompt and prompt ~= "" then
-    table.insert(cmd_parts, vim.fn.shellescape(prompt))
+  if fragment_paths then
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end
-
-  local cmd = table.concat(cmd_parts, " ")
-
-  -- Debug output
-  local config = require('llm.config')
-  if config.get('debug') then
-    vim.notify("Executing command: " .. cmd, vim.log.levels.DEBUG)
+  table.insert(cmd_parts, "-f")
+  table.insert(cmd_parts, vim.fn.shellescape(temp_file))
+  local target_bufnr = bufnr
+  if not target_bufnr then
+    vim.cmd('vnew')
+    target_bufnr = vim.api.nvim_get_current_buf()
+    local buffer_name = "LLM Response - " .. os.time()
+    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
+    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-
-  M.llm_command_and_display_response(buffer, cmd)
+  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr, {
+    on_exit = function()
+      vim.notify("LLM command finished.")
+      -- Clean up the temporary file
+      os.remove(temp_file)
+    end,
+  })
+  if job_id and prompt and prompt ~= "" then
+    table.insert(cmd_parts, prompt)
+    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
+  end
 end
 
 ---------------------
