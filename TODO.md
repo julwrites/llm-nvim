@@ -1,109 +1,38 @@
-# LLM Command Streaming Implementation
+### Unify LLM Streaming Logic
 
-This document outlines the plan to extend streaming functionality to all `llm` commands, building upon the existing interactive chat implementation.
+- [ ] **Create a Unified Streaming Function:**
+    - [ ] **Analysis of `:LLMChat`:** The streaming is handled by `api.run_llm_command_streamed` in `lua/llm/api.lua`, which is called from `lua/llm/chat.lua`. It uses `vim.fn.jobsend` to send the prompt to the `llm` process and has chat-specific logic in its `on_stdout` and `on_exit` callbacks.
+    - [ ] **Generalization Plan:** To make this reusable, the chat-specific logic should be moved out of `api.run_llm_command_streamed`. A new, more generic function should be created that accepts callbacks as arguments, allowing each command to define its own behavior for handling the streamed output and the command's completion.
+    - [ ] Create a new function, likely in `lua/llm/api.lua`, that encapsulates the logic for running a streaming command.
+    - [ ] This function will take the command parts, the prompt, and the target buffer as arguments.
+    - [ ] It will handle creating the job and sending the prompt to the command's stdin using `vim.fn.jobsend`.
 
-## Current Status
-- `llm.api.lua`: `run_llm_command_streamed` handles streaming output to a buffer using `llm.core.utils.job.lua`.
-- `llm.commands.lua`:
-    - `M.prompt` (for `:LLM {prompt}`)
-    - `M.prompt_with_current_file` (for `:LLM file [{prompt}]` and `:LLM explain`)
-    - `M.prompt_with_selection` (for `:LLM selection [{prompt}]`)
-    - `M.interactive_prompt_with_fragments` (for `:LLM fragments`)
-  These functions already utilize `api.run_llm_command_streamed` and `vim.fn.jobsend`.
+- [ ] **Refactor LLM Command Callsites:**
+    - [ ] **`prompt` command (`lua/llm/commands.lua`):**
+        - **Analysis:** This is the basic prompt command. It streams the response to a new buffer.
+        - **Refactoring:** Modify the function to call the new unified streaming function. The `prompt` string will be passed to be sent via `jobsend`. The `on_stdout` callback will append data to the buffer, and the `on_exit` callback will be empty.
+        - **Testing:** Write a test to verify that the unified streaming function is called with the correct arguments. Simulate the callbacks and assert that the buffer is updated correctly.
 
-## Plan
+    - [ ] **`prompt_with_current_file` command (`lua/llm/commands.lua`):**
+        - **Analysis:** This command adds the current file as a fragment before calling the LLM.
+        - **Refactoring:** Similar to the `prompt` command, this will be modified to call the new unified streaming function, passing the prompt via `jobsend`.
+        - **Testing:** Write a test to verify that the unified streaming function is called with the correct arguments, including the fragment for the current file. Simulate the callbacks and assert that the buffer is updated correctly.
 
-1.  **Review `llm.init.lua`**:
-    *   Understand how all `:LLM` commands are registered.
-    *   Identify any missing links or incorrect command definitions that might prevent streaming.
+    - [ ] **`prompt_with_selection` command (`lua/llm/commands.lua`):**
+        - **Analysis:** This command uses a temporary file for the selection and has an `on_exit` callback to clean it up.
+        - **Refactoring:** Modify the function to call the new unified streaming function. The `on_exit` callback, which removes the temporary file, will be passed to the new function.
+        - **Testing:** Write a test to verify that the unified streaming function is called correctly. The test should also verify that the temporary file is created and that the `on_exit` callback removes it.
 
-2.  **Investigate `:LLM schema` and `:LLM template`**:
-    *   Locate the implementation for these commands, likely within `llm.managers.schemas_manager.lua` and `llm.managers.templates_manager.lua`.
-    *   Modify their execution flow to use `api.run_llm_command_streamed` for output.
+    - [ ] **`send_prompt` command (`lua/llm/chat.lua`):**
+        - **Analysis:** This is the chat command. It has custom logic in its callbacks to filter startup messages and to re-prompt the user on exit.
+        - **Refactoring:** Modify the function to call the new unified streaming function. The custom `on_stdout` and `on_exit` callbacks will be passed to the new function.
+        - **Testing:** Write a test to verify that the unified streaming function is called correctly. The test should simulate the `on_stdout` callback and assert that startup messages are filtered. It should also simulate the `on_exit` callback and assert that the UI is updated to re-prompt the user.
 
-3.  **Verify `llm` executable interaction**:
-    *   Ensure that the `llm` executable itself is configured to stream its output for all relevant commands. (This is an assumption for now, based on chat working).
-
-4.  **Test and Refine**:
-    *   After implementing changes for each command, test thoroughly to ensure streaming works as expected and output is correctly displayed in the target buffer.
-    *   Address any issues with buffer management, prompt handling, or job lifecycle.
-
-## Addressing Input Context for `llm` Commands
-
-**Problem**: Commands are currently sending a newly created streaming buffer as input to the `llm` executable, instead of the intended file path or selected text. This results in incorrect context being provided to the LLM.
-
-**Goal**: Ensure that `llm` commands correctly identify and pass either the current file's path (as a fragment) or the visually selected text as input to the `llm` executable.
-
-**Tasks**:
-
-1.  **Identify where input context is determined**:
-    *   Locate the code responsible for preparing the input to the `llm` executable for commands like `:LLM file`, `:LLM selection`, and `:LLM explain`. This is likely within `llm.commands.lua` or related utility functions.
-
-2.  **Modify input preparation logic**:
-    *   For `:LLM file`:
-        *   Ensure the absolute path of the currently focused file is retrieved.
-        *   Pass this path to the `llm` executable using the `-f` flag (e.g., `llm -f <filepath> -s <prompt>`).
-        *   Verify that the file content is not being streamed directly as standard input unless explicitly intended.
-    *   For `:LLM selection`:
-        *   Ensure the visually selected text is correctly captured.
-        *   Pass this text to the `llm` executable as part of the prompt or via standard input, as appropriate (e.g., `llm -s <selected text + prompt>`).
-        *   Avoid creating a new buffer solely for streaming the selected text if it can be passed directly.
-    *   For `:LLM explain`:
-        *   Confirm that this command correctly uses the current file's path as a fragment, similar to `:LLM file`.
-
-3.  **Update `llm` executable command construction**:
-    *   Review the `llm` command construction (e.g., in `llm.core.utils.shell.lua` or `llm.api.lua`) to ensure it correctly incorporates the `-f` or `-s` flags and their respective arguments.
-
-## Detailed Steps for Each Command
-
-### `:LLM {prompt}`
-- **Status**: **COMPLETED**. Core streaming logic is in place via `M.prompt`.
-- **Action**: Verify command registration in `llm.init.lua` and ensure the prompt is correctly passed to `M.prompt`.
-
-### `:LLM file [{prompt}]`
-- **Status**: **COMPLETED**. Core streaming logic is in place via `M.prompt_with_current_file`.
-- **Action**:
-    *   Verify command registration in `llm.init.lua`.
-    *   **COMPLETED**: Ensure the absolute path of the current file is correctly identified and passed to the `llm` executable using the `-f` flag, and that the file content itself is *not* being streamed as a new buffer.
-    *   Ensure optional prompt is correctly handled.
-
-### `:LLM selection [{prompt}]`
-- **Status**: **COMPLETED**. Core streaming logic is in place via `M.prompt_with_selection`.
-- **Action**:
-    *   Verify command registration in `llm.init.lua`.
-    *   **COMPLETED**: Ensure the visually selected text is correctly captured and passed to the `llm` executable as part of the prompt or via standard input, and that a new buffer is *not* being created solely for this purpose.
-    *   Ensure optional prompt is correctly handled.
-
-### `:LLM explain`
-- **Status**: **COMPLETED**. Handled by `M.prompt_with_current_file`.
-- **Action**:
-    *   Verify command registration in `llm.init.lua`.
-    *   **COMPLETED**: Confirm that the current file's path is correctly used as a fragment for the `llm` executable, similar to `:LLM file`.
-
-### `:LLM fragments`
-- **Status**: **COMPLETED**. `M.interactive_prompt_with_fragments` eventually calls `M.prompt`.
-- **Action**: Verified the flow from interactive selection to `M.prompt` ensures streaming and that the selected fragment's content is correctly passed as input to the `llm` executable.
-
-### `:LLM schema`
-- **Status**: **COMPLETED**. Modified `llm.managers.schemas_manager.lua` to use `api.run_llm_command_streamed`.
-- **Action**: No further action required.
-
-### `:LLM template`
-- **Status**: **COMPLETED**. Core streaming logic is in place via `llm.managers.templates_manager.lua`.
-- **Action**: No further action required.
-
-## Plugin Manager Fix
-- **Status**: **COMPLETED**. Modified `llm.managers.plugins_manager.lua` to correctly parse installed plugins by requesting JSON output from `llm plugins --json`.
-- **Action**: No further action required.
-
-## Plugin Manager Cache Invalidation Fix
-- **Status**: **COMPLETED**. Modified `M.refresh_available_plugins` in `lua/llm/managers/plugins_manager.lua` to invalidate both `available_plugins` and `installed_plugins` caches.
-- **Action**: No further action required.
-
-## Plugin Manager JSON Parsing Fix
-- **Status**: **COMPLETED**. Reverted `string.gmatch` and added `trim` function to `plugins_output` before `vim.fn.json_decode` in `M.get_installed_plugins`. Also added newline removal.
-- **Action**: No further action required.
-
-## Plugin Manager Unfinished String Fix
-- **Status**: **COMPLETED**. Removed problematic debug notification line from `plugins_manager.lua`.
-- **Action**: No further action required.
+- [ ] **Test the Unified Streaming Function:**
+    - [ ] **Testing Strategy:** The unified streaming function will be tested using the existing `busted` and `luassert` test suite. The tests will rely on mocking the `job.run` and `vim.fn` APIs to simulate the behavior of the streaming job. While this approach won't test the actual asynchronous nature of the stream, it will provide a high degree of confidence in the correctness of the implementation.
+    - [ ] **Test Correct Job Creation:** Write a test to assert that `job.run` is called with the correct command and arguments.
+    - [ ] **Test Correct Prompt Handling:** Write a test to assert that `vim.fn.jobsend` is called with the correct job ID and prompt text.
+    - [ ] **Test Callback Behavior:** Write tests to capture the `on_stdout`, `on_stderr`, and `on_exit` callbacks and invoke them directly to verify that they:
+        - Correctly append data to the buffer.
+        - Correctly report errors.
+        - Perform any necessary cleanup or finalization.
