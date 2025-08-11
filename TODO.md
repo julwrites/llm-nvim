@@ -36,11 +36,11 @@ The current test failures indicate a brittle mocking setup, primarily due to inc
 
 These failures are likely indicative of actual bugs or incorrect logic in the plugin and should be addressed after the test environment is stable.
 
-- [ ] **Investigate and Fix: `tests/spec/core/utils/ui_spec.lua` Failure - `create_chat_buffer()` arguments mismatch.**
-    - [ ] **Problem:** `llm.core.utils.ui create_chat_buffer() should create and configure the chat buffer correctly` - `Function was never called with matching arguments.`
-    - [ ] **Evaluation:** This is a legitimate test failure, likely due to incorrect mocking or a change in the `create_chat_buffer` function's signature or behavior. It is not outdated or brittle, but rather a sign that the test setup or the function under test needs adjustment.
-    - [ ] **Action:** Analyze `ui_spec.lua` and `lua/llm/core/utils/ui.lua` to understand why the mock for `create_chat_buffer` is not being called with the expected arguments. Adjust the mock or the test to match the actual function call.
-    - [ ] **Test:** Rerun the specific test to confirm the fix.
+- [x] **Investigate and Fix: `tests/spec/core/utils/ui_spec.lua` Failure - `create_chat_buffer()` arguments mismatch.**
+    - [x] **Problem:** `llm.core.utils.ui create_chat_buffer() should create and configure the chat buffer correctly` - `Function was never called with matching arguments.`
+    - [x] **Evaluation:** This is a legitimate test failure, likely due to incorrect mocking or a change in the `create_chat_buffer` function's signature or behavior. It is not outdated or brittle, but rather a sign that the test setup or the function under test needs adjustment.
+    - [x] **Action:** Analyze `ui_spec.lua` and `lua/llm/core/utils/ui.lua` to understand why the mock for `create_chat_buffer` is not being called with the expected arguments. Adjust the mock or the test to match the actual function call.
+    - [x] **Test:** Rerun the specific test to confirm the fix.
 
 - [ ] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `chat.start_chat()`**
     - [ ] **Problem:** `plugin/llm.lua :LLM command handler should call chat.start_chat() when called with no arguments` - `Expected to be called >0 time(s), but was called 0 time(s)`

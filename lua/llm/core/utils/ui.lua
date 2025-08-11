@@ -92,11 +92,26 @@ function M.create_chat_buffer()
     filetype = "markdown"
   })
 
+  -- Set the content of the buffer to a prompt
+  local prompt_text = {
+    '--- User Prompt ---',
+    'Enter your prompt below and press <Enter> to submit.',
+    '-------------------',
+    ''
+  }
+  api.nvim_buf_set_lines(buf, 0, -1, false, prompt_text)
+
   -- Set up keymap for <Enter>
   api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>',
     { noremap = true, silent = true })
   -- Add a keymap for closing the buffer
   api.nvim_buf_set_keymap(buf, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
+
+  -- Move the cursor to the end of the prompt
+  api.nvim_win_set_cursor(0, { 4, 0 })
+
+  -- Switch to insert mode
+  vim.cmd('startinsert')
 
   return buf
 end
