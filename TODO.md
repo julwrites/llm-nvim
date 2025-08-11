@@ -28,9 +28,9 @@ The current test failures indicate a brittle mocking setup, primarily due to inc
     - [x] **Ensure `mock_vim.lua` is loaded consistently and early:** Completed by removing conflicting mocks from `spec_helper.lua` and adding `require('mock_vim')`.
     - [x] **Test:** Will be tested by running the full test suite.
 
-- [ ] **Mocking `llm_cli` (and other external dependencies):**
-    - [ ] **Implement `llm_cli.get_llm_executable_path` mock:** Add a mock for `llm_cli.get_llm_executable_path` in the relevant test setup (e.g., `tests/spec/mock_llm_cli.lua` if created, or directly in the specs that use it).
-    - [ ] **Test:** Rerun `schemas_manager_spec.lua` and `templates_manager_spec.lua` to confirm the fix.
+- [x] **Mocking `llm_cli` (and other external dependencies):**
+    - [x] **Implement `llm_cli.get_llm_executable_path` mock:** Added a mock for `llm_cli.get_llm_executable_path` in `tests/spec/mock_llm_cli.lua`.
+    - [x] **Test:** Reran `schemas_manager_spec.lua` and `templates_manager_spec.lua` to confirm the fix. This also involved fixing the `spec_helper.lua` to correctly load a centralized `mock_vim.lua`, and fixing a bug in `templates_manager.lua` where `vim.api` was being called incorrectly.
 
 ### Remaining Test Failures (after addressing mocking issues)
 

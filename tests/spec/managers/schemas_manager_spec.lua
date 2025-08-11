@@ -1,3 +1,7 @@
+package.preload['llm.core.data.llm_cli'] = function()
+    return require('mock_llm_cli')
+end
+
 require('spec_helper')
 local schemas_manager = require('llm.managers.schemas_manager')
 local llm_cli = require('llm.core.data.llm_cli')
@@ -102,19 +106,57 @@ describe('schemas_manager', function()
   end)
 
   describe('run_schema', function()
-    it('should call llm_cli.run_llm_command with the correct arguments', function()
+    it('should return correct command string in test_mode', function()
       local old_tempname = vim.fn.tempname
       vim.fn.tempname = function()
         return 'temp_file'
       end
 
-      local command = schemas_manager.run_schema('my-schema', 'my-input', false, true)
+      local command = schemas_manager.run_schema('my-schema', 'my-input', false, nil, true)
       assert.are.equal('schema my-schema temp_file', command)
 
-      command = schemas_manager.run_schema('my-schema', 'my-input', true, true)
+      command = schemas_manager.run_schema('my-schema', 'my-input', true, nil, true)
       assert.are.equal('schema my-schema temp_file --multi', command)
 
       vim.fn.tempname = old_tempname
+    end)
+
+    it('should call api.run_llm_command_streamed with correct executable path when not in test mode', function()
+        -- spy on llm.api
+        local streamed_cmd_parts
+        package.preload['llm.api'] = function()
+            return {
+                run_llm_command_streamed = function(cmd_parts, _, _)
+                    streamed_cmd_parts = cmd_parts
+                    return 123 -- return a dummy job id
+                end
+            }
+        end
+        package.loaded['llm.api'] = nil
+
+        -- Mock other dependencies
+        local old_tempname = vim.fn.tempname
+        vim.fn.tempname = function() return 'temp_file' end
+        local old_open = io.open
+        io.open = function() return { write = function() end, close = function() end } end
+        local old_remove = os.remove
+        os.remove = function() end
+
+        -- Call the function
+        schemas_manager.run_schema('my-schema', 'my-input', false, nil, false) -- test_mode is false
+
+        -- Assertions
+        assert.is_not_nil(streamed_cmd_parts)
+        -- The mock returns "/usr/bin/llm"
+        assert.are.equal('/usr/bin/llm', streamed_cmd_parts[1])
+        assert.are.equal('schema my-schema temp_file', streamed_cmd_parts[2])
+
+        -- Restore mocks
+        vim.fn.tempname = old_tempname
+        io.open = old_open
+        os.remove = old_remove
+        package.loaded['llm.api'] = nil
+        package.preload['llm.api'] = nil
     end)
   end)
 end)
