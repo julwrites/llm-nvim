@@ -5,6 +5,7 @@ local M = {}
 
 -- Forward declarations
 local api = require('llm.api')
+local v_api = vim.api
 local llm_cli = require('llm.core.data.llm_cli')
 local cache = require('llm.core.data.cache')
 local templates_view = require('llm.ui.views.templates_view')
@@ -125,21 +126,21 @@ function M.run_template_with_selection(template_name, selection)
   if #param_names > 0 then
     M.collect_params_and_run(template_name, selection, param_names, template.defaults, function(final_params)
       local cmd_parts = M.run_template(template_name, selection, final_params)
-      local response_buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
-      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
-      api.nvim_buf_set_option(response_buf, "swapfile", false)
-      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      local response_buf = v_api.nvim_create_buf(false, true)
+      v_api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      v_api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      v_api.nvim_buf_set_option(response_buf, "swapfile", false)
+      v_api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
       require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
       api.run_llm_command_streamed(cmd_parts, response_buf)
     end)
   else
     local cmd_parts = M.run_template(template_name, selection, {})
-    local response_buf = api.nvim_create_buf(false, true)
-    api.nvim_buf_set_option(response_buf, "buftype", "nofile")
-    api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
-    api.nvim_buf_set_option(response_buf, "swapfile", false)
-    api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+    local response_buf = v_api.nvim_create_buf(false, true)
+    v_api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+    v_api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+    v_api.nvim_buf_set_option(response_buf, "swapfile", false)
+    v_api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
     require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
     api.run_llm_command_streamed(cmd_parts, response_buf)
   end
@@ -222,22 +223,22 @@ function M.run_template_with_input(template_name, params)
         return
       end
       local cmd_parts = M.run_template(template_name, selection, params)
-      local response_buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
-      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
-      api.nvim_buf_set_option(response_buf, "swapfile", false)
-      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      local response_buf = v_api.nvim_create_buf(false, true)
+      v_api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      v_api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      v_api.nvim_buf_set_option(response_buf, "swapfile", false)
+      v_api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
       require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
       api.run_llm_command_streamed(cmd_parts, response_buf)
     elseif choice == "Current buffer" then
-      local lines = api.nvim_buf_get_lines(0, 0, -1, false)
+      local lines = v_api.nvim_buf_get_lines(0, 0, -1, false)
       local content = table.concat(lines, "\n")
       local cmd_parts = M.run_template(template_name, content, params)
-      local response_buf = api.nvim_create_buf(false, true)
-      api.nvim_buf_set_option(response_buf, "buftype", "nofile")
-      api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
-      api.nvim_buf_set_option(response_buf, "swapfile", false)
-      api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
+      local response_buf = v_api.nvim_create_buf(false, true)
+      v_api.nvim_buf_set_option(response_buf, "buftype", "nofile")
+      v_api.nvim_buf_set_option(response_buf, "bufhidden", "wipe")
+      v_api.nvim_buf_set_option(response_buf, "swapfile", false)
+      v_api.nvim_buf_set_name(response_buf, "Template Result: " .. template_name)
       require('llm.core.utils.ui').create_floating_window(response_buf, "Template Result: " .. template_name)
       api.run_llm_command_streamed(cmd_parts, response_buf)
     elseif choice == "URL (will use curl)" then
@@ -534,7 +535,7 @@ function M.populate_templates_buffer(bufnr)
     end
   end
 
-  api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  v_api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   styles.setup_highlights()
   styles.setup_buffer_syntax(bufnr)
   vim.b[bufnr].line_to_template = line_to_template
@@ -547,7 +548,7 @@ function M.setup_templates_keymaps(bufnr, manager_module)
   manager_module = manager_module or M
 
   local function set_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
+    v_api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
   set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
@@ -630,11 +631,11 @@ function M.view_template_details_under_cursor(bufnr)
 end
 
 function M.show_template_details(template_name, template)
-  local detail_buf = api.nvim_create_buf(false, true)
-  api.nvim_buf_set_option(detail_buf, "buftype", "nofile")
-  api.nvim_buf_set_option(detail_buf, "bufhidden", "wipe")
-  api.nvim_buf_set_option(detail_buf, "swapfile", false)
-  api.nvim_buf_set_name(detail_buf, "Template Details: " .. template_name)
+  local detail_buf = v_api.nvim_create_buf(false, true)
+  v_api.nvim_buf_set_option(detail_buf, "buftype", "nofile")
+  v_api.nvim_buf_set_option(detail_buf, "bufhidden", "wipe")
+  v_api.nvim_buf_set_option(detail_buf, "swapfile", false)
+  v_api.nvim_buf_set_name(detail_buf, "Template Details: " .. template_name)
 
   local detail_win = require('llm.core.utils.ui').create_floating_window(detail_buf, 'LLM Template Details: ' .. template_name)
 
@@ -655,10 +656,10 @@ function M.show_template_details(template_name, template)
     table.insert(lines, "## Schema: " .. template.schema); table.insert(lines, "")
   end
   table.insert(lines, ""); table.insert(lines, "Press [q]uit, [e]dit template, [r]un template")
-  api.nvim_buf_set_lines(detail_buf, 0, -1, false, lines)
+  v_api.nvim_buf_set_lines(detail_buf, 0, -1, false, lines)
 
   local function set_detail_keymap(mode, lhs, rhs)
-    api.nvim_buf_set_keymap(detail_buf, mode, lhs, rhs, { noremap = true, silent = true })
+    v_api.nvim_buf_set_keymap(detail_buf, mode, lhs, rhs, { noremap = true, silent = true })
   end
 
   set_detail_keymap("n", "q", [[<cmd>lua vim.api.nvim_win_close(0, true)<CR>]])
@@ -670,7 +671,7 @@ function M.show_template_details(template_name, template)
 end
 
 function M.get_template_info_under_cursor(bufnr)
-  local current_line = api.nvim_win_get_cursor(0)[1]
+  local current_line = v_api.nvim_win_get_cursor(0)[1]
   local line_to_template = vim.b[bufnr].line_to_template
   local template_data = vim.b[bufnr].template_data
   if not line_to_template or not template_data then
@@ -717,7 +718,7 @@ function M.run_template_by_name(template_name)
 end
 
 function M.edit_template_from_details(template_name)
-  api.nvim_win_close(0, true)
+  v_api.nvim_win_close(0, true)
   vim.schedule(function()
     M.edit_template(template_name)
   end)
