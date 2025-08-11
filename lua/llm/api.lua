@@ -29,6 +29,27 @@ for name, fn in pairs(facade) do
   end
 end
 
+--- A unified function for running LLM commands and handling streaming output.
+-- @param command_parts table: The command and its arguments.
+-- @param prompt string: The prompt to send to the command's stdin.
+-- @param callbacks table: A table with on_stdout, on_stderr, and on_exit callbacks.
+-- @return number: The job ID, or nil if the job failed to start.
+function M.run_llm_command(command_parts, prompt, callbacks)
+  local job_instance = job.run({
+    command = command_parts,
+    on_stdout = callbacks.on_stdout,
+    on_stderr = callbacks.on_stderr,
+    on_exit = callbacks.on_exit,
+  })
+
+  if job_instance and job_instance.id then
+    vim.fn.jobsend(job_instance.id, prompt)
+    return job_instance.id
+  end
+
+  return nil
+end
+
 --- Runs an LLM command with streaming output to a specified buffer.
 -- @param cmd_parts table: The command and its arguments as a table.
 -- @param bufnr number: The buffer number to stream output to.
