@@ -42,24 +42,24 @@ These failures are likely indicative of actual bugs or incorrect logic in the pl
     - [x] **Action:** Analyze `ui_spec.lua` and `lua/llm/core/utils/ui.lua` to understand why the mock for `create_chat_buffer` is not being called with the expected arguments. Adjust the mock or the test to match the actual function call.
     - [x] **Test:** Rerun the specific test to confirm the fix.
 
-- [ ] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `chat.start_chat()`**
-    - [ ] **Problem:** `plugin/llm.lua :LLM command handler should call chat.start_chat() when called with no arguments` - `Expected to be called >0 time(s), but was called 0 time(s)`
-    - [ ] **Evaluation:** This is a critical functional test. If the `:LLM` command isn't calling `chat.start_chat()` as expected, it's a bug in the plugin's core functionality. This test is not outdated or brittle.
-    - [ ] **Action:** Examine `plugin/llm.lua` and `lua/llm/chat.lua` to ensure the `:LLM` command correctly dispatches to `chat.start_chat()` when no arguments are provided. Verify mocks for `vim.api.nvim_create_user_command` or similar are correct.
-    - [ ] **Test:** Rerun the specific test to confirm the fix.
+- [x] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `chat.start_chat()`**
+    - [x] **Problem:** `plugin/llm.lua :LLM command handler should call chat.start_chat() when called with no arguments` - `Expected to be called >0 time(s), but was called 0 time(s)`
+    - [x] **Evaluation:** This is a critical functional test. If the `:LLM` command isn't calling `chat.start_chat()` as expected, it's a bug in the plugin's core functionality. This test is not outdated or brittle.
+    - [x] **Action:** Examine `plugin/llm.lua` and `lua/llm/chat.lua` to ensure the `:LLM` command correctly dispatches to `chat.start_chat()` when no arguments are provided. Verify mocks for `vim.api.nvim_create_user_command` or similar are correct.
+    - [x] **Test:** Rerun the specific test to confirm the fix.
 
-- [ ] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `commands.prompt()`**
-    - [ ] **Problem:** `plugin/llm.lua :LLM command handler should call commands.prompt() when called with a prompt` - `Function was never called with matching arguments.`
-    - [ ] **Evaluation:** This is a critical functional test. Similar to the above, if the `:LLM` command with arguments isn't calling `commands.prompt()`, it's a core functionality bug. This test is not outdated or brittle.
-    - [ ] **Action:** Similar to the above, check `plugin/llm.lua` and `lua/llm/commands.lua` to ensure the `:LLM` command correctly dispatches to `commands.prompt()` with the provided arguments.
-    - [ ] **Test:** Rerun the specific test to confirm the fix.
+- [x] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `commands.prompt()`**
+    - [x] **Problem:** `plugin/llm.lua :LLM command handler should call commands.prompt() when called with a prompt` - `Function was never called with matching arguments.`
+    - [x] **Evaluation:** This is a critical functional test. Similar to the above, if the `:LLM` command with arguments isn't calling `commands.prompt()`, it's a core functionality bug. This test is not outdated or brittle.
+    - [x] **Action:** Similar to the above, check `plugin/llm.lua` and `lua/llm/commands.lua` to ensure the `:LLM` command correctly dispatches to `commands.prompt()` with the provided arguments.
+    - [x] **Test:** Rerun the specific test to confirm the fix.
 
-- [ ] **Investigate and Fix: `chat_spec.lua` Error - `nvim_win_get_cursor` is nil.**                                                                                  │
-    - [ ] **Problem:** `./lua/llm/chat.lua:28: attempt to call a nil value (field 'nvim_win_get_cursor')`                                                             │
-    - [ ] **Evaluation:** This error indicates an incomplete test setup where a `vim` API function is not mocked. The test itself is relevant, but the test           │
+- [x] **Investigate and Fix: `chat_spec.lua` Error - `nvim_win_get_cursor` is nil.**                                                                                  │
+    - [x] **Problem:** `./lua/llm/chat.lua:28: attempt to call a nil value (field 'nvim_win_get_cursor')`                                                             │
+    - [x] **Evaluation:** This error indicates an incomplete test setup where a `vim` API function is not mocked. The test itself is relevant, but the test           │
         environment is brittle.                                                                                                                                                 │
-    - [ ] **Action:** Add a mock for `vim.api.nvim_win_get_cursor` to `tests/spec/mock_vim.lua`.                                                                      │
-    - [ ] **Test:** Rerun `chat_spec.lua` to confirm the fix.                                                                                                         │
+    - [x] **Action:** Add a mock for `vim.api.nvim_win_get_cursor` to `tests/spec/mock_vim.lua`.                                                                      │
+    - [x] **Test:** Rerun `chat_spec.lua` to confirm the fix.                                                                                                         │
                                                                                                                                                                       │
 - [ ] **Investigate and Fix: Recurring Error - `attempt to index a nil value (field 'env')` or `(global 'vim')` in `facade.lua`.**                                    │
     - [ ] **Problem:** This error appears in `commands_spec.lua`, `llm_cli_spec.lua`, `custom_openai_spec.lua`, `scratch_buffer_save_spec.lua`. It points to          │

@@ -1,16 +1,18 @@
 require('tests.spec.spec_helper')
+local spy = require('luassert.spy')
 
 describe('llm.chat', function()
   local chat
   local mock_job
   local mock_ui
-  local mock_api
   local mock_commands
 
   local job_run_calls
+  local append_to_buffer_calls
 
   before_each(function()
     job_run_calls = {} -- Reset calls for each test
+    append_to_buffer_calls = {}
 
     -- Mock the job runner
     mock_job = {
@@ -19,31 +21,34 @@ describe('llm.chat', function()
       end,
     }
     package.loaded['llm.core.utils.job'] = mock_job
-    package.loaded['llm.core.utils.job'] = mock_job
 
     -- Mock the ui module
     mock_ui = {
       create_chat_buffer = spy.new(function() end),
-      append_to_buffer = spy.new(function() end),
+      append_to_buffer = function(...)
+        table.insert(append_to_buffer_calls, { ... })
+      end,
     }
     package.loaded['llm.core.utils.ui'] = mock_ui
 
     -- Mock the vim api
-    mock_api = {
+    local mock_api_extensions = {
       nvim_get_current_buf = spy.new(function()
         return 1
       end),
       nvim_buf_get_lines = function()
         return {
-          '--- User Prompt ---',
-          'Enter your prompt below and press <Enter> to submit.',
-          '-------------------',
-          'This is the user prompt'
+          "--- Some other line ---",
+          "--- You ---",
+          "This is the user prompt",
         }
       end,
       nvim_buf_set_lines = spy.new(function() end),
+      nvim_win_get_cursor = function() return { 3, 0 } end,
     }
-    vim.api = mock_api
+    for k, v in pairs(mock_api_extensions) do
+      vim.api[k] = v
+    end
     vim.fn = {
         shellescape = function(s) return "'" .. s .. "'" end
     }
@@ -87,7 +92,7 @@ describe('llm.chat', function()
       chat.send_prompt()
       assert.is_not_nil(job_run_calls[1])
       local job_args = job_run_calls[1].cmd_parts
-      assert.is_true(vim.list_contains(job_args, "'This is the user prompt'"))
+      assert.is_true(vim.list_contains(job_args, "This is the user prompt"))
     end)
 
     it('should stream response to buffer via on_stdout callback', function()
@@ -97,10 +102,12 @@ describe('llm.chat', function()
       assert.is_not_nil(callbacks.on_stdout)
 
       callbacks.on_stdout(nil, {"First line of response"})
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "First line of response\n")
+      local last_call = append_to_buffer_calls[#append_to_buffer_calls]
+      assert.are.same({1, "First line of response\n", "LlmModelResponse"}, last_call)
 
       callbacks.on_stdout(nil, {"Second line of response"})
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "Second line of response\n")
+      last_call = append_to_buffer_calls[#append_to_buffer_calls]
+      assert.are.same({1, "Second line of response\n", "LlmModelResponse"}, last_call)
     end)
   end)
 end)

@@ -66,13 +66,19 @@ local command_handlers = {
 -- Usage: :LLM [subcommand] [prompt]
 -- Subcommands: file, selection, explain, schema, template, fragments, update
 vim.api.nvim_create_user_command("LLM", function(opts)
+  if not opts.args or opts.args == "" then
+    require('llm.chat').start_chat()
+    return
+  end
+
   local args = vim.split(opts.args, "%s+")
   local subcmd = args[1]
   local handler = command_handlers[subcmd]
+
   if handler then
     handler(table.concat(args, " ", 2), opts.range > 0)
   else
-    vim.notify("Unknown LLM subcommand: " .. (subcmd or "") .. "\nUsage: :LLM [subcommand] [prompt]", vim.log.levels.ERROR)
+    require('llm.commands').prompt(opts.args)
   end
 end, {
   nargs = "*",
