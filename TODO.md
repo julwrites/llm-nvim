@@ -32,96 +32,45 @@ The current test failures indicate a brittle mocking setup, primarily due to inc
     - [x] **Implement `llm_cli.get_llm_executable_path` mock:** Added a mock for `llm_cli.get_llm_executable_path` in `tests/spec/mock_llm_cli.lua`.
     - [x] **Test:** Reran `schemas_manager_spec.lua` and `templates_manager_spec.lua` to confirm the fix. This also involved fixing the `spec_helper.lua` to correctly load a centralized `mock_vim.lua`, and fixing a bug in `templates_manager.lua` where `vim.api` was being called incorrectly.
 
+- [x] **Investigate and Fix: Recurring Error - `attempt to index a nil value (field 'env')` or `(global 'vim')` in `facade.lua`.**
+    - [x] **Problem:** This error appears in `commands_spec.lua`, `llm_cli_spec.lua`, `custom_openai_spec.lua`, `scratch_buffer_save_spec.lua`. It points to `lua/llm/facade.lua:35`.
+    - [x] **Evaluation:** This was a fundamental issue with the test environment's mocking of the `vim` object. Several test specs were defining their own local, incomplete `vim` mocks instead of using the centralized mock provided by `spec_helper.lua`.
+    - [x] **Action:** Modified `commands_spec.lua`, `llm_cli_spec.lua`, `custom_openai_spec.lua`, and `scratch_buffer_save_spec.lua` to remove local mocks and `require('spec_helper')` instead. Updated `mock_vim.lua` with functions that were missing.
+    - [x] **Test:** Reran the full test suite. The original error is gone, but new failures have been revealed.
+
 ### Remaining Test Failures (after addressing mocking issues)
 
 These failures are likely indicative of actual bugs or incorrect logic in the plugin and should be addressed after the test environment is stable.
 
-- [x] **Investigate and Fix: `tests/spec/core/utils/ui_spec.lua` Failure - `create_chat_buffer()` arguments mismatch.**
-    - [x] **Problem:** `llm.core.utils.ui create_chat_buffer() should create and configure the chat buffer correctly` - `Function was never called with matching arguments.`
-    - [x] **Evaluation:** This is a legitimate test failure, likely due to incorrect mocking or a change in the `create_chat_buffer` function's signature or behavior. It is not outdated or brittle, but rather a sign that the test setup or the function under test needs adjustment.
-    - [x] **Action:** Analyze `ui_spec.lua` and `lua/llm/core/utils/ui.lua` to understand why the mock for `create_chat_buffer` is not being called with the expected arguments. Adjust the mock or the test to match the actual function call.
-    - [x] **Test:** Rerun the specific test to confirm the fix.
+- [ ] **Investigate and Fix: `commands_spec.lua` failures.**
+    - [ ] **Problem:** The tests for `prompt`, `explain_code`, `prompt_with_current_file`, and `prompt_with_selection` are failing. The spy on `job.run` is not being called.
+    - [ ] **Evaluation:** The mock for `llm.core.utils.job` is set up before `llm.commands` is required, so it should be working. There might be a subtle issue with how modules are loaded or how spies are created.
+    - [ ] **Action:** Investigate the module loading order and the spy setup in `commands_spec.lua`.
 
-- [x] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `chat.start_chat()`**
-    - [x] **Problem:** `plugin/llm.lua :LLM command handler should call chat.start_chat() when called with no arguments` - `Expected to be called >0 time(s), but was called 0 time(s)`
-    - [x] **Evaluation:** This is a critical functional test. If the `:LLM` command isn't calling `chat.start_chat()` as expected, it's a bug in the plugin's core functionality. This test is not outdated or brittle.
-    - [x] **Action:** Examine `plugin/llm.lua` and `lua/llm/chat.lua` to ensure the `:LLM` command correctly dispatches to `chat.start_chat()` when no arguments are provided. Verify mocks for `vim.api.nvim_create_user_command` or similar are correct.
-    - [x] **Test:** Rerun the specific test to confirm the fix.
+- [ ] **Investigate and Fix: `core/utils/job_spec.lua` failures.**
+    - [ ] **Problem:** The tests for `on_stdout` handling are failing.
+    - [ ] **Evaluation:** The mock for the `on_stdout` callback is not being called with the expected arguments.
+    - [ ] **Action:** Analyze `job_spec.lua` and `lua/llm/core/utils/job.lua` to understand the mismatch.
 
-- [x] **Investigate and Fix: `tests/spec/plugin_spec.lua` Failure - `:LLM command handler not calling `commands.prompt()`**
-    - [x] **Problem:** `plugin/llm.lua :LLM command handler should call commands.prompt() when called with a prompt` - `Function was never called with matching arguments.`
-    - [x] **Evaluation:** This is a critical functional test. Similar to the above, if the `:LLM` command with arguments isn't calling `commands.prompt()`, it's a core functionality bug. This test is not outdated or brittle.
-    - [x] **Action:** Similar to the above, check `plugin/llm.lua` and `lua/llm/commands.lua` to ensure the `:LLM` command correctly dispatches to `commands.prompt()` with the provided arguments.
-    - [x] **Test:** Rerun the specific test to confirm the fix.
+- [ ] **Investigate and Fix: `core/utils/shell_spec.lua` errors.**
+    - [ ] **Problem:** The tests are failing with `attempt to index upvalue 'api_obj' (a nil value)`.
+    - [ ] **Evaluation:** `api_obj` is passed to `update_llm_cli`, but it seems to be nil in the test context.
+    - [ ] **Action:** Analyze `shell_spec.lua` and how `update_llm_cli` is tested.
 
-- [x] **Investigate and Fix: `chat_spec.lua` Error - `nvim_win_get_cursor` is nil.**                                                                                  │
-    - [x] **Problem:** `./lua/llm/chat.lua:28: attempt to call a nil value (field 'nvim_win_get_cursor')`                                                             │
-    - [x] **Evaluation:** This error indicates an incomplete test setup where a `vim` API function is not mocked. The test itself is relevant, but the test           │
-        environment is brittle.                                                                                                                                                 │
-    - [x] **Action:** Add a mock for `vim.api.nvim_win_get_cursor` to `tests/spec/mock_vim.lua`.                                                                      │
-    - [x] **Test:** Rerun `chat_spec.lua` to confirm the fix.                                                                                                         │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: Recurring Error - `attempt to index a nil value (field 'env')` or `(global 'vim')` in `facade.lua`.**                                    │
-    - [ ] **Problem:** This error appears in `commands_spec.lua`, `llm_cli_spec.lua`, `custom_openai_spec.lua`, `scratch_buffer_save_spec.lua`. It points to          │
-        `lua/llm/facade.lua:35`.                                                                                                                                                │
-    - [ ] **Evaluation:** This is a fundamental issue with the test environment's mocking of the `vim` object or its `env` field. The tests are relevant, but the     │
-        test setup is brittle.                                                                                                                                                  │
-    - [ ] **Action:** Analyze `lua/llm/facade.lua` and `tests/spec/mock_vim.lua`. Ensure that `vim.env` and the global `vim` object are correctly mocked and          │
-        accessible within the test environment, especially in modules that `require 'llm.facade'`.                                                                              │
-    - [ ] **Test:** Rerun affected specs to confirm the fix.                                                                                                          │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `job_spec.lua` Error - `vim.inspect` is nil.**                                                                                           │
-    - [ ] **Problem:** `./lua/llm/core/utils/job.lua:9: attempt to call a nil value (field 'inspect')`                                                                │
-    - [ ] **Evaluation:** This error indicates an incomplete test setup where a `vim` utility function is not mocked. The test itself is relevant, but the test       │
-        environment is brittle.                                                                                                                                                 │
-    - [ ] **Action:** Add a mock for `vim.inspect` to `tests/spec/mock_vim.lua`.                                                                                      │
-    - [ ] **Test:** Rerun `job_spec.lua` to confirm the fix.                                                                                                          │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `shell_spec.lua` Error - `vim.split` is nil.**                                                                                           │
-    - [ ] **Problem:** `./lua/llm/core/utils/shell.lua:167: attempt to call a nil value (field 'split')`                                                              │
-    - [ ] **Evaluation:** This indicates a problem with the `vim.split` mock not being correctly loaded or applied in this specific test context. The test is         │
-        relevant, but the test environment is brittle.                                                                                                                          │
-    - [ ] **Action:** Verify that the `vim.split` mock added to `tests/spec/mock_vim.lua` is correctly loaded and accessible in `shell_spec.lua`. If not, ensure      │
-        `spec_helper.lua` or the test setup correctly includes `mock_vim.lua`.                                                                                                  │
-    - [ ] **Test:** Rerun `shell_spec.lua` to confirm the fix.                                                                                                        │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `ui_spec.lua` Error - `nvim_buf_get_name` is nil.**                                                                                      │
-    - [ ] **Problem:** `./lua/llm/core/utils/ui.lua:108: attempt to call a nil value (field 'nvim_buf_get_name')`                                                     │
-    - [ ] **Evaluation:** This error indicates an incomplete test setup where a `vim` API function is not mocked. The test itself is relevant, but the test           │
-        environment is brittle.                                                                                                                                                 │
-    - [ ] **Action:** Add a mock for `vim.api.nvim_buf_get_name` to `tests/spec/mock_vim.lua`.                                                                        │
-    - [ ] **Test:** Rerun `ui_spec.lua` to confirm the fix.                                                                                                           │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `ui_spec.lua` Error - `nvim_get_current_buf` is nil.**                                                                                   │
-    - [ ] **Problem:** `./lua/llm/core/utils/ui.lua:318: attempt to call a nil value (field 'nvim_get_current_buf')`                                                  │
-    - [ ] **Evaluation:** This error indicates an incomplete test setup where a `vim` API function is not mocked. The test itself is relevant, but the test           │
-        environment is brittle.                                                                                                                                                 │
-    - [ ] **Action:** Add a mock for `vim.api.nvim_get_current_buf` to `tests/spec/mock_vim.lua`.                                                                     │
-    - [ ] **Test:** Rerun `ui_spec.lua` to confirm the fix.                                                                                                           │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: Recurring Error - `llm_cli.lua` `vim.split` is nil.**                                                                                    │
-    - [ ] **Problem:** `./lua/llm/core/data/llm_cli.lua:10: attempt to call a nil value (field 'split')` - This is still present in `fragments_manager_spec.lua`,     │
-        `keys_manager_spec.lua`, `models_io_spec.lua`, `templates_manager_spec.lua`.                                                                                            │
-    - [ ] **Evaluation:** This indicates a deeper issue with the `vim.split` mock not being universally applied or a caching issue in the test runner. The tests are  │
-        relevant, but the test environment is brittle.                                                                                                                          │
-    - [ ] **Action:** This indicates a deeper issue with the `vim.split` mock not being universally applied or a caching issue in the test runner. Re-verify          │
-        `spec_helper.lua` and the test setup to ensure `mock_vim.lua` is loaded before any module that uses `vim.split`.                                                        │
-    - [ ] **Test:** Rerun affected specs to confirm the fix.                                                                                                          │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `schemas_manager_spec.lua` Error - `get_llm_executable_path` is nil.**                                                                   │
-    - [ ] **Problem:** `./lua/llm/managers/schemas_manager.lua:78: attempt to call a nil value (field 'get_llm_executable_path')`                                     │
-    - [ ] **Evaluation:** This error indicates either a missing function in `llm_cli.lua` or an incomplete mock. The test is relevant, but the test environment is    │
-        brittle.                                                                                                                                                                │
-    - [ ] **Action:** Add a mock for `llm_cli.get_llm_executable_path` in the relevant test setup or `mock_llm_cli.lua` if such a file exists. If                     │
-        `get_llm_executable_path` is a new function, ensure it's defined in `llm_cli.lua`.                                                                                      │
-    - [ ] **Test:** Rerun `schemas_manager_spec.lua` to confirm the fix.                                                                                              │
-                                                                                                                                                                      │
-- [ ] **Investigate and Fix: `templates_manager_spec.lua` Error - `get_llm_executable_path` is nil.**                                                                 │
-    - [ ] **Problem:** `./lua/llm/managers/templates_manager.lua:79: attempt to call a nil value (field 'get_llm_executable_path')`                                   │
-    - [ ] **Evaluation:** This error indicates either a missing function in `llm_cli.lua` or an incomplete mock. The test is relevant, but the test environment is    │
-        brittle.                                                                                                                                                                │
-    - [ ] **Action:** Same as above, ensure `llm_cli.get_llm_executable_path` is properly mocked or defined.                                                          │
-    - [ ] **Test:** Rerun `templates_manager_spec.lua` to confirm the fix.                                                                                            │
+- [ ] **Investigate and Fix: `core/utils/ui_spec.lua` failures.**
+    - [ ] **Problem:** The tests for `create_buffer_with_content` and `append_to_buffer` are failing. Spies are not being called as expected.
+    - [ ] **Evaluation:** The mocks are set up using `ui_utils.set_api`, but the spies are not being triggered correctly.
+    - [ ] **Action:** Analyze the spy setup and the logic in `ui.lua`.
+
+- [ ] **Investigate and Fix: `managers/*_spec.lua` errors.**
+    - [ ] **Problem:** Some manager specs are still failing with `attempt to call field 'system' (a nil value)` in `shell.lua`.
+    - [ ] **Evaluation:** This is happening even though `vim.system` is mocked in `mock_vim.lua` and the specs use `spec_helper`. There might be another module loading issue.
+    - [ ] **Action:** Investigate the module loading order in the failing manager specs.
+
+- [ ] **Investigate and Fix: Test runner errors.**
+    - [ ] **Problem:** Several test files are failing with `luarocks/core/persist.lua:18: attempt to call method 'read' (a nil value)`.
+    - [ ] **Evaluation:** This seems to be an issue with the test runner (`busted`) or its dependencies, not with the plugin code itself.
+    - [ ] **Action:** This might require cleaning the test cache or reinstalling test dependencies.
 
 ### Unify LLM Streaming Logic
 

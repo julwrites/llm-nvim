@@ -1,6 +1,6 @@
 -- tests/spec/managers/custom_openai_spec.lua
 
-require("mock_vim")
+require("spec_helper")
 
 describe("llm.managers.custom_openai", function()
   local custom_openai

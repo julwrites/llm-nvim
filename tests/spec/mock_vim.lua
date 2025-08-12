@@ -27,8 +27,9 @@ M.fn = {
   json_decode = function(s)
     return M.json.decode(s)
   end,
-  shellescape = function(s) return "'" .. tostring(s):gsub("'", "'\\''") .. "'" end,
+  shellescape = function(s) return s end,
   jobstart = function() return 1 end,
+  expand = function(s) return s end,
 }
 
 M.api = {
@@ -42,7 +43,29 @@ M.api = {
   nvim_buf_set_option = function() end,
   nvim_buf_set_lines = function() end,
   nvim_create_buf = function() return 1 end,
+  nvim_set_current_buf = function() end,
+  nvim_buf_get_lines = function() return {} end,
+  nvim_buf_is_valid = function() return true end,
+  nvim_create_augroup = function() return 1 end,
+  nvim_create_autocmd = function() end,
+  nvim_open_win = function() return 1 end,
 }
+
+M.schedule = function(cb)
+  cb()
+end
+
+M.list_extend = function(t1, t2)
+  for _, v in ipairs(t2) do
+    table.insert(t1, v)
+  end
+end
+
+M.defer_fn = function(fn, _)
+  fn()
+end
+
+M.wait = function() end
 
 M.json = {
   encode = function(val)
@@ -87,7 +110,13 @@ M.json = {
 
 M.cmd = function() end
 M.env = {}
-M.split = function() return {} end
+M.split = function(str, sep)
+  local result = {}
+  for s in string.gmatch(str, "([^" .. sep .. "]+)") do
+    table.insert(result, s)
+  end
+  return result
+end
 
 M.tbl_deep_extend = function(a, b)
   for k, v in pairs(b) do
@@ -116,6 +145,18 @@ M.notify = function() end
 
 function M.inspect(v)
   return tostring(v)
+end
+
+function M.system(cmd, opts, callback)
+  return {
+    wait = function()
+      return {
+        stdout = "",
+        stderr = "",
+        code = 0,
+      }
+    end,
+  }
 end
 
 

@@ -1,3 +1,4 @@
+require('spec_helper')
 local spy = require('luassert.spy')
 
 describe('llm.commands', function()
@@ -5,40 +6,6 @@ describe('llm.commands', function()
   local config_mock
 
   before_each(function()
-    -- Mock the vim object
-    _G.vim = {
-      fn = {
-        shellescape = spy.new(function(str)
-          return str
-        end),
-        stdpath = spy.new(function()
-          return '/tmp'
-        end),
-      },
-      api = {
-        nvim_set_current_buf = spy.new(function() end),
-      },
-      log = {
-        levels = {
-          ERROR = 1,
-        },
-      },
-      notify = spy.new(function() end),
-      schedule = spy.new(function(cb)
-        cb()
-      end),
-      list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-          table.insert(t1, v)
-        end
-      end,
-      cmd = spy.new(function() end),
-      defer_fn = spy.new(function(fn, _)
-        fn()
-      end),
-      wait = spy.new(function() end),
-    }
-
     package.loaded['llm.config'] = nil
     package.loaded['llm.commands'] = nil
 
@@ -58,7 +25,6 @@ describe('llm.commands', function()
 
   after_each(function()
     package.loaded['llm.config'] = nil
-    _G.vim = nil
   end)
 
   describe('get_model_arg', function()

@@ -93,6 +93,7 @@ describe('llm.core.utils.ui', function()
         nvim_open_win = open_win_spy,
         nvim_buf_set_option = function() end,
         nvim_buf_set_name = function() end,
+        nvim_buf_get_name = function() return "test_buffer" end,
         nvim_buf_set_lines = set_lines_spy,
         nvim_create_augroup = function() end,
         nvim_create_autocmd = function() end,
@@ -222,6 +223,7 @@ describe('llm.core.utils.ui', function()
         nvim_buf_set_lines = set_lines_spy,
         nvim_win_set_cursor = set_cursor_spy,
         nvim_buf_line_count = line_count_spy,
+        nvim_get_current_buf = function() return 1 end,
       })
       vim.fn.bufwinid = bufwinid_spy
 
