@@ -118,6 +118,15 @@ function M.write_context_to_temp_file(context)
   return temp_file
 end
 
+function M.create_response_buffer(content)
+  ui.create_buffer_with_content(content, "LLM Response", "markdown")
+end
+
+function M.fill_response_buffer(bufnr, content)
+  ui.replace_buffer_with_content(content, bufnr, "markdown")
+  vim.cmd("redraw")
+end
+
 -- Helper function to select an existing fragment alias
 local function select_existing_fragment(callback)
   local fragments_manager = require('llm.managers.fragments_manager')

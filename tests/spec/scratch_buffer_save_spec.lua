@@ -1,4 +1,4 @@
-require('tests.spec.spec_helper')
+require('spec_helper')
 
 describe('llm.commands', function()
   local commands
@@ -6,46 +6,6 @@ describe('llm.commands', function()
   local job_mock
 
   before_each(function()
-    -- Mock the vim object
-    _G.vim = {
-      fn = {
-        shellescape = spy.new(function(str)
-          return str
-        end),
-        stdpath = spy.new(function()
-            return "/tmp"
-        end),
-      },
-      api = {
-        nvim_buf_get_lines = spy.new(function()
-          return { 'test prompt' }
-        end),
-        nvim_get_current_buf = spy.new(function()
-          return 1
-        end),
-        nvim_buf_get_name = spy.new(function()
-          return 'LLM_Scratch'
-        end),
-        nvim_buf_is_valid = spy.new(function()
-          return true
-        end),
-        nvim_buf_set_lines = spy.new(function() end),
-        nvim_create_augroup = spy.new(function() end),
-        nvim_create_autocmd = spy.new(function() end),
-        nvim_buf_set_option = spy.new(function() end),
-        nvim_buf_set_name = spy.new(function() end),
-        nvim_create_buf = spy.new(function() end),
-        nvim_open_win = spy.new(function() end),
-      },
-      notify = spy.new(function() end),
-      cmd = spy.new(function() end),
-      list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-          table.insert(t1, v)
-        end
-      end,
-    }
-
     config_mock = {
       get = spy.new(function(key)
         if key == 'model' then
@@ -68,7 +28,6 @@ describe('llm.commands', function()
   after_each(function()
     package.loaded['llm.config'] = nil
     package.loaded['llm.core.utils.job'] = nil
-    _G.vim = nil
   end)
 
   it('should call llm with buffer content on BufWriteCmd', function()
