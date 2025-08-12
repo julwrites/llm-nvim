@@ -109,4 +109,34 @@ function M.parse_simple_yaml(filepath)
   return data
 end
 
+function M.wrap(text, width, indent)
+  indent = indent or ''
+  width = width or 80
+
+  local words = {}
+  for word in text:gmatch('%S+') do
+    table.insert(words, word)
+  end
+
+  if #words == 0 then
+    return ''
+  end
+
+  local lines = {}
+  local current_line = indent .. words[1]
+
+  for i = 2, #words do
+    local word = words[i]
+    if #current_line + 1 + #word > width then
+      table.insert(lines, current_line)
+      current_line = indent .. word
+    else
+      current_line = current_line .. ' ' .. word
+    end
+  end
+  table.insert(lines, current_line)
+
+  return table.concat(lines, '\n')
+end
+
 return M

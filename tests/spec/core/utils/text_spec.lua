@@ -95,4 +95,50 @@ key3:
       os.remove('temp_yaml.yaml')
     end)
   end)
+
+  describe('wrap()', function()
+    it('should not wrap a line shorter than the width', function()
+      local text = 'hello world'
+      local wrapped = text_utils.wrap(text, 80)
+      assert.are.equal('hello world', wrapped)
+    end)
+
+    it('should wrap a long line', function()
+      local text = 'this is a long line of text that should be wrapped'
+      local wrapped = text_utils.wrap(text, 20)
+      local expected = 'this is a long line\nof text that should\nbe wrapped'
+      assert.are.equal(expected, wrapped)
+    end)
+
+    it('should wrap a long line with an indent', function()
+      local text = 'this is a long line of text that should be wrapped'
+      local wrapped = text_utils.wrap(text, 30, '  ')
+      local expected = '  this is a long line of text\n  that should be wrapped'
+      assert.are.equal(expected, wrapped)
+    end)
+
+    it('should handle a word longer than the width', function()
+      local text = 'thisisaverylongword'
+      local wrapped = text_utils.wrap(text, 10)
+      assert.are.equal('thisisaverylongword', wrapped)
+    end)
+
+    it('should handle an empty string', function()
+      local text = ''
+      local wrapped = text_utils.wrap(text, 80)
+      assert.are.equal('', wrapped)
+    end)
+
+    it('should handle a string with only spaces', function()
+      local text = '   '
+      local wrapped = text_utils.wrap(text, 80)
+      assert.are.equal('', wrapped)
+    end)
+
+    it('should handle a string shorter than the width', function()
+      local text = 'a short string'
+      local wrapped = text_utils.wrap(text, 80)
+      assert.are.equal('a short string', wrapped)
+    end)
+  end)
 end)
