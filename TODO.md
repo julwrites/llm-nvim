@@ -69,8 +69,17 @@ These failures are likely indicative of actual bugs or incorrect logic in the pl
 
 - [ ] **Investigate and Fix: Test runner errors.**
     - [ ] **Problem:** Several test files are failing with `luarocks/core/persist.lua:18: attempt to call method 'read' (a nil value)`.
-    - [ ] **Evaluation:** This seems to be an issue with the test runner (`busted`) or its dependencies, not with the plugin code itself.
-    - [ ] **Action:** This might require cleaning the test cache or reinstalling test dependencies.
+    - [ ] **Evaluation:** This seems to be an issue with the test runner (`busted`) or its dependencies, not with the plugin code itself. The error suggests that a file is not being opened correctly, and the file handle is `nil`. This could be a permission issue, or the file might not exist. Cleaning the cache and reinstalling dependencies did not solve the issue.
+    - [ ] **Action:** 
+        - [ ] Investigate the `luarocks/core/persist.lua` file to understand what it is doing and what file it is trying to read.
+        - [ ] Try to run the tests with `strace` or a similar tool to see what files are being accessed.
+
+- [x] **Investigate and Fix: `chat_spec.lua` errors.**
+    - [x] **Problem:** The tests are failing with `attempt to call a nil value (global 'unpack')`.
+    - [x] **Evaluation:** The `unpack` function was removed in Lua 5.2 and replaced with `table.unpack`. It was re-introduced in Lua 5.3, but it is possible that the test environment is using a version of Lua where `unpack` is not available.
+    - [x] **Action:** 
+        - [x] Replace `unpack` with `table.unpack` in `lua/llm/chat.lua`.
+        - [ ] Check the Lua version being used by the test runner.
 
 ### Unify LLM Streaming Logic
 

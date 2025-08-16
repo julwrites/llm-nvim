@@ -25,7 +25,7 @@ end
 function M.send_prompt()
   vim.notify("DEBUG: send_prompt function called.", vim.log.levels.INFO)
   local bufnr = vim.api.nvim_get_current_buf()
-  local current_cursor_line, _ = unpack(vim.api.nvim_win_get_cursor(0))    -- 1-indexed line number of cursor
+  local current_cursor_line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))    -- 1-indexed line number of cursor
   local all_buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false) -- 0-indexed table of all lines
 
   local you_marker_line_idx = -1                                           -- 0-indexed line number of "--- You ---"
