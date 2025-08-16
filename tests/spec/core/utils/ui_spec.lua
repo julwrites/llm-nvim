@@ -1,4 +1,4 @@
-require('tests.spec.spec_helper')
+require('spec_helper')
 
 describe('llm.core.utils.ui', function()
   local ui_utils = require('llm.core.utils.ui')
@@ -6,29 +6,20 @@ describe('llm.core.utils.ui', function()
   describe('create_chat_buffer()', function()
     it('should create and configure the chat buffer correctly', function()
       -- Spies for API calls
-      local cmd_spy = spy.new(function() end)
-      local get_current_buf_spy = spy.new(function() return 1 end)
-      local set_lines_spy = spy.new(function() end)
-      local set_keymap_spy = spy.new(function() end)
-      local win_set_cursor_spy = spy.new(function() end)
-
-      -- Mock vim.cmd and vim.api
-      vim.cmd = cmd_spy
-      ui_utils.set_api({
-        nvim_get_current_buf = get_current_buf_spy,
-        nvim_buf_set_lines = set_lines_spy,
-        nvim_buf_set_keymap = set_keymap_spy,
-        nvim_win_set_cursor = win_set_cursor_spy,
-        nvim_buf_set_option = function() end, -- Mocked to avoid side-effects
-        nvim_buf_set_name = function() end, -- Mocked to avoid side-effects
-      })
+      vim.cmd = spy.new(function() end)
+      vim.api.nvim_get_current_buf = spy.new(function() return 1 end)
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
+      vim.api.nvim_buf_set_keymap = spy.new(function() end)
+      vim.api.nvim_win_set_cursor = spy.new(function() end)
+      vim.api.nvim_buf_set_option = spy.new(function() end)
+      vim.api.nvim_buf_set_name = spy.new(function() end)
 
       -- Execute the function
       ui_utils.create_chat_buffer()
 
       -- Assertions
-      assert.spy(cmd_spy).was.called_with('vnew')
-      assert.spy(get_current_buf_spy).was.called()
+      assert.spy(vim.cmd).was.called_with('vnew')
+      assert.spy(vim.api.nvim_get_current_buf).was.called()
 
       -- Check that the prompt is set correctly
       local expected_prompt = {
@@ -37,168 +28,125 @@ describe('llm.core.utils.ui', function()
         '-------------------',
         ''
       }
-      assert.spy(set_lines_spy).was.called_with(1, 0, -1, false, expected_prompt)
+      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(1, 0, -1, false, expected_prompt)
 
       -- Check that keymaps are set
-      assert.spy(set_keymap_spy).was.called_with(1, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
-      assert.spy(set_keymap_spy).was.called_with(1, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
+      assert.spy(vim.api.nvim_buf_set_keymap).was.called_with(1, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>', { noremap = true, silent = true })
+      assert.spy(vim.api.nvim_buf_set_keymap).was.called_with(1, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
 
       -- Check that the cursor is positioned correctly
-      assert.spy(win_set_cursor_spy).was.called_with(0, { 4, 0 })
+      assert.spy(vim.api.nvim_win_set_cursor).was.called_with(0, { 4, 0 })
 
       -- Check that Neovim is put into insert mode
-      assert.spy(cmd_spy).was.called_with('startinsert')
+      assert.spy(vim.cmd).was.called_with('startinsert')
     end)
   end)
 
   describe('create_prompt_buffer()', function()
     it('should create a prompt buffer', function()
-      local cmd_spy = spy.new(function() end)
-      local get_current_buf_spy = spy.new(function() return 1 end)
-      local set_lines_spy = spy.new(function() end)
-      local create_augroup_spy = spy.new(function() return 1 end)
-      local create_autocmd_spy = spy.new(function() end)
-
-      -- Mock vim.cmd and vim.api
-      vim.cmd = cmd_spy
-      ui_utils.set_api({
-        nvim_get_current_buf = get_current_buf_spy,
-        nvim_buf_set_lines = set_lines_spy,
-        nvim_create_augroup = create_augroup_spy,
-        nvim_create_autocmd = create_autocmd_spy,
-      })
+      vim.cmd = spy.new(function() end)
+      vim.api.nvim_get_current_buf = spy.new(function() return 1 end)
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
+      vim.api.nvim_create_augroup = spy.new(function() return 1 end)
+      vim.api.nvim_create_autocmd = spy.new(function() end)
 
       ui_utils.create_prompt_buffer()
 
-      assert.spy(cmd_spy).was.called_with('vnew')
-      assert.spy(cmd_spy).was.called_with('startinsert')
-      assert.spy(get_current_buf_spy).was.called()
-      assert.spy(set_lines_spy).was.called()
-      assert.spy(create_augroup_spy).was.called()
-      assert.spy(create_autocmd_spy).was.called()
+      assert.spy(vim.cmd).was.called_with('vnew')
+      assert.spy(vim.cmd).was.called_with('startinsert')
+      assert.spy(vim.api.nvim_get_current_buf).was.called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.called()
+      assert.spy(vim.api.nvim_create_augroup).was.called()
+      assert.spy(vim.api.nvim_create_autocmd).was.called()
     end)
   end)
 
   describe('buffer content', function()
     it('should create a buffer with content', function()
-      local create_buf_spy = spy.new(function() return 1 end)
-      local open_win_spy = spy.new(function() end)
-      local set_lines_spy = spy.new(function() end)
-      local cmd_spy = spy.new(function() end)
+      vim.api.nvim_create_buf = spy.new(function() return 1 end)
+      vim.api.nvim_open_win = spy.new(function() end)
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
+      vim.cmd = spy.new(function() end)
+      vim.api.nvim_buf_set_option = spy.new(function() end)
+      vim.api.nvim_buf_set_name = spy.new(function() end)
+      vim.api.nvim_buf_get_name = spy.new(function() return "test_buffer" end)
+      vim.api.nvim_create_augroup = spy.new(function() end)
+      vim.api.nvim_create_autocmd = spy.new(function() end)
 
-      -- Mock vim.cmd and vim.api
-      vim.cmd = cmd_spy
-      ui_utils.set_api({
-        nvim_create_buf = create_buf_spy,
-        nvim_open_win = open_win_spy,
-        nvim_buf_set_option = function() end,
-        nvim_buf_set_name = function() end,
-        nvim_buf_get_name = function() return "test_buffer" end,
-        nvim_buf_set_lines = set_lines_spy,
-        nvim_create_augroup = function() end,
-        nvim_create_autocmd = function() end,
-      })
+      package.loaded['llm.core.utils.ui'] = nil
+      ui_utils = require('llm.core.utils.ui')
 
       ui_utils.create_buffer_with_content('hello', 'test_buffer', 'markdown')
 
-      assert.spy(create_buf_spy).was.called()
-      assert.spy(open_win_spy).was.called()
-      assert.spy(set_lines_spy).was.called_with(1, 0, -1, false, { 'hello' })
+      assert.spy(vim.api.nvim_create_buf).was.called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(1, 0, -1, false, { 'hello' })
     end)
 
     it('should replace buffer content', function()
-      local set_lines_spy = spy.new(function() end)
-
-      ui_utils.set_api({
-        nvim_buf_set_option = function() end,
-        nvim_buf_set_lines = set_lines_spy,
-      })
+      vim.api.nvim_buf_set_option = spy.new(function() end)
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
 
       ui_utils.replace_buffer_with_content('new content', 2, 'text')
 
-      assert.spy(set_lines_spy).was.called_with(2, 0, -1, false, { 'new content' })
+      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(2, 0, -1, false, { 'new content' })
     end)
   end)
 
   describe('floating window', function()
     it('should create a floating window', function()
-      local open_win_spy = spy.new(function() return 1 end)
-      local set_option_spy = spy.new(function() end)
-
-      ui_utils.set_api({
-        nvim_open_win = open_win_spy,
-        nvim_win_set_option = set_option_spy,
-      })
+      vim.api.nvim_open_win = spy.new(function() return 1 end)
+      vim.api.nvim_win_set_option = spy.new(function() end)
 
       vim.o = { columns = 100, lines = 50 }
 
       ui_utils.create_floating_window(1, 'test_window')
 
-      assert.spy(open_win_spy).was.called()
-      assert.spy(set_option_spy).was.called_with(1, 'cursorline', true)
+      assert.spy(vim.api.nvim_open_win).was.called()
+      assert.spy(vim.api.nvim_win_set_option).was.called_with(1, 'cursorline', true)
     end)
   end)
 
   describe('floating input', function()
     it('should create a floating input', function()
-      local create_buf_spy = spy.new(function() return 1 end)
-      local open_win_spy = spy.new(function() return 2 end)
-      local set_keymap_spy = spy.new(function() end)
-      local set_var_spy = spy.new(function() end)
-      local command_spy = spy.new(function() end)
-
-      ui_utils.set_api({
-        nvim_create_buf = create_buf_spy,
-        nvim_open_win = open_win_spy,
-        nvim_buf_set_keymap = set_keymap_spy,
-        nvim_buf_set_var = set_var_spy,
-        nvim_command = command_spy,
-      })
+      vim.api.nvim_create_buf = spy.new(function() return 1 end)
+      vim.api.nvim_open_win = spy.new(function() return 2 end)
+      vim.api.nvim_buf_set_keymap = spy.new(function() end)
+      vim.api.nvim_buf_set_var = spy.new(function() end)
+      vim.api.nvim_command = spy.new(function() end)
       vim.o = { columns = 100, lines = 50 }
 
       ui_utils.floating_input({ prompt = 'test' }, function() end)
 
-      assert.spy(create_buf_spy).was.called()
-      assert.spy(open_win_spy).was.called()
-      assert.spy(set_keymap_spy).was.called()
-      assert.spy(set_var_spy).was.called()
-      assert.spy(command_spy).was.called_with('startinsert')
+      assert.spy(vim.api.nvim_create_buf).was.called()
+      assert.spy(vim.api.nvim_open_win).was.called()
+      assert.spy(vim.api.nvim_buf_set_keymap).was.called()
+      assert.spy(vim.api.nvim_buf_set_var).was.called()
+      assert.spy(vim.api.nvim_command).was.called_with('startinsert')
     end)
   end)
 
   describe('floating confirm', function()
     it('should create a floating confirm', function()
-      local create_buf_spy = spy.new(function() return 1 end)
-      local open_win_spy = spy.new(function() return 2 end)
-      local set_hl_spy = spy.new(function() end)
-      local win_set_option_spy = spy.new(function() end)
-      local buf_set_lines_spy = spy.new(function() end)
-      local buf_add_highlight_spy = spy.new(function() end)
-      local buf_set_keymap_spy = spy.new(function() end)
-      local buf_set_var_spy = spy.new(function() end)
-
-      ui_utils.set_api({
-        nvim_create_buf = create_buf_spy,
-        nvim_open_win = open_win_spy,
-        nvim_set_hl = set_hl_spy,
-        nvim_win_set_option = win_set_option_spy,
-        nvim_buf_set_lines = buf_set_lines_spy,
-        nvim_buf_add_highlight = buf_add_highlight_spy,
-        nvim_buf_set_keymap = buf_set_keymap_spy,
-        nvim_buf_set_var = buf_set_var_spy,
-      })
+      vim.api.nvim_create_buf = spy.new(function() return 1 end)
+      vim.api.nvim_open_win = spy.new(function() return 2 end)
+      vim.api.nvim_set_hl = spy.new(function() end)
+      vim.api.nvim_win_set_option = spy.new(function() end)
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
+      vim.api.nvim_buf_add_highlight = spy.new(function() end)
+      vim.api.nvim_buf_set_keymap = spy.new(function() end)
+      vim.api.nvim_buf_set_var = spy.new(function() end)
       vim.o = { columns = 100, lines = 50 }
 
       ui_utils.floating_confirm({ prompt = 'test' })
 
-      assert.spy(create_buf_spy).was.called()
-      assert.spy(open_win_spy).was.called()
-      assert.spy(set_hl_spy).was.called()
-      assert.spy(win_set_option_spy).was.called()
-      assert.spy(buf_set_lines_spy).was.called()
-      assert.spy(buf_add_highlight_spy).was.called()
-      assert.spy(buf_set_keymap_spy).was.called()
-      assert.spy(buf_set_var_spy).was.called()
+      assert.spy(vim.api.nvim_create_buf).was.called()
+      assert.spy(vim.api.nvim_open_win).was.called()
+      assert.spy(vim.api.nvim_set_hl).was.called()
+      assert.spy(vim.api.nvim_win_set_option).was.called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.called()
+      assert.spy(vim.api.nvim_buf_add_highlight).was.called()
+      assert.spy(vim.api.nvim_buf_set_keymap).was.called()
+      assert.spy(vim.api.nvim_buf_set_var).was.called()
     end)
   end)
 
@@ -214,59 +162,45 @@ describe('llm.core.utils.ui', function()
     end)
 
     it('should append lines and move cursor', function()
-      local set_lines_spy = spy.new(function() end)
-      local set_cursor_spy = spy.new(function() end)
-      local line_count_spy = spy.new(function() return 5 end)
-      local bufwinid_spy = spy.new(function() return 1 end)
-
-      ui_utils.set_api({
-        nvim_buf_set_lines = set_lines_spy,
-        nvim_win_set_cursor = set_cursor_spy,
-        nvim_buf_line_count = line_count_spy,
-        nvim_get_current_buf = function() return 1 end,
-      })
-      vim.fn.bufwinid = bufwinid_spy
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
+      vim.api.nvim_win_set_cursor = spy.new(function() end)
+      vim.api.nvim_buf_line_count = spy.new(function() return 5 end)
+      vim.fn.bufwinid = spy.new(function() return 1 end)
+      vim.api.nvim_get_current_buf = spy.new(function() return 123 end)
 
       ui_utils.append_to_buffer(123, 'some new content')
 
-      assert.spy(line_count_spy).was.called_with(123)
-      assert.spy(set_lines_spy).was.called_with(123, 5, 5, false, { 'some new content' })
-      assert.spy(bufwinid_spy).was.called_with(123)
-      assert.spy(set_cursor_spy).was.called_with(1, { 6, 0 })
+      assert.spy(vim.api.nvim_buf_line_count).was.called_with(123)
+      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(123, 5, 5, false, { 'some new content' })
+      assert.spy(vim.api.nvim_win_set_cursor).was.called_with(0, { 6, 0 })
     end)
 
     it('should do nothing for empty content', function()
-      local set_lines_spy = spy.new(function() end)
-      ui_utils.set_api({ nvim_buf_set_lines = set_lines_spy })
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
 
       ui_utils.append_to_buffer(123, '')
 
-      assert.spy(set_lines_spy).was.not_called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.not_called()
     end)
 
     it('should do nothing for nil content', function()
-      local set_lines_spy = spy.new(function() end)
-      ui_utils.set_api({ nvim_buf_set_lines = set_lines_spy })
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
 
       ui_utils.append_to_buffer(123, nil)
 
-      assert.spy(set_lines_spy).was.not_called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.not_called()
     end)
 
     it('should handle invalid buffer handle gracefully', function()
-      local line_count_spy = spy.new(function()
+      vim.api.nvim_buf_line_count = spy.new(function()
         error('Invalid buffer id')
       end)
-      local set_lines_spy = spy.new(function() end)
-      ui_utils.set_api({
-        nvim_buf_line_count = line_count_spy,
-        nvim_buf_set_lines = set_lines_spy,
-      })
+      vim.api.nvim_buf_set_lines = spy.new(function() end)
 
       assert.is_not.error(function()
         ui_utils.append_to_buffer(999, 'content')
       end)
-      assert.spy(set_lines_spy).was.not_called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.not_called()
     end)
   end)
 end)

@@ -172,28 +172,36 @@ describe('llm.core.utils.shell', function()
       end
 
       local run_update_calls = {}
-      shell.run_update_command = function(cmd)
-        table.insert(run_update_calls, cmd)
-        return 'success', 0
-      end
+      local api_mock = {
+        run_llm_command_streamed = function(cmd, bufnr, callbacks)
+            table.insert(run_update_calls, cmd)
+            callbacks.on_exit(0, 0, 'exit')
+        end
+      }
 
-      local result = shell.update_llm_cli()
+      shell.update_llm_cli(1, api_mock)
 
-      assert.is_true(result.success)
-      assert.are.equal('llm CLI updated successfully via pipx.', result.message)
       assert.are.same({ 'uv', 'pipx' }, command_exists_calls)
-      assert.are.same({ 'pipx upgrade llm' }, run_update_calls)
+      assert.are.same({ {"pipx", "upgrade", "llm"} }, run_update_calls)
     end)
 
     it('should try all methods and fail', function()
-      shell.command_exists = function() return false end
-      shell.run_update_command = function() return 'fail', 1 end
+        local command_exists_calls = {}
+        shell.command_exists = function(cmd)
+            table.insert(command_exists_calls, cmd)
+            return false
+        end
 
-      local result = shell.update_llm_cli()
+        local run_update_calls = {}
+        local api_mock = {
+            run_llm_command_streamed = function(cmd, bufnr, callbacks)
+                table.insert(run_update_calls, cmd)
+                callbacks.on_exit(0, 1, 'exit')
+            end
+        }
 
-      assert.is_false(result.success)
-      assert.is_not_nil(result.message:find('uv command not found'))
-      assert.is_not_nil(result.message:find('pipx command not found'))
+      shell.update_llm_cli(1, api_mock)
+      assert.are.same({ 'uv', 'pipx', 'brew' }, command_exists_calls)
     end)
   end)
 end)

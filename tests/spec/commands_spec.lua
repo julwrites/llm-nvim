@@ -212,21 +212,12 @@ describe('llm.commands', function()
   end)
 
   describe('prompt', function()
-    it('should construct and run the correct llm command using job.run', function()
-      -- Mock job.run
-      local job_mock = {
-        run = spy.new(function() end),
+    it('should construct and run the correct llm command using api.run_llm_command_streamed', function()
+      -- Mock api.run_llm_command_streamed
+      local api_mock = {
+        run_llm_command_streamed = spy.new(function() end),
       }
-      package.loaded['llm.core.utils.job'] = job_mock
-
-      -- Mock ui functions
-      local ui_mock = {
-        create_buffer_with_content = spy.new(function()
-          return 1 -- Return a buffer ID
-        end),
-        append_to_buffer = spy.new(function() end),
-      }
-      package.loaded['llm.core.utils.ui'] = ui_mock
+      package.loaded['llm.api'] = api_mock
 
       -- Reload commands to apply mocks
       package.loaded['llm.commands'] = nil
@@ -235,37 +226,18 @@ describe('llm.commands', function()
       -- Call the function
       commands.prompt('test prompt', { 'frag1' })
 
-      -- Assert that job.run was called with the correct command table
-      local expected_cmd = {
-        'llm',
-        '-m',
-        'test-model',
-        '-f',
-        'frag1',
-        'test prompt',
-      }
-      assert.spy(job_mock.run).was.called()
-      -- assert.spy(job_mock.run).was.called_with(expected_cmd, assert.is_table())
+      -- Assert that api.run_llm_command_streamed was called with the correct command table
+      assert.spy(api_mock.run_llm_command_streamed).was.called()
     end)
   end)
 
   describe('explain_code', function()
-    it('should construct and run the correct llm command using job.run', function()
-      -- Mock job.run
-      local job_mock = {
-        run = spy.new(function() end),
+    it('should construct and run the correct llm command using api.run_llm_command_streamed', function()
+      -- Mock api.run_llm_command_streamed
+      local api_mock = {
+        run_llm_command_streamed = spy.new(function() end),
       }
-      package.loaded['llm.core.utils.job'] = job_mock
-
-      -- Mock ui functions
-      local ui_mock = {
-        create_buffer_with_content = spy.new(function()
-          return 1 -- Return a buffer ID
-        end),
-        append_to_buffer = spy.new(function() end),
-        replace_buffer_with_content = spy.new(function() end),
-      }
-      package.loaded['llm.core.utils.ui'] = ui_mock
+      package.loaded['llm.api'] = api_mock
 
       _G.vim.api.nvim_buf_get_name = spy.new(function()
         return 'test_file'
@@ -278,39 +250,18 @@ describe('llm.commands', function()
       -- Call the function
       commands.explain_code({ 'frag1' })
 
-      -- Assert that job.run was called with the correct command table
-      local expected_cmd = {
-        'llm',
-        '-m',
-        'test-model',
-        '-f',
-        'frag1',
-        '-f',
-        'test_file',
-        'Explain this code',
-      }
-      assert.spy(job_mock.run).was.called()
-      -- assert.spy(job_mock.run).was.called_with(expected_cmd, assert.is_table())
+      -- Assert that api.run_llm_command_streamed was called with the correct command table
+      assert.spy(api_mock.run_llm_command_streamed).was.called()
     end)
   end)
 
   describe('prompt_with_current_file', function()
-    it('should construct and run the correct llm command using job.run', function()
-      -- Mock job.run
-      local job_mock = {
-        run = spy.new(function() end),
+    it('should construct and run the correct llm command using api.run_llm_command_streamed', function()
+      -- Mock api.run_llm_command_streamed
+      local api_mock = {
+        run_llm_command_streamed = spy.new(function() end),
       }
-      package.loaded['llm.core.utils.job'] = job_mock
-
-      -- Mock ui functions
-      local ui_mock = {
-        create_buffer_with_content = spy.new(function()
-          return 1 -- Return a buffer ID
-        end),
-        append_to_buffer = spy.new(function() end),
-        replace_buffer_with_content = spy.new(function() end),
-      }
-      package.loaded['llm.core.utils.ui'] = ui_mock
+      package.loaded['llm.api'] = api_mock
 
       _G.vim.api.nvim_buf_get_name = spy.new(function()
         return 'test_file'
@@ -323,39 +274,18 @@ describe('llm.commands', function()
       -- Call the function
       commands.prompt_with_current_file('test prompt', { 'frag1' })
 
-      -- Assert that job.run was called with the correct command table
-      local expected_cmd = {
-        'llm',
-        '-m',
-        'test-model',
-        '-f',
-        'frag1',
-        '-f',
-        'test_file',
-        'test prompt',
-      }
-      assert.spy(job_mock.run).was.called()
-      -- assert.spy(job_mock.run).was.called_with(expected_cmd, assert.is_table())
+      -- Assert that api.run_llm_command_streamed was called with the correct command table
+      assert.spy(api_mock.run_llm_command_streamed).was.called()
     end)
   end)
 
   describe('prompt_with_selection', function()
-    it('should construct and run the correct llm command using job.run', function()
-      -- Mock job.run
-      local job_mock = {
-        run = spy.new(function() end),
+    it('should construct and run the correct llm command using api.run_llm_command_streamed', function()
+      -- Mock api.run_llm_command_streamed
+      local api_mock = {
+        run_llm_command_streamed = spy.new(function() end),
       }
-      package.loaded['llm.core.utils.job'] = job_mock
-
-      -- Mock ui functions
-      local ui_mock = {
-        create_buffer_with_content = spy.new(function()
-          return 1 -- Return a buffer ID
-        end),
-        append_to_buffer = spy.new(function() end),
-        replace_buffer_with_content = spy.new(function() end),
-      }
-      package.loaded['llm.core.utils.ui'] = ui_mock
+      package.loaded['llm.api'] = api_mock
 
       -- Mock text utils
       local text_mock = {
@@ -378,19 +308,8 @@ describe('llm.commands', function()
       -- Call the function
       commands.prompt_with_selection('test prompt', { 'frag1' }, true)
 
-      -- Assert that job.run was called with the correct command table
-      local expected_cmd = {
-        'llm',
-        '-m',
-        'test-model',
-        '-f',
-        'frag1',
-        '-f',
-        'temp_file',
-        'test prompt',
-      }
-      assert.spy(job_mock.run).was.called()
-      -- assert.spy(job_mock.run).was.called_with(expected_cmd, assert.is_table())
+      -- Assert that api.run_llm_command_streamed was called with the correct command table
+      assert.spy(api_mock.run_llm_command_streamed).was.called()
     end)
   end)
 

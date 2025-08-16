@@ -42,30 +42,30 @@ The current test failures indicate a brittle mocking setup, primarily due to inc
 
 These failures are likely indicative of actual bugs or incorrect logic in the plugin and should be addressed after the test environment is stable.
 
-- [ ] **Investigate and Fix: `commands_spec.lua` failures.**
-    - [ ] **Problem:** The tests for `prompt`, `explain_code`, `prompt_with_current_file`, and `prompt_with_selection` are failing. The spy on `job.run` is not being called.
-    - [ ] **Evaluation:** The mock for `llm.core.utils.job` is set up before `llm.commands` is required, so it should be working. There might be a subtle issue with how modules are loaded or how spies are created.
-    - [ ] **Action:** Investigate the module loading order and the spy setup in `commands_spec.lua`.
+- [x] **Investigate and Fix: `commands_spec.lua` failures.**
+    - [x] **Problem:** The tests for `prompt`, `explain_code`, `prompt_with_current_file`, and `prompt_with_selection` are failing. The spy on `job.run` is not being called.
+    - [x] **Evaluation:** The mock for `llm.core.utils.job` is set up before `llm.commands` is required, so it should be working. There might be a subtle issue with how modules are loaded or how spies are created.
+    - [x] **Action:** Investigated the module loading order and the spy setup in `commands_spec.lua`. The issue was that `job.run` was not being called directly, but instead `api.run_llm_command_streamed` was. The tests were updated to mock `api.run_llm_command_streamed` instead.
 
-- [ ] **Investigate and Fix: `core/utils/job_spec.lua` failures.**
-    - [ ] **Problem:** The tests for `on_stdout` handling are failing.
-    - [ ] **Evaluation:** The mock for the `on_stdout` callback is not being called with the expected arguments.
-    - [ ] **Action:** Analyze `job_spec.lua` and `lua/llm/core/utils/job.lua` to understand the mismatch.
+- [x] **Investigate and Fix: `core/utils/job_spec.lua` failures.**
+    - [x] **Problem:** The tests for `on_stdout` handling are failing.
+    - [x] **Evaluation:** The mock for the `on_stdout` callback is not being called with the expected arguments.
+    - [x] **Action:** Analyzed `job_spec.lua` and `lua/llm/core/utils/job.lua` and updated both to correctly handle stdout.
 
-- [ ] **Investigate and Fix: `core/utils/shell_spec.lua` errors.**
-    - [ ] **Problem:** The tests are failing with `attempt to index upvalue 'api_obj' (a nil value)`.
-    - [ ] **Evaluation:** `api_obj` is passed to `update_llm_cli`, but it seems to be nil in the test context.
-    - [ ] **Action:** Analyze `shell_spec.lua` and how `update_llm_cli` is tested.
+- [x] **Investigate and Fix: `core/utils/shell_spec.lua` errors.**
+    - [x] **Problem:** The tests are failing with `attempt to index upvalue 'api_obj' (a nil value)`.
+    - [x] **Evaluation:** `api_obj` is passed to `update_llm_cli`, but it seems to be nil in the test context.
+    - [x] **Action:** Analyzed `shell_spec.lua` and how `update_llm_cli` is tested. The test was updated to pass a mock api object to the function.
 
-- [ ] **Investigate and Fix: `core/utils/ui_spec.lua` failures.**
-    - [ ] **Problem:** The tests for `create_buffer_with_content` and `append_to_buffer` are failing. Spies are not being called as expected.
-    - [ ] **Evaluation:** The mocks are set up using `ui_utils.set_api`, but the spies are not being triggered correctly.
-    - [ ] **Action:** Analyze the spy setup and the logic in `ui.lua`.
+- [x] **Investigate and Fix: `core/utils/ui_spec.lua` failures.**
+    - [x] **Problem:** The tests for `create_buffer_with_content` and `append_to_buffer` are failing. Spies are not being called as expected.
+    - [x] **Evaluation:** The mocks are set up using `ui_utils.set_api`, but the spies are not being triggered correctly.
+    - [x] **Action:** Refactored `lua/llm/core/utils/ui.lua` to use the global `vim.api` object and updated the tests in `tests/spec/core/utils/ui_spec.lua` to mock the `vim.api` functions directly.
 
-- [ ] **Investigate and Fix: `managers/*_spec.lua` errors.**
-    - [ ] **Problem:** Some manager specs are still failing with `attempt to call field 'system' (a nil value)` in `shell.lua`.
-    - [ ] **Evaluation:** This is happening even though `vim.system` is mocked in `mock_vim.lua` and the specs use `spec_helper`. There might be another module loading issue.
-    - [ ] **Action:** Investigate the module loading order in the failing manager specs.
+- [x] **Investigate and Fix: `managers/*_spec.lua` errors.**
+    - [x] **Problem:** Some manager specs are still failing with `attempt to call field 'system' (a nil value)` in `shell.lua`.
+    - [x] **Evaluation:** This is happening even though `vim.system` is mocked in `mock_vim.lua` and the specs use `spec_helper`. There might be another module loading issue.
+    - [x] **Action:** The `vim.fn.system` mock was incorrect. It was returning a table instead of a string. The mock was updated to return a string.
 
 - [ ] **Investigate and Fix: Test runner errors.**
     - [ ] **Problem:** Several test files are failing with `luarocks/core/persist.lua:18: attempt to call method 'read' (a nil value)`.

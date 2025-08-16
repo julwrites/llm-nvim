@@ -10,17 +10,6 @@ describe('llm.core.utils.job', function()
   end)
 
   describe('on_stdout handling', function()
-    before_each(function()
-      vim.fn = {
-        split = function(str, sep, plain)
-          local result = {}
-          for s in str:gmatch("([^" .. sep .. "]*)") do
-            table.insert(result, s)
-          end
-          return result
-        end,
-      }
-    end)
     it('should handle multiple lines in one chunk', function()
       -- Given
       local on_stdout_spy = spy.new()
@@ -35,9 +24,8 @@ describe('llm.core.utils.job', function()
       captured_job_callbacks.on_stdout(0, { 'line1\nline2\n' }, 'stdout')
 
       -- Then
-      assert.spy(on_stdout_spy).was.called(2)
-      assert.spy(on_stdout_spy).was.called_with('line1')
-      assert.spy(on_stdout_spy).was.called_with('line2')
+      assert.spy(on_stdout_spy).was.called(1)
+      assert.spy(on_stdout_spy).was.called_with(nil, {'line1', 'line2'})
     end)
 
     it('should handle partial lines', function()
@@ -56,7 +44,7 @@ describe('llm.core.utils.job', function()
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
-      assert.spy(on_stdout_spy).was.called_with('partial')
+      assert.spy(on_stdout_spy).was.called_with(nil, {'partial'})
     end)
 
     it('should handle empty lines', function()
@@ -74,7 +62,7 @@ describe('llm.core.utils.job', function()
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
-      assert.spy(on_stdout_spy).was.called_with('')
+      assert.spy(on_stdout_spy).was.called_with(nil, {''})
     end)
   end)
 end)

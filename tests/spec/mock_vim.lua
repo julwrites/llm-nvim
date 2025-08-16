@@ -30,6 +30,21 @@ M.fn = {
   shellescape = function(s) return s end,
   jobstart = function() return 1 end,
   expand = function(s) return s end,
+  system = function(cmd)
+    if type(cmd) == 'table' then
+      cmd = table.concat(cmd, " ")
+    end
+    if string.match(cmd, "models list --json") then
+      return '[]'
+    end
+    if string.match(cmd, "aliases list --json") then
+      return '[]'
+    end
+    if string.match(cmd, "fragments list --json") then
+      return '[]'
+    end
+    return ""
+  end,
 }
 
 M.api = {

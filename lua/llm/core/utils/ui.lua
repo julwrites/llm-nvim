@@ -1,11 +1,5 @@
 local M = {}
 
-local api = vim.api
-
-function M.set_api(new_api)
-  api = new_api
-end
-
 -- Common buffer configuration
 local DEFAULT_BUFFER_OPTS = {
   buftype = 'nofile',
@@ -25,19 +19,19 @@ end
 -- Configure a buffer with standard options
 local function configure_buffer(buf, opts)
   for opt, val in pairs(DEFAULT_BUFFER_OPTS) do
-    api.nvim_buf_set_option(buf, opt, val)
+    vim.api.nvim_buf_set_option(buf, opt, val)
   end
 
   if opts.name then
-    api.nvim_buf_set_name(buf, opts.name)
+    vim.api.nvim_buf_set_name(buf, opts.name)
   end
 
   if opts.filetype then
-    api.nvim_buf_set_option(buf, 'filetype', opts.filetype)
+    vim.api.nvim_buf_set_option(buf, 'filetype', opts.filetype)
   end
 
   if opts.content then
-    api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(opts.content))
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(opts.content))
   end
 end
 
@@ -46,21 +40,21 @@ function M.create_prompt_buffer()
   vim.cmd('vnew')
 
   -- Get the new buffer
-  local buf = api.nvim_get_current_buf()
+  local buf = vim.api.nvim_get_current_buf()
 
   -- Switch to insert mode
   vim.cmd('startinsert')
 
   -- Set the content of the buffer to a prompt
   local prompt_text = "Enter your prompt here and then save and close the buffer to continue."
-  api.nvim_buf_set_lines(buf, 0, -1, false, { prompt_text })
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, { prompt_text })
 
-  local group = api.nvim_create_augroup("LLMSavePrompt", { clear = true })
-  api.nvim_create_autocmd("BufWriteCmd", {
+  local group = vim.api.nvim_create_augroup("LLMSavePrompt", { clear = true })
+  vim.api.nvim_create_autocmd("BufWriteCmd", {
     group = group,
     buffer = buf,
     callback = function()
-      local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+      local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
       table.remove(lines, 1)
       local content = table.concat(lines, "\n")
       -- The command needs to be loaded to be called.
@@ -77,7 +71,7 @@ function M.create_chat_buffer()
   vim.cmd('vnew')
 
   -- Get the new buffer
-  local buf = api.nvim_get_current_buf()
+  local buf = vim.api.nvim_get_current_buf()
 
   -- Get the model name
   local config = require('llm.config')
@@ -99,16 +93,16 @@ function M.create_chat_buffer()
     '-------------------',
     ''
   }
-  api.nvim_buf_set_lines(buf, 0, -1, false, prompt_text)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, prompt_text)
 
   -- Set up keymap for <Enter>
-  api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'i', '<Enter>', '<Cmd>lua require("llm.chat").send_prompt()<CR>',
     { noremap = true, silent = true })
   -- Add a keymap for closing the buffer
-  api.nvim_buf_set_keymap(buf, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'q', '<Cmd>bd<CR>', { noremap = true, silent = true })
 
   -- Move the cursor to the end of the prompt
-  api.nvim_win_set_cursor(0, { 4, 0 })
+  vim.api.nvim_win_set_cursor(0, { 4, 0 })
 
   -- Switch to insert mode
   vim.cmd('startinsert')
@@ -117,19 +111,19 @@ function M.create_chat_buffer()
 end
 
 function M.create_buffer_with_content(initial_content, buffer_name, filetype)
-  local buf = api.nvim_create_buf(false, true)
+  local buf = vim.api.nvim_create_buf(false, true)
 
   -- Only set name if provided and buffer doesn't already have one
-  if buffer_name and api.nvim_buf_get_name(buf) == "" then
-    api.nvim_buf_set_name(buf, buffer_name)
+  if buffer_name and vim.api.nvim_buf_get_name(buf) == "" then
+    vim.api.nvim_buf_set_name(buf, buffer_name)
   end
 
   if filetype then
-    api.nvim_buf_set_option(buf, 'filetype', filetype)
+    vim.api.nvim_buf_set_option(buf, 'filetype', filetype)
   end
 
   if initial_content then
-    api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(initial_content))
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, content_to_lines(initial_content))
   end
 
   return buf
@@ -161,9 +155,9 @@ local function get_window_config(width_ratio, height_ratio, title)
 end
 
 function M.create_floating_window(buf, title)
-  local win = api.nvim_open_win(buf, true, get_window_config(0.8, 0.8, title))
-  api.nvim_win_set_option(win, 'cursorline', true)
-  api.nvim_win_set_option(win, 'winblend', 0)
+  local win = vim.api.nvim_open_win(buf, true, get_window_config(0.8, 0.8, title))
+  vim.api.nvim_win_set_option(win, 'cursorline', true)
+  vim.api.nvim_win_set_option(win, 'winblend', 0)
   return win
 end
 
@@ -176,16 +170,16 @@ local function set_floating_keymaps(buf, confirm_cmd, cancel_cmd)
   }
 
   for _, km in ipairs(keymaps) do
-    api.nvim_buf_set_keymap(buf, km.mode, km.key, km.cmd, { noremap = true, silent = true })
+    vim.api.nvim_buf_set_keymap(buf, km.mode, km.key, km.cmd, { noremap = true, silent = true })
   end
 end
 
 function M.floating_input(opts, on_confirm)
-  local buf = api.nvim_create_buf(false, true)
-  local win = api.nvim_open_win(buf, true, get_window_config(0.6, 1, opts.prompt or 'Input'))
+  local buf = vim.api.nvim_create_buf(false, true)
+  local win = vim.api.nvim_open_win(buf, true, get_window_config(0.6, 1, opts.prompt or 'Input'))
 
   if opts.default then
-    api.nvim_buf_set_lines(buf, 0, -1, false, { opts.default })
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, { opts.default })
   end
 
   set_floating_keymaps(buf,
@@ -193,29 +187,29 @@ function M.floating_input(opts, on_confirm)
     '<cmd>lua require("llm.core.utils.ui")._close_floating_input()<CR>'
   )
 
-  api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
+  vim.api.nvim_buf_set_var(buf, 'floating_input_callback', function(input)
     if on_confirm then on_confirm(input) end
   end)
 
-  api.nvim_command('startinsert')
+  vim.api.nvim_command('startinsert')
 end
 
 function M._confirm_floating_input()
-  local buf = api.nvim_get_current_buf()
-  local win = api.nvim_get_current_win()
-  local lines = api.nvim_buf_get_lines(buf, 0, -1, false)
+  local buf = vim.api.nvim_get_current_buf()
+  local win = vim.api.nvim_get_current_win()
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
   local input = table.concat(lines, '\n')
-  local callback = api.nvim_buf_get_var(buf, 'floating_input_callback')
-  api.nvim_win_close(win, true)
-  api.nvim_command('stopinsert')
+  local callback = vim.api.nvim_buf_get_var(buf, 'floating_input_callback')
+  vim.api.nvim_win_close(win, true)
+  vim.api.nvim_command('stopinsert')
   if callback then
     callback(input)
   end
 end
 
 function M._close_floating_input()
-  local win = api.nvim_get_current_win()
-  api.nvim_win_close(win, true)
+  local win = vim.api.nvim_get_current_win()
+  vim.api.nvim_win_close(win, true)
 end
 
 -- Create a floating confirmation dialog with styling
@@ -230,7 +224,7 @@ function M.floating_confirm(opts)
   local col = math.floor((vim.o.columns - width) / 2)
 
   -- Create window with styling
-  local buf = api.nvim_create_buf(false, true)
+  local buf = vim.api.nvim_create_buf(false, true)
   local win_opts = {
     relative = 'editor',
     width = width,
@@ -247,18 +241,18 @@ function M.floating_confirm(opts)
   }
 
   -- Apply highlights before creating window
-  api.nvim_set_hl(0, 'LlmConfirmTitle', { fg = '#f8f8f2', bg = '#44475a', bold = true })
-  api.nvim_set_hl(0, 'LlmConfirmBorder', { fg = '#6272a4' })
-  api.nvim_set_hl(0, 'LlmConfirmText', { fg = '#f8f8f2' })
-  api.nvim_set_hl(0, 'LlmConfirmButton', { fg = '#50fa7b', bold = true })
-  api.nvim_set_hl(0, 'LlmConfirmButtonCancel', { fg = '#ff5555', bold = true })
-  api.nvim_set_hl(0, 'LlmUserPrompt', { fg = '#50fa7b' })    -- Green for user prompts
-  api.nvim_set_hl(0, 'LlmModelResponse', { fg = '#bd93f9' }) -- Purple for model responses
+  vim.api.nvim_set_hl(0, 'LlmConfirmTitle', { fg = '#f8f8f2', bg = '#44475a', bold = true })
+  vim.api.nvim_set_hl(0, 'LlmConfirmBorder', { fg = '#6272a4' })
+  vim.api.nvim_set_hl(0, 'LlmConfirmText', { fg = '#f8f8f2' })
+  vim.api.nvim_set_hl(0, 'LlmConfirmButton', { fg = '#50fa7b', bold = true })
+  vim.api.nvim_set_hl(0, 'LlmConfirmButtonCancel', { fg = '#ff5555', bold = true })
+  vim.api.nvim_set_hl(0, 'LlmUserPrompt', { fg = '#50fa7b' })    -- Green for user prompts
+  vim.api.nvim_set_hl(0, 'LlmModelResponse', { fg = '#bd93f9' }) -- Purple for model responses
 
-  local win = api.nvim_open_win(buf, true, win_opts)
+  local win = vim.api.nvim_open_win(buf, true, win_opts)
 
   -- Set window highlights
-  api.nvim_win_set_option(win, 'winhl',
+  vim.api.nvim_win_set_option(win, 'winhl',
     'Normal:LlmConfirmText,NormalFloat:LlmConfirmText,FloatBorder:LlmConfirmBorder,Title:LlmConfirmTitle')
 
   -- Add compact styled content that fits in 5 lines
@@ -269,32 +263,32 @@ function M.floating_confirm(opts)
     "",
     "  [Y]es    [N]o"
   }
-  api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
 
   -- Add highlights for the buttons
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)         -- Yes
-  api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13) -- No
+  vim.api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButton', 4, 3, 7)         -- Yes
+  vim.api.nvim_buf_add_highlight(buf, -1, 'LlmConfirmButtonCancel', 4, 11, 13) -- No
 
   -- Set keymaps with better visual feedback
-  api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
     { noremap = true, silent = true, desc = "Confirm action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'Y', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(true)<CR>',
     { noremap = true, silent = true, desc = "Confirm action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'n', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
-  api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'n', 'N', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
-  api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
+  vim.api.nvim_buf_set_keymap(buf, 'n', '<Esc>', '<Cmd>lua require("llm.core.utils.ui")._confirm_floating_dialog(false)<CR>',
     { noremap = true, silent = true, desc = "Cancel action" })
 
   -- Store callback in buffer var
-  api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)
+  vim.api.nvim_buf_set_var(buf, 'floating_confirm_callback', on_confirm)
 end
 
 function M._confirm_floating_dialog(confirmed)
-  local buf = api.nvim_get_current_buf()
-  local callback = api.nvim_buf_get_var(buf, 'floating_confirm_callback')
-  api.nvim_win_close(api.nvim_get_current_win(), true)
+  local buf = vim.api.nvim_get_current_buf()
+  local callback = vim.api.nvim_buf_get_var(buf, 'floating_confirm_callback')
+  vim.api.nvim_win_close(vim.api.nvim_get_current_win(), true)
   if confirmed then
     callback("Yes")
   else
@@ -312,17 +306,17 @@ function M.append_to_buffer(bufnr, content, highlight_group)
     return
   end
 
-  local ok, last_line = pcall(api.nvim_buf_line_count, bufnr)
+  local ok, last_line = pcall(vim.api.nvim_buf_line_count, bufnr)
   if not ok then
     vim.notify("append_to_buffer: Invalid buffer number: " .. tostring(bufnr), vim.log.levels.ERROR)
     return -- Invalid buffer, do nothing
   end
 
-  api.nvim_buf_set_lines(bufnr, last_line, last_line, false, lines)
+  vim.api.nvim_buf_set_lines(bufnr, last_line, last_line, false, lines)
 
   if highlight_group then
     for i = 0, #lines - 1 do
-      api.nvim_buf_add_highlight(bufnr, -1, highlight_group, last_line + i, 0, -1)
+      vim.api.nvim_buf_add_highlight(bufnr, -1, highlight_group, last_line + i, 0, -1)
     end
   end
 
@@ -330,8 +324,8 @@ function M.append_to_buffer(bufnr, content, highlight_group)
     vim.log.levels.DEBUG)
 
   -- Move cursor to the end of the buffer if it's the current buffer
-  if api.nvim_get_current_buf() == bufnr then
-    api.nvim_win_set_cursor(0, { last_line + #lines, 0 })
+  if vim.api.nvim_get_current_buf() == bufnr then
+    vim.api.nvim_win_set_cursor(0, { last_line + #lines, 0 })
     vim.notify("append_to_buffer: Cursor moved in current window", vim.log.levels.DEBUG)
   else
     vim.notify("append_to_buffer: Not current buffer, cursor not moved.", vim.log.levels.DEBUG)
