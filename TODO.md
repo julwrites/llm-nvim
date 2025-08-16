@@ -85,10 +85,10 @@ These failures are likely indicative of actual bugs or incorrect logic in the pl
 
 This is the first priority. The goal is to create a single, unified function for handling streaming output from the `llm` command. This will make the code easier to maintain and extend in the future.
 
-- [ ] **Create a Unified Streaming Function:**
-    - [ ] **Analyze `:LLMChat`:** The streaming is handled by `api.run_llm_command_streamed` in `lua/llm/api.lua`, which is called from `lua/llm/chat.lua`. It uses `vim.fn.jobsend` to send the prompt to the `llm` process and has chat-specific logic in its `on_stdout` and `on_exit` callbacks.
-    - [ ] **Generalize the streaming logic:** To make this reusable, move the chat-specific logic out of `api.run_llm_command_streamed`. Create a new, more generic function that accepts callbacks as arguments, allowing each command to define its own behavior for handling the streamed output and the command's completion.
-    - [ ] **Implement the new streaming function:** Create a new function, likely in `lua/llm/api.lua`, that encapsulates the logic for running a streaming command. This function will take the command parts, the prompt, and the target buffer as arguments. It will handle creating the job and sending the prompt to the command's stdin using `vim.fn.jobsend`.
+- [x] **Create a Unified Streaming Function:**
+    - [x] **Analyze `:LLMChat`:** The streaming is handled by `api.run_llm_command_streamed` in `lua/llm/api.lua`, which is called from `lua/llm/chat.lua`. It uses `vim.fn.jobsend` to send the prompt to the `llm` process and has chat-specific logic in its `on_stdout` and `on_exit` callbacks.
+    - [x] **Generalize the streaming logic:** To make this reusable, move the chat-specific logic out of `api.run_llm_command_streamed`. Create a new, more generic function that accepts callbacks as arguments, allowing each command to define its own behavior for handling the streamed output and the command's completion.
+    - [x] **Implement the new streaming function:** Create a new function, likely in `lua/llm/api.lua`, that encapsulates the logic for running a streaming command. This function will take the command parts, the prompt, and the target buffer as arguments. It will handle creating the job and sending the prompt to the command's stdin using `vim.fn.jobsend`.
 
 - [ ] **Refactor LLM Command Callsites:**
     - [ ] **Refactor `prompt` command (`lua/llm/commands.lua`):**
