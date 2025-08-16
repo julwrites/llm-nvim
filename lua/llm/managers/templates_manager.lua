@@ -36,16 +36,16 @@ end
 function M.save_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
     local cmd = 'templates save ' .. name
     if prompt then
-        cmd = cmd .. ' --prompt ' .. vim.fn.shellescape(prompt)
+        cmd = cmd .. " --prompt '" .. prompt .. "'"
     end
     if system then
-        cmd = cmd .. ' --system ' .. vim.fn.shellescape(system)
+        cmd = cmd .. " --system '" .. system .. "'"
     end
     if model then
         cmd = cmd .. ' --model ' .. model
     end
     for k, v in pairs(options) do
-        cmd = cmd .. ' -o ' .. k .. ' ' .. vim.fn.shellescape(v)
+        cmd = cmd .. " -o " .. k .. " '" .. tostring(v) .. "'"
     end
     for _, f in ipairs(fragments) do
         cmd = cmd .. ' -f ' .. f
@@ -54,7 +54,7 @@ function M.save_template(name, prompt, system, model, options, fragments, system
         cmd = cmd .. ' -sf ' .. f
     end
     for k, v in pairs(defaults) do
-        cmd = cmd .. ' -d ' .. k .. ' ' .. vim.fn.shellescape(v)
+        cmd = cmd .. " -d " .. k .. " '" .. v .. "'"
     end
     if extract then
         cmd = cmd .. ' --extract'
@@ -79,12 +79,12 @@ end
 function M.run_template(template_name, input, params)
     local cmd = { llm_cli.get_llm_executable_path(), "-t", template_name }
     if input then
-        table.insert(cmd, vim.fn.shellescape(input))
+        table.insert(cmd, "'" .. input .. "'")
     end
     for k, v in pairs(params) do
         table.insert(cmd, "-p")
         table.insert(cmd, k)
-        table.insert(cmd, vim.fn.shellescape(v))
+        table.insert(cmd, "'" .. v .. "'")
     end
     return cmd
 end

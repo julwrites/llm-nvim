@@ -134,11 +134,10 @@ describe('schemas_manager', function()
         end
         package.loaded['llm.api'] = nil
 
-        -- Mock other dependencies
+        local mock_helper = require('mock_helper')
+        local revert_io_open = mock_helper.mock_io_open('temp_file')
         local old_tempname = vim.fn.tempname
         vim.fn.tempname = function() return 'temp_file' end
-        local old_open = io.open
-        io.open = function() return { write = function() end, close = function() end } end
         local old_remove = os.remove
         os.remove = function() end
 
@@ -153,7 +152,7 @@ describe('schemas_manager', function()
 
         -- Restore mocks
         vim.fn.tempname = old_tempname
-        io.open = old_open
+        revert_io_open()
         os.remove = old_remove
         package.loaded['llm.api'] = nil
         package.preload['llm.api'] = nil

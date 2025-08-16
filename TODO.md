@@ -67,12 +67,12 @@ These failures are likely indicative of actual bugs or incorrect logic in the pl
     - [x] **Evaluation:** This is happening even though `vim.system` is mocked in `mock_vim.lua` and the specs use `spec_helper`. There might be another module loading issue.
     - [x] **Action:** The `vim.fn.system` mock was incorrect. It was returning a table instead of a string. The mock was updated to return a string.
 
-- [ ] **Investigate and Fix: Test runner errors.**
-    - [ ] **Problem:** Several test files are failing with `luarocks/core/persist.lua:18: attempt to call method 'read' (a nil value)`.
-    - [ ] **Evaluation:** This seems to be an issue with the test runner (`busted`) or its dependencies, not with the plugin code itself. The error suggests that a file is not being opened correctly, and the file handle is `nil`. This could be a permission issue, or the file might not exist. Cleaning the cache and reinstalling dependencies did not solve the issue.
-    - [ ] **Action:** 
-        - [ ] Investigate the `luarocks/core/persist.lua` file to understand what it is doing and what file it is trying to read.
-        - [ ] Try to run the tests with `strace` or a similar tool to see what files are being accessed.
+- [x] **Investigate and Fix: Test runner errors.**
+    - [x] **Problem:** Several test files are failing with `luarocks/core/persist.lua:18: attempt to call method 'read' (a nil value)`.
+    - [x] **Evaluation:** This seems to be an issue with the test runner (`busted`) or its dependencies, not with the plugin code itself. The error suggests that a file is not being opened correctly, and the file handle is `nil`. This could be a permission issue, or the file might not exist. Cleaning the cache and reinstalling dependencies did not solve the issue.
+    - [x] **Action:** 
+        - [x] Investigate the `luarocks/core/persist.lua` file to understand what it is doing and what file it is trying to read.
+        - [x] Try to run the tests with `strace` or a similar tool to see what files are being accessed.
 
 - [x] **Investigate and Fix: `chat_spec.lua` errors.**
     - [x] **Problem:** The tests are failing with `attempt to call a nil value (global 'unpack')`.
