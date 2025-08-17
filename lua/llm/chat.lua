@@ -111,7 +111,7 @@ function M.send_prompt()
   ui.append_to_buffer(bufnr, prompt .. "\n", "LlmUserPrompt")
   ui.append_to_buffer(bufnr, "--- LLM ---\n", "LlmModelResponse")
 
-  local cmd_parts = { commands.get_llm_executable_path(), prompt }
+  local cmd_parts = { commands.get_llm_executable_path() }
   vim.list_extend(cmd_parts, commands.get_model_arg())
   vim.list_extend(cmd_parts, commands.get_system_arg())
 

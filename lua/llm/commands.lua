@@ -275,12 +275,20 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
     vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
-  if job_id and prompt and prompt ~= "" then
-    table.insert(cmd_parts, prompt)
-    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
-  end
+
+  local callbacks = {
+    on_stdout = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
+  }
+
+  api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
 
 -- Send selected text with a prompt to llm
 function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr)
@@ -288,7 +296,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   if from_visual_mode then
     selection = text.get_visual_selection()
   else
-    selection = vim.api.nvim_get_current_line()
+    selection = vim.nvim_get_current_line()
   end
 
   if selection == "" then
@@ -315,18 +323,25 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr, {
+
+  local callbacks = {
+    on_stdout = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
     on_exit = function()
       vim.notify("LLM command finished.")
       -- Clean up the temporary file
       os.remove(temp_file)
     end,
-  })
-  if job_id and prompt and prompt ~= "" then
-    table.insert(cmd_parts, prompt)
-    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
-  end
+  }
+
+  api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
 
 ---------------------
 -- Interactive Commands

@@ -90,23 +90,23 @@ This is the first priority. The goal is to create a single, unified function for
     - [x] **Generalize the streaming logic:** To make this reusable, move the chat-specific logic out of `api.run_llm_command_streamed`. Create a new, more generic function that accepts callbacks as arguments, allowing each command to define its own behavior for handling the streamed output and the command's completion.
     - [x] **Implement the new streaming function:** Create a new function, likely in `lua/llm/api.lua`, that encapsulates the logic for running a streaming command. This function will take the command parts, the prompt, and the target buffer as arguments. It will handle creating the job and sending the prompt to the command's stdin using `vim.fn.jobsend`.
 
-- [ ] **Refactor LLM Command Callsites:**
-    - [ ] **Refactor `prompt` command (`lua/llm/commands.lua`):**
+- [x] **Refactor LLM Command Callsites:**
+    - [x] **Refactor `prompt` command (`lua/llm/commands.lua`):**
         - **Analyze:** This is the basic prompt command. It streams the response to a new buffer.
         - **Refactor:** Modify the function to call the new unified streaming function. The `prompt` string will be passed to be sent via `jobsend`. The `on_stdout` callback will append data to the buffer, and the `on_exit` callback will be empty.
         - **Test:** Write a test to verify that the unified streaming function is called with the correct arguments. Simulate the callbacks and assert that the buffer is updated correctly.
 
-    - [ ] **Refactor `prompt_with_current_file` command (`lua/llm/commands.lua`):**
+    - [x] **Refactor `prompt_with_current_file` command (`lua/llm/commands.lua`):**
         - **Analyze:** This command adds the current file as a fragment before calling the LLM.
         - **Refactor:** Similar to the `prompt` command, this will be modified to call the new unified streaming function, passing the prompt via `jobsend`.
         - **Test:** Write a test to verify that the unified streaming function is called with the correct arguments, including the fragment for the current file. Simulate the callbacks and assert that the buffer is updated correctly.
 
-    - [ ] **Refactor `prompt_with_selection` command (`lua/llm/commands.lua`):**
+    - [x] **Refactor `prompt_with_selection` command (`lua/llm/commands.lua`):**
         - **Analyze:** This command uses a temporary file for the selection and has an `on_exit` callback to clean it up.
         - **Refactor:** Modify the function to call the new unified streaming function. The `on_exit` callback, which removes the temporary file, will be passed to the new function.
         - **Test:** Write a test to verify that the unified streaming function is called correctly. The test should also verify that the temporary file is created and that the `on_exit` callback removes it.
 
-    - [ ] **Refactor `send_prompt` command (`lua/llm/chat.lua`):**
+    - [x] **Refactor `send_prompt` command (`lua/llm/chat.lua`):**
         - **Analyze:** This is the chat command. It has custom logic in its callbacks to filter startup messages and to re-prompt the user on exit.
         - **Refactor:** Modify the function to call the new unified streaming function. The custom `on_stdout` and `on_exit` callbacks will be passed to the new function.
         - **Test:** Write a test to verify that the unified streaming function is called correctly. The test should simulate the `on_stdout` callback and assert that startup messages are filtered. It should also simulate the `on_exit` callback and assert that the UI is updated to re-prompt the user.

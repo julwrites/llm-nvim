@@ -8,7 +8,9 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
   before_each(function()
     -- Mock the llm.api module
     api_mock = {
-      run_streaming_command = spy.new(function() end), -- Mock the streaming command function
+      run_streaming_command = spy.new(function(cmd_parts, prompt, callbacks)
+        api_mock.run_streaming_command.calls = { { cmd_parts, prompt, callbacks } }
+      end),
     }
     package.loaded['llm.api'] = api_mock
 
@@ -32,6 +34,10 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       end),
     }
 
+    -- Mock the llm.core.utils.text module
+    local text_mock = { get_visual_selection = spy.new(function() return 'selected text' end) }
+    package.loaded['llm.core.utils.text'] = text_mock
+
     -- Clear the commands module from package.loaded to ensure a fresh load
     package.loaded['llm.commands'] = nil
     commands = require('llm.commands')
@@ -45,24 +51,69 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
 
   describe('prompt', function()
     it('should call api.run_streaming_command with the correct arguments', function()
-      local run_streaming_command_spy = spy.on(api_mock, 'run_streaming_command')
-      commands.prompt('test prompt', {}, 1, '/usr/bin/llm', 'test-model', 'test-system-prompt')
+      commands.prompt('test prompt', {}, 1)
 
-      assert.spy(run_streaming_command_spy).was.called()
-      local call_args = run_streaming_command_spy.calls[1]
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
       assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt' }, call_args[1])
       assert.are.equal('test prompt', call_args[2])
     end)
 
     it('should append data to the buffer on stdout', function()
-      local run_streaming_command_spy = spy.on(api_mock, 'run_streaming_command')
-      commands.prompt('test prompt', {}, 1, '/usr/bin/llm', 'test-model', 'test-system-prompt')
+      commands.prompt('test prompt', {}, 1)
 
-      local call_args = run_streaming_command_spy.calls[1]
+      local call_args = api_mock.run_streaming_command.calls[1]
       local callbacks = call_args[3]
       callbacks.on_stdout(nil, { 'test output' })
 
       assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output\n', 'LlmModelResponse')
+    end)
+  end)
+
+  describe('prompt_with_current_file', function()
+    it('should call api.run_streaming_command with the correct arguments', function()
+      -- Mock vim.fn.expand to return a dummy file path
+      vim.fn.expand = spy.new(function() return '/path/to/file.lua' end)
+
+      commands.prompt_with_current_file('test prompt', {}, 1)
+
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
+      assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt', '-f', '/path/to/file.lua' }, call_args[1])
+      assert.are.equal('test prompt', call_args[2])
+    end)
+
+    it('should append data to the buffer on stdout', function()
+      -- Mock vim.fn.expand to return a dummy file path
+      vim.fn.expand = spy.new(function() return '/path/to/file.lua' end)
+
+      commands.prompt_with_current_file('test prompt', {}, 1)
+
+      local call_args = api_mock.run_streaming_command.calls[1]
+      local callbacks = call_args[3]
+      callbacks.on_stdout(nil, { 'test output' })
+
+      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output\n', 'LlmModelResponse')
+    end)
+  end)
+
+  describe('prompt_with_selection', function()
+    it('should call api.run_streaming_command with the correct arguments', function()
+      -- Mock dependencies
+      commands.write_context_to_temp_file = spy.new(function() return '/tmp/temp_file' end)
+      os.remove = spy.new(function() end)
+
+      commands.prompt_with_selection('test prompt', {}, true, 1)
+
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
+      assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt', '-f', '/tmp/temp_file' }, call_args[1])
+      assert.are.equal('test prompt', call_args[2])
+
+      -- Test on_exit callback
+      local callbacks = call_args[3]
+      callbacks.on_exit()
+      assert.spy(os.remove).was.called_with('/tmp/temp_file')
     end)
   end)
 end)
