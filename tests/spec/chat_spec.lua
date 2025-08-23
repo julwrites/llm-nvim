@@ -1,106 +1,80 @@
-require('tests.spec.spec_helper')
+require('spec_helper')
 
 describe('llm.chat', function()
   local chat
-  local mock_job
-  local mock_ui
-  local mock_api
-  local mock_commands
-
-  local job_run_calls
+  local api_mock
+  local ui_mock
+  local commands_mock
 
   before_each(function()
-    job_run_calls = {} -- Reset calls for each test
-
-    -- Mock the job runner
-    mock_job = {
-      run = function(cmd_parts, callbacks)
-        table.insert(job_run_calls, { cmd_parts = cmd_parts, callbacks = callbacks })
-      end,
+    -- Mock dependencies
+    api_mock = {
+      run_streaming_command = spy.new(function(cmd_parts, prompt, callbacks) 
+        api_mock.run_streaming_command.calls = { { cmd_parts, prompt, callbacks } }
+      end),
     }
-    package.loaded['llm.core.utils.job'] = mock_job
-    package.loaded['llm.core.utils.job'] = mock_job
+    package.loaded['llm.api'] = api_mock
 
-    -- Mock the ui module
-    mock_ui = {
-      create_chat_buffer = spy.new(function() end),
+    ui_mock = {
+      create_chat_buffer = spy.new(function() return 1 end),
       append_to_buffer = spy.new(function() end),
     }
-    package.loaded['llm.core.utils.ui'] = mock_ui
+    package.loaded['llm.core.utils.ui'] = ui_mock
 
-    -- Mock the vim api
-    mock_api = {
-      nvim_get_current_buf = spy.new(function()
-        return 1
-      end),
-      nvim_buf_get_lines = function()
-        return {
-          '--- User Prompt ---',
-          'Enter your prompt below and press <Enter> to submit.',
-          '-------------------',
-          'This is the user prompt'
-        }
-      end,
-      nvim_buf_set_lines = spy.new(function() end),
+    commands_mock = {
+      get_llm_executable_path = spy.new(function() return '/usr/bin/llm' end),
+      get_model_arg = spy.new(function() return { '-m', 'test-model' } end),
+      get_system_arg = spy.new(function() return { '-s', 'test-system-prompt' } end),
     }
-    vim.api = mock_api
-    vim.fn = {
-        shellescape = function(s) return "'" .. s .. "'" end
-    }
-    vim.list_extend = function(t1, t2)
-        for _, v in ipairs(t2) do
-            table.insert(t1, v)
-        end
-        return t1
-    end
-    vim.list_contains = function(list, value)
-        for _, v in ipairs(list) do
-            if v == value then
-                return true
-            end
-        end
-        return false
-    end
+    package.loaded['llm.commands'] = commands_mock
 
-    -- Mock the commands module
-    mock_commands = {
-      get_llm_executable_path = spy.new(function() return 'llm' end),
-      get_model_arg = spy.new(function() return {} end),
-      get_system_arg = spy.new(function() return {} end),
-    }
-    package.loaded['llm.commands'] = mock_commands
+    -- Mock vim functions
+    vim.api.nvim_get_current_buf = spy.new(function() return 1 end)
+    vim.api.nvim_win_get_cursor = spy.new(function() return { 3, 0 } end)
+    vim.api.nvim_buf_get_lines = spy.new(function() return { '---', '--- You ---', '> test prompt' } end)
+    vim.api.nvim_buf_line_count = spy.new(function() return 4 end)
+    vim.api.nvim_win_set_cursor = spy.new(function() end)
+    vim.api.nvim_buf_set_lines = spy.new(function() end)
+    vim.cmd = spy.new(function() end)
 
-
-    -- Load the chat module
     package.loaded['llm.chat'] = nil
     chat = require('llm.chat')
   end)
 
   after_each(function()
-    package.loaded['llm.core.utils.job'] = nil
+    package.loaded['llm.api'] = nil
     package.loaded['llm.core.utils.ui'] = nil
     package.loaded['llm.commands'] = nil
   end)
 
   describe('send_prompt', function()
-    it('should extract the prompt correctly and call job.run', function()
+    it('should call api.run_streaming_command with the correct arguments', function()
       chat.send_prompt()
-      assert.is_not_nil(job_run_calls[1])
-      local job_args = job_run_calls[1].cmd_parts
-      assert.is_true(vim.list_contains(job_args, "'This is the user prompt'"))
+
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
+      assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt' }, call_args[1])
+      assert.are.equal('> test prompt', call_args[2])
     end)
 
-    it('should stream response to buffer via on_stdout callback', function()
+    it('should filter startup messages on stdout', function()
       chat.send_prompt()
-      assert.is_not_nil(job_run_calls[1])
-      local callbacks = job_run_calls[1].callbacks
-      assert.is_not_nil(callbacks.on_stdout)
 
-      callbacks.on_stdout(nil, {"First line of response"})
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "First line of response\n")
+      local call_args = api_mock.run_streaming_command.calls[1]
+      local callbacks = call_args[3]
+      callbacks.on_stdout(nil, { 'Chatting with test-model', 'test output' })
 
-      callbacks.on_stdout(nil, {"Second line of response"})
-      assert.spy(mock_ui.append_to_buffer).was.called_with(1, "Second line of response\n")
+      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output\n', 'LlmModelResponse')
+    end)
+
+    it('should re-prompt on exit', function()
+      chat.send_prompt()
+
+      local call_args = api_mock.run_streaming_command.calls[1]
+      local callbacks = call_args[3]
+      callbacks.on_exit(nil, 0)
+
+      assert.spy(ui_mock.append_to_buffer).was.called_with(1, ">  ", "LlmUserPrompt")
     end)
   end)
 end)

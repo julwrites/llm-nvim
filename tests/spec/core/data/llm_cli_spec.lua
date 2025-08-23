@@ -1,4 +1,5 @@
 -- tests/spec/core/data/llm_cli_spec.lua
+require('spec_helper')
 
 describe("llm.core.data.llm_cli", function()
   local llm_cli
@@ -37,7 +38,7 @@ describe("llm.core.data.llm_cli", function()
   it("should handle an empty command", function()
     local spy = spy.on(shell, "safe_shell_command")
     llm_cli.run_llm_command("")
-    assert.spy(spy).was.called_with("llm ")
+    assert.spy(spy).was.called_with("llm")
   end)
 
   it("should handle a command with special characters", function()

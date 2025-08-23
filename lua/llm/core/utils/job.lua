@@ -13,34 +13,33 @@ function M.run(cmd, callbacks)
     local handler = (event == "stdout" and callbacks.on_stdout) or (event == "stderr" and callbacks.on_stderr)
     if not handler then return end
 
-    -- The data from jobstart is a table of strings.
-    -- We concatenate them, assuming they might be chunked.
-    local chunk = table.concat(data, "\n")
-    vim.notify("job.lua: processing chunk for " .. event .. ", chunk length: " .. tostring(#chunk), vim.log.levels.DEBUG)
+    for _, chunk in ipairs(data) do
+        vim.notify("job.lua: processing chunk for " .. event .. ", chunk length: " .. tostring(#chunk), vim.log.levels.DEBUG)
 
-    -- For stdout, we buffer and split by lines
-    if event == "stdout" then
-      stdout_buffer = stdout_buffer .. chunk
-      local lines = {}
-      local i = 1
-      while true do
-        local j = stdout_buffer:find("\n", i)
-        if not j then break end
-        table.insert(lines, stdout_buffer:sub(i, j - 1))
-        i = j + 1
-      end
-      -- Keep the incomplete part of the last line in the buffer
-      stdout_buffer = stdout_buffer:sub(i)
-      vim.notify(
-        "job.lua: stdout_buffer remaining: " .. tostring(#stdout_buffer) .. ", lines to send: " .. tostring(#lines),
-        vim.log.levels.DEBUG)
+        -- For stdout, we buffer and split by lines
+        if event == "stdout" then
+            stdout_buffer = stdout_buffer .. chunk
+            local lines = {}
+            local i = 1
+            while true do
+                local j = stdout_buffer:find("\n", i)
+                if not j then break end
+                table.insert(lines, stdout_buffer:sub(i, j - 1))
+                i = j + 1
+            end
+            -- Keep the incomplete part of the last line in the buffer
+            stdout_buffer = stdout_buffer:sub(i)
+            vim.notify(
+                "job.lua: stdout_buffer remaining: " .. tostring(#stdout_buffer) .. ", lines to send: " .. tostring(#lines),
+                vim.log.levels.DEBUG)
 
-      if #lines > 0 then
-        handler(nil, lines)
-      end
-    else
-      -- For stderr, just send the chunk directly as a table
-      handler(nil, data)
+            if #lines > 0 then
+                handler(nil, lines)
+            end
+        else
+            -- For stderr, just send the chunk directly as a table
+            handler(nil, {chunk})
+        end
     end
   end
 

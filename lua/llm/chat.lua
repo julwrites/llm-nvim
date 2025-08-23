@@ -22,10 +22,60 @@ function M.start_chat()
   return bufnr
 end
 
+function M.start_chat_stream(bufnr, cmd_parts, prompt)
+  local callbacks = {
+    on_stdout = function(_, data) 
+      local startup_patterns = {
+        "^Chatting with ",
+        "^Type 'exit' or 'quit' to exit",
+        "^Type '!multi' to enter multiple lines, then '!end' to finish",
+        "^Type '!edit' to open your default editor and modify the prompt",
+        "^Type '!fragment ",
+        "^>",
+      }
+      if data then
+        for _, line in ipairs(data) do
+          local is_startup_line = false
+          for _, pattern in ipairs(startup_patterns) do
+            if string.find(line, pattern) then
+              is_startup_line = true
+              break
+            end
+          end
+          if not is_startup_line then
+            ui.append_to_buffer(bufnr, line .. "\n", "LlmModelResponse")
+          end
+        end
+      end
+    end,
+    on_stderr = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          vim.notify("LLM stderr: " .. line, vim.log.levels.ERROR)
+        end
+      end
+    end,
+    on_exit = function(_, exit_code) 
+      vim.notify("LLM command finished with exit code: " .. tostring(exit_code), vim.log.levels.INFO)
+      -- After the model finishes, indicate user's turn
+      ui.append_to_buffer(bufnr, "--- You ---", "LlmUserPrompt")
+      ui.append_to_buffer(bufnr, ">  ", "LlmUserPrompt")
+
+      -- Move cursor to the end of the buffer
+      local num_lines = vim.api.nvim_buf_line_count(bufnr)
+      vim.api.nvim_win_set_cursor(0, { num_lines, 3 })
+      vim.cmd('startinsert') -- Re-enter insert mode
+    end,
+  }
+
+  local job_id = api.run_streaming_command(cmd_parts, prompt, callbacks)
+  return job_id
+end
+
 function M.send_prompt()
   vim.notify("DEBUG: send_prompt function called.", vim.log.levels.INFO)
   local bufnr = vim.api.nvim_get_current_buf()
-  local current_cursor_line, _ = unpack(vim.api.nvim_win_get_cursor(0))    -- 1-indexed line number of cursor
+  local current_cursor_line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))    -- 1-indexed line number of cursor
   local all_buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false) -- 0-indexed table of all lines
 
   local you_marker_line_idx = -1                                           -- 0-indexed line number of "--- You ---"
@@ -61,14 +111,11 @@ function M.send_prompt()
   ui.append_to_buffer(bufnr, prompt .. "\n", "LlmUserPrompt")
   ui.append_to_buffer(bufnr, "--- LLM ---\n", "LlmModelResponse")
 
-  local cmd_parts = { commands.get_llm_executable_path(), prompt }
+  local cmd_parts = { commands.get_llm_executable_path() }
   vim.list_extend(cmd_parts, commands.get_model_arg())
   vim.list_extend(cmd_parts, commands.get_system_arg())
 
-  local job_id = api.run_llm_command_streamed(cmd_parts, bufnr)
-  if job_id then
-    vim.fn.jobsend(job_id, prompt .. "\n")
-  end
+  M.start_chat_stream(bufnr, cmd_parts, prompt)
 end
 
 return M

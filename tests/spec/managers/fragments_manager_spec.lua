@@ -1,4 +1,3 @@
--- tests/spec/managers/fragments_manager_spec.lua
 require('spec_helper')
 local fragments_manager = require('llm.managers.fragments_manager')
 local llm_cli = require('llm.core.data.llm_cli')

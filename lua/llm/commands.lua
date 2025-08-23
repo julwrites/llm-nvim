@@ -118,6 +118,15 @@ function M.write_context_to_temp_file(context)
   return temp_file
 end
 
+function M.create_response_buffer(content)
+  ui.create_buffer_with_content(content, "LLM Response", "markdown")
+end
+
+function M.fill_response_buffer(bufnr, content)
+  ui.replace_buffer_with_content(content, bufnr, "markdown")
+  vim.cmd("redraw")
+end
+
 -- Helper function to select an existing fragment alias
 local function select_existing_fragment(callback)
   local fragments_manager = require('llm.managers.fragments_manager')
@@ -179,14 +188,28 @@ end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths, bufnr)
-  local cmd_parts = { M.get_llm_executable_path() }
+  local llm_executable_path = config.get("llm_executable_path")
+  local model = config.get("model")
+  local system_prompt = config.get("system_prompt")
 
-  -- Add model args (returns a table)
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  -- Add system args (returns a table)
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  -- Add fragment args (returns a table)
-  vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+  local cmd_parts = { llm_executable_path }
+
+  if model and model ~= "" then
+    table.insert(cmd_parts, "-m")
+    table.insert(cmd_parts, model)
+  end
+
+  if system_prompt and system_prompt ~= "" then
+    table.insert(cmd_parts, "-s")
+    table.insert(cmd_parts, system_prompt)
+  end
+
+  if fragment_paths then
+    for _, fragment in ipairs(fragment_paths) do
+      table.insert(cmd_parts, "-f")
+      table.insert(cmd_parts, fragment)
+    end
+  end
 
   local target_bufnr = bufnr
   if not target_bufnr then
@@ -197,12 +220,21 @@ function M.prompt(prompt, fragment_paths, bufnr)
     vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
-  if job_id and prompt and prompt ~= "" then
-    table.insert(cmd_parts, prompt)
-    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
-  end
+
+  local callbacks = {
+    on_stdout = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
+  }
+
+  api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
+
 
 -- Explain the current buffer or selection
 function M.explain_code(fragment_paths, bufnr)
@@ -243,12 +275,20 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
     vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr)
-  if job_id and prompt and prompt ~= "" then
-    table.insert(cmd_parts, prompt)
-    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
-  end
+
+  local callbacks = {
+    on_stdout = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
+  }
+
+  api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
 
 -- Send selected text with a prompt to llm
 function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr)
@@ -256,7 +296,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   if from_visual_mode then
     selection = text.get_visual_selection()
   else
-    selection = vim.api.nvim_get_current_line()
+    selection = vim.nvim_get_current_line()
   end
 
   if selection == "" then
@@ -283,18 +323,25 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
-  local job_id = api.run_llm_command_streamed(cmd_parts, target_bufnr, {
+
+  local callbacks = {
+    on_stdout = function(_, data) 
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
     on_exit = function()
       vim.notify("LLM command finished.")
       -- Clean up the temporary file
       os.remove(temp_file)
     end,
-  })
-  if job_id and prompt and prompt ~= "" then
-    table.insert(cmd_parts, prompt)
-    vim.notify("commands.lua: Appended prompt to command parts for job ID: " .. tostring(job_id), vim.log.levels.INFO)
-  end
+  }
+
+  api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
 
 ---------------------
 -- Interactive Commands

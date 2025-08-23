@@ -57,4 +57,89 @@ describe('llm.api', function()
       end
     end)
   end)
+
+  describe('run_llm_command', function()
+    local job_mock
+    local vim_fn_mock
+
+    before_each(function()
+      job_mock = {
+        run = spy.new(function()
+          return { id = 1 }
+        end),
+      }
+      vim_fn_mock = {
+        jobsend = spy.new(function() end),
+      }
+      package.loaded['llm.core.utils.job'] = job_mock
+      -- Rerequire api to get the mocked job
+      package.loaded['llm.api'] = nil
+      api = require('llm.api')
+      vim.fn = vim_fn_mock
+    end)
+
+    after_each(function()
+      package.loaded['llm.core.utils.job'] = nil
+    end)
+
+    it('should call job.run with the correct arguments', function()
+      local command_parts = { 'llm', 'prompt' }
+      local prompt = 'test prompt'
+      local callbacks = {
+        on_stdout = function() end,
+        on_stderr = function() end,
+        on_exit = function() end,
+      }
+      api.run_llm_command(command_parts, prompt, callbacks)
+      assert.spy(job_mock.run).was.called_with({
+        command = command_parts,
+        on_stdout = callbacks.on_stdout,
+        on_stderr = callbacks.on_stderr,
+        on_exit = callbacks.on_exit,
+      })
+    end)
+
+    it('should call vim.fn.jobsend with the correct prompt', function()
+      local command_parts = { 'llm', 'prompt' }
+      local prompt = 'test prompt'
+      local callbacks = {
+        on_stdout = function() end,
+        on_stderr = function() end,
+        on_exit = function() end,
+      }
+      api.run_llm_command(command_parts, prompt, callbacks)
+      assert.spy(vim.fn.jobsend).was.called_with(1, prompt)
+    end)
+
+    it('should pass callbacks to job.run', function()
+      local command_parts = { 'llm', 'prompt' }
+      local prompt = 'test prompt'
+      local on_stdout_spy = spy.new(function() end)
+      local on_stderr_spy = spy.new(function() end)
+      local on_exit_spy = spy.new(function() end)
+
+      local callbacks = {
+        on_stdout = on_stdout_spy,
+        on_stderr = on_stderr_spy,
+        on_exit = on_exit_spy,
+      }
+
+      local captured_callbacks
+      job_mock.run = spy.new(function(args)
+        captured_callbacks = args
+        return { id = 1 }
+      end)
+
+      api.run_llm_command(command_parts, prompt, callbacks)
+
+      captured_callbacks.on_stdout(nil, { 'data' })
+      assert.spy(on_stdout_spy).was.called_with(nil, { 'data' })
+
+      captured_callbacks.on_stderr(nil, { 'error' })
+      assert.spy(on_stderr_spy).was.called_with(nil, { 'error' })
+
+      captured_callbacks.on_exit(nil, 0)
+      assert.spy(on_exit_spy).was.called_with(nil, 0)
+    end)
+  end)
 end)
