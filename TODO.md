@@ -111,11 +111,11 @@ This is the first priority. The goal is to create a single, unified function for
         - **Refactor:** Modify the function to call the new unified streaming function. The custom `on_stdout` and `on_exit` callbacks will be passed to the new function.
         - **Test:** Write a test to verify that the unified streaming function is called correctly. The test should simulate the `on_stdout` callback and assert that startup messages are filtered. It should also simulate the `on_exit` callback and assert that the UI is updated to re-prompt the user.
 
-- [ ] **Test the Unified Streaming Function:**
-    - [ ] **Testing Strategy:** The unified streaming function will be tested using the existing `busted` and `luassert` test suite. The tests will rely on mocking the `job.run` and `vim.fn` APIs to simulate the behavior of the streaming job. While this approach won't test the actual asynchronous nature of the stream, it will provide a high degree of confidence in the correctness of the implementation.
-    - [ ] **Test Correct Job Creation:** Write a test to assert that `job.run` is called with the correct command and arguments.
-    - [ ] **Test Correct Prompt Handling:** Write a test to assert that `vim.fn.jobsend` is called with the correct job ID and prompt text.
-    - [ ] **Test Callback Behavior:** Write tests to capture the `on_stdout`, `on_stderr`, and `on_exit` callbacks and invoke them directly to verify that they:
+- [x] **Test the Unified Streaming Function:**
+    - [x] **Testing Strategy:** The unified streaming function will be tested using the existing `busted` and `luassert` test suite. The tests will rely on mocking the `job.run` and `vim.fn` APIs to simulate the behavior of the streaming job. While this approach won't test the actual asynchronous nature of the stream, it will provide a high degree of confidence in the correctness of the implementation.
+    - [x] **Test Correct Job Creation:** Write a test to assert that `job.run` is called with the correct command and arguments.
+    - [x] **Test Correct Prompt Handling:** Write a test to assert that `vim.fn.jobsend` is called with the correct job ID and prompt text.
+    - [x] **Test Callback Behavior:** Write tests to capture the `on_stdout`, `on_stderr`, and `on_exit` callbacks and invoke them directly to verify that they:
         - Correctly append data to the buffer.
         - Correctly report errors.
         - Perform any necessary cleanup or finalization.

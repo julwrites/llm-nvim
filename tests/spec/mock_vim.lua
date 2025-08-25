@@ -29,6 +29,8 @@ M.fn = {
   end,
   shellescape = function(s) return s end,
   jobstart = function() return 1 end,
+  jobsend = function() end,
+  jobclose = function() end,
   expand = function(s) return s end,
   system = function(cmd)
     if type(cmd) == 'table' then
