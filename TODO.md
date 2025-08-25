@@ -124,10 +124,10 @@ This is the first priority. The goal is to create a single, unified function for
 
 This task depends on the successful completion of the "Unify LLM Streaming Logic" task.
 
-- [ ] **Analyze and fix the bug in `:LLMChat` conversation handling:** The `send_prompt` function in `lua/llm/chat.lua` incorrectly handles conversations. It passes the prompt as a command-line argument instead of just to stdin, and it doesn't use the `llm` tool's conversation management features. This causes subsequent prompts to be concatenated with the previous ones.
+- [x] **Analyze and fix the bug in `:LLMChat` conversation handling:** The `send_prompt` function in `lua/llm/chat.lua` incorrectly handles conversations. It passes the prompt as a command-line argument instead of just to stdin, and it doesn't use the `llm` tool's conversation management features. This causes subsequent prompts to be concatenated with the previous ones.
 
-- [ ] **Plan to Fix:**
-    - [ ] **Manage Chat State:** Introduce a buffer-local variable (e.g., `b.llm_chat_is_continuing`) to track whether a chat is new or ongoing.
-    - [ ] **Use the `--continue` Flag:** For ongoing chats, add the `--continue` flag to the `llm` command to tell the tool to load the conversation history.
-    - [ ] **Send Prompt via Stdin Only:** Modify the `send_prompt` function to send the prompt *only* to the `llm` command's standard input via `jobsend`, not as a command-line argument.
-    - [ ] **Refactor `send_prompt`:** Update the `send_prompt` function to implement this new logic, checking the chat state and modifying the command arguments accordingly.
+- [x] **Plan to Fix:**
+    - [x] **Manage Chat State:** Introduce a buffer-local variable (e.g., `b.llm_chat_is_continuing`) to track whether a chat is new or ongoing.
+    - [x] **Use the `--continue` Flag:** For ongoing chats, add the `--continue` flag to the `llm` command to tell the tool to load the conversation history.
+    - [x] **Send Prompt via Stdin Only:** Modify the `send_prompt` function to send the prompt *only* to the `llm` command's standard input via `jobsend`, not as a command-line argument.
+    - [x] **Refactor `send_prompt`:** Update the `send_prompt` function to implement this new logic, checking the chat state and modifying the command arguments accordingly.

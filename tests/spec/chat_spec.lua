@@ -48,12 +48,32 @@ describe('llm.chat', function()
   end)
 
   describe('send_prompt', function()
-    it('should call api.run_streaming_command with the correct arguments', function()
+    it('should call api.run_streaming_command with the correct arguments for a new chat', function()
+      -- Arrange
+      vim.b.llm_chat_is_continuing = nil
+
+      -- Act
       chat.send_prompt()
 
+      -- Assert
       assert.spy(api_mock.run_streaming_command).was.called()
       local call_args = api_mock.run_streaming_command.calls[1]
       assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt' }, call_args[1])
+      assert.are.equal('> test prompt', call_args[2])
+      assert.is_true(vim.b.llm_chat_is_continuing)
+    end)
+
+    it('should call api.run_streaming_command with the --continue flag for an ongoing chat', function()
+      -- Arrange
+      vim.b.llm_chat_is_continuing = true
+
+      -- Act
+      chat.send_prompt()
+
+      -- Assert
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
+      assert.same({ '/usr/bin/llm', '-m', 'test-model', '-s', 'test-system-prompt', '--continue' }, call_args[1])
       assert.are.equal('> test prompt', call_args[2])
     end)
 

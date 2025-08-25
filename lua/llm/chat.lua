@@ -109,13 +109,20 @@ function M.send_prompt()
   -- Append the prompt and response sections
   -- "--- You ---" is already in the buffer, just append the captured prompt
   ui.append_to_buffer(bufnr, prompt .. "\n", "LlmUserPrompt")
-  ui.append_to_buffer(bufnr, "--- LLM ---\n", "LlmModelResponse")
+  ui.append_to_buffer(bufnr, "--- LLM ---\\n", "LlmModelResponse")
 
   local cmd_parts = { commands.get_llm_executable_path() }
   vim.list_extend(cmd_parts, commands.get_model_arg())
   vim.list_extend(cmd_parts, commands.get_system_arg())
 
+  if vim.b.llm_chat_is_continuing then
+    table.insert(cmd_parts, "--continue")
+  else
+    vim.b.llm_chat_is_continuing = true
+  end
+
   M.start_chat_stream(bufnr, cmd_parts, prompt)
 end
+
 
 return M

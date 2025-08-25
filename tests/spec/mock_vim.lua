@@ -127,6 +127,7 @@ M.json = {
 
 M.cmd = function() end
 M.env = {}
+M.b = {}
 M.split = function(str, sep)
   local result = {}
   for s in string.gmatch(str, "([^" .. sep .. "]+)") do
