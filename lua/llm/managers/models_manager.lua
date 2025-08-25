@@ -148,7 +148,8 @@ function M.get_available_models()
       end
 
       if provider and model_id then
-        table.insert(models, { provider = provider, id = model_id, name = model_id })
+        local clean_model_id = model_id:gsub("%s*%s*%(aliases.-%)", "")
+        table.insert(models, { provider = provider, id = clean_model_id, name = clean_model_id })
       else
         -- Handle lines without a provider or unparseable lines
         table.insert(models, { provider = "Other", id = line, name = line })
