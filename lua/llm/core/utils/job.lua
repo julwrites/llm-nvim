@@ -1,56 +1,76 @@
 local M = {}
 
 function M.run(cmd, callbacks)
-  vim.notify("job.lua: Attempting to run command: " .. table.concat(cmd, " "), vim.log.levels.INFO)
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Starting job: " .. cmd[1], vim.log.levels.DEBUG)
+  end
 
   local stdout_buffer = ""
+  local stderr_buffer = ""
 
   local function process_output(data, event)
-    vim.notify("job.lua: process_output called for event: " .. event .. ", data: " .. vim.inspect(data),
-      vim.log.levels.DEBUG)
     if not data then return end
 
     local handler = (event == "stdout" and callbacks.on_stdout) or (event == "stderr" and callbacks.on_stderr)
     if not handler then return end
-
+    
+    local buffer = (event == "stdout") and stdout_buffer or stderr_buffer
+    
     for _, chunk in ipairs(data) do
-        vim.notify("job.lua: processing chunk for " .. event .. ", chunk length: " .. tostring(#chunk), vim.log.levels.DEBUG)
-
-        -- For stdout, we buffer and split by lines
-        if event == "stdout" then
-            stdout_buffer = stdout_buffer .. chunk
-            local lines = {}
-            local i = 1
-            while true do
-                local j = stdout_buffer:find("\n", i)
-                if not j then break end
-                table.insert(lines, stdout_buffer:sub(i, j - 1))
-                i = j + 1
-            end
-            -- Keep the incomplete part of the last line in the buffer
-            stdout_buffer = stdout_buffer:sub(i)
-            vim.notify(
-                "job.lua: stdout_buffer remaining: " .. tostring(#stdout_buffer) .. ", lines to send: " .. tostring(#lines),
-                vim.log.levels.DEBUG)
-
-            if #lines > 0 then
-                handler(nil, lines)
-            end
-        else
-            -- For stderr, just send the chunk directly as a table
-            handler(nil, {chunk})
-        end
+      -- Accumulate chunk into buffer
+      buffer = buffer .. chunk
+      
+      -- Split buffer on newlines
+      local lines = {}
+      while true do
+        local newline_pos = buffer:find('\n')
+        if not newline_pos then break end
+        
+        -- Extract line without the newline
+        local line = buffer:sub(1, newline_pos - 1)
+        table.insert(lines, line)
+        
+        -- Remove processed line from buffer
+        buffer = buffer:sub(newline_pos + 1)
+      end
+      
+      -- Update the appropriate buffer
+      if event == "stdout" then
+        stdout_buffer = buffer
+      else
+        stderr_buffer = buffer
+      end
+      
+      -- Call handler with complete lines
+      if #lines > 0 then
+        handler(nil, lines)
+      end
     end
   end
 
   local options = {
     on_exit = function(j, exit_code)
-      vim.notify("job.lua: Job " .. tostring(j) .. " exited with code: " .. tostring(exit_code), vim.log.levels.INFO)
+      if config.get('debug') then
+        vim.notify("Job exited with code: " .. tostring(exit_code), vim.log.levels.DEBUG)
+      end
+      
       -- Process any remaining buffered stdout before calling the final on_exit callback
       if #stdout_buffer > 0 then
-        process_output({ stdout_buffer }, "stdout")
+        if callbacks.on_stdout then
+          callbacks.on_stdout(nil, {stdout_buffer})
+        end
         stdout_buffer = "" -- Clear buffer after processing
       end
+      
+      -- Process any remaining buffered stderr
+      if #stderr_buffer > 0 then
+        if callbacks.on_stderr then
+          callbacks.on_stderr(nil, {stderr_buffer})
+        end
+        stderr_buffer = "" -- Clear buffer after processing
+      end
+      
       if callbacks.on_exit then callbacks.on_exit(j, exit_code) end
     end,
     on_stdout = function(j, d, e) process_output(d, e) end,
@@ -61,13 +81,11 @@ function M.run(cmd, callbacks)
   }
 
   local job_id = vim.fn.jobstart(cmd, options)
-  vim.notify("job.lua: jobstart returned ID: " .. tostring(job_id), vim.log.levels.INFO)
 
   if not job_id or job_id <= 0 then
-    vim.notify("job.lua: Failed to start job for command: " .. cmd[1], vim.log.levels.ERROR)
+    vim.notify("Failed to start job: " .. cmd[1], vim.log.levels.ERROR)
     return nil
   else
-    vim.notify("job.lua: Job started with ID: " .. tostring(job_id), vim.log.levels.INFO)
     return job_id
   end
 end

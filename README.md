@@ -41,7 +41,12 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 ## Requirements
 
 - Neovim 0.7.0 or later
+- Lua 5.2+ (Neovim bundles LuaJIT 2.1+ which is compatible)
 - [llm CLI tool](https://github.com/simonw/llm) installed (`pip install llm` or `brew install llm`)
+
+### Lua Compatibility Note
+
+This plugin uses Lua 5.2+ APIs (`table.unpack`) for forward compatibility. Neovim bundles LuaJIT 2.1+ which provides these APIs, so no additional Lua installation is required.
 
 ## Installation
 
@@ -229,6 +234,18 @@ Tests cover:
 - Plugin management
 - API key management
 - Fragment management
+
+## Troubleshooting
+
+### Lua Compatibility Errors
+
+If you encounter errors like "attempt to call a nil value (global 'unpack')":
+- Ensure you're using Neovim 0.7.0 or later
+- Check your Lua version: `:lua print(_VERSION)` in Neovim
+- Update Neovim if you're using an older version
+- Report the issue with your Neovim and Lua versions if problems persist
+
+The plugin requires Lua 5.2+ APIs which are provided by Neovim's bundled LuaJIT 2.1+.
 
 ## License
 

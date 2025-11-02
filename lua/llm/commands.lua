@@ -243,7 +243,6 @@ end
 
 function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   local filepath = vim.fn.expand('%:p')
-  vim.notify("commands.lua: Current file path: " .. filepath, vim.log.levels.INFO)
   if filepath == "" then
     vim.notify("Current buffer has no file path", vim.log.levels.ERROR)
     return
@@ -263,8 +262,6 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   -- Add the current file as a fragment
   table.insert(cmd_parts, "-f")
   table.insert(cmd_parts, vim.fn.shellescape(filepath))
-
-  vim.notify("commands.lua: cmd_parts for file command: " .. vim.inspect(cmd_parts), vim.log.levels.INFO)
 
   local target_bufnr = bufnr
   if not target_bufnr then
@@ -288,6 +285,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
 
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
+
 
 
 -- Send selected text with a prompt to llm
