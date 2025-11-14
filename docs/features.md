@@ -15,7 +15,7 @@
 - Streaming responses
 - Continue previous conversations with `--continue` flag
 
-### Unified Manager Window (`:LLMToggle`)
+### Unified Manager Window (`:LLMConfig`)
 - Models view: List, select, and set default models
 - Plugins view: Manage LLM plugins
 - API Keys view: Manage API keys for multiple providers

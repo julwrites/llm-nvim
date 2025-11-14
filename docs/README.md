@@ -55,4 +55,4 @@ When updating documentation:
 3. **Tasks**: Create task documents before implementation, update during work
 4. **History**: Append completed work, never delete
 
-See [task-documentation-guide.md](../task-documentation-guide.md) for detailed task documentation standards.
+See [tasks/README.md](tasks/README.md) for task documentation standards and current status.

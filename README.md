@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 - Fragment management (files, URLs, GitHub repos)
 - Template creation and execution
 - Schema management and execution
-- Unified manager window (`:LLMToggle`) with views for:
+- Unified manager window (`:LLMConfig`) with views for:
   - Models
   - Plugins  
   - API Keys
@@ -150,14 +150,14 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 - `:LLM update` - Manually trigger an update check for the underlying `llm` CLI tool.
 
 #### Unified Manager
-- `:LLMToggle [view]` - Toggle unified manager window
+- `:LLMConfig [view]` - Open unified manager window
   - Optional views: `models`, `plugins`, `keys`, `fragments`, `templates`, `schemas`
-- `:LLMToggle models` - Open Models view
-- `:LLMToggle plugins` - Open Plugins view  
-- `:LLMToggle keys` - Open API Keys view
-- `:LLMToggle fragments` - Open Fragments view
-- `:LLMToggle templates` - Open Templates view
-- `:LLMToggle schemas` - Open Schemas view
+- `:LLMConfig models` - Open Models view
+- `:LLMConfig plugins` - Open Plugins view  
+- `:LLMConfig keys` - Open API Keys view
+- `:LLMConfig fragments` - Open Fragments view
+- `:LLMConfig templates` - Open Templates view
+- `:LLMConfig schemas` - Open Schemas view
 
 ### Basic Prompting
 
@@ -178,7 +178,7 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 
 ### Using the Unified Manager
 
-1.  Type `:LLMToggle` or press `<leader>ll` (default mapping).
+1.  Type `:LLMConfig` or press `<leader>ll` (default mapping).
 2.  The manager window opens, likely showing the Models view first.
 3.  Press `P` to switch to the Plugins view.
 4.  Press `K` to switch to the API Keys view.
@@ -192,7 +192,7 @@ The plugin doesn't set any default key mappings. Here are some suggested mapping
 
 ```lua
 -- Toggle unified manager
-vim.keymap.set('n', '<leader>ll', '<Cmd>LLMToggle<CR>', { desc = "Toggle LLM Manager" })
+vim.keymap.set('n', '<leader>ll', '<Cmd>LLMConfig<CR>', { desc = "Toggle LLM Manager" })
 
 -- Basic prompt
 vim.keymap.set('n', '<leader>lp', '<Cmd>LLM<Space>', { desc = "LLM Prompt" })

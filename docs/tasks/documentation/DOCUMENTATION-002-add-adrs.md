@@ -32,6 +32,10 @@ The plugin has undergone significant architectural evolution (streaming unificat
 - [x] Document chat conversation management (ADR-002)
 - [x] Document manager lazy loading pattern (ADR-003)
 - [x] Document temp file selection pattern (ADR-004)
+- [x] Document configuration system (ADR-005)
+- [x] Document manager pattern (ADR-006)
+- [x] Document auto-update system (ADR-007)
+- [x] Document command system architecture (ADR-008)
 - [x] Update docs/architecture.md to reference ADRs
 - [x] Add ADR index in docs/adr/README.md
 
@@ -109,12 +113,16 @@ The plugin has undergone significant architectural evolution (streaming unificat
 
 - [ADR-000](ADR-000-template.md) - Template for new ADRs
 - [ADR-001](ADR-001-streaming-unification.md) - Unified Streaming Command Execution
-- [ADR-002](ADR-002-chat-conversation.md) - LLM CLI Conversation Management  
+- [ADR-002](ADR-002-chat-conversation.md) - LLM CLI Conversation Management
 - [ADR-003](ADR-003-lazy-manager-facade.md) - Lazy-Loaded Manager Facade
 - [ADR-004](ADR-004-temp-file-selection.md) - Temporary Files for Visual Selection
+- [ADR-005](ADR-005-configuration-system.md) - Centralized Configuration System
+- [ADR-006](ADR-006-manager-pattern.md) - Domain-Specific Manager Pattern
+- [ADR-007](ADR-007-auto-update-system.md) - Auto-Update System for LLM CLI
+- [ADR-008](ADR-008-command-system.md) - Command System Architecture
 
 ## Status Summary
-- Accepted: 4
+- Accepted: 8
 - Proposed: 0
 - Deprecated: 0
 ```
@@ -160,9 +168,37 @@ The plugin has undergone significant architectural evolution (streaming unificat
 - Performance: <1ms for small, 1-20ms for large selections
 - References: `lua/llm/commands.lua`, `lua/llm/core/utils/text.lua`
 
+**✅ ADR-005: Centralized Configuration System** (`docs/adr/ADR-005-configuration-system.md`)
+- Context: Need for robust configuration system
+- Decision: Centralized config with validation and change listeners
+- Consequences: Type safety, reactive updates, single source of truth
+- Alternatives: Global variables, simple table, external library (all rejected)
+- References: `lua/llm/config.lua`, `lua/llm/core/utils/validate.lua`
+
+**✅ ADR-006: Domain-Specific Manager Pattern** (`docs/adr/ADR-006-manager-pattern.md`)
+- Context: Multiple domains need clear separation
+- Decision: Domain-specific managers with facade access
+- Consequences: Separation of concerns, testability, maintainability
+- Alternatives: Monolithic module, functional approach, OOP classes (all rejected)
+- References: `lua/llm/facade.lua`, `lua/llm/managers/`, `lua/llm/ui/views/`
+
+**✅ ADR-007: Auto-Update System for LLM CLI** (`docs/adr/ADR-007-auto-update-system.md`)
+- Context: Need to keep llm CLI current
+- Decision: Background update checks with multiple package manager support
+- Consequences: Current dependencies, flexible installation, non-intrusive
+- Alternatives: Manual updates, prompt-based, external manager (all rejected)
+- References: `lua/llm/core/utils/shell.lua`, `lua/llm/init.lua`, `plugin/llm.lua`
+
+**✅ ADR-008: Command System Architecture** (`docs/adr/ADR-008-command-system.md`)
+- Context: Need flexible command system with subcommands
+- Decision: Multi-layered command system with dispatcher
+- Consequences: Flexible, consistent, discoverable, testable
+- Alternatives: Monolithic handler, per-command modules, event-driven (all rejected)
+- References: `plugin/llm.lua`, `lua/llm/commands.lua`, `lua/llm/api.lua`
+
 **✅ ADR Index** (`docs/adr/README.md`)
 - Complete index with all ADRs
-- Status summary table
+- Status summary table (8 accepted ADRs)
 - Guidelines for creating new ADRs
 - Reading order for new contributors
 - Links to related documentation
@@ -170,11 +206,15 @@ The plugin has undergone significant architectural evolution (streaming unificat
 **✅ Updated `docs/architecture.md`**
 - Added quick links section referencing ADRs
 - Linked each architectural decision to its ADR
-- Four decisions now reference their detailed ADRs:
+- All major decisions now reference their detailed ADRs:
   - ADR-001: Streaming (Decision #2)
   - ADR-002: Chat management (Decision #8)
   - ADR-003: Manager facade (Decision #1)
   - ADR-004: Selection handling (Decision #4)
+  - ADR-005: Configuration system (Decision #3)
+  - ADR-006: Manager pattern (Decision #5)
+  - ADR-007: Auto-update system (Decision #10)
+  - ADR-008: Command system (Data Flow section)
 
 ### ADR Content Quality
 
@@ -193,6 +233,10 @@ Each ADR includes:
 - `docs/adr/ADR-002-chat-conversation.md`
 - `docs/adr/ADR-003-lazy-manager-facade.md`
 - `docs/adr/ADR-004-temp-file-selection.md`
+- `docs/adr/ADR-005-configuration-system.md`
+- `docs/adr/ADR-006-manager-pattern.md`
+- `docs/adr/ADR-007-auto-update-system.md`
+- `docs/adr/ADR-008-command-system.md`
 - `docs/adr/README.md`
 
 ### Files Modified
@@ -207,6 +251,8 @@ Each ADR includes:
 - Comprehensive coverage of major architectural patterns
 - Clear writing suitable for new contributors
 - Links provide traceability to implementation
+- **Additional ADRs created**: Configuration system, manager pattern, auto-update system, command system
+- **Complete coverage**: All major architectural decisions now documented
 
 ---
 

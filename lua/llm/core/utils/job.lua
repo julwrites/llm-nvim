@@ -77,7 +77,6 @@ function M.run(cmd, callbacks)
     on_stderr = function(j, d, e) process_output(d, e) end,
     stdout_buffered = false,
     stderr_buffered = false,
-    pty = true,
   }
 
   local job_id = vim.fn.jobstart(cmd, options)

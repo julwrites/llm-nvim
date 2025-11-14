@@ -90,6 +90,8 @@ For detailed context, rationale, and alternatives considered for each decision, 
 
 **Decision**: Centralized configuration with validation and change listeners.
 
+**See**: [ADR-005: Centralized Configuration System](adr/ADR-005-configuration-system.md)
+
 **Rationale**:
 - Single source of truth for all settings
 - Type validation prevents runtime errors
@@ -113,6 +115,8 @@ For detailed context, rationale, and alternatives considered for each decision, 
 ### 5. Manager Pattern
 
 **Decision**: Each domain (models, keys, fragments, etc.) has dedicated manager module.
+
+**See**: [ADR-006: Domain-Specific Manager Pattern](adr/ADR-006-manager-pattern.md)
 
 **Rationale**:
 - Separation of concerns
@@ -174,6 +178,8 @@ For detailed context, rationale, and alternatives considered for each decision, 
 
 **Decision**: Optional background CLI update checks with multiple package manager support.
 
+**See**: [ADR-007: Auto-Update System for LLM CLI](adr/ADR-007-auto-update-system.md)
+
 **Rationale**:
 - Keeps users on latest llm CLI version
 - Non-intrusive with configurable interval
@@ -208,6 +214,8 @@ For detailed context, rationale, and alternatives considered for each decision, 
 
 ### Command Execution Flow
 
+**See**: [ADR-008: Command System Architecture](adr/ADR-008-command-system.md)
+
 1. User invokes command (`:LLM`, `:LLMChat`, etc.)
 2. `plugin/llm.lua` dispatches to appropriate handler
 3. Handler in `commands.lua` constructs llm CLI command
@@ -217,7 +225,7 @@ For detailed context, rationale, and alternatives considered for each decision, 
 
 ### Manager Interaction Flow
 
-1. User opens manager (`:LLMToggle [view]`)
+1. User opens manager (`:LLMConfig [view]`)
 2. `unified_manager.lua` creates/toggles window
 3. View module (e.g., `models_view.lua`) renders content
 4. User action triggers manager function

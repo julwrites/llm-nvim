@@ -16,12 +16,16 @@ An Architectural Decision Record captures a single architectural decision along 
 - [ADR-002](ADR-002-chat-conversation.md) - LLM CLI Native Conversation Management
 - [ADR-003](ADR-003-lazy-manager-facade.md) - Lazy-Loaded Manager Facade
 - [ADR-004](ADR-004-temp-file-selection.md) - Temporary Files for Visual Selection
+- [ADR-005](ADR-005-configuration-system.md) - Centralized Configuration System
+- [ADR-006](ADR-006-manager-pattern.md) - Domain-Specific Manager Pattern
+- [ADR-007](ADR-007-auto-update-system.md) - Auto-Update System for LLM CLI
+- [ADR-008](ADR-008-command-system.md) - Command System Architecture
 
 ## Status Summary
 
 | Status | Count | ADRs |
 |--------|-------|------|
-| Accepted | 4 | ADR-001, ADR-002, ADR-003, ADR-004 |
+| Accepted | 8 | ADR-001, ADR-002, ADR-003, ADR-004, ADR-005, ADR-006, ADR-007, ADR-008 |
 | Proposed | 0 | - |
 | Deprecated | 0 | - |
 | Superseded | 0 | - |
@@ -95,4 +99,4 @@ For understanding the architecture, read ADRs in this order:
 ---
 
 *Last updated: 2025-02-11*
-*Total ADRs: 5 (including template)*
+*Total ADRs: 9 (including template)*

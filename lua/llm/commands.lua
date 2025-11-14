@@ -22,27 +22,27 @@ function M.get_llm_executable_path()
   return config.get("llm_executable_path")
 end
 
--- Get the model argument if specified, properly escaped
+-- Get the model argument if specified
 function M.get_model_arg()
   local model = config.get("model")
   if model and model ~= "" then
     -- Return as a table element for later concatenation
-    return { "-m", vim.fn.shellescape(model) }
+    return { "-m", model }
   end
   return {} -- Return empty table if no model
 end
 
--- Get the system prompt argument if specified, properly escaped
+-- Get the system prompt argument if specified
 function M.get_system_arg()
   local system = config.get("system_prompt")
   if system and system ~= "" then
     -- Return as a table element for later concatenation
-    return { "-s", vim.fn.shellescape(system) }
+    return { "-s", system }
   end
   return {} -- Return empty table if no system prompt
 end
 
--- Get fragment arguments if specified, properly escaped
+-- Get fragment arguments if specified
 function M.get_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
     return {} -- Return empty table if no fragments
@@ -50,9 +50,9 @@ function M.get_fragment_args(fragment_list)
 
   local args = {}
   for _, fragment in ipairs(fragment_list) do
-    -- Add '-f' and the escaped fragment as separate elements
+    -- Add '-f' and the fragment as separate elements
     table.insert(args, "-f")
-    table.insert(args, vim.fn.shellescape(fragment))
+    table.insert(args, fragment)
 
     -- Debug output
     local config = require('llm.config')
@@ -64,7 +64,7 @@ function M.get_fragment_args(fragment_list)
   return args -- Return the table directly
 end
 
--- Get system fragment arguments if specified, properly escaped
+-- Get system fragment arguments if specified
 function M.get_system_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
     return {} -- Return empty table if no fragments
@@ -72,9 +72,9 @@ function M.get_system_fragment_args(fragment_list)
 
   local args = {}
   for _, fragment in ipairs(fragment_list) do
-    -- Add '--system-fragment' and the escaped fragment as separate elements
+    -- Add '--system-fragment' and the fragment as separate elements
     table.insert(args, "--system-fragment")
-    table.insert(args, vim.fn.shellescape(fragment))
+    table.insert(args, fragment)
   end
 
   return args -- Return the table directly
@@ -261,7 +261,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
 
   -- Add the current file as a fragment
   table.insert(cmd_parts, "-f")
-  table.insert(cmd_parts, vim.fn.shellescape(filepath))
+  table.insert(cmd_parts, filepath)
 
   local target_bufnr = bufnr
   if not target_bufnr then
@@ -311,7 +311,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end
   table.insert(cmd_parts, "-f")
-  table.insert(cmd_parts, vim.fn.shellescape(temp_file))
+  table.insert(cmd_parts, temp_file)
   local target_bufnr = bufnr
   if not target_bufnr then
     vim.cmd('vnew')

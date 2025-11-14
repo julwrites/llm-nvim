@@ -20,13 +20,16 @@ docs/tasks/
 Tasks that block core functionality or cause user-facing failures. These should be addressed immediately.
 
 **Current tasks**:
+- ⏳ CRITICAL-003: Redesign chat feature
+
+**✅ Completed tasks**:
 - CRITICAL-001: Fix Lua 5.2+ compatibility (unpack → table.unpack)
 - CRITICAL-002: Implement proper line buffering in job.lua
 
 ### Code Quality
 Tasks that improve code maintainability, remove technical debt, and follow best practices.
 
-**Current tasks**:
+**✅ Completed tasks**:
 - CODE-QUALITY-001: Remove excessive debug logging
 - CODE-QUALITY-002: Remove duplicate LLMChat command registration
 - CODE-QUALITY-003: Remove unused validate_view_name function
@@ -35,32 +38,32 @@ Tasks that improve code maintainability, remove technical debt, and follow best 
 Tasks related to test infrastructure, test coverage, and quality assurance.
 
 **Current tasks**:
-- TESTING-001: Audit codebase for Lua 5.1 vs 5.2+ compatibility
-- TESTING-002: Add CI/CD pipeline for automated testing
+- ✅ TESTING-001: Audit codebase for Lua 5.1 vs 5.2+ compatibility
+- ⏳ TESTING-002: Add CI/CD pipeline for automated testing
 
 ### Documentation
 Tasks that improve user or developer documentation.
 
 **Current tasks**:
-- DOCUMENTATION-001: Document Lua version requirements
-- DOCUMENTATION-002: Add architectural decision records (ADRs)
+- ✅ DOCUMENTATION-001: Document Lua version requirements
+- ✅ DOCUMENTATION-002: Add architectural decision records (ADRs)
 
 ### Performance
 Tasks that optimize performance without changing functionality.
 
 **Current tasks**:
-- PERFORMANCE-001: Implement caching for manager LLM CLI calls
+- ⏳ PERFORMANCE-001: Implement caching for manager LLM CLI calls
 
 ## Task Status
 
 | Category | Pending | In Progress | Completed | Blocked |
 |----------|---------|-------------|-----------|---------|
-| Critical | 0 | 0 | 2 | 0 |
+| Critical | 1 | 0 | 2 | 0 |
 | Code Quality | 0 | 0 | 3 | 0 |
 | Testing | 2 | 0 | 0 | 0 |
 | Documentation | 2 | 0 | 0 | 0 |
 | Performance | 1 | 0 | 0 | 0 |
-| **Total** | **5** | **0** | **5** | **0** |
+| **Total** | **6** | **0** | **5** | **0** |
 
 ## Quick Start
 
