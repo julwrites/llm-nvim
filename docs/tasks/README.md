@@ -20,7 +20,10 @@ docs/tasks/
 Tasks that block core functionality or cause user-facing failures. These should be addressed immediately.
 
 **Current tasks**:
-- ⏳ CRITICAL-003: Redesign chat feature
+- ⏳ CRITICAL-003: Redesign and Fix Chat Feature
+- ⏳ CRITICAL-004: Add Embeddings Support
+- ⏳ CRITICAL-005: Add Tools (Function Calling) Support
+- ⏳ CRITICAL-006: Add Multi-modal Attachments Support
 
 **✅ Completed tasks**:
 - CRITICAL-001: Fix Lua 5.2+ compatibility (unpack → table.unpack)
@@ -28,6 +31,9 @@ Tasks that block core functionality or cause user-facing failures. These should 
 
 ### Code Quality
 Tasks that improve code maintainability, remove technical debt, and follow best practices.
+
+**Current tasks**:
+- ⏳ CODE-QUALITY-004: Add Model Alias Management
 
 **✅ Completed tasks**:
 - CODE-QUALITY-001: Remove excessive debug logging
@@ -56,14 +62,15 @@ Tasks that optimize performance without changing functionality.
 
 ## Task Status
 
-| Category | Pending | In Progress | Completed | Blocked |
-|----------|---------|-------------|-----------|---------|
-| Critical | 1 | 0 | 2 | 0 |
-| Code Quality | 0 | 0 | 3 | 0 |
-| Testing | 2 | 0 | 0 | 0 |
-| Documentation | 2 | 0 | 0 | 0 |
-| Performance | 1 | 0 | 0 | 0 |
-| **Total** | **6** | **0** | **5** | **0** |
+| Category      | Pending | In Progress | Completed | Blocked |
+|---------------|---------|-------------|-----------|---------|
+| Critical      | 4       | 0           | 2         | 0       |
+| Code Quality  | 1       | 0           | 3         | 0       |
+| Testing       | 2       | 0           | 0         | 0       |
+| Documentation | 2       | 0           | 0         | 0       |
+| Performance   | 1       | 0           | 0         | 0       |
+| **Total**     | **10**  | **0**       | **5**     | **0**     |
+
 
 ## Quick Start
 
@@ -169,6 +176,16 @@ Tasks:
 - PERFORMANCE-001: Implement caching
 - CODE-QUALITY-003: Remove unused code
 
+### Phase 5: New Features (Roadmap)
+**Goal**: Implement missing features and redesign the chat functionality.
+- CRITICAL-003: Redesign and Fix Chat Feature
+- CRITICAL-004: Add Embeddings Support
+- CRITICAL-005: Add Tools (Function Calling) Support
+
+### Phase 6: Polish and UX Improvements (Roadmap)
+- CRITICAL-006: Add Multi-modal Attachments Support
+- CODE-QUALITY-004: Add Model Alias Management
+
 ## Task Documentation Format
 
 Each task document follows this structure:
@@ -242,5 +259,5 @@ See AGENTS.md for AI-specific task documentation instructions.
 ---
 
 *Created: 2025-02-11*
-*Last updated: 2025-02-11*
-*Total tasks: 10 (2 critical, 3 code-quality, 2 testing, 2 documentation, 1 performance)*
+*Last updated: 2025-11-14*
+*Total tasks: 15 (6 critical, 4 code-quality, 2 testing, 2 documentation, 1 performance)*
