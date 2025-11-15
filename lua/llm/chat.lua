@@ -3,8 +3,8 @@
 
 local M = {}
 local config = require('llm.config')
-local ChatSession = require('llm.chat.session').ChatSession
-local ChatBuffer = require('llm.chat.buffer').ChatBuffer
+local ChatSession = require('llm.chat.session')
+local ChatBuffer = require('llm.chat.buffer')
 
 -- Track active chat sessions by buffer number
 local active_sessions = {}
@@ -113,7 +113,7 @@ function M.send_message()
         for _, line in ipairs(data) do
           -- Skip conversation ID lines (they'll be extracted by session)
           if not line:match("^Conversation ID:") then
-            buffer:append_llm_message(line .. "\n")
+            buffer:append_llm_message(line)
           end
         end
       end
@@ -137,8 +137,6 @@ function M.send_message()
           buffer:update_conversation_id(conv_id)
         end
         
-        -- Add blank line after LLM response
-        buffer:append_llm_message("")
         
         -- Focus input for next message
         buffer:focus_input()

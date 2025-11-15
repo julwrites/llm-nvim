@@ -66,4 +66,9 @@ function M.toggle_unified_manager(initial_view)
   end
 end
 
+-- Chat function
+function M.chat(opts)
+  return require('llm.chat').start(opts)
+end
+
 return M

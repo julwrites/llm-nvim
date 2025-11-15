@@ -32,6 +32,7 @@ M.fn = {
   jobsend = function() end,
   jobclose = function() end,
   expand = function(s) return s end,
+  mode = function() return "n" end,
   system = function(cmd)
     if type(cmd) == 'table' then
       cmd = table.concat(cmd, " ")
@@ -50,22 +51,81 @@ M.fn = {
 }
 
 M.api = {
-  nvim_buf_set_name = function() end,
-  nvim_win_set_config = function() end,
-  nvim_win_close = function() end,
-  nvim_win_get_cursor = function() return {1, 0} end,
-  nvim_buf_get_name = function() return "buffer_name" end,
-  nvim_get_current_buf = function() return 1 end,
-  nvim_create_user_command = function() end,
-  nvim_buf_set_option = function() end,
-  nvim_buf_set_lines = function() end,
-  nvim_create_buf = function() return 1 end,
-  nvim_set_current_buf = function() end,
-  nvim_buf_get_lines = function() return {} end,
-  nvim_buf_is_valid = function() return true end,
-  nvim_create_augroup = function() return 1 end,
-  nvim_create_autocmd = function() end,
-  nvim_open_win = function() return 1 end,
+  ["_buffers"] = {},
+  ["nvim_buf_set_name"] = function() end,
+  ["nvim_win_set_config"] = function() end,
+  ["nvim_win_close"] = function() end,
+  ["nvim_win_get_cursor"] = function() return {1, 0} end,
+  ["nvim_buf_get_name"] = function() return "buffer_name" end,
+  ["nvim_get_current_buf"] = function() return 1 end,
+  ["nvim_create_user_command"] = function() end,
+  ["nvim_buf_set_option"] = function(bufnr, option, value)
+    if not M.bo[bufnr] then M.bo[bufnr] = {} end
+    M.bo[bufnr][option] = value
+  end,
+  ["nvim_buf_set_lines"] = function(bufnr, start, end_, _, lines)
+    if not M.api._buffers[bufnr] then M.api._buffers[bufnr] = {} end
+
+    local new_lines = {}
+    -- Copy lines before the start of the change
+    for i = 1, start do
+        table.insert(new_lines, M.api._buffers[bufnr][i])
+    end
+
+    -- Insert the new lines
+    for _, line in ipairs(lines) do
+        table.insert(new_lines, line)
+    end
+
+    -- Copy lines after the end of the change
+    for i = end_ + 1, #M.api._buffers[bufnr] do
+        table.insert(new_lines, M.api._buffers[bufnr][i])
+    end
+
+    M.api._buffers[bufnr] = new_lines
+  end,
+  ["nvim_create_buf"] = function(listed, scratch)
+    local bufnr = #M.api._buffers + 1
+    M.api._buffers[bufnr] = {}
+    M.b[bufnr] = {}
+    M.bo[bufnr] = {}
+    return bufnr
+  end,
+  ["nvim_set_current_buf"] = function() end,
+  ["nvim_buf_get_lines"] = function(bufnr, start, end_, strict_indexing)
+    if not M.api._buffers[bufnr] then return {} end
+    if start == -1 then start = #M.api._buffers[bufnr] end
+    if end_ == -1 then end_ = #M.api._buffers[bufnr] end
+    local selected_lines = {}
+    for i = start, end_ do
+        table.insert(selected_lines, M.api._buffers[bufnr][i + 1])
+    end
+    return selected_lines
+  end,
+  ["nvim_buf_is_valid"] = function() return true end,
+  ["nvim_create_augroup"] = function() return 1 end,
+  ["nvim_create_autocmd"] = function() end,
+  ["nvim_open_win"] = function() return 1 end,
+  ["nvim_buf_set_keymap"] = function() end,
+  ["nvim_win_is_valid"] = function() return true end,
+  ["nvim_set_current_win"] = function() end,
+  ["nvim_get_current_win"] = function() return 1 end,
+  ["nvim_win_set_buf"] = function() end,
+  ["nvim_win_set_cursor"] = function() end,
+  ["nvim_buf_line_count"] = function(bufnr)
+    if M.api._buffers[bufnr] then
+      return #M.api._buffers[bufnr]
+    end
+    return 0
+  end,
+  ["nvim_list_bufs"] = function()
+    local bufs = {}
+    for i, _ in ipairs(M.api._buffers) do
+        table.insert(bufs, i)
+    end
+    return bufs
+  end,
+  ["nvim_buf_delete"] = function() end,
 }
 
 M.schedule = function(cb)
@@ -128,6 +188,7 @@ M.json = {
 M.cmd = function() end
 M.env = {}
 M.b = {}
+M.bo = {}
 M.split = function(str, sep)
   local result = {}
   for s in string.gmatch(str, "([^" .. sep .. "]+)") do
@@ -162,7 +223,16 @@ end
 M.notify = function() end
 
 function M.inspect(v)
-  return tostring(v)
+  if type(v) == "table" then
+    local s = "{"
+    for k, val in pairs(v) do
+      s = s .. "[" .. tostring(k) .. "] = " .. M.inspect(val) .. ","
+    end
+    s = s .. "}"
+    return s
+  else
+    return tostring(v)
+  end
 end
 
 function M.system(cmd, opts, callback)

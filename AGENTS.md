@@ -137,6 +137,12 @@ make test file=init_spec.lua
 
 Tests use busted framework and require luarocks packages: busted and luassert.
 
+**Testing Strategy for UI Components**:
+
+-   **Avoid Mocking Neovim UI**: Do not attempt to create comprehensive mocks for Neovim's UI components (e.g., buffers, windows). Mocks of the `vim.api` are brittle and lead to tests that are difficult to maintain.
+-   **Focus on Unit Testing Logic**: Maximize code coverage by writing unit tests for the underlying business logic of UI components. For example, when testing a module that formats data for a buffer, test the data formatting function in isolation, not the function that writes the data to the buffer.
+-   **Use Integration Tests Sparingly**: For critical UI workflows, it is acceptable to write a small number of integration tests that run inside a headless Neovim instance. However, these tests should be limited in scope and should not attempt to cover all edge cases.
+
 ## Architecture
 
 ### Entry Points
