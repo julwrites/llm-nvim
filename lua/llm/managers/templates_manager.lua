@@ -485,9 +485,7 @@ function M.finalize_template_creation(template)
 end
 
 -- Populate the buffer with template management content
-function M.populate_templates_buffer(bufnr)
-  local templates = M.get_templates()
-
+function M.build_buffer_data(templates)
   local lines = {
     "# Template Management",
     "",
@@ -534,6 +532,13 @@ function M.populate_templates_buffer(bufnr)
       current_line = current_line + #entry_lines
     end
   end
+  return lines, template_data, line_to_template
+end
+
+-- Populate the buffer with template management content
+function M.populate_templates_buffer(bufnr)
+  local templates = M.get_templates()
+  local lines, template_data, line_to_template = M.build_buffer_data(templates)
 
   v_api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
   styles.setup_highlights()
@@ -544,18 +549,23 @@ function M.populate_templates_buffer(bufnr)
 end
 
 -- Setup keymaps for the template management buffer
-function M.setup_templates_keymaps(bufnr, manager_module)
+function M.get_keymap_definitions(bufnr, manager_module)
   manager_module = manager_module or M
+  return {
+    { mode = 'n', lhs = 'c', rhs = string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr) },
+    { mode = 'n', lhs = 'r', rhs = string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr) },
+    { mode = 'n', lhs = 'e', rhs = string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr) },
+    { mode = 'n', lhs = 'd', rhs = string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr) },
+    { mode = 'n', lhs = 'v', rhs = string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr) },
+  }
+end
 
-  local function set_keymap(mode, lhs, rhs)
-    v_api.nvim_buf_set_keymap(bufnr, mode, lhs, rhs, { noremap = true, silent = true })
+-- Setup keymaps for the template management buffer
+function M.setup_templates_keymaps(bufnr, manager_module)
+  local keymaps = M.get_keymap_definitions(bufnr, manager_module)
+  for _, keymap in ipairs(keymaps) do
+    v_api.nvim_buf_set_keymap(bufnr, keymap.mode, keymap.lhs, keymap.rhs, { noremap = true, silent = true })
   end
-
-  set_keymap('n', 'c', string.format([[<Cmd>lua require('%s').create_template_from_manager(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
-  set_keymap('n', 'r', string.format([[<Cmd>lua require('%s').run_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
-  set_keymap('n', 'e', string.format([[<Cmd>lua require('%s').edit_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
-  set_keymap('n', 'd', string.format([[<Cmd>lua require('%s').delete_template_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
-  set_keymap('n', 'v', string.format([[<Cmd>lua require('%s').view_template_details_under_cursor(%d)<CR>]], manager_module.__name or 'llm.managers.templates_manager', bufnr))
 end
 
 function M.create_template_from_manager(bufnr)
