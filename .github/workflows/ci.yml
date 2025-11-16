@@ -41,10 +41,12 @@ jobs:
     - name: Run coverage
       id: coverage
       run: |
+        export PATH=$HOME/.luarocks/bin:$PATH
         make coverage
 
     - name: Check coverage
       run: |
+        export PATH=$HOME/.luarocks/bin:$PATH
         COVERAGE=$(luacov-console -s | grep 'Total' | awk '{print $3}' | sed 's/%//')
         echo "Current coverage is $COVERAGE%"
         if (( $(echo "$COVERAGE < 70" | bc -l) )); then
