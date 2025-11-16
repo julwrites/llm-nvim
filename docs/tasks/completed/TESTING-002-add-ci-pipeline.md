@@ -2,7 +2,14 @@
 
 ## Task Information
 - **Task ID**: TESTING-002
-- **Status**: pending
+- **Status**: completed
+
+### Investigation Summary (2025-11-16)
+This task was verified as **Implemented**.
+- A CI workflow file exists at `.github/workflows/ci.yml`.
+- The workflow runs on push and pull_request events.
+- It includes a `coverage` job that runs tests with Luacov and checks if the total coverage is above a certain threshold, failing the build if it's not.
+
 - **Priority**: medium
 - **Phase**: 3
 - **Estimated Effort**: 1 day

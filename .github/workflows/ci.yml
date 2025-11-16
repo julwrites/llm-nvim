@@ -24,3 +24,27 @@ jobs:
       run: |
         make test
         nvim --headless -c "set rtp+=$GITHUB_WORKSPACE/test/plenary.nvim" -c "set rtp+=$GITHUB_WORKSPACE" -c "PlenaryBustedDirectory test/spec { minimal_init = 'test/init.lua' }" -c "qa!"
+
+  coverage:
+    runs-on: ubuntu-latest
+    container:
+      image: docker://ghcr.io/julwrites/llm-nvim-build-ubuntu:main
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Install test dependencies
+      run: make test-deps
+
+    - name: Run coverage
+      id: coverage
+      run: |
+        make coverage
+
+    - name: Check coverage
+      run: |
+        COVERAGE=$(luacov-console -s | grep 'Total' | awk '{print $3}' | sed 's/%//')
+        echo "Current coverage is $COVERAGE%"
+        if (( $(echo "$COVERAGE < 70" | bc -l) )); then
+          echo "Coverage is below 70%. Failing build."
+          exit 1
+        fi

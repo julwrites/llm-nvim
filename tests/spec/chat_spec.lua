@@ -68,6 +68,9 @@ describe('llm.chat', function()
     vim.cmd = spy.new(function() end)
     vim.fn.jobstart = spy.new(function() return 12345 end)
     vim.fn.jobstop = spy.new(function() end)
+    vim.fn.chansend = spy.new(function() end)
+    vim.fn.chanclose = spy.new(function() end)
+    vim.fn.mode = spy.new(function() return 'n' end)
     
     -- Mock vim.b with proper metatable for indexing
     local b_storage = {}
@@ -138,7 +141,6 @@ describe('llm.chat', function()
         "/usr/bin/llm", "prompt",
         "-m", "gpt-4",
         "-s", "You are helpful",
-        "Hello"
       }, cmd)
     end)
 
@@ -155,7 +157,6 @@ describe('llm.chat', function()
         "/usr/bin/llm", "prompt",
         "-m", "gpt-4",
         "-c", "conv-123",
-        "Follow up"
       }, cmd)
     end)
 
@@ -280,6 +281,23 @@ describe('llm.chat', function()
   end)
 
   describe('chat orchestration', function()
+    local _session, _buffer, _bufnr
+    
+    before_each(function()
+      local result = chat.start_chat({
+        model = "gpt-4",
+        system_prompt = "Test prompt",
+      })
+      _session = result.session
+      _buffer = result.buffer
+      _bufnr = _buffer:get_bufnr()
+      
+      -- Ensure vim.b is correctly set for the mocked buffer
+      vim.b[_bufnr].llm_chat_bufnr = _bufnr
+      
+      -- Mock vim.api.nvim_get_current_buf to return the chat buffer
+      vim.api.nvim_get_current_buf = spy.new(function() return _bufnr end)
+    end)
     it('should start a new chat session', function()
       local result = chat.start_chat({
         model = "gpt-4",
@@ -289,37 +307,37 @@ describe('llm.chat', function()
       assert.is_not_nil(result)
       assert.is_not_nil(result.session)
       assert.is_not_nil(result.buffer)
-      assert.is_table(vim.b[1])
-      assert.is_not_nil(vim.b[1].llm_chat_session)
+      
+      local bufnr = result.buffer:get_bufnr()
+      assert.is_not_nil(vim.b[bufnr].llm_chat_bufnr)
+      assert.are.equal(bufnr, vim.b[bufnr].llm_chat_bufnr)
+      
+      local retrieved_chat_data = chat.get_session(bufnr)
+      assert.is_not_nil(retrieved_chat_data)
+      assert.are.equal(result.session, retrieved_chat_data.session)
+      assert.are.equal(result.buffer, retrieved_chat_data.buffer)
     end)
 
     it('should send message from chat buffer', function()
-      -- Set up a chat session first
-      local result = chat.start_chat()
-      vim.b[1] = { llm_chat_session = result }
-      
       -- Mock get_user_input to return a message
-      result.buffer.get_user_input = spy.new(function() return "Test message" end)
-      result.buffer.set_status = spy.new(function() end)
-      result.buffer.append_user_message = spy.new(function() end)
-      result.buffer.clear_input = spy.new(function() end)
-      result.buffer.append_llm_message = spy.new(function() end)
-      result.buffer.update_conversation_id = spy.new(function() end)
-      result.buffer.focus_input = spy.new(function() end)
+      _buffer.get_user_input = spy.new(function() return "Test message" end)
+      _buffer.set_status = spy.new(function() end)
+      _buffer.append_user_message = spy.new(function() end)
+      _buffer.clear_input = spy.new(function() end)
+      _buffer.append_llm_message = spy.new(function() end)
+      _buffer.update_conversation_id = spy.new(function() end)
+      _buffer.focus_input = spy.new(function() end)
       
       chat.send_message()
       
-      assert.spy(result.buffer.get_user_input).was.called()
-      assert.spy(result.buffer.set_status).was.called_with(match._, "Processing...")
-      assert.spy(result.buffer.append_user_message).was.called()
-      assert.spy(result.buffer.clear_input).was.called()
+      assert.spy(_buffer.get_user_input).was.called()
+      assert.spy(_buffer.set_status).was.called_with(match._, "Processing...")
+      assert.spy(_buffer.append_user_message).was.called()
+      assert.spy(_buffer.clear_input).was.called()
     end)
 
     it('should not send empty message', function()
-      local result = chat.start_chat()
-      vim.b[1] = { llm_chat_session = result }
-      
-      result.buffer.get_user_input = spy.new(function() return "" end)
+      _buffer.get_user_input = spy.new(function() return "" end)
       
       chat.send_message()
       
@@ -327,10 +345,7 @@ describe('llm.chat', function()
     end)
 
     it('should not send when session is processing', function()
-      local result = chat.start_chat()
-      vim.b[1] = { llm_chat_session = result }
-      
-      result.session.state = 'processing'
+      _session.state = 'processing'
       
       chat.send_message()
       

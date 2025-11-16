@@ -235,6 +235,24 @@ Tests cover:
 - API key management
 - Fragment management
 
+### Code Coverage
+
+This project enforces a minimum code coverage of 70%. The CI/CD pipeline will fail if the coverage drops below this threshold. To run the coverage check locally, you first need to install the coverage dependencies:
+
+```bash
+sudo luarocks install luacov
+sudo luarocks install luacov-console
+```
+
+Then, you can run the coverage check:
+
+```bash
+make coverage
+```
+
+This will run the tests with Luacov and print a coverage report to the console.
+
+
 ## Troubleshooting
 
 ### Lua Compatibility Errors

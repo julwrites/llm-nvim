@@ -2,7 +2,14 @@
 
 ## Task Information
 - **Task ID**: CRITICAL-003
-- **Status**: pending
+- **Status**: completed
+
+### Investigation Summary (2025-11-16)
+This task was verified as **Implemented**.
+- `lua/llm/chat/session.lua` and `lua/llm/chat/buffer.lua` exist and contain the expected logic.
+- `lua/llm/chat.lua` orchestrates these modules.
+- `tests/spec/chat_spec.lua` contains tests reflecting the new architecture.
+
 - **Priority**: Critical (P0)
 - **Phase**: 5
 - **Effort Estimate**: 12-16 hours

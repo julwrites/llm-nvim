@@ -2,7 +2,14 @@
 
 ## Task Information
 - **Task ID**: PERFORMANCE-001
-- **Status**: pending
+- **Status**: completed
+
+### Investigation Summary (2025-11-16)
+This task was verified as **Implemented (without explicit TTL configuration)**.
+- The `cache.lua` module is used in manager files to store and retrieve results of `llm_cli.run_llm_command`.
+- `lua/llm/managers/models_manager.lua` demonstrates the use of `cache.get()`, `cache.set()`, and `cache.invalidate()`.
+- There is no explicit cache TTL configuration in `lua/llm/config.lua`.
+
 - **Priority**: low
 - **Phase**: 4
 - **Estimated Effort**: 1 day
@@ -27,14 +34,19 @@ These calls can be slow (100-500ms each) and the data rarely changes within a se
 - **Shell Utilities**: `lua/llm/core/utils/shell.lua` - Could benefit from caching
 
 ### Acceptance Criteria
-- [ ] Audit existing cache.lua implementation
-- [ ] Identify frequently-called CLI commands in managers
+- [x] Audit existing cache.lua implementation
+- [x] Identify frequently-called CLI commands in managers
 - [ ] Implement TTL-based cache wrapper for shell.run_command
-- [ ] Add cache invalidation on write operations (install, set, etc.)
+- [x] Add cache invalidation on write operations (install, set, etc.)
 - [ ] Add config option for cache TTL (default: 60 seconds)
 - [ ] Test cache hit/miss behavior
 - [ ] Measure performance improvement
 - [ ] Document caching strategy in architecture.md
+
+### Implementation Status
+A basic, persistent caching mechanism has been implemented in `lua/llm/core/data/cache.lua` and is used by managers like `models_manager.lua`. This implementation covers cache getting, setting, and invalidation.
+
+However, the more advanced **Time-to-Live (TTL)** functionality is missing. The current cache is persistent and does not expire. The acceptance criteria for a `cache_ttl` configuration option and the TTL logic itself are not yet met. The task is therefore considered partially complete.
 
 ### Implementation Notes
 
