@@ -3,6 +3,11 @@
 ## Task Information
 - **Task ID**: CRITICAL-006
 - **Status**: pending
+
+### Investigation Summary (2025-11-16)
+This task was verified as **Not Implemented**.
+- The `:LLM` command in `lua/llm/commands.lua` does not handle an `--attach` or `-a` flag.
+
 - **Priority**: Medium (P2)
 - **Phase**: 6
 - **Effort Estimate**: 5 days

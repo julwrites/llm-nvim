@@ -97,6 +97,10 @@ grep -r "Status**: blocked" docs/tasks/
    - Dependencies on other tasks
 6. Add to `docs/tasks/README.md` task list
 
+### Completed Tasks
+
+When a task is completed, it should be moved from its category directory to the `docs/tasks/completed/` directory. This keeps the main task directories focused on pending work.
+
 ## Current Status and Quick Start
 
 ### 🎯 Current Priority Tasks
@@ -131,11 +135,19 @@ make test-deps
 # Run all tests
 make test
 
-# Run specific test file
+# Run a specific test file
 make test file=init_spec.lua
+
+# Run tests with code coverage
+make coverage
 ```
 
-Tests use busted framework and require luarocks packages: busted and luassert.
+Tests use the `busted` framework and require `luarocks` packages: `busted` and `luassert`.
+
+The `make coverage` command uses `luacov` to generate a code coverage report. The CI pipeline will fail if code coverage drops below a certain threshold.
+
+**IMPORTANT**: When adding new features or modifying existing code, it is crucial to add or update tests to maintain or increase the code coverage. All new code should be accompanied by corresponding tests.
+
 
 **Testing Strategy for UI Components**:
 

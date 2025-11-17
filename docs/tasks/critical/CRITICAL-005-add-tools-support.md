@@ -3,6 +3,12 @@
 ## Task Information
 - **Task ID**: CRITICAL-005
 - **Status**: pending
+
+### Investigation Summary (2025-11-16)
+This task was verified as **Not Implemented**.
+- `tools_manager.lua` does not exist.
+- The `:LLM` command in `lua/llm/commands.lua` does not handle a `--tool` or `-t` flag.
+
 - **Priority**: High (P1)
 - **Phase**: 5
 - **Effort Estimate**: 8 days
