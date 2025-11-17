@@ -51,3 +51,6 @@ test/plenary.nvim/
 /.luarocks
 app-dev-1.rockspec
 temp_file
+
+# Coverage reports
+luacov.*
