@@ -43,6 +43,8 @@ jobs:
       run: |
         export PATH=$HOME/.luarocks/bin:$PATH
         make coverage
+      env:
+        LUA_PATH: "./lua/?.lua;;"
 
     - name: Check coverage
       run: |
