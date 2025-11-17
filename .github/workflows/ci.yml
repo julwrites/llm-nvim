@@ -33,15 +33,22 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install test dependencies
-      run: make test-deps
+      run: |
+        luarocks install --local busted
+        luarocks install --local luacov
+        luarocks install --local luacov-console
 
     - name: Run coverage
       id: coverage
       run: |
+        export PATH=$HOME/.luarocks/bin:$PATH
         make coverage
+      env:
+        LUA_PATH: "./lua/?.lua;;"
 
     - name: Check coverage
       run: |
+        export PATH=$HOME/.luarocks/bin:$PATH
         COVERAGE=$(luacov-console -s | grep 'Total' | awk '{print $3}' | sed 's/%//')
         echo "Current coverage is $COVERAGE%"
         if (( $(echo "$COVERAGE < 70" | bc -l) )); then

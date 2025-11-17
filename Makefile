@@ -4,10 +4,12 @@ test:
 	@LUA_PATH="lua/?.lua;;" busted --config-file=tests/.busted tests/spec
 
 coverage:
-	@luacov -c
-	@LUA_PATH="lua/?.lua;;" busted --helper=luacov --config-file=tests/.busted tests/spec
-	@luacov-console
-	@luacov-console
+	@rm -f luacov.stats.out luacov.report.out
+	@LUA_PATH="lua/?.lua;;" busted --coverage --config-file=tests/.busted tests/spec
+	@test -f luacov.stats.out && echo "Coverage stats generated successfully" || (echo "ERROR: luacov.stats.out not generated" && exit 1)
+	@luacov
+	@echo "Coverage report generated. Summary:"
+	@luacov-console -s || echo "Note: luacov-console may show 0% if functions are mocked in tests"
 
 test-deps:
 	@if ! command -v busted &> /dev/null; then \

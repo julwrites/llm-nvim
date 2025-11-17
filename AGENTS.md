@@ -148,6 +148,10 @@ The `make coverage` command uses `luacov` to generate a code coverage report. Th
 
 **IMPORTANT**: When adding new features or modifying existing code, it is crucial to add or update tests to maintain or increase the code coverage. All new code should be accompanied by corresponding tests.
 
+**Testing `vim.api`**: The testing strategy for functions using `vim.api` depends on their purpose:
+- **Non-UI Operations**: For operations that manipulate buffers, lines, or other non-UI elements (e.g., `vim.api.nvim_buf_set_lines`, `vim.api.nvim_get_current_buf`), it is acceptable to call `vim.api` directly. The test environment supports these functions.
+- **UI Operations**: For functions that create or manage UI elements like floating windows or pop-up menus (e.g., `vim.api.nvim_open_win`), these functions should be mocked. The test environment does not have a display server, and calling these will cause errors. Mocking allows the test to verify the business logic leading up to the UI call without testing the UI itself.
+
 
 **Testing Strategy for UI Components**:
 
