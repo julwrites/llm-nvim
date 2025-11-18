@@ -111,9 +111,11 @@ function M.send_message()
     on_stdout = function(_, data)
       if data then
         for _, line in ipairs(data) do
-          -- Skip conversation ID lines (they'll be extracted by session)
-          if not line:match("^Conversation ID:") then
-            buffer:append_llm_message(line .. "\n")
+          local new_conv_id = session:extract_conversation_id(line)
+          if new_conv_id then
+            session.conversation_id = new_conv_id
+          else
+            buffer:append_llm_message(line)
           end
         end
       end
@@ -137,8 +139,6 @@ function M.send_message()
           buffer:update_conversation_id(conv_id)
         end
         
-        -- Add blank line after LLM response
-        buffer:append_llm_message("")
         
         -- Focus input for next message
         buffer:focus_input()
