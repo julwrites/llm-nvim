@@ -189,6 +189,7 @@ M.cmd = function() end
 M.env = {}
 M.b = {}
 M.bo = {}
+M.g = {}
 M.split = function(str, sep)
   local result = {}
   for s in string.gmatch(str, "([^" .. sep .. "]+)") do

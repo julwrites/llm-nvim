@@ -3,8 +3,8 @@
 
 local M = {}
 local config = require('llm.config')
-local ChatSession = require('llm.chat.session')
-local ChatBuffer = require('llm.chat.buffer')
+local ChatSession = require('llm.chat.session').ChatSession
+local ChatBuffer = require('llm.chat.buffer').ChatBuffer
 
 -- Track active chat sessions by buffer number
 local active_sessions = {}
@@ -111,8 +111,10 @@ function M.send_message()
     on_stdout = function(_, data)
       if data then
         for _, line in ipairs(data) do
-          -- Skip conversation ID lines (they'll be extracted by session)
-          if not line:match("^Conversation ID:") then
+          local new_conv_id = session:extract_conversation_id(line)
+          if new_conv_id then
+            session.conversation_id = new_conv_id
+          else
             buffer:append_llm_message(line)
           end
         end

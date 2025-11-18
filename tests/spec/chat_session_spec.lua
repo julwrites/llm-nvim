@@ -1,10 +1,23 @@
 -- tests/spec/chat_spec.lua
+require('spec_helper')
 
 describe("llm.chat.session", function()
   local Session
   local captured_args
 
   before_each(function()
+    -- Mock config
+    local config_mock = {
+      get = function(key)
+        if key == "llm_executable_path" then
+          return "/usr/bin/llm"
+        end
+        return nil
+      end,
+    }
+    package.loaded["llm.config"] = config_mock
+    -- Mock vim.g
+    vim = { g = {} }
     -- Mock the api.run function to capture its arguments
     local mock_api = {
       run = function(args, callbacks)
@@ -22,7 +35,7 @@ describe("llm.chat.session", function()
 
     -- Reload the session module to use the mock
     package.loaded["llm.chat.session"] = nil
-    Session = require("llm.chat.session")
+    Session = require("llm.chat.session").ChatSession
 
     -- Reset captured args
     captured_args = nil
@@ -43,15 +56,13 @@ describe("llm.chat.session", function()
 
     -- Assert
     assert.is_not_nil(captured_args)
-    assert.are.same("prompt", captured_args[1])
-    assert.are.same("-c", captured_args[2])
-    -- a conversation id is generated, so we just check it exists
-    assert.is_string(captured_args[3])
-    assert.are.same("--model", captured_args[4])
-    assert.are.same("test-model", captured_args[5])
-    assert.are.same("--system", captured_args[6])
-    assert.are.same("test-system", captured_args[7])
-    assert.are.same(expected_prompt, captured_args[8])
+    assert.are.same("/usr/bin/llm", captured_args[1])
+    assert.are.same("prompt", captured_args[2])
+    assert.are.same("-m", captured_args[3])
+    assert.are.same("test-model", captured_args[4])
+    assert.are.same("-s", captured_args[5])
+    assert.are.same("test-system", captured_args[6])
+    assert.are.same(expected_prompt, captured_args[7])
   end)
 
   it("should not send system prompt on subsequent calls", function()
@@ -67,12 +78,22 @@ describe("llm.chat.session", function()
     -- System prompt should not be present
     local has_system = false
     for _, arg in ipairs(captured_args) do
-        if arg == "--system" then
+        if arg == "-s" then
             has_system = true
             break
         end
     end
     assert.is_false(has_system)
+
+    -- Continuation should be present
+    local has_continuation = false
+    for _, arg in ipairs(captured_args) do
+        if arg == "-c" then
+            has_continuation = true
+            break
+        end
+    end
+    assert.is_true(has_continuation)
     assert.are.same("second prompt", captured_args[#captured_args])
   end)
 end)

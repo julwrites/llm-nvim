@@ -31,16 +31,20 @@ describe("llm.chat orchestrator", function()
     }
 
     local mock_session = {
-      new = function()
-        session_new_called = true
-        return mock_session_instance
-      end
+      ChatSession = {
+        new = function()
+          session_new_called = true
+          return mock_session_instance
+        end,
+      },
     }
     local mock_buffer = {
-      new = function()
-        buffer_new_called = true
-        return mock_buffer_instance
-      end
+      ChatBuffer = {
+        new = function()
+          buffer_new_called = true
+          return mock_buffer_instance
+        end,
+      },
     }
 
     package.loaded["llm.chat.session"] = mock_session
