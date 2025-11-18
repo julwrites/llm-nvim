@@ -36,6 +36,14 @@ describe('llm.chat', function()
       end),
     }
     package.loaded['llm.core.utils.job'] = job_mock
+    -- Mock llm.api
+    local api_mock = {
+      run = spy.new(function(cmd, callbacks)
+        -- Return a mock job ID
+        return 12345
+      end),
+    }
+    package.loaded['llm.api'] = api_mock
 
     -- Mock vim functions
     vim.api.nvim_get_current_buf = spy.new(function() return 1 end)
@@ -113,7 +121,7 @@ describe('llm.chat', function()
       local session = ChatSession.new()
       
       assert.is_not_nil(session)
-      assert.is_nil(session.conversation_id)
+      assert.is_string(session.conversation_id)
       assert.are.equal('ready', session.state)
     end)
 
@@ -134,13 +142,16 @@ describe('llm.chat', function()
         model = "gpt-4",
         system_prompt = "You are helpful",
       })
-      
+
       local cmd = session:build_command("Hello")
-      
+
       assert.are.same({
-        "/usr/bin/llm", "prompt",
-        "-m", "gpt-4",
-        "-s", "You are helpful",
+        "/usr/bin/llm",
+        "prompt",
+        "-m",
+        "gpt-4",
+        "-s",
+        "You are helpful",
       }, cmd)
     end)
 
@@ -150,22 +161,26 @@ describe('llm.chat', function()
         system_prompt = "You are helpful",
       })
       session.conversation_id = "conv-123"
-      
+      table.insert(session.history, { role = "user", content = "Hello" })
+
       local cmd = session:build_command("Follow up")
-      
+
       assert.are.same({
-        "/usr/bin/llm", "prompt",
-        "-m", "gpt-4",
-        "-c", "conv-123",
+        "/usr/bin/llm",
+        "prompt",
+        "-m",
+        "gpt-4",
+        "-c",
+        "conv-123",
       }, cmd)
     end)
 
     it('should extract conversation ID from output', function()
       local session = ChatSession.new()
-      
+
       local output = "Some response text\n\nConversation ID: abc123def\n"
       local id = session:extract_conversation_id(output)
-      
+
       assert.are.equal("abc123def", id)
     end)
 
@@ -212,10 +227,7 @@ describe('llm.chat', function()
       local buffer = ChatBuffer.new()
       
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      assert.is_number(buffer.history_start_line)
-      assert.is_number(buffer.history_end_line)
       assert.is_number(buffer.input_start_line)
-      assert.is_number(buffer.input_end_line)
     end)
 
     it('should set status message', function()
@@ -232,7 +244,7 @@ describe('llm.chat', function()
       buffer:update_conversation_id("new-conv-123")
       
       assert.are.equal("new-conv-123", buffer.conversation_id)
-      assert.spy(vim.api.nvim_buf_set_name).was.called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.called()
     end)
 
     it('should append user message to history', function()

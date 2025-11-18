@@ -7,10 +7,12 @@ function M.new(opts)
   opts = opts or {}
   self.bufnr = vim.api.nvim_create_buf(false, true)
   self.win_id = nil
+  self.conversation_id = nil
   self.on_submit = opts.on_submit or function() end
   self.input_start_line = -1
 
   self:_setup_buffer()
+  self:render({ history = {} })
   return self
 end
 
@@ -31,6 +33,7 @@ end
 function M:append_user_message(message)
   vim.api.nvim_buf_set_lines(self.bufnr, self.input_start_line - 2, self.input_start_line - 2, false, {"", "**user**:", message})
   self.input_start_line = self.input_start_line + 3
+  vim.api.nvim_buf_add_highlight(self.bufnr, -1, "Question", self.input_start_line - 4, 0, -1)
 end
 
 function M:clear_input()
@@ -44,6 +47,7 @@ function M:append_llm_message(message)
   else
     vim.api.nvim_buf_set_lines(self.bufnr, self.input_start_line - 3, self.input_start_line - 2, false, { last_line .. message })
   end
+  vim.api.nvim_buf_add_highlight(self.bufnr, -1, "Question", self.input_start_line - 3, 0, -1)
 end
 
 function M:get_last_line()
@@ -52,11 +56,13 @@ function M:get_last_line()
 end
 
 function M:update_conversation_id(id)
+  self.conversation_id = id
   vim.api.nvim_buf_set_lines(self.bufnr, 0, 1, false, { "--- Conversation ID: " .. id })
 end
 
 function M:focus_input()
   vim.api.nvim_win_set_cursor(self.win_id, { self.input_start_line, 3 })
+  vim.cmd('startinsert')
 end
 
 function M:_setup_buffer()
@@ -131,4 +137,4 @@ function M:add_assistant_message(content)
   vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
 end
 
-return M
+return { ChatBuffer = M }
