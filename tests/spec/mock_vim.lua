@@ -107,7 +107,7 @@ M.api = {
   ["nvim_create_autocmd"] = function() end,
   ["nvim_open_win"] = function() return 1 end,
   ["nvim_buf_set_keymap"] = function() end,
-  ["nvim_win_is_valid"] = function() return true end,
+  ["nvim_win_is_valid"] = function(win_id) return win_id ~= nil end,
   ["nvim_set_current_win"] = function() end,
   ["nvim_get_current_win"] = function() return 1 end,
   ["nvim_win_set_buf"] = function() end,

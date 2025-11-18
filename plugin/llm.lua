@@ -108,7 +108,10 @@ end, {
 -- Usage: :LLMChat [prompt]
 vim.api.nvim_create_user_command('LLMChat', function(opts)
   local chat = require('llm.chat').start_chat()
-  
+
+  -- Open the chat buffer in a window
+  chat.buffer:open()
+
   if opts.args and opts.args ~= "" then
     -- Pre-fill the input area with the prompt
     chat.buffer:set_input(opts.args)

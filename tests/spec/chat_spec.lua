@@ -282,11 +282,67 @@ describe('llm.chat', function()
       assert.spy(vim.api.nvim_buf_set_lines).was.called()
     end)
 
-    it('should focus input area', function()
+    it('should focus input area when window is open', function()
       local buffer = ChatBuffer.new()
-      
+
+      -- Mock that a window is open by setting win_id
+      buffer.win_id = 1
+
       buffer:focus_input()
-      
+
+      assert.spy(vim.api.nvim_win_set_cursor).was.called()
+      assert.spy(vim.cmd).was.called_with('startinsert')
+    end)
+
+    it('should handle render without window gracefully', function()
+      local buffer = ChatBuffer.new()
+
+      -- Reset spy to clear previous calls from new()
+      vim.api.nvim_win_set_cursor:clear()
+
+      -- Render should work even without a window
+      buffer:render({ history = {} })
+
+      -- Should not call nvim_win_set_cursor when win_id is nil
+      assert.spy(vim.api.nvim_win_set_cursor).was_not.called()
+      assert.spy(vim.api.nvim_buf_set_lines).was.called()
+    end)
+
+    it('should handle focus_input without window gracefully', function()
+      local buffer = ChatBuffer.new()
+
+      -- Reset spy to clear previous calls from new()
+      vim.api.nvim_win_set_cursor:clear()
+      vim.cmd:clear()
+
+      -- focus_input should not crash when win_id is nil
+      buffer:focus_input()
+
+      -- Should not call nvim_win_set_cursor or startinsert when win_id is nil
+      assert.spy(vim.api.nvim_win_set_cursor).was_not.called()
+      assert.spy(vim.cmd).was_not.called_with('startinsert')
+    end)
+
+    it('should set input text', function()
+      local buffer = ChatBuffer.new()
+
+      buffer:set_input("Hello, world!")
+
+      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(1, buffer.input_start_line - 1, -1, false, { "> Hello, world!" })
+    end)
+
+    it('should open buffer and focus input', function()
+      local buffer = ChatBuffer.new()
+
+      -- Clear previous calls from new()
+      vim.cmd:clear()
+      vim.api.nvim_buf_set_option:clear()
+      vim.api.nvim_win_set_cursor:clear()
+
+      buffer:open()
+
+      assert.spy(vim.cmd).was.called_with("vsplit")
+      assert.spy(vim.api.nvim_buf_set_option).was.called_with(1, "modifiable", true)
       assert.spy(vim.api.nvim_win_set_cursor).was.called()
       assert.spy(vim.cmd).was.called_with('startinsert')
     end)

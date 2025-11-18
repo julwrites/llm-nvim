@@ -40,6 +40,10 @@ function M:clear_input()
   vim.api.nvim_buf_set_lines(self.bufnr, self.input_start_line - 1, -1, false, { "> " })
 end
 
+function M:set_input(text)
+  vim.api.nvim_buf_set_lines(self.bufnr, self.input_start_line - 1, -1, false, { "> " .. text })
+end
+
 function M:append_llm_message(message)
   local last_line = vim.api.nvim_buf_get_lines(self.bufnr, self.input_start_line - 3, self.input_start_line - 2, false)[1]
   if last_line == "" or last_line == nil then
@@ -61,8 +65,10 @@ function M:update_conversation_id(id)
 end
 
 function M:focus_input()
-  vim.api.nvim_win_set_cursor(self.win_id, { self.input_start_line, 3 })
-  vim.cmd('startinsert')
+  if self.win_id and vim.api.nvim_win_is_valid(self.win_id) then
+    vim.api.nvim_win_set_cursor(self.win_id, { self.input_start_line, 3 })
+    vim.cmd('startinsert')
+  end
 end
 
 function M:_setup_buffer()
@@ -82,12 +88,19 @@ end
 function M:open()
   if self.win_id and vim.api.nvim_win_is_valid(self.win_id) then
     vim.api.nvim_set_current_win(self.win_id)
+    -- Make buffer modifiable and focus input when window already exists
+    vim.api.nvim_buf_set_option(self.bufnr, "modifiable", true)
+    self:focus_input()
     return
   end
-  
+
   vim.cmd("vsplit")
   self.win_id = vim.api.nvim_get_current_win()
   vim.api.nvim_win_set_buf(self.win_id, self.bufnr)
+
+  -- Make buffer modifiable and focus input area
+  vim.api.nvim_buf_set_option(self.bufnr, "modifiable", true)
+  self:focus_input()
 end
 
 function M:render(state)
@@ -109,7 +122,9 @@ function M:render(state)
   table.insert(lines, "> ")
   
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
-  vim.api.nvim_win_set_cursor(self.win_id, { self.input_start_line, 3 })
+  if self.win_id and vim.api.nvim_win_is_valid(self.win_id) then
+    vim.api.nvim_win_set_cursor(self.win_id, { self.input_start_line, 3 })
+  end
   vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
 end
 
