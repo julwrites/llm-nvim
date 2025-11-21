@@ -32,6 +32,10 @@ if not ok then
   end
   return
 end
+
+-- Initialize the plugin with default configuration
+llm.setup()
+
 local config = require("llm.config") -- Load config module
 
 -- Handler function for manually updating the LLM CLI
@@ -107,44 +111,27 @@ end, {
 -- Command to start an LLM chat session or send a prompt to chat
 -- Usage: :LLMChat [prompt]
 vim.api.nvim_create_user_command('LLMChat', function(opts)
-  local chat_bufnr = require('llm.chat').start_chat()
+  local chat = require('llm.chat').start_chat()
+
+  -- Open the chat buffer in a window
+  chat.buffer:open()
 
   if opts.args and opts.args ~= "" then
-    -- Insert the prompt into the chat buffer at line 4
-    vim.api.nvim_buf_set_lines(chat_bufnr, 3, 3, false, { opts.args })
-    -- Call send_prompt to process the inserted prompt
-    vim.api.nvim_set_current_buf(chat_bufnr) -- Switch to the chat buffer
-    require('llm.chat').send_prompt()
+    -- Pre-fill the input area with the prompt
+    chat.buffer:set_input(opts.args)
+    -- Switch to the buffer before sending
+    vim.api.nvim_set_current_buf(chat.buffer:get_bufnr())
+    -- Send the message using the module function (it will access the session from buffer variable)
+    require('llm.chat').send_message()
+    -- Ensure we're in normal mode after sending
+    vim.cmd('stopinsert')
   end
 end, {
   nargs = "*", -- Allow optional prompt argument
   desc = "Start an LLM chat session or send a prompt to chat",
 })
 
-
--- Helper function to validate and normalize view names
-local function validate_view_name(view)
-  if not view or view == "" then return nil end
-  -- Convert to proper case (first letter capitalized)
-  view = view:sub(1, 1):upper() .. view:sub(2):lower()
-  -- Validate view name
-  local valid_views = {
-    Models = true,
-    Plugins = true,
-    Keys = true,
-    Fragments = true,
-    Templates = true,
-    Schemas = true
-  }
-  if not valid_views[view] then
-    vim.notify("Invalid view: " .. view .. "\nValid views: Models, Plugins, Keys, Fragments, Templates, Schemas",
-      vim.log.levels.ERROR)
-    return nil
-  end
-  return view
-end
-
--- Command to open the LLM configuration manager with an optional initial view
+-- Command to open the LLM configuration manager
 -- Usage: :LLMConfig [view] where view is one of: models, plugins, keys, fragments, templates, schemas
 vim.api.nvim_create_user_command('LLMConfig', function(opts)
   require('llm.commands').dispatch_command('toggle', opts.fargs[1])
@@ -153,21 +140,4 @@ end, {
   complete = function()
     return { "Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas" }
   end
-})
-
--- Command to start an LLM chat session or send a prompt to chat
--- Usage: :LLMChat [prompt]
-vim.api.nvim_create_user_command('LLMChat', function(opts)
-  local chat_bufnr = require('llm.chat').start_chat()
-
-  if opts.args and opts.args ~= "" then
-    -- Insert the prompt into the chat buffer at line 4
-    vim.api.nvim_buf_set_lines(chat_bufnr, 3, 3, false, { opts.args })
-    -- Call send_prompt to process the inserted prompt
-    vim.api.nvim_set_current_buf(chat_bufnr) -- Switch to the chat buffer
-    require('llm.chat').send_prompt()
-  end
-end, {
-  nargs = "*", -- Allow optional prompt argument
-  desc = "Start an LLM chat session or send a prompt to chat",
 })

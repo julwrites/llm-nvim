@@ -43,7 +43,7 @@ describe("llm.managers.models_io", function()
       models_io.get_default_model_from_cli()
 
       -- Assertions
-      assert.spy(run_llm_command_spy).was.called_with("default")
+      assert.spy(run_llm_command_spy).was.called_with("models default")
     end)
   end)
 
@@ -56,7 +56,7 @@ describe("llm.managers.models_io", function()
       models_io.set_default_model_in_cli("test-model")
 
       -- Assertions
-      assert.spy(run_llm_command_spy).was.called_with("default test-model")
+      assert.spy(run_llm_command_spy).was.called_with("models default test-model")
     end)
   end)
 

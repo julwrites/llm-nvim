@@ -50,10 +50,10 @@ function M.populate_fragments_buffer(bufnr)
     table.insert(lines, "Use 'n' to add a new fragment from a file.")
   else
     for i, fragment in ipairs(fragments) do
-      if not show_all and (#fragment.aliases == 0) then
+      if not show_all and (not fragment.aliases or #fragment.aliases == 0) then
         -- Skip to the next iteration
       else
-        local aliases = #fragment.aliases > 0 and table.concat(fragment.aliases, ", ") or "none"
+        local aliases = fragment.aliases and #fragment.aliases > 0 and table.concat(fragment.aliases, ", ") or "none"
         local source = fragment.source or "unknown"
         local first_line = fragment.content:match("^[^\r\n]*") or ""
         local content_preview = first_line
@@ -116,7 +116,7 @@ end
 function M.view_fragment_under_cursor(bufnr)
   local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
-  fragments_view.view_fragment(fragment_info.content, fragment_info.source)
+  fragments_view.view_fragment(fragment_hash, fragment_info)
 end
 
 function M.set_alias_for_fragment_under_cursor(bufnr)
@@ -128,7 +128,7 @@ function M.set_alias_for_fragment_under_cursor(bufnr)
   fragments_view.get_alias(function(alias)
     if not alias or alias == "" then return end
     print("Got alias")
-    if llm_cli.run_llm_command('fragments alias set ' .. fragment_hash .. ' ' .. alias) then
+    if llm_cli.run_llm_command('fragments set ' .. alias .. ' ' .. fragment_hash) then
       print("Alias set")
       vim.notify("Alias set: " .. alias .. " -> " .. fragment_hash:sub(1, 8), vim.log.levels.INFO)
       cache.invalidate('fragments')
@@ -142,7 +142,7 @@ end
 function M.remove_alias_from_fragment_under_cursor(bufnr)
   local fragment_hash, fragment_info = M.get_fragment_info_under_cursor(bufnr)
   if not fragment_hash then return end
-  if #fragment_info.aliases == 0 then
+  if not fragment_info.aliases or #fragment_info.aliases == 0 then
     vim.notify("Fragment has no aliases", vim.log.levels.WARN)
     return
   end
@@ -161,7 +161,7 @@ end
 function M.confirm_and_remove_alias(alias)
   fragments_view.confirm_remove_alias(alias, function(confirmed)
     if not confirmed then return end
-    if llm_cli.run_llm_command('fragments alias remove ' .. alias) then
+    if llm_cli.run_llm_command('fragments remove ' .. alias) then
       vim.notify("Alias removed: " .. alias, vim.log.levels.INFO)
       cache.invalidate('fragments')
       require('llm.ui.unified_manager').switch_view("Fragments")
