@@ -151,6 +151,7 @@ The `make coverage` command uses `luacov` to generate a code coverage report. Th
 **Testing `vim.api`**: The testing strategy for functions using `vim.api` depends on their purpose:
 - **Non-UI Operations**: For operations that manipulate buffers, lines, or other non-UI elements (e.g., `vim.api.nvim_buf_set_lines`, `vim.api.nvim_get_current_buf`), it is acceptable to call `vim.api` directly. The test environment supports these functions.
 - **UI Operations**: For functions that create or manage UI elements like floating windows or pop-up menus (e.g., `vim.api.nvim_open_win`), these functions should be mocked. The test environment does not have a display server, and calling these will cause errors. Mocking allows the test to verify the business logic leading up to the UI call without testing the UI itself.
+- **Verify UI Calls with Spies**: When testing functions that call UI-related functions, use spies to verify that the UI functions were called with the correct arguments. This is sufficient to confirm the integration between business logic and the UI without needing to mock the UI's internal behavior.
 
 
 **Testing Strategy for UI Components**:

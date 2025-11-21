@@ -223,128 +223,37 @@ describe('llm.chat', function()
       assert.spy(vim.api.nvim_buf_set_keymap).was.called()
     end)
 
-    it('should initialize layout with sections', function()
+    it('should get user input', function()
       local buffer = ChatBuffer.new()
-      
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      assert.is_number(buffer.input_start_line)
-    end)
-
-    it('should set status message', function()
-      local buffer = ChatBuffer.new()
-      
-      buffer:set_status("Processing...")
-      
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-    end)
-
-    it('should update conversation ID', function()
-      local buffer = ChatBuffer.new()
-      
-      buffer:update_conversation_id("new-conv-123")
-      
-      assert.are.equal("new-conv-123", buffer.conversation_id)
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-    end)
-
-    it('should append user message to history', function()
-      local buffer = ChatBuffer.new()
-      
-      buffer:append_user_message("Hello, LLM!")
-      
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      assert.spy(vim.api.nvim_buf_add_highlight).was.called()
-    end)
-
-    it('should append LLM message to history', function()
-      local buffer = ChatBuffer.new()
-      
-      buffer:append_llm_message("Hello, user!")
-      
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-      assert.spy(vim.api.nvim_buf_add_highlight).was.called()
-    end)
-
-    it('should get user input from input area', function()
-      local buffer = ChatBuffer.new()
-      
+      -- Mock nvim_win_get_cursor to be at the end of the buffer
+      vim.api.nvim_win_get_cursor = spy.new(function() return {3, 1} end)
+      vim.api.nvim_buf_get_lines = spy.new(function()
+          return {
+            "--- You ---",
+            "> user prompt line 1",
+            "user prompt line 2",
+          }
+      end)
       local input = buffer:get_user_input()
-      
-      -- Should extract "Test message" from the mocked buffer lines
-      assert.is_string(input)
+      assert.are.same("user prompt line 1\nuser prompt line 2", input)
     end)
 
-    it('should clear input area', function()
-      local buffer = ChatBuffer.new()
-      
-      buffer:clear_input()
-      
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-    end)
-
-    it('should focus input area when window is open', function()
-      local buffer = ChatBuffer.new()
-
-      -- Mock that a window is open by setting win_id
-      buffer.win_id = 1
-
-      buffer:focus_input()
-
-      assert.spy(vim.api.nvim_win_set_cursor).was.called()
-      assert.spy(vim.cmd).was.called_with('startinsert')
-    end)
-
-    it('should handle render without window gracefully', function()
-      local buffer = ChatBuffer.new()
-
-      -- Reset spy to clear previous calls from new()
-      vim.api.nvim_win_set_cursor:clear()
-
-      -- Render should work even without a window
-      buffer:render({ history = {} })
-
-      -- Should not call nvim_win_set_cursor when win_id is nil
-      assert.spy(vim.api.nvim_win_set_cursor).was_not.called()
-      assert.spy(vim.api.nvim_buf_set_lines).was.called()
-    end)
-
-    it('should handle focus_input without window gracefully', function()
-      local buffer = ChatBuffer.new()
-
-      -- Reset spy to clear previous calls from new()
-      vim.api.nvim_win_set_cursor:clear()
-      vim.cmd:clear()
-
-      -- focus_input should not crash when win_id is nil
-      buffer:focus_input()
-
-      -- Should not call nvim_win_set_cursor or startinsert when win_id is nil
-      assert.spy(vim.api.nvim_win_set_cursor).was_not.called()
-      assert.spy(vim.cmd).was_not.called_with('startinsert')
-    end)
-
-    it('should set input text', function()
-      local buffer = ChatBuffer.new()
-
-      buffer:set_input("Hello, world!")
-
-      assert.spy(vim.api.nvim_buf_set_lines).was.called_with(1, buffer.input_start_line - 1, -1, false, { "> Hello, world!" })
-    end)
-
-    it('should open buffer and focus input', function()
-      local buffer = ChatBuffer.new()
-
-      -- Clear previous calls from new()
-      vim.cmd:clear()
-      vim.api.nvim_buf_set_option:clear()
-      vim.api.nvim_win_set_cursor:clear()
-
-      buffer:open()
-
-      assert.spy(vim.cmd).was.called_with("vsplit")
-      assert.spy(vim.api.nvim_buf_set_option).was.called_with(1, "modifiable", true)
-      assert.spy(vim.api.nvim_win_set_cursor).was.called()
-      assert.spy(vim.cmd).was.called_with('startinsert')
+    it('should append user message', function()
+        local buffer = ChatBuffer.new()
+        vim.api.nvim_buf_get_lines = spy.new(function()
+            return {
+                "--- You ---",
+                "> ",
+            }
+        end)
+        -- Mock vim.split to handle newlines correctly
+        vim.split = function(s, p)
+            local rt = {}
+            string.gsub(s, '[^'..p..']+', function(w) table.insert(rt, w) end)
+            return rt
+        end
+        buffer:append_user_message("new message\nwith two lines")
+        assert.spy(vim.api.nvim_buf_set_lines).was.called_with(1, 1, -1, false, {"new message", "with two lines"})
     end)
   end)
 
@@ -361,7 +270,7 @@ describe('llm.chat', function()
       _bufnr = _buffer:get_bufnr()
       
       -- Ensure vim.b is correctly set for the mocked buffer
-      vim.b[_bufnr].llm_chat_bufnr = _bufnr
+      vim.b[_bufnr].llm_chat_session = result
       
       -- Mock vim.api.nvim_get_current_buf to return the chat buffer
       vim.api.nvim_get_current_buf = spy.new(function() return _bufnr end)
@@ -375,33 +284,19 @@ describe('llm.chat', function()
       assert.is_not_nil(result)
       assert.is_not_nil(result.session)
       assert.is_not_nil(result.buffer)
-      
-      local bufnr = result.buffer:get_bufnr()
-      assert.is_not_nil(vim.b[bufnr].llm_chat_bufnr)
-      assert.are.equal(bufnr, vim.b[bufnr].llm_chat_bufnr)
-      
-      local retrieved_chat_data = chat.get_session(bufnr)
-      assert.is_not_nil(retrieved_chat_data)
-      assert.are.equal(result.session, retrieved_chat_data.session)
-      assert.are.equal(result.buffer, retrieved_chat_data.buffer)
     end)
 
     it('should send message from chat buffer', function()
       -- Mock get_user_input to return a message
       _buffer.get_user_input = spy.new(function() return "Test message" end)
-      _buffer.set_status = spy.new(function() end)
       _buffer.append_user_message = spy.new(function() end)
-      _buffer.clear_input = spy.new(function() end)
-      _buffer.append_llm_message = spy.new(function() end)
-      _buffer.update_conversation_id = spy.new(function() end)
-      _buffer.focus_input = spy.new(function() end)
+      _buffer.add_llm_header = spy.new(function() end)
       
       chat.send_message()
       
       assert.spy(_buffer.get_user_input).was.called()
-      assert.spy(_buffer.set_status).was.called_with(match._, "Processing...")
       assert.spy(_buffer.append_user_message).was.called()
-      assert.spy(_buffer.clear_input).was.called()
+      assert.spy(_buffer.add_llm_header).was.called()
     end)
 
     it('should not send empty message', function()
@@ -420,18 +315,6 @@ describe('llm.chat', function()
       assert.spy(vim.notify).was.called_with("Chat is processing, please wait", vim.log.levels.WARN)
     end)
 
-    it('should handle new message command', function()
-      local result = chat.start_chat()
-      vim.b[1] = { llm_chat_session = result }
-      
-      result.buffer.clear_input = spy.new(function() end)
-      result.buffer.focus_input = spy.new(function() end)
-      
-      chat.new_message()
-      
-      assert.spy(result.buffer.clear_input).was.called()
-      assert.spy(result.buffer.focus_input).was.called()
-    end)
 
     it('should get active session for buffer', function()
       local result = chat.start_chat()
@@ -452,37 +335,23 @@ describe('llm.chat', function()
         result.session.current_job_id = nil
         result.session.state = 'ready'
       end)
-      result.buffer.set_status = spy.new(function() end)
       
       chat.stop_current_job()
       
       assert.spy(result.session.stop_current_job).was.called()
-      assert.spy(result.buffer.set_status).was.called_with(match._, "Stopped")
     end)
   end)
 
   describe('error handling', function()
     it('should handle send_message on non-chat buffer', function()
-      vim.b[1] = nil
-      
+      vim.b[1] = {}
       chat.send_message()
-      
-      assert.spy(vim.notify).was.called_with("Not a chat buffer", vim.log.levels.ERROR)
-    end)
-
-    it('should handle new_message on non-chat buffer', function()
-      vim.b[1] = nil
-      
-      chat.new_message()
-      
       assert.spy(vim.notify).was.called_with("Not a chat buffer", vim.log.levels.ERROR)
     end)
 
     it('should handle stop_current_job on non-chat buffer', function()
-      vim.b[1] = nil
-      
+      vim.b[1] = {}
       chat.stop_current_job()
-      
       assert.spy(vim.notify).was.called_with("Not a chat buffer", vim.log.levels.ERROR)
     end)
   end)

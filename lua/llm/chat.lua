@@ -26,23 +26,19 @@ function M.start_chat(opts)
   })
   
   -- Create buffer
-  local buffer = ChatBuffer.new({
-    model = opts.model or config.get("model"),
-    system_prompt = opts.system_prompt or config.get("system_prompt"),
-  })
+  local buffer = ChatBuffer.new()
   
   -- Link session to buffer
   session.bufnr = buffer:get_bufnr()
   
-  -- Store session for later access (keep table with metatables intact)
+  -- Store session for later access
   active_sessions[buffer:get_bufnr()] = {
     session = session,
     buffer = buffer,
   }
   
   -- Store reference in buffer variable for keymap access
-  -- Note: Store the active_sessions reference, not a copy
-  vim.b[buffer:get_bufnr()].llm_chat_bufnr = buffer:get_bufnr()
+  vim.b[buffer:get_bufnr()].llm_chat_session = active_sessions[buffer:get_bufnr()]
   
   if config.get('debug') then
     vim.notify(
@@ -58,20 +54,14 @@ function M.start_chat(opts)
 end
 
 --- Send message from current buffer
--- Called by keymap (<C-CR> or <Leader>s)
+-- Called by keymap (<CR>)
 function M.send_message()
   local bufnr = vim.api.nvim_get_current_buf()
   
   -- Get chat data from active_sessions using buffer number
-  local chat_bufnr = vim.b[bufnr].llm_chat_bufnr
-  if not chat_bufnr then
-    vim.notify("Not a chat buffer", vim.log.levels.ERROR)
-    return
-  end
-  
-  local chat_data = active_sessions[chat_bufnr]
+  local chat_data = active_sessions[bufnr]
   if not chat_data then
-    vim.notify("Chat session not found", vim.log.levels.ERROR)
+    vim.notify("Not a chat buffer", vim.log.levels.ERROR)
     return
   end
   
@@ -97,14 +87,9 @@ function M.send_message()
     vim.cmd('stopinsert')
   end
   
-  -- Update status
-  buffer:set_status("Processing...")
-  
   -- Add user message to history
   buffer:append_user_message(prompt)
-  
-  -- Clear input area
-  buffer:clear_input()
+  buffer:add_llm_header()
   
   -- Send prompt to LLM
   local job_id = session:send_prompt(prompt, {
@@ -131,26 +116,18 @@ function M.send_message()
     
     on_exit = function(_, exit_code)
       if exit_code == 0 then
-        buffer:set_status("Ready")
-        
-        -- Update conversation ID in buffer if this was first message
-        local conv_id = session:get_conversation_id()
-        if conv_id then
-          buffer:update_conversation_id(conv_id)
-        end
-        
+        buffer:add_user_header()
         
         -- Focus input for next message
         buffer:focus_input()
         
         if config.get('debug') then
           vim.notify(
-            string.format("[Chat] Message completed (conversation: %s)", conv_id or "unknown"),
+            string.format("[Chat] Message completed (conversation: %s)", session:get_conversation_id() or "unknown"),
             vim.log.levels.DEBUG
           )
         end
       else
-        buffer:set_status("Error")
         vim.notify(
           string.format("LLM command failed with exit code: %d", exit_code),
           vim.log.levels.ERROR
@@ -160,7 +137,6 @@ function M.send_message()
   })
   
   if not job_id then
-    buffer:set_status("Error")
     vim.notify("Failed to start LLM command", vim.log.levels.ERROR)
   else
     if config.get('debug') then
@@ -169,28 +145,6 @@ function M.send_message()
         vim.log.levels.DEBUG
       )
     end
-  end
-end
-
---- Start a new message in the input area
--- Called by keymap (<C-n>)
-function M.new_message()
-  local bufnr = vim.api.nvim_get_current_buf()
-  local chat_data = vim.b[bufnr].llm_chat_session
-  
-  if not chat_data then
-    vim.notify("Not a chat buffer", vim.log.levels.ERROR)
-    return
-  end
-  
-  local buffer = chat_data.buffer
-  
-  -- Clear input and focus
-  buffer:clear_input()
-  buffer:focus_input()
-  
-  if config.get('debug') then
-    vim.notify("[Chat] Cleared input for new message", vim.log.levels.DEBUG)
   end
 end
 
@@ -213,9 +167,6 @@ function M.stop_current_job()
   
   local session = chat_data.session
   session:stop_current_job()
-  
-  local buffer = chat_data.buffer
-  buffer:set_status("Stopped")
   
   vim.notify("Stopped current LLM job", vim.log.levels.INFO)
 end
