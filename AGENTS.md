@@ -236,3 +236,74 @@ When prompting with selection:
 2. Selection written to temp file via `commands.write_context_to_temp_file()`
 3. Temp file passed as fragment argument to llm CLI
 4. Temp file cleaned up after command execution
+
+## Chat Functionality Learnings
+
+**IMPORTANT**: The following issues were identified and fixed during chat functionality development. These should be referenced when making changes to chat-related code to prevent regression.
+
+### Critical Issues and Solutions
+
+#### 1. Lua Compatibility Issues
+- **Problem**: `table.unpack` vs `_G.unpack` compatibility between Lua 5.1 and 5.2+
+- **Solution**: Use compatibility shim: `local unpack = table.unpack or _G.unpack`
+- **Files affected**: `lua/llm/chat/buffer.lua`
+
+#### 2. API Method Naming
+- **Problem**: Incorrect API method name `api.run` instead of `api.run_llm_command`
+- **Solution**: Always use full method names from API documentation
+- **Files affected**: `lua/llm/chat/session.lua`
+
+#### 3. Job Utility Issues
+- **Problem**: Missing command validation and nil-safe handling
+- **Solution**: Add proper validation and error handling in job runner
+- **Files affected**: `lua/llm/core/utils/job.lua`
+
+#### 4. Configuration Initialization
+- **Problem**: Plugin configuration not initialized before use
+- **Solution**: Call `llm.setup()` during plugin initialization
+- **Files affected**: `plugin/llm.lua`
+
+#### 5. LLM Command Syntax
+- **Problem**: Using `llm chat` instead of `llm` for non-interactive mode
+- **Solution**: Use `llm` directly and send prompt via stdin
+- **Files affected**: `lua/llm/chat/session.lua`
+
+#### 6. Job Callback Signature
+- **Problem**: Incorrect callback signature in job utility
+- **Solution**: Use `function(j, data)` instead of `function(j, d, e)`
+- **Files affected**: `lua/llm/core/utils/job.lua`
+
+#### 7. Stdin Handling
+- **Problem**: Not closing stdin after sending prompt, causing hanging
+- **Solution**: Call `vim.fn.jobclose(job_id, "stdin")` after `vim.fn.jobsend()`
+- **Files affected**: `lua/llm/api.lua`
+
+#### 8. Buffer Modifiability
+- **Problem**: Buffer becoming non-modifiable after LLM response
+- **Solution**: Ensure buffer remains modifiable for user input:
+  - `render()`: Leave buffer modifiable for initial input
+  - `append_user_message()`: Leave modifiable for LLM operations
+  - `add_llm_header()`: Leave modifiable for response
+  - `append_llm_message()`: Set non-modifiable to protect response
+  - `add_user_header()`: Leave modifiable for next message
+- **Files affected**: `lua/llm/chat/buffer.lua`
+
+#### 9. Session State Management
+- **Problem**: Session state never reset from "processing" to "ready"
+- **Solution**: Add `session:reset_state()` call in `on_exit` callback
+- **Files affected**: `lua/llm/chat.lua`, `lua/llm/chat/session.lua`
+
+### Debugging Strategy
+
+When debugging chat functionality:
+1. **Add comprehensive logging** to callback functions (`on_stdout`, `on_stderr`, `on_exit`)
+2. **Check job execution flow**: command building → job start → stdin send → callback execution
+3. **Verify buffer operations**: modifiability state changes and content updates
+4. **Test session state**: ensure proper state transitions (ready → processing → ready)
+
+### Testing Considerations
+
+- Always test multi-message conversations to verify session state management
+- Verify buffer remains modifiable after LLM responses
+- Test with different LLM models and conversation configurations
+- Ensure proper cleanup when chat buffers are closed
