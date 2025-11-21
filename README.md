@@ -28,7 +28,7 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 - Fragment management (files, URLs, GitHub repos)
 - Template creation and execution
 - Schema management and execution
-- Unified manager window (`:LLMToggle`) with views for:
+- Unified manager window (`:LLMConfig`) with views for:
   - Models
   - Plugins  
   - API Keys
@@ -41,7 +41,12 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 ## Requirements
 
 - Neovim 0.7.0 or later
+- Lua 5.2+ (Neovim bundles LuaJIT 2.1+ which is compatible)
 - [llm CLI tool](https://github.com/simonw/llm) installed (`pip install llm` or `brew install llm`)
+
+### Lua Compatibility Note
+
+This plugin uses Lua 5.2+ APIs (`table.unpack`) for forward compatibility. Neovim bundles LuaJIT 2.1+ which provides these APIs, so no additional Lua installation is required.
 
 ## Installation
 
@@ -145,14 +150,14 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 - `:LLM update` - Manually trigger an update check for the underlying `llm` CLI tool.
 
 #### Unified Manager
-- `:LLMToggle [view]` - Toggle unified manager window
+- `:LLMConfig [view]` - Open unified manager window
   - Optional views: `models`, `plugins`, `keys`, `fragments`, `templates`, `schemas`
-- `:LLMToggle models` - Open Models view
-- `:LLMToggle plugins` - Open Plugins view  
-- `:LLMToggle keys` - Open API Keys view
-- `:LLMToggle fragments` - Open Fragments view
-- `:LLMToggle templates` - Open Templates view
-- `:LLMToggle schemas` - Open Schemas view
+- `:LLMConfig models` - Open Models view
+- `:LLMConfig plugins` - Open Plugins view  
+- `:LLMConfig keys` - Open API Keys view
+- `:LLMConfig fragments` - Open Fragments view
+- `:LLMConfig templates` - Open Templates view
+- `:LLMConfig schemas` - Open Schemas view
 
 ### Basic Prompting
 
@@ -173,7 +178,7 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 
 ### Using the Unified Manager
 
-1.  Type `:LLMToggle` or press `<leader>ll` (default mapping).
+1.  Type `:LLMConfig` or press `<leader>ll` (default mapping).
 2.  The manager window opens, likely showing the Models view first.
 3.  Press `P` to switch to the Plugins view.
 4.  Press `K` to switch to the API Keys view.
@@ -183,11 +188,11 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 
 ## Suggested Mappings
 
-The plugin doesn't set any default key mappings. Here are some suggested mappings you might want to set up:
+The plugin provides default key mappings that can be disabled with `no_mappings = true`. Here are the default mappings and some suggested alternatives:
 
 ```lua
 -- Toggle unified manager
-vim.keymap.set('n', '<leader>ll', '<Cmd>LLMToggle<CR>', { desc = "Toggle LLM Manager" })
+vim.keymap.set('n', '<leader>ll', '<Cmd>LLMConfig<CR>', { desc = "Toggle LLM Manager" })
 
 -- Basic prompt
 vim.keymap.set('n', '<leader>lp', '<Cmd>LLM<Space>', { desc = "LLM Prompt" })
@@ -229,6 +234,36 @@ Tests cover:
 - Plugin management
 - API key management
 - Fragment management
+
+### Code Coverage
+
+This project enforces a minimum code coverage of 70%. The CI/CD pipeline will fail if the coverage drops below this threshold. To run the coverage check locally, you first need to install the coverage dependencies:
+
+```bash
+sudo luarocks install luacov
+sudo luarocks install luacov-console
+```
+
+Then, you can run the coverage check:
+
+```bash
+make coverage
+```
+
+This will run the tests with Luacov and print a coverage report to the console.
+
+
+## Troubleshooting
+
+### Lua Compatibility Errors
+
+If you encounter errors like "attempt to call a nil value (global 'unpack')":
+- Ensure you're using Neovim 0.7.0 or later
+- Check your Lua version: `:lua print(_VERSION)` in Neovim
+- Update Neovim if you're using an older version
+- Report the issue with your Neovim and Lua versions if problems persist
+
+The plugin requires Lua 5.2+ APIs which are provided by Neovim's bundled LuaJIT 2.1+.
 
 ## License
 

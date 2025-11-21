@@ -161,7 +161,7 @@ Custom mappings:
     *:LLM template*                                          
         Select and run template                              
                                                              
-*:LLMToggle* [{view}]                                        
+*:LLMConfig* [{view}]                                        
     Open or close the unified manager window. This window    
     allows managing Models, Plugins, API Keys, Fragments,    
     Templates, and Schemas.                                  
@@ -172,12 +172,12 @@ Custom mappings:
     switch between views, and [q] or <Esc> to close.         
                                                              
     Alternatively use subcommands to open specific views:     
-    *:LLMToggle models*                                      
-    *:LLMToggle plugins*                                     
-    *:LLMToggle keys*                                        
-    *:LLMToggle fragments*                                   
-    *:LLMToggle templates*                                   
-    *:LLMToggle schemas*                                     
+    *:LLMConfig models*                                      
+    *:LLMConfig plugins*                                     
+    *:LLMConfig keys*                                        
+    *:LLMConfig fragments*                                   
+    *:LLMConfig templates*                                   
+    *:LLMConfig schemas*                                     
                                                              
 =============================================================
 =================                                            
@@ -189,7 +189,7 @@ create their own mappings if desired. Example mappings:
                                                              
 >                                                            
     -- Toggle unified manager                                
-    vim.keymap.set('n', '<leader>ll', '<Cmd>LLMToggle<CR>')  
+    vim.keymap.set('n', '<leader>ll', '<Cmd>LLMConfig<CR>')  
                                                              
     -- Basic prompt                                          
     vim.keymap.set('n', '<leader>lp', '<Cmd>LLM<Space>')     

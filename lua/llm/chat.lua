@@ -1,128 +1,202 @@
-local api = require('llm.api')
-local ui = require('llm.core.utils.ui')
-local commands = require('llm.commands')
+-- llm/chat.lua - Chat Orchestration
+-- License: Apache 2.0
 
 local M = {}
+local config = require('llm.config')
+local ChatSession = require('llm.chat.session').ChatSession
+local ChatBuffer = require('llm.chat.buffer').ChatBuffer
 
-function M.start_chat()
-  local bufnr = ui.create_chat_buffer()
+-- Track active chat sessions by buffer number
+local active_sessions = {}
 
-  ui.append_to_buffer(bufnr, "Enter your prompt below and press <Enter> to submit\n", "LlmUserPrompt")
-  ui.append_to_buffer(bufnr, "-----------\n", "LlmUserPrompt")
-  ui.append_to_buffer(bufnr, "--- You ---\n", "LlmUserPrompt")
-  ui.append_to_buffer(bufnr, ">  ", "LlmUserPrompt")
-
-  -- Move cursor to the end of the buffer
-  local num_lines = vim.api.nvim_buf_line_count(bufnr)
-  vim.api.nvim_win_set_cursor(0, { num_lines, 3 })
-
-  -- Switch to insert mode
-  vim.cmd('startinsert')
-
-  return bufnr
-end
-
-function M.start_chat_stream(bufnr, cmd_parts, prompt)
-  local callbacks = {
-    on_stdout = function(_, data) 
-      local startup_patterns = {
-        "^Chatting with ",
-        "^Type 'exit' or 'quit' to exit",
-        "^Type '!multi' to enter multiple lines, then '!end' to finish",
-        "^Type '!edit' to open your default editor and modify the prompt",
-        "^Type '!fragment ",
-        "^>",
-      }
-      if data then
-        for _, line in ipairs(data) do
-          local is_startup_line = false
-          for _, pattern in ipairs(startup_patterns) do
-            if string.find(line, pattern) then
-              is_startup_line = true
-              break
-            end
-          end
-          if not is_startup_line then
-            ui.append_to_buffer(bufnr, line .. "\n", "LlmModelResponse")
-          end
-        end
-      end
-    end,
-    on_stderr = function(_, data) 
-      if data then
-        for _, line in ipairs(data) do
-          vim.notify("LLM stderr: " .. line, vim.log.levels.ERROR)
-        end
-      end
-    end,
-    on_exit = function(_, exit_code) 
-      vim.notify("LLM command finished with exit code: " .. tostring(exit_code), vim.log.levels.INFO)
-      -- After the model finishes, indicate user's turn
-      ui.append_to_buffer(bufnr, "--- You ---", "LlmUserPrompt")
-      ui.append_to_buffer(bufnr, ">  ", "LlmUserPrompt")
-
-      -- Move cursor to the end of the buffer
-      local num_lines = vim.api.nvim_buf_line_count(bufnr)
-      vim.api.nvim_win_set_cursor(0, { num_lines, 3 })
-      vim.cmd('startinsert') -- Re-enter insert mode
-    end,
+--- Start a new chat session
+-- @param opts table: Chat options
+--   - model: string (optional) - Model to use
+--   - system_prompt: string (optional) - System prompt
+--   - fragments: table (optional) - List of fragment paths
+-- @return table: { session, buffer }
+function M.start_chat(opts)
+  opts = opts or {}
+  
+  -- Create session
+  local session = ChatSession.new({
+    model = opts.model,
+    system_prompt = opts.system_prompt,
+    fragments = opts.fragments,
+  })
+  
+  -- Create buffer
+  local buffer = ChatBuffer.new()
+  
+  -- Link session to buffer
+  session.bufnr = buffer:get_bufnr()
+  
+  -- Store session for later access
+  active_sessions[buffer:get_bufnr()] = {
+    session = session,
+    buffer = buffer,
   }
-
-  local job_id = api.run_streaming_command(cmd_parts, prompt, callbacks)
-  return job_id
+  
+  -- Store reference in buffer variable for keymap access
+  vim.b[buffer:get_bufnr()].llm_chat_session = active_sessions[buffer:get_bufnr()]
+  
+  if config.get('debug') then
+    vim.notify(
+      string.format("[Chat] Started new chat session in buffer %d", buffer:get_bufnr()),
+      vim.log.levels.DEBUG
+    )
+  end
+  
+  return {
+    session = session,
+    buffer = buffer,
+  }
 end
 
-function M.send_prompt()
-  vim.notify("DEBUG: send_prompt function called.", vim.log.levels.INFO)
+--- Send message from current buffer
+-- Called by keymap (<CR>)
+function M.send_message()
   local bufnr = vim.api.nvim_get_current_buf()
-  local current_cursor_line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))    -- 1-indexed line number of cursor
-  local all_buffer_lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false) -- 0-indexed table of all lines
-
-  local you_marker_line_idx = -1                                           -- 0-indexed line number of "--- You ---"
-
-  -- Search upwards from the line *before* the cursor to find "--- You ---"
-  for i = current_cursor_line - 1, 0, -1 do
-    if all_buffer_lines[i + 1] == "--- You ---" then -- Lua table is 1-indexed, so all_buffer_lines[i+1]
-      you_marker_line_idx = i
-      break
-    end
-  end
-
-  if you_marker_line_idx == -1 then
-    vim.notify("Error: '--- You ---' marker not found in buffer.", vim.log.levels.ERROR)
+  
+  -- Get chat data from active_sessions using buffer number
+  local chat_data = active_sessions[bufnr]
+  if not chat_data then
+    vim.notify("Not a chat buffer", vim.log.levels.ERROR)
     return
   end
-
-  -- Extract user prompt lines
-  -- The prompt starts on the line *after* "--- You ---" and goes up to the current cursor line.
-  -- In 0-indexed terms: from (you_marker_line_idx + 1) to (current_cursor_line - 1)
-  local user_prompt_lines = {}
-  for i = you_marker_line_idx + 1, current_cursor_line - 1 do
-    table.insert(user_prompt_lines, all_buffer_lines[i + 1]) -- all_buffer_lines is 0-indexed, so all_buffer_lines[i+1]
+  
+  local session = chat_data.session
+  local buffer = chat_data.buffer
+  
+  -- Check if session is ready
+  if not session:is_ready() then
+    vim.notify("Chat is processing, please wait", vim.log.levels.WARN)
+    return
   end
-  local prompt = table.concat(user_prompt_lines, "\n")
+  
+  -- Get user input
+  local prompt = buffer:get_user_input()
 
-  -- Clear only the user input area
-  -- Clear from the line *after* "--- You ---" (0-indexed: you_marker_line_idx + 1) to the end of the buffer (-1)
-  vim.api.nvim_buf_set_lines(bufnr, you_marker_line_idx + 1, -1, false, {})
+  if not prompt or prompt == "" then
+    vim.notify("Cannot send empty message", vim.log.levels.WARN)
+    return
+  end
+  
+  -- Switch to normal mode if in insert mode
+  if vim.fn.mode() == 'i' then
+    vim.cmd('stopinsert')
+  end
+  
+  -- Add user message to history
+  buffer:append_user_message(prompt)
+  buffer:add_llm_header()
+  
+  -- Send prompt to LLM
+  local job_id = session:send_prompt(prompt, {
+    on_stdout = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          local new_conv_id = session:extract_conversation_id(line)
+          if new_conv_id then
+            session.conversation_id = new_conv_id
+          else
+            buffer:append_llm_message(line)
+          end
+        end
+      end
+    end,
+    
+    on_stderr = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          vim.notify("LLM error: " .. line, vim.log.levels.ERROR)
+        end
+      end
+    end,
+    
+    on_exit = function(_, exit_code)
+      -- Reset session state to ready regardless of exit code
+      session:reset_state()
 
-  -- Append the prompt and response sections
-  -- "--- You ---" is already in the buffer, just append the captured prompt
-  ui.append_to_buffer(bufnr, prompt .. "\n", "LlmUserPrompt")
-  ui.append_to_buffer(bufnr, "--- LLM ---\\n", "LlmModelResponse")
+      if exit_code == 0 then
+        buffer:add_user_header()
 
-  local cmd_parts = { commands.get_llm_executable_path() }
-  vim.list_extend(cmd_parts, commands.get_model_arg())
-  vim.list_extend(cmd_parts, commands.get_system_arg())
+        -- Focus input for next message
+        buffer:focus_input()
 
-  if vim.b.llm_chat_is_continuing then
-    table.insert(cmd_parts, "--continue")
+        if config.get('debug') then
+          vim.notify(
+            string.format("[Chat] Message completed (conversation: %s)", session:get_conversation_id() or "unknown"),
+            vim.log.levels.DEBUG
+          )
+        end
+      else
+        vim.notify(
+          string.format("LLM command failed with exit code: %d", exit_code),
+          vim.log.levels.ERROR
+        )
+      end
+    end,
+  })
+  
+  if not job_id then
+    vim.notify("Failed to start LLM command", vim.log.levels.ERROR)
   else
-    vim.b.llm_chat_is_continuing = true
+    if config.get('debug') then
+      vim.notify(
+        string.format("[Chat] Started job %d for message", job_id),
+        vim.log.levels.DEBUG
+      )
+    end
   end
-
-  M.start_chat_stream(bufnr, cmd_parts, prompt)
 end
 
+--- Get active session for a buffer
+-- @param bufnr number: Buffer number
+-- @return table|nil: Chat session data or nil
+function M.get_session(bufnr)
+  return active_sessions[bufnr]
+end
+
+--- Stop current job in active chat buffer
+function M.stop_current_job()
+  local bufnr = vim.api.nvim_get_current_buf()
+  local chat_data = vim.b[bufnr].llm_chat_session
+  
+  if not chat_data then
+    vim.notify("Not a chat buffer", vim.log.levels.ERROR)
+    return
+  end
+  
+  local session = chat_data.session
+  session:stop_current_job()
+  
+  vim.notify("Stopped current LLM job", vim.log.levels.INFO)
+end
+
+--- Clean up session when buffer is deleted
+-- Set up autocmd to clean up when chat buffer is closed
+vim.api.nvim_create_autocmd("BufDelete", {
+  callback = function(args)
+    local bufnr = args.buf
+    if active_sessions[bufnr] then
+      -- Stop any running jobs
+      local session = active_sessions[bufnr].session
+      if session.current_job_id then
+        session:stop_current_job()
+      end
+      
+      -- Remove from active sessions
+      active_sessions[bufnr] = nil
+      
+      if config.get('debug') then
+        vim.notify(
+          string.format("[Chat] Cleaned up session for buffer %d", bufnr),
+          vim.log.levels.DEBUG
+        )
+      end
+    end
+  end,
+})
 
 return M

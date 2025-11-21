@@ -1,6 +1,7 @@
 :LLM	llm.txt	/*:LLM*
 :LLM	llm.txt	/*:LLM*
-:LLMToggle	llm.txt	/*:LLMToggle*
+:LLM	llm.txt	/*:LLM*
+:LLMConfig	llm.txt	/*:LLMConfig*
 llm-commands	llm.txt	/*llm-commands*
 llm-configuration	llm.txt	/*llm-configuration*
 llm-contents	llm.txt	/*llm-contents*

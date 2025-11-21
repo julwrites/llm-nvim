@@ -1,0 +1,24 @@
+return {
+  -- Include all lua files in the lua directory
+  include = {
+    "^lua/.*$"
+  },
+
+  -- Exclude test files
+  exclude = {
+    "^tests/.*$",
+    "^test/.*$"
+  },
+
+  -- Stats file location
+  statsfile = "luacov.stats.out",
+
+  -- Report file location
+  reportfile = "luacov.report.out",
+
+  -- Enable detailed reporting
+  report = true,
+
+  -- Don't delete stats file on startup
+  deletestats = false
+}

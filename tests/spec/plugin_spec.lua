@@ -36,7 +36,10 @@ describe('plugin/llm.lua', function()
     _G.vim.api.nvim_open_win = spy.new(function() return 1 end) -- return a dummy window handle
 
     chat_mock = { start_chat = spy.new() }
-    llm_mock = { prompt = spy.new() }
+    llm_mock = {
+      prompt = spy.new(),
+      setup = spy.new()
+    }
     commands_mock = {
       prompt = spy.new(),
       prompt_with_current_file = spy.new(),

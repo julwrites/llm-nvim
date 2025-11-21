@@ -35,16 +35,16 @@ end
 -- @param callbacks table: A table with on_stdout, on_stderr, and on_exit callbacks.
 -- @return number: The job ID, or nil if the job failed to start.
 function M.run_llm_command(command_parts, prompt, callbacks)
-  local job_instance = job.run({
-    command = command_parts,
+  local job_id = job.run(command_parts, {
     on_stdout = callbacks.on_stdout,
     on_stderr = callbacks.on_stderr,
     on_exit = callbacks.on_exit,
   })
 
-  if job_instance and job_instance.id then
-    vim.fn.jobsend(job_instance.id, prompt)
-    return job_instance.id
+  if job_id then
+    vim.fn.jobsend(job_id, prompt)
+    vim.fn.jobclose(job_id, "stdin")
+    return job_id
   end
 
   return nil

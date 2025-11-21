@@ -47,20 +47,38 @@ describe('llm.managers.keys_manager', function()
   end)
 
   describe('set_api_key', function()
-    it('should call `llm_cli.run_llm_command` with `\'keys set <key_name> <key_value>\'`', function()
+    it('should call `llm_cli.run_llm_command` with `\'keys set <key_name> --value <key_value>\'`', function()
       local llm_cli_spy = spy.on(llm_cli, 'run_llm_command')
       KeysManager.set_api_key('openai', 'sk-12345')
-      assert.spy(llm_cli_spy).was_called_with('keys set openai sk-12345')
+      assert.spy(llm_cli_spy).was_called_with('keys set openai --value sk-12345')
       llm_cli_spy:revert()
     end)
   end)
 
   describe('remove_api_key', function()
-    it('should call `llm_cli.run_llm_command` with `\'keys remove <key_name>\'`', function()
+    it('should call `llm_cli.run_llm_command` with `\'keys path\'`', function()
       local llm_cli_spy = spy.on(llm_cli, 'run_llm_command')
+      -- Mock the file operations to avoid actual file I/O in tests
+      local mock_file = {
+        read = function() return '{"openai": "test-key"}' end,
+        close = function() end
+      }
+      stub(io, 'open', function(path, mode)
+        if mode == "r" then
+          return mock_file
+        else
+          return { write = function() end, close = function() end }
+        end
+      end)
+      stub(vim.fn, 'json_decode', function() return { openai = "test-key" } end)
+      stub(vim.fn, 'json_encode', function() return '{}' end)
+
       KeysManager.remove_api_key('openai')
-      assert.spy(llm_cli_spy).was_called_with('keys remove openai')
+      assert.spy(llm_cli_spy).was_called_with('keys path')
+
       llm_cli_spy:revert()
+      mock.revert(io)
+      mock.revert(vim.fn)
     end)
   end)
 end)
