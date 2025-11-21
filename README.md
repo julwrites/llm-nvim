@@ -188,7 +188,7 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 
 ## Suggested Mappings
 
-The plugin doesn't set any default key mappings. Here are some suggested mappings you might want to set up:
+The plugin provides default key mappings that can be disabled with `no_mappings = true`. Here are the default mappings and some suggested alternatives:
 
 ```lua
 -- Toggle unified manager
