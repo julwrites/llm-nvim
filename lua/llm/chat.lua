@@ -76,7 +76,7 @@ function M.send_message()
   
   -- Get user input
   local prompt = buffer:get_user_input()
-  
+
   if not prompt or prompt == "" then
     vim.notify("Cannot send empty message", vim.log.levels.WARN)
     return
@@ -115,12 +115,15 @@ function M.send_message()
     end,
     
     on_exit = function(_, exit_code)
+      -- Reset session state to ready regardless of exit code
+      session:reset_state()
+
       if exit_code == 0 then
         buffer:add_user_header()
-        
+
         -- Focus input for next message
         buffer:focus_input()
-        
+
         if config.get('debug') then
           vim.notify(
             string.format("[Chat] Message completed (conversation: %s)", session:get_conversation_id() or "unknown"),

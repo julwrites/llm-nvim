@@ -19,7 +19,8 @@ end
 function M:build_command(prompt)
   local config = require("llm.config")
   local llm_executable = config.get("llm_executable_path")
-  local cmd_args = { llm_executable, "prompt" }
+
+  local cmd_args = { llm_executable }
 
   if self.model then
     table.insert(cmd_args, "-m")
@@ -48,9 +49,10 @@ end
 function M:send_prompt(prompt, callbacks)
   self.state = "processing"
   local cmd = self:build_command(prompt)
+
   table.insert(self.history, { role = "user", content = prompt })
-  table.insert(cmd, prompt)
-  self.current_job_id = api.run(cmd, callbacks)
+  self.current_job_id = api.run_llm_command(cmd, prompt, callbacks)
+
   return self.current_job_id
 end
 
@@ -60,6 +62,10 @@ end
 
 function M:get_conversation_id()
     return self.conversation_id
+end
+
+function M:reset_state()
+    self.state = "ready"
 end
 
 return { ChatSession = M }

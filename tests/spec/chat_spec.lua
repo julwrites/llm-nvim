@@ -38,7 +38,7 @@ describe('llm.chat', function()
     package.loaded['llm.core.utils.job'] = job_mock
     -- Mock llm.api
     local api_mock = {
-      run = spy.new(function(cmd, callbacks)
+      run_llm_command = spy.new(function(cmd, prompt, callbacks)
         -- Return a mock job ID
         return 12345
       end),
@@ -147,7 +147,6 @@ describe('llm.chat', function()
 
       assert.are.same({
         "/usr/bin/llm",
-        "prompt",
         "-m",
         "gpt-4",
         "-s",
@@ -167,7 +166,6 @@ describe('llm.chat', function()
 
       assert.are.same({
         "/usr/bin/llm",
-        "prompt",
         "-m",
         "gpt-4",
         "-c",

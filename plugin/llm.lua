@@ -32,6 +32,10 @@ if not ok then
   end
   return
 end
+
+-- Initialize the plugin with default configuration
+llm.setup()
+
 local config = require("llm.config") -- Load config module
 
 -- Handler function for manually updating the LLM CLI

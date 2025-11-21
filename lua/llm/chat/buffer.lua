@@ -2,6 +2,9 @@
 
 local M = {}
 
+-- Compatibility shim for unpack function
+local unpack = table.unpack or _G.unpack
+
 function M.new(opts)
   local self = setmetatable({}, { __index = M })
   opts = opts or {}
@@ -19,7 +22,7 @@ function M:get_bufnr()
 end
 
 function M:get_user_input()
-  local current_cursor_line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
+  local current_cursor_line, _ = unpack(vim.api.nvim_win_get_cursor(0))
   local all_buffer_lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
 
   local you_marker_line_num = -1
@@ -69,23 +72,16 @@ function M:append_user_message(message)
     -- Replace from the line after "--- You ---" to the end of the buffer
     vim.api.nvim_buf_set_lines(self.bufnr, you_marker_line_idx + 1, -1, false, message_lines)
   end
-  vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
+  -- Don't set to non-modifiable - we need to add LLM header and response next
 end
 
 function M:append_llm_message(message)
   vim.api.nvim_buf_set_option(self.bufnr, "modifiable", true)
   local last_line_num = vim.api.nvim_buf_line_count(self.bufnr)
-  local last_line_content = vim.api.nvim_buf_get_lines(self.bufnr, last_line_num - 1, last_line_num, false)[1] or ""
 
-  -- Append message to the last line, handling newlines
+  -- Append message on new lines after the LLM header
   local message_lines = vim.split(message, "\n")
-  if #message_lines == 1 then
-    vim.api.nvim_buf_set_lines(self.bufnr, last_line_num - 1, last_line_num, false, {last_line_content .. message})
-  else
-    vim.api.nvim_buf_set_lines(self.bufnr, last_line_num - 1, last_line_num, false, {last_line_content .. message_lines[1]})
-    table.remove(message_lines, 1)
-    vim.api.nvim_buf_set_lines(self.bufnr, last_line_num, last_line_num, false, message_lines)
-  end
+  vim.api.nvim_buf_set_lines(self.bufnr, last_line_num, last_line_num, false, message_lines)
 
   vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
 end
@@ -138,27 +134,27 @@ function M:render()
     "--- You ---",
     "> ",
   }
-  
+
   vim.api.nvim_buf_set_lines(self.bufnr, 0, -1, false, lines)
   if self.win_id and vim.api.nvim_win_is_valid(self.win_id) then
       local num_lines = vim.api.nvim_buf_line_count(self.bufnr)
     vim.api.nvim_win_set_cursor(self.win_id, { num_lines, 3 })
   end
-  vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
+  -- Don't set to non-modifiable - user needs to be able to type
 end
 
 function M:add_llm_header()
     vim.api.nvim_buf_set_option(self.bufnr, "modifiable", true)
     local num_lines = vim.api.nvim_buf_line_count(self.bufnr)
     vim.api.nvim_buf_set_lines(self.bufnr, num_lines, num_lines, false, {"--- LLM ---"})
-    vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
+    -- Don't set to non-modifiable - we'll append LLM response next
 end
 
 function M:add_user_header()
     vim.api.nvim_buf_set_option(self.bufnr, "modifiable", true)
     local num_lines = vim.api.nvim_buf_line_count(self.bufnr)
     vim.api.nvim_buf_set_lines(self.bufnr, num_lines, num_lines, false, {"--- You ---", "> "})
-    vim.api.nvim_buf_set_option(self.bufnr, "modifiable", false)
+    -- Don't set to non-modifiable here - user needs to be able to type
 end
 
 

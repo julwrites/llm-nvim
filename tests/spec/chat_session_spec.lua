@@ -18,10 +18,10 @@ describe("llm.chat.session", function()
     package.loaded["llm.config"] = config_mock
     -- Mock vim.g
     vim = { g = {} }
-    -- Mock the api.run function to capture its arguments
+    -- Mock the api.run_llm_command function to capture its arguments
     local mock_api = {
-      run = function(args, callbacks)
-        captured_args = args
+      run_llm_command = function(args, prompt, callbacks)
+        captured_args = { command = args, prompt = prompt }
         if callbacks and callbacks.on_stdout then
           callbacks.on_stdout(nil, { "assistant response" })
         end
@@ -56,13 +56,12 @@ describe("llm.chat.session", function()
 
     -- Assert
     assert.is_not_nil(captured_args)
-    assert.are.same("/usr/bin/llm", captured_args[1])
-    assert.are.same("prompt", captured_args[2])
-    assert.are.same("-m", captured_args[3])
-    assert.are.same("test-model", captured_args[4])
-    assert.are.same("-s", captured_args[5])
-    assert.are.same("test-system", captured_args[6])
-    assert.are.same(expected_prompt, captured_args[7])
+    assert.are.same("/usr/bin/llm", captured_args.command[1])
+    assert.are.same("-m", captured_args.command[2])
+    assert.are.same("test-model", captured_args.command[3])
+    assert.are.same("-s", captured_args.command[4])
+    assert.are.same("test-system", captured_args.command[5])
+    assert.are.same(expected_prompt, captured_args.prompt)
   end)
 
   it("should not send system prompt on subsequent calls", function()
@@ -77,7 +76,7 @@ describe("llm.chat.session", function()
     assert.is_not_nil(captured_args)
     -- System prompt should not be present
     local has_system = false
-    for _, arg in ipairs(captured_args) do
+    for _, arg in ipairs(captured_args.command) do
         if arg == "-s" then
             has_system = true
             break
@@ -87,13 +86,13 @@ describe("llm.chat.session", function()
 
     -- Continuation should be present
     local has_continuation = false
-    for _, arg in ipairs(captured_args) do
+    for _, arg in ipairs(captured_args.command) do
         if arg == "-c" then
             has_continuation = true
             break
         end
     end
     assert.is_true(has_continuation)
-    assert.are.same("second prompt", captured_args[#captured_args])
+    assert.are.same("second prompt", captured_args.prompt)
   end)
 end)
