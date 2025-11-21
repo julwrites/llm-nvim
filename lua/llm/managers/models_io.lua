@@ -10,11 +10,11 @@ function M.get_models_from_cli()
 end
 
 function M.get_default_model_from_cli()
-    return llm_cli.run_llm_command("default")
+    return llm_cli.run_llm_command("models default")
 end
 
 function M.set_default_model_in_cli(model_name)
-    return llm_cli.run_llm_command(string.format('default %s', model_name))
+    return llm_cli.run_llm_command(string.format('models default %s', model_name))
 end
 
 function M.get_aliases_from_cli()
