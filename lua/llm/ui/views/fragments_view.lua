@@ -18,7 +18,7 @@ function M.view_fragment(fragment_hash, fragment_info)
   local content_lines = {
     "# Fragment: " .. fragment_hash,
     "Source: " .. (fragment_info.source or "unknown"),
-    "Aliases: " .. (#fragment_info.aliases > 0 and table.concat(fragment_info.aliases, ", ") or "none"),
+    "Aliases: " .. (fragment_info.aliases and #fragment_info.aliases > 0 and table.concat(fragment_info.aliases, ", ") or "none"),
     "Date: " .. (fragment_info.datetime or "unknown"),
     "",
     "## Content:",

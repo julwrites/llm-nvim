@@ -59,7 +59,7 @@ describe('fragments_manager', function()
       fragments_manager.set_alias_for_fragment_under_cursor(0)
 
       -- Assert that llm_cli.run_llm_command was called with the correct arguments
-      assert.spy(llm_cli_spy).was.called_with('fragments alias set 123 my-alias')
+      assert.spy(llm_cli_spy).was.called_with('fragments set my-alias 123')
     end)
   end)
 
@@ -82,7 +82,7 @@ describe('fragments_manager', function()
       fragments_manager.remove_alias_from_fragment_under_cursor(0)
 
       -- Assert that llm_cli.run_llm_command was called with the correct arguments
-      assert.spy(llm_cli_spy).was.called_with('fragments alias remove my-alias')
+      assert.spy(llm_cli_spy).was.called_with('fragments remove my-alias')
     end)
   end)
 
