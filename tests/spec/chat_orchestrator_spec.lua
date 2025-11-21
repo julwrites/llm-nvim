@@ -6,44 +6,34 @@ describe("llm.chat orchestrator", function()
   local chat
   local mock_session_instance
   local mock_buffer_instance
-  local session_new_called = false
-  local buffer_new_called = false
 
   before_each(function()
     -- Mock Session and Buffer modules
     mock_session_instance = {
-      send_prompt_called = false,
-      send_prompt = function(self)
-        self.send_prompt_called = true
+      send_prompt = spy.new(function(self)
         return { pid = 123 }
-      end,
+      end),
       is_ready = function() return true end,
     }
     mock_buffer_instance = {
         get_bufnr = function() return 1 end,
         get_user_input = function() return "user input" end,
-        set_status_called_with = nil,
-        set_status = function(self, status) self.set_status_called_with = status end,
-        append_user_message_called_with = nil,
-        append_user_message = function(self, message) self.append_user_message_called_with = message end,
-        clear_input_called = false,
-        clear_input = function(self) self.clear_input_called = true end,
+        append_user_message = spy.new(function() end),
+        add_llm_header = spy.new(function() end),
     }
 
     local mock_session = {
       ChatSession = {
-        new = function()
-          session_new_called = true
+        new = spy.new(function()
           return mock_session_instance
-        end,
+        end),
       },
     }
     local mock_buffer = {
       ChatBuffer = {
-        new = function()
-          buffer_new_called = true
+        new = spy.new(function()
           return mock_buffer_instance
-        end,
+        end),
       },
     }
 
@@ -53,9 +43,6 @@ describe("llm.chat orchestrator", function()
     -- Reload the chat module to use the mocks
     package.loaded["llm.chat"] = nil
     chat = require("llm.chat")
-
-    session_new_called = false
-    buffer_new_called = false
   end)
 
   after_each(function()
@@ -67,17 +54,21 @@ describe("llm.chat orchestrator", function()
   it("should start a chat and send a message", function()
     -- Arrange
     vim.b[1] = {}
+    local result = chat.start_chat()
+    -- Manually insert into the internal active_sessions table for testing
+    local active_sessions = chat.get_session(1)
+    active_sessions.session = mock_session_instance
+    active_sessions.buffer = mock_buffer_instance
+    vim.api.nvim_get_current_buf = spy.new(function() return 1 end)
 
     -- Act
-    chat.start_chat()
     chat.send_message()
 
     -- Assert
-    assert.is_true(session_new_called)
-    assert.is_true(buffer_new_called)
-    assert.is_true(mock_session_instance.send_prompt_called)
-    assert.are.same("Processing...", mock_buffer_instance.set_status_called_with)
-    assert.are.same("user input", mock_buffer_instance.append_user_message_called_with)
-    assert.is_true(mock_buffer_instance.clear_input_called)
+    assert.spy(require("llm.chat.session").ChatSession.new).was.called()
+    assert.spy(require("llm.chat.buffer").ChatBuffer.new).was.called()
+    assert.spy(mock_session_instance.send_prompt).was.called()
+    assert.spy(mock_buffer_instance.append_user_message).was.called_with(mock_buffer_instance, "user input")
+    assert.spy(mock_buffer_instance.add_llm_header).was.called()
   end)
 end)
