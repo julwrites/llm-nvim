@@ -3,7 +3,9 @@ local M = {}
 function M.run(cmd, callbacks)
   local config = require('llm.config')
 
-  vim.notify("DEBUG: job.run() called with cmd: " .. vim.inspect(cmd), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: job.run() called with cmd: " .. vim.inspect(cmd), vim.log.levels.DEBUG)
+  end
 
   -- Validate command
   if not cmd or type(cmd) ~= "table" or #cmd == 0 then
@@ -95,14 +97,18 @@ function M.run(cmd, callbacks)
 
   local job_id = vim.fn.jobstart(cmd, options)
 
-  vim.notify("DEBUG: vim.fn.jobstart() returned: " .. tostring(job_id), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: vim.fn.jobstart() returned: " .. tostring(job_id), vim.log.levels.DEBUG)
+  end
 
   if not job_id or job_id <= 0 then
     local cmd_name = cmd and cmd[1] or "unknown"
     vim.notify("Failed to start job: " .. cmd_name, vim.log.levels.ERROR)
     return nil
   else
-    vim.notify("DEBUG: Job started successfully with ID: " .. tostring(job_id), vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("DEBUG: Job started successfully with ID: " .. tostring(job_id), vim.log.levels.DEBUG)
+    end
     return job_id
   end
 end

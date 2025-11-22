@@ -33,8 +33,19 @@ if not ok then
   return
 end
 
--- Initialize the plugin with default configuration
-llm.setup()
+-- Initialize the plugin with user configuration
+local user_config = {}
+
+-- Check for global variables (backward compatibility)
+if vim.g.llm_model then user_config.model = vim.g.llm_model end
+if vim.g.llm_system_prompt then user_config.system_prompt = vim.g.llm_system_prompt end
+if vim.g.llm_no_mappings then user_config.no_mappings = vim.g.llm_no_mappings end
+if vim.g.llm_debug then user_config.debug = vim.g.llm_debug end
+if vim.g.llm_auto_update_cli then user_config.auto_update_cli = vim.g.llm_auto_update_cli end
+if vim.g.llm_auto_update_interval_days then user_config.auto_update_interval_days = vim.g.llm_auto_update_interval_days end
+if vim.g.llm_executable_path then user_config.llm_executable_path = vim.g.llm_executable_path end
+
+llm.setup(user_config)
 
 local config = require("llm.config") -- Load config module
 
