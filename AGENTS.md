@@ -237,6 +237,39 @@ When prompting with selection:
 3. Temp file passed as fragment argument to llm CLI
 4. Temp file cleaned up after command execution
 
+## Recent Fixes and Learnings
+
+### Keys Manager Fixes (November 2024)
+
+**IMPORTANT**: The following issues were identified and fixed during keys manager development:
+
+#### 1. Keys List JSON Parsing
+- **Problem**: `llm keys list --json` command doesn't exist (no --json flag)
+- **Solution**: Use plain text parsing instead of JSON
+- **Files affected**: `lua/llm/managers/keys_manager.lua:get_stored_keys()`
+
+#### 2. Key Setting Syntax
+- **Problem**: Incorrect command syntax `llm keys set provider key-value`
+- **Solution**: Use `llm keys set provider --value key-value` syntax
+- **Files affected**: `lua/llm/managers/keys_manager.lua:set_api_key()`
+
+#### 3. Key Removal Implementation
+- **Problem**: `llm keys remove` command doesn't exist
+- **Solution**: Direct JSON file editing using `llm keys path`
+- **Files affected**: `lua/llm/managers/keys_manager.lua:remove_api_key()`
+
+### Fragments Manager Fixes (November 2024)
+
+#### 1. Fragment Viewing
+- **Problem**: Parameter order incorrect in `view_fragment_under_cursor`
+- **Solution**: Fixed parameter order and added nil-safe checks
+- **Files affected**: `lua/llm/managers/fragments_manager.lua:view_fragment_under_cursor()`
+
+#### 2. Alias Management
+- **Problem**: Incorrect command syntax for alias add/remove
+- **Solution**: Use correct commands `fragments set` and `fragments remove`
+- **Files affected**: `lua/llm/managers/fragments_manager.lua:set_alias_for_fragment_under_cursor()`, `remove_alias_from_fragment_under_cursor()`
+
 ## Chat Functionality Learnings
 
 **IMPORTANT**: The following issues were identified and fixed during chat functionality development. These should be referenced when making changes to chat-related code to prevent regression.

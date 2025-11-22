@@ -84,15 +84,15 @@ Or install and configure a plugin for local models:
 3. CONFIGURATION                                             
 *llm-configuration*                                          
                                                              
-Using Lua (recommended):                                     
->                                                            
-    require('llm').setup({                                   
-      model = 'gpt-4o',                          -- Default  
-model to use                                                 
-      system_prompt = 'You are a helpful assistant.', --     
-Default system prompt                                        
-      no_mappings = false,                       -- Set to   
-true to disable default mappings                             
+Using Lua (recommended):
+>
+    require('llm').setup({
+      model = 'gpt-4o',                          -- Default model to use
+      system_prompt = 'You are a helpful assistant.', -- Default system prompt
+      no_mappings = false,                       -- Set to true to disable default mappings
+      debug = false,                             -- Enable debug logging
+      auto_update_cli = false,                   -- Enable automatic CLI updates
+      auto_update_interval_days = 7,             -- Update check interval
     })                                                       
 <                                                            
                                                              
@@ -133,14 +133,11 @@ Custom mappings:
 4. COMMANDS                                                  
 *llm-commands*                                               
                                                              
-*:LLM* [{subcommand}] {args}                                 
-    Unified command for all LLM operations.                  
-    Available subcommands:                                   
-                                                             
-    *:LLM*
-        Start an interactive chat session.
+*:LLM* [{subcommand}] {args}
+    Unified command for all LLM operations.
+    Available subcommands:
 
-    *:LLM* {prompt}                                          
+    *:LLM* {prompt}
         Send a one-off prompt to the configured LLM.
                                                              
     *:LLM file* [{prompt}]                                   
@@ -158,9 +155,12 @@ Custom mappings:
     *:LLM schema*                                            
         Select and run schema                                
                                                              
-    *:LLM template*                                          
-        Select and run template                              
-                                                             
+    *:LLM template*
+        Select and run template
+
+    *:LLM update*
+        Manually trigger update check for llm CLI tool
+
 *:LLMConfig* [{view}]                                        
     Open or close the unified manager window. This window    
     allows managing Models, Plugins, API Keys, Fragments,    
@@ -181,11 +181,11 @@ Custom mappings:
                                                              
 =============================================================
 =================                                            
-5. MAPPINGS                                                  
-*llm-mappings*                                               
-                                                             
-The plugin does not set any default key mappings. Users should 
-create their own mappings if desired. Example mappings:       
+5. MAPPINGS
+*llm-mappings*
+
+The plugin provides default key mappings that can be disabled
+with `no_mappings = true` in the configuration. Example mappings:
                                                              
 >                                                            
     -- Toggle unified manager                                

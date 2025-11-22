@@ -23,7 +23,7 @@ Tasks that block core functionality or cause user-facing failures. These should 
 - ⏳ CRITICAL-004: Add Embeddings Support
 - ⏳ CRITICAL-005: Add Tools (Function Calling) Support
 - ⏳ CRITICAL-006: Add Multi-modal Attachments Support
-- ⏳ CRITICAL-007: Increase Code Coverage to 70%
+- ⏳ CRITICAL-007: Increase Code Coverage to 70% (Current: 204/204 tests passing)
 
 **✅ Completed tasks**:
 - CRITICAL-001: Fix Lua 5.2+ compatibility (unpack → table.unpack)
