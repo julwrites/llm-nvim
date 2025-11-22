@@ -33,7 +33,7 @@ function M.populate_fragments_buffer(bufnr)
   local lines = {
     "# Fragment Management",
     "",
-    "Navigate: [M]odels [P]lugins [K]eys [T]emplates [S]chemas",
+    "Navigate: [M]odels [P]lugins [K]eys",
     "Actions: [v]iew [a]dd alias [r]emove alias [n]ew file [g]itHub [p]rompt [t]oggle view [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",

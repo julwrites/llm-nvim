@@ -13,8 +13,6 @@ https://github.com/user-attachments/assets/b326370e-5752-46af-ba5c-6ae08d157f01
 ### Fragment Management
 https://github.com/user-attachments/assets/2fc30538-6fd5-4cfa-9b7b-7fd7757f20c1
 
-### Template Management
-https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 
 
 ## Feature List
@@ -26,15 +24,11 @@ https://github.com/user-attachments/assets/d9e16473-90fe-4ccc-a480-d5452070afc2
 - Support for custom models and system prompts
 - API key management for multiple providers
 - Fragment management (files, URLs, GitHub repos)
-- Template creation and execution
-- Schema management and execution
 - Unified manager window (`:LLMConfig`) with views for:
   - Models
-  - Plugins  
+  - Plugins
   - API Keys
   - Fragments
-  - Templates
-  - Schemas
 - Markdown-formatted responses with syntax highlighting
 - Asynchronous command execution
 
@@ -145,19 +139,15 @@ This helps ensure your `llm` tool stays up-to-date with the latest features and 
 - `:LLM selection [{prompt}]` - Send visual selection with optional prompt
 - `:LLM explain` - Explain current buffer's code
 - `:LLM fragments` - Interactive prompt with fragment selection
-- `:LLM schema` - Select and run schema
-- `:LLM template` - Select and run template
 - `:LLM update` - Manually trigger an update check for the underlying `llm` CLI tool.
 
 #### Unified Manager
 - `:LLMConfig [view]` - Open unified manager window
-  - Optional views: `models`, `plugins`, `keys`, `fragments`, `templates`, `schemas`
+  - Optional views: `models`, `plugins`, `keys`, `fragments`
 - `:LLMConfig models` - Open Models view
-- `:LLMConfig plugins` - Open Plugins view  
+- `:LLMConfig plugins` - Open Plugins view
 - `:LLMConfig keys` - Open API Keys view
 - `:LLMConfig fragments` - Open Fragments view
-- `:LLMConfig templates` - Open Templates view
-- `:LLMConfig schemas` - Open Schemas view
 
 ### Basic Prompting
 

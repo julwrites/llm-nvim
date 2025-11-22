@@ -4,7 +4,7 @@ This file provides guidance to Qoder (qoder.com) when working with code in this 
 
 ## Project Overview
 
-llm-nvim is a Neovim plugin that integrates with Simon Willison's llm CLI tool, enabling users to interact with large language models directly from Neovim. The plugin provides a unified interface for prompting LLMs, managing models, API keys, fragments, templates, and schemas.
+llm-nvim is a Neovim plugin that integrates with Simon Willison's llm CLI tool, enabling users to interact with large language models directly from Neovim. The plugin provides a unified interface for prompting LLMs, managing models, API keys, and fragments.
 
 ## Requirements
 

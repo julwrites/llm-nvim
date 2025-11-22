@@ -466,19 +466,22 @@ end
 
 -- Test function to verify terminal creation
 function M.test_terminal_creation()
-  vim.notify("Testing terminal creation...", vim.log.levels.INFO)
-  vim.cmd('new')
-  local buf = vim.api.nvim_get_current_buf()
-  vim.notify("Created buffer: " .. buf, vim.log.levels.INFO)
+  local config = require('llm.config')
+  if config.get('debug') then
+    vim.notify("Testing terminal creation...", vim.log.levels.DEBUG)
+    vim.cmd('new')
+    local buf = vim.api.nvim_get_current_buf()
+    vim.notify("Created buffer: " .. buf, vim.log.levels.DEBUG)
 
-  local cmd = "echo 'Test terminal'"
-  vim.notify("Executing: terminal " .. cmd, vim.log.levels.INFO)
-  vim.cmd('terminal ' .. cmd)
+    local cmd = "echo 'Test terminal'"
+    vim.notify("Executing: terminal " .. cmd, vim.log.levels.DEBUG)
+    vim.cmd('terminal ' .. cmd)
 
-  local term_buf = vim.api.nvim_get_current_buf()
-  vim.notify("Terminal buffer: " .. term_buf, vim.log.levels.INFO)
-  local buf_type = vim.api.nvim_buf_get_option(term_buf, 'buftype')
-  vim.notify("Buffer type: " .. buf_type, vim.log.levels.INFO)
+    local term_buf = vim.api.nvim_get_current_buf()
+    vim.notify("Terminal buffer: " .. term_buf, vim.log.levels.DEBUG)
+    local buf_type = vim.api.nvim_buf_get_option(term_buf, 'buftype')
+    vim.notify("Buffer type: " .. buf_type, vim.log.levels.DEBUG)
+  end
 
   vim.cmd('startinsert')
 end

@@ -409,7 +409,10 @@ end
 function M.continue_template_creation_params(template)
   local params = M.extract_params(template)
   if #params > 0 then
-    vim.notify("Found parameters: " .. table.concat(params, ", "), vim.log.levels.INFO)
+    local config = require('llm.config')
+    if config.get('debug') then
+      vim.notify("Found parameters: " .. table.concat(params, ", "), vim.log.levels.DEBUG)
+    end
     M.set_param_defaults_loop(template, params, 1, function()
       M.continue_template_creation_extract(template)
     end)
@@ -489,7 +492,7 @@ function M.build_buffer_data(templates)
   local lines = {
     "# Template Management",
     "",
-    "Navigate: [M]odels [P]lugins [K]eys [F]ragments [S]chemas",
+    "Navigate: [M]odels [P]lugins [K]eys [F]ragments",
     "Actions: [c]reate [r]un [e]dit [d]elete [v]iew details [q]uit",
     "──────────────────────────────────────────────────────────────",
     ""

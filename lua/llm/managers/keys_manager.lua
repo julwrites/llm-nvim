@@ -44,6 +44,7 @@ end
 function M.set_api_key(key_name, key_value)
     local result = llm_cli.run_llm_command('keys set ' .. key_name .. ' --value ' .. key_value)
     cache.invalidate('keys')
+    cache.invalidate('models') -- Invalidate models cache when keys change
     return result ~= nil
 end
 
@@ -89,6 +90,7 @@ function M.remove_api_key(key_name)
         keys_file_write:close()
 
         cache.invalidate('keys')
+        cache.invalidate('models') -- Invalidate models cache when keys change
         return true
     else
         vim.notify("Key '" .. key_name .. "' not found in keys.json", vim.log.levels.WARN)
@@ -105,7 +107,7 @@ function M.populate_keys_buffer(bufnr)
   local lines = {
     "# API Key Management",
     "",
-    "Navigate: [M]odels [P]lugins [F]ragments [T]emplates [S]chemas",
+    "Navigate: [M]odels [P]lugins [F]ragments",
     "Actions: [s]et key [r]emove key [A]dd custom [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",
