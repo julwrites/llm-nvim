@@ -71,8 +71,6 @@ local command_handlers = {
     require('llm.commands').prompt_with_selection(prompt, nil, is_range, nil)
   end,
   explain = function() require('llm.commands').explain_code(nil, nil) end,
-  schema = function() require('llm.managers.schemas_manager').select_schema() end,
-  template = function() require('llm.managers.templates_manager').select_template() end,
   fragments = function() llm.interactive_prompt_with_fragments() end,
   update = manual_cli_update
 }
@@ -108,8 +106,6 @@ end, {
         "file",      -- :LLM file
         "selection", -- :LLM selection
         "explain",   -- :LLM explain
-        "schema",    -- :LLM schema
-        "template",  -- :LLM template
         "fragments", -- :LLM fragments
         "update"     -- :LLM update
       }
@@ -149,6 +145,6 @@ vim.api.nvim_create_user_command('LLMConfig', function(opts)
 end, {
   nargs = '?',
   complete = function()
-    return { "Models", "Plugins", "Keys", "Fragments", "Templates", "Schemas" }
+    return { "Models", "Plugins", "Keys", "Fragments" }
   end
 })
