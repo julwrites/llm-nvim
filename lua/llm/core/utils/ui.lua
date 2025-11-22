@@ -1,6 +1,7 @@
 local M = {}
 
 -- Common buffer configuration
+local config = require('llm.config')
 local DEFAULT_BUFFER_OPTS = {
   buftype = 'nofile',
   bufhidden = 'wipe',
@@ -297,12 +298,16 @@ function M._confirm_floating_dialog(confirmed)
 end
 
 function M.append_to_buffer(bufnr, content, highlight_group)
-  vim.notify(
-    "append_to_buffer called for bufnr: " .. tostring(bufnr) .. ", content length: " .. tostring(#(content or "")),
-    vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify(
+      "append_to_buffer called for bufnr: " .. tostring(bufnr) .. ", content length: " .. tostring(#(content or "")),
+      vim.log.levels.DEBUG)
+  end
   local lines = content_to_lines(content or '')
   if #lines == 0 then
-    vim.notify("append_to_buffer: No lines to append.", vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("append_to_buffer: No lines to append.", vim.log.levels.DEBUG)
+    end
     return
   end
 
@@ -320,15 +325,21 @@ function M.append_to_buffer(bufnr, content, highlight_group)
     end
   end
 
-  vim.notify("append_to_buffer: Appended " .. tostring(#lines) .. " lines to buffer " .. tostring(bufnr),
-    vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("append_to_buffer: Appended " .. tostring(#lines) .. " lines to buffer " .. tostring(bufnr),
+      vim.log.levels.DEBUG)
+  end
 
   -- Move cursor to the end of the buffer if it's the current buffer
   if vim.api.nvim_get_current_buf() == bufnr then
     vim.api.nvim_win_set_cursor(0, { last_line + #lines, 0 })
-    vim.notify("append_to_buffer: Cursor moved in current window", vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("append_to_buffer: Cursor moved in current window", vim.log.levels.DEBUG)
+    end
   else
-    vim.notify("append_to_buffer: Not current buffer, cursor not moved.", vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("append_to_buffer: Not current buffer, cursor not moved.", vim.log.levels.DEBUG)
+    end
   end
 end
 

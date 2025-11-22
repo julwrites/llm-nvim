@@ -9,6 +9,7 @@ local llm_cli = require('llm.core.data.llm_cli')
 local cache = require('llm.core.data.cache')
 local plugins_view = require('llm.ui.views.plugins_view')
 local styles = require('llm.ui.styles')
+local config = require('llm.config')
 
 local function parse_plugins_html(html)
   local plugins = {}
@@ -154,7 +155,9 @@ function M.populate_plugins_buffer(bufnr)
   end
 
   local installed_plugins = M.get_installed_plugins()
-  vim.notify("DEBUG: Raw installed_plugins: " .. vim.inspect(installed_plugins), vim.log.levels.INFO)
+  if config.get('debug') then
+    vim.notify("DEBUG: Raw installed_plugins: " .. vim.inspect(installed_plugins), vim.log.levels.DEBUG)
+  end
   local installed_set = {}
   vim.notify("--- INSTALLED PLUGINS (" .. #installed_plugins .. ") ---", vim.log.levels.INFO)
   for _, plugin in ipairs(installed_plugins) do

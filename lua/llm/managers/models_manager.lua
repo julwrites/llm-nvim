@@ -111,13 +111,19 @@ end
 function M.get_available_models()
   local cached_models = cache.get('models')
   if cached_models then
-    vim.notify("DEBUG: Cache hit for models at " .. os.time(), vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("DEBUG: Cache hit for models at " .. os.time(), vim.log.levels.DEBUG)
+    end
     return cached_models
   end
 
-  vim.notify("DEBUG: Cache miss for models. Running llm models list at " .. os.time(), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: Cache miss for models. Running llm models list at " .. os.time(), vim.log.levels.DEBUG)
+  end
   local models_json = llm_cli.run_llm_command('models list')
-  vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: llm models list command finished at " .. os.time(), vim.log.levels.DEBUG)
+  end
   if not models_json then return {} end
   local models = {}
   for line in models_json:gmatch("[^\n]+") do
@@ -221,13 +227,19 @@ end
 function M.get_model_aliases()
   local cached_aliases = cache.get('aliases')
   if cached_aliases then
-    vim.notify("DEBUG: Cache hit for aliases at " .. os.time(), vim.log.levels.DEBUG)
+    if config.get('debug') then
+      vim.notify("DEBUG: Cache hit for aliases at " .. os.time(), vim.log.levels.DEBUG)
+    end
     return cached_aliases
   end
 
-  vim.notify("DEBUG: Cache miss for aliases. Running llm aliases list --json at " .. os.time(), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: Cache miss for aliases. Running llm aliases list --json at " .. os.time(), vim.log.levels.DEBUG)
+  end
   local aliases_json = llm_cli.run_llm_command('aliases list --json')
-  vim.notify("DEBUG: llm aliases list --json command finished at " .. os.time(), vim.log.levels.DEBUG)
+  if config.get('debug') then
+    vim.notify("DEBUG: llm aliases list --json command finished at " .. os.time(), vim.log.levels.DEBUG)
+  end
   if not aliases_json then return {} end
   local aliases = vim.fn.json_decode(aliases_json)
   cache.set('aliases', aliases)
