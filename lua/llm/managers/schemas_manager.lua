@@ -382,7 +382,7 @@ function M.build_buffer_lines(schemas, show_named_only)
   local lines = {
     "# Schema Management",
     "",
-    "Navigate: [M]odels [P]lugins [K]eys [F]ragments [T]emplates",
+    "Navigate: [M]odels [P]lugins [K]eys [F]ragments",
     "Actions: [c]reate [r]un [v]iew [e]dit [a]lias [d]elete alias [t]oggle view [q]uit",
     "──────────────────────────────────────────────────────────────",
     "",

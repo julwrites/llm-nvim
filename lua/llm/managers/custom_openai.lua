@@ -30,7 +30,7 @@ function M.load_custom_openai_models()
 
   local _, yaml_path = file_utils.get_config_path("extra-openai-models.yaml")
   if config.get("debug") then
-    vim.notify("Looking for custom OpenAI models at: " .. (yaml_path or "path not found"), vim.log.levels.INFO)
+    vim.notify("Looking for custom OpenAI models at: " .. (yaml_path or "path not found"), vim.log.levels.DEBUG)
   end
 
   if not yaml_path then
@@ -41,7 +41,7 @@ function M.load_custom_openai_models()
   local file = io.open(yaml_path, "r")
   if not file then
     if config.get("debug") then
-      vim.notify("extra-openai-models.yaml not found at: " .. yaml_path .. ". No custom models loaded.", vim.log.levels.INFO)
+      vim.notify("extra-openai-models.yaml not found at: " .. yaml_path .. ". No custom models loaded.", vim.log.levels.DEBUG)
     end
     return {}
   end
@@ -50,7 +50,7 @@ function M.load_custom_openai_models()
   file:close()
   if not content or content == "" then
     if config.get("debug") then
-      vim.notify("extra-openai-models.yaml is empty. No custom models loaded.", vim.log.levels.INFO)
+      vim.notify("extra-openai-models.yaml is empty. No custom models loaded.", vim.log.levels.DEBUG)
     end
     return {}
   end

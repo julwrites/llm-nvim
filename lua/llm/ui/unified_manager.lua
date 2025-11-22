@@ -55,18 +55,6 @@ local views = {
     title = "Fragments",
     manager_module = fragments_manager,
   },
-  Templates = {
-    populate = templates_manager.populate_templates_buffer,
-    setup_keymaps = templates_manager.setup_templates_keymaps,
-    title = "Templates",
-    manager_module = templates_manager,
-  },
-  Schemas = {
-    populate = schemas_manager.populate_schemas_buffer,
-    setup_keymaps = schemas_manager.setup_schemas_keymaps,
-    title = "Schemas",
-    manager_module = schemas_manager,
-  },
 }
 
 -- Close the unified window
@@ -107,8 +95,6 @@ local function setup_common_keymaps(bufnr)
   set_keymap('n', 'P', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Plugins")<CR>')
   set_keymap('n', 'K', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Keys")<CR>')
   set_keymap('n', 'F', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Fragments")<CR>')
-  set_keymap('n', 'T', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Templates")<CR>')
-  set_keymap('n', 'S', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Schemas")<CR>')
 end
 
 -- Switch the view within the unified window

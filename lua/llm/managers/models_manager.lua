@@ -50,10 +50,10 @@ function M.get_available_providers()
   return {
     -- OpenAI only requires the API key, not a plugin
     OpenAI = keys_manager.is_key_set("openai"),
-    Anthropic = keys_manager.is_key_set("anthropic"),
-    Mistral = keys_manager.is_key_set("mistral"),
-    Gemini = keys_manager.is_key_set("gemini"),                 -- Corrected key name from "google" to "gemini"
-    Groq = keys_manager.is_key_set("groq"),
+    Anthropic = keys_manager.is_key_set("anthropic") and plugins_manager.is_plugin_installed("llm-anthropic"),
+    Mistral = keys_manager.is_key_set("mistral") and plugins_manager.is_plugin_installed("llm-mistral"),
+    Gemini = keys_manager.is_key_set("gemini") and plugins_manager.is_plugin_installed("llm-gemini"),
+    Groq = keys_manager.is_key_set("groq") and plugins_manager.is_plugin_installed("llm-groq"),
     Ollama = plugins_manager.is_plugin_installed("llm-ollama"), -- Corrected plugin name from "ollama" to "llm-ollama"
     -- Local models are always available
     Local = true
@@ -75,7 +75,7 @@ function M.is_model_available(model_line)
       model_line:match("^Custom OpenAI:") or
       model_line:match("^Azure OpenAI:") then
     if config.get("debug") then
-      vim.notify("Checking custom model availability: " .. model_name, vim.log.levels.INFO)
+      vim.notify("Checking custom model availability: " .. model_name, vim.log.levels.DEBUG)
     end
     -- For custom models, check validity using the dedicated function and the extracted name/id
     return custom_openai.is_custom_openai_model_valid(model_name)
@@ -83,7 +83,7 @@ function M.is_model_available(model_line)
     -- Check if this standard-looking OpenAI model is actually a custom one
     if custom_openai.is_custom_openai_model_valid(model_name) then
       if config.get("debug") then
-        vim.notify("Identified standard OpenAI line as custom model: " .. model_name, vim.log.levels.INFO)
+        vim.notify("Identified standard OpenAI line as custom model: " .. model_name, vim.log.levels.DEBUG)
       end
       return true -- Validity is checked by is_custom_openai_model_valid
     end
@@ -311,7 +311,7 @@ function M.generate_models_list()
   local lines = {
     "# Model Management",
     "",
-    "Navigate: [P]lugins [K]eys [F]ragments [T]emplates [S]chemas",
+    "Navigate: [P]lugins [K]eys [F]ragments",
     "Actions: [s]et default [a]dd alias [r]emove alias [c]ustom model [q]uit", -- Updated actions
     "──────────────────────────────────────────────────────────────",
     ""

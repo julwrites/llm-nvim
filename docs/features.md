@@ -20,8 +20,6 @@
 - Plugins view: Manage LLM plugins
 - API Keys view: Manage API keys for multiple providers
 - Fragments view: Manage files, URLs, and GitHub repos as fragments
-- Templates view: Create and execute templates
-- Schemas view: Manage and execute schemas
 
 ### Fragment Management
 - Add files as fragments
@@ -30,15 +28,6 @@
 - Reference fragments by alias or hash
 - Use fragments in prompts to provide context
 
-### Template System
-- Create reusable prompt templates
-- Execute templates with variable substitution
-- Manage template library
-
-### Schema System
-- Define structured interaction schemas
-- Execute schemas for consistent workflows
-- Manage schema library
 
 ### API Key Management
 - Store API keys for multiple LLM providers
