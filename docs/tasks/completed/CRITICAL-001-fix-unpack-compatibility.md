@@ -1,16 +1,14 @@
-# Task: Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
+---
+id: CRITICAL-001
+status: completed
+title: Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
+priority: critical
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: CRITICAL-001
-- **Status**: completed
-- **Priority**: critical
-- **Phase**: 1
-- **Estimated Effort**: 0.25 days
-- **Actual Effort**: 0.1 days (15 minutes)
-- **Completed**: 2025-02-11
-- **Dependencies**: None
-
-## Task Details
+# Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
 
 ### Description
 The chat module uses the deprecated global `unpack` function which was removed in Lua 5.2 and replaced with `table.unpack`. This breaks all chat functionality when running on Lua 5.2+.
@@ -74,9 +72,3 @@ Error -> tests/spec/chat_spec.lua @ 90
 - Completed faster than estimated (15 min vs 2 hours)
 - Confirms Neovim's LuaJIT supports table.unpack
 - The 2 remaining test failures are unrelated to this fix (mock infrastructure issues)
-
----
-
-*Created: 2025-02-11*
-*Completed: 2025-02-11*
-*Status: completed - All chat functionality now working*

@@ -1,21 +1,14 @@
-# Task: Implement Caching for Manager LLM CLI Calls
+---
+id: PERFORMANCE-001
+status: completed
+title: Implement Caching for Manager LLM CLI Calls
+priority: low
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: PERFORMANCE-001
-- **Status**: completed
-
-### Investigation Summary (2025-11-16)
-This task was verified as **Implemented (without explicit TTL configuration)**.
-- The `cache.lua` module is used in manager files to store and retrieve results of `llm_cli.run_llm_command`.
-- `lua/llm/managers/models_manager.lua` demonstrates the use of `cache.get()`, `cache.set()`, and `cache.invalidate()`.
-- There is no explicit cache TTL configuration in `lua/llm/config.lua`.
-
-- **Priority**: low
-- **Phase**: 4
-- **Estimated Effort**: 1 day
-- **Dependencies**: None
-
-## Task Details
+# Implement Caching for Manager LLM CLI Calls
 
 ### Description
 Implement TTL-based caching for frequently-called llm CLI commands in manager modules to improve responsiveness of the unified manager UI.
@@ -129,8 +122,3 @@ time llm models list  # ~5ms (from cache)
 - **Con**: Stale data if models change externally
 - **Con**: Additional memory usage (minimal)
 - **Con**: Cache invalidation complexity
-
----
-
-*Created: 2025-02-11*
-*Status: pending - Nice-to-have performance optimization*

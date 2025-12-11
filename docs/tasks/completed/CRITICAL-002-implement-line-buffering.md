@@ -1,16 +1,14 @@
-# Task: Implement Proper Line Buffering in job.lua
+---
+id: CRITICAL-002
+status: completed
+title: Implement Proper Line Buffering in job.lua
+priority: critical
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: CRITICAL-002
-- **Status**: completed
-- **Priority**: critical
-- **Phase**: 1
-- **Estimated Effort**: 1 day
-- **Actual Effort**: 0.5 days
-- **Completed**: 2025-02-11
-- **Dependencies**: None
-
-## Task Details
+# Implement Proper Line Buffering in job.lua
 
 ### Description
 The `job.lua` module currently passes raw stdout chunks to callbacks without proper line buffering and splitting. This causes inconsistent streaming behavior and test failures.
@@ -139,9 +137,3 @@ end
 - Both stdout and stderr buffering implemented
 - Handles edge cases (empty lines, partial lines, multi-line chunks)
 - No performance impact - buffering is minimal overhead
-
----
-
-*Created: 2025-02-11*
-*Completed: 2025-02-11*
-*Status: completed - Streaming output now reliable across all LLM commands*

@@ -1,16 +1,14 @@
-# Task: Document Lua Version Requirements
+---
+id: DOCUMENTATION-001
+status: completed
+title: Document Lua Version Requirements
+priority: medium
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: DOCUMENTATION-001
-- **Status**: completed
-- **Priority**: medium
-- **Phase**: 2
-- **Estimated Effort**: 0.25 days
-- **Actual Effort**: 0.25 days
-- **Completed**: 2025-02-11
-- **Dependencies**: TESTING-001 (audit results inform requirements)
-
-## Task Details
+# Document Lua Version Requirements
 
 ### Description
 Explicitly document the minimum Lua version required for llm-nvim and explain Neovim's Lua environment to help users troubleshoot compatibility issues.
@@ -158,9 +156,3 @@ If you encounter errors like "attempt to call a nil value (global 'unpack')":
 - Based on actual audit results from TESTING-001
 - Helps users understand why certain code patterns are used
 - Provides clear troubleshooting path for compatibility issues
-
----
-
-*Created: 2025-02-11*
-*Completed: 2025-02-11*
-*Status: completed - Lua requirements fully documented*

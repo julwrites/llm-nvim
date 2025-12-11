@@ -1,19 +1,15 @@
-# Task: Add Multi-modal Attachments Support
+---
+id: CRITICAL-006
+status: pending
+title: Add Multi-modal Attachments Support
+priority: Medium
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: CRITICAL-006
-- **Status**: pending
+# Add Multi-modal Attachments Support
 
-### Investigation Summary (2025-11-16)
-This task was verified as **Not Implemented**.
-- The `:LLM` command in `lua/llm/commands.lua` does not handle an `--attach` or `-a` flag.
-
-- **Priority**: Medium (P2)
-- **Phase**: 6
-- **Effort Estimate**: 5 days
-- **Dependencies**: None
-
-## Task Details
 ### Description
 The `llm` CLI can process images, audio, and video files as attachments to a prompt. The `llm-nvim` plugin is currently limited to text-based inputs. This task is to add support for attaching multi-modal files to prompts.
 
@@ -39,7 +35,3 @@ The `llm` CLI can process images, audio, and video files as attachments to a pro
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-14*
-*Last updated: 2025-11-14*

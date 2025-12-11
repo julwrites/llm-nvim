@@ -1,20 +1,15 @@
-# Task: Add Tools (Function Calling) Support
+---
+id: CRITICAL-005
+status: pending
+title: Add Tools (Function Calling) Support
+priority: High
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: CRITICAL-005
-- **Status**: pending
+# Add Tools (Function Calling) Support
 
-### Investigation Summary (2025-11-16)
-This task was verified as **Not Implemented**.
-- `tools_manager.lua` does not exist.
-- The `:LLM` command in `lua/llm/commands.lua` does not handle a `--tool` or `-t` flag.
-
-- **Priority**: High (P1)
-- **Phase**: 5
-- **Effort Estimate**: 8 days
-- **Dependencies**: None
-
-## Task Details
 ### Description
 The `llm` CLI supports "tools", which allow the language model to execute predefined functions to retrieve information or perform actions. This is a powerful feature for creating more interactive and capable agents, and it is currently not implemented in the `llm-nvim` plugin. This task is to add support for using tools in prompts.
 
@@ -48,7 +43,3 @@ The `llm` CLI supports "tools", which allow the language model to execute predef
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-14*
-*Last updated: 2025-11-14*

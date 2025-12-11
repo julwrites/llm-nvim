@@ -1,21 +1,15 @@
-# Task: Add Embeddings Support
+---
+id: CRITICAL-004
+status: pending
+title: Add Embeddings Support
+priority: High
+created: 2025-12-11 06:18:18
+category: unknown
+type: task
+---
 
-## Task Information
-- **Task ID**: CRITICAL-004
-- **Status**: pending
+# Add Embeddings Support
 
-### Investigation Summary (2025-11-16)
-This task was verified as **Not Implemented**.
-- `lua/llm/managers/embeddings_manager.lua` does not exist.
-- `lua/llm/ui/views/embeddings_view.lua` does not exist.
-- The commands `:LLMEmbed` and `:LLMSimilar` do not exist.
-
-- **Priority**: High (P1)
-- **Phase**: 5
-- **Effort Estimate**: 10 days
-- **Dependencies**: None
-
-## Task Details
 ### Description
 The `llm` CLI provides a comprehensive suite of tools for working with embeddings, including creating embeddings, finding similar items, and managing collections. This feature set is entirely missing from the `llm-nvim` plugin. This task is to implement a user interface and the underlying logic to expose the `llm` CLI's embedding functionality within Neovim.
 
@@ -49,7 +43,3 @@ The `llm` CLI provides a comprehensive suite of tools for working with embedding
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-14*
-*Last updated: 2025-11-14*
