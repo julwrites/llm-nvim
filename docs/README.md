@@ -6,9 +6,9 @@ This directory contains comprehensive documentation for the llm-nvim plugin.
 
 ### Core Documentation
 
-- **[features.md](features.md)**: Complete feature list, requirements, and configuration options
-- **[architecture.md](architecture.md)**: Architectural decisions, data flows, and technical rationale
-- **[history.md](history.md)**: Historical record of completed development work
+- **[Features](features/README.md)**: Complete feature list, requirements, and configuration options
+- **[Architecture](architecture/README.md)**: Architectural decisions, data flows, and technical rationale
+- **[History](history.md)**: Historical record of completed development work
 
 ### Task System
 
@@ -24,11 +24,11 @@ This directory contains comprehensive documentation for the llm-nvim plugin.
 
 ### For Users
 - **Getting Started**: See main [README.md](../README.md)
-- **Features**: [features.md](features.md)
-- **Configuration**: [features.md](features.md#configuration-options)
+- **Features**: [Features Documentation](features/README.md)
+- **Configuration**: [Configuration Options](features/README.md#configuration-options)
 
 ### For Contributors
-- **Architecture**: [architecture.md](architecture.md)
+- **Architecture**: [Architecture Documentation](architecture/README.md)
 - **Current Tasks**: [tasks/README.md](tasks/README.md)
 - **Development Workflow**: [../AGENTS.md](../AGENTS.md)
 - **Testing**: [../README.md#testing](../README.md#testing)
@@ -36,7 +36,7 @@ This directory contains comprehensive documentation for the llm-nvim plugin.
 ### For Maintainers
 - **Task Management**: [tasks/README.md](tasks/README.md)
 - **History**: [history.md](history.md)
-- **Architecture Decisions**: [architecture.md](architecture.md#key-architectural-decisions)
+- **Architecture Decisions**: [Architecture Decisions](architecture/README.md#key-architectural-decisions)
 
 ## Documentation Principles
 

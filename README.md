@@ -255,6 +255,10 @@ If you encounter errors like "attempt to call a nil value (global 'unpack')":
 
 The plugin requires Lua 5.2+ APIs which are provided by Neovim's bundled LuaJIT 2.1+.
 
+## Documentation
+
+For more detailed documentation, including architecture and contribution guides, see the [Documentation Directory](docs/README.md).
+
 ## License
 
 Apache 2.0
