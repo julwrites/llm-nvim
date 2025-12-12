@@ -180,6 +180,59 @@
           "required": ["filename"]
         }
       }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "index_impact",
+        "description": "Check impact of a file change on documentation.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "file": {
+              "type": "string",
+              "description": "The file path to check impact for."
+            }
+          },
+          "required": ["file"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "index_add",
+        "description": "Add or update a documentation index entry.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "doc": {
+              "type": "string",
+              "description": "Path to the document."
+            },
+            "related": {
+              "type": "string",
+              "description": "Comma-separated list of related files."
+            },
+            "depends": {
+              "type": "string",
+              "description": "Comma-separated list of dependency documents."
+            }
+          },
+          "required": ["doc"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "index_check",
+        "description": "Check integrity of the documentation index.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
     }
   ]
 }

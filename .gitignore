@@ -54,3 +54,14 @@ temp_file
 
 # Coverage reports
 luacov.*
+
+# Agent Harness
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.env
+.DS_Store
