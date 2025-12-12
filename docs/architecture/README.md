@@ -19,8 +19,11 @@ llm-nvim/
 │   ├── config.lua             # Configuration management
 │   ├── commands.lua           # Command execution layer
 │   ├── api.lua                # LLM CLI interaction
-│   ├── chat.lua               # Chat session management
+│   ├── chat.lua               # Chat session orchestration
 │   ├── errors.lua             # Error handling
+│   ├── chat/
+│   │   ├── session.lua        # Chat session logic and state
+│   │   └── buffer.lua         # Chat buffer UI logic
 │   ├── core/
 │   │   ├── loaders.lua        # Data loading on initialization
 │   │   ├── data/
@@ -28,7 +31,7 @@ llm-nvim/
 │   │   │   └── cache.lua      # Caching layer
 │   │   └── utils/
 │   │       ├── shell.lua      # Shell command execution
-│   │       ├── ui.lua         # Buffer and UI operations
+│   │       ├── ui.lua         # Buffer and UI operations (Core)
 │   │       ├── text.lua       # Text manipulation
 │   │       ├── validate.lua   # Validation utilities
 │   │       ├── job.lua        # Async job execution
@@ -36,6 +39,7 @@ llm-nvim/
 │   │       └── notify.lua     # User notifications
 │   ├── managers/
 │   │   ├── models_manager.lua
+│   │   ├── models_io.lua      # Models I/O helper
 │   │   ├── plugins_manager.lua
 │   │   ├── keys_manager.lua
 │   │   ├── fragments_manager.lua
@@ -152,16 +156,20 @@ For detailed context, rationale, and alternatives considered for each decision, 
 
 ### 8. Chat Conversation Management
 
-**Decision**: Use llm CLI's built-in conversation tracking with `--continue` flag.
+**Decision**: Use llm CLI's built-in conversation tracking with `--continue` flag, orchestrated by separated session and buffer logic.
 
 **See**: [ADR-002: LLM CLI Native Conversation Management](adr/ADR-002-chat-conversation.md)
 
 **Rationale**:
 - Leverages llm's native conversation storage
 - Avoids reimplementing conversation history
-- Consistent with llm CLI UX
+- Separation of UI (`buffer.lua`) and State (`session.lua`) improves maintainability and testability
 
-**Implementation**: Buffer-local variable tracks chat state, `--continue` flag added for ongoing conversations.
+**Implementation**:
+- `chat.lua`: Orchestrates the interaction
+- `session.lua`: Manages state and API interactions
+- `buffer.lua`: Handles rendering and user input
+- Buffer-local variable tracks chat state
 
 ### 9. Job-Based Async Execution
 
@@ -209,6 +217,17 @@ For detailed context, rationale, and alternatives considered for each decision, 
 - ✅ All code uses modern, forward-compatible APIs
 - ✅ 100% Lua 5.2+ compatible
 - ✅ Full test suite passes on Neovim's LuaJIT
+
+### 12. Error Handling System
+
+**Decision**: Centralized error handling with structured error objects.
+
+**Rationale**:
+- Consistent error reporting across modules
+- Support for different severity levels (INFO, WARNING, ERROR, CRITICAL)
+- Programmatic error handling capabilities
+
+**Implementation**: `errors.lua` provides `handle()`, `wrap()`, and specialized handlers like `shell_error()`.
 
 ## Data Flow
 
