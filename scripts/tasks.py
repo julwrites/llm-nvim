@@ -26,6 +26,7 @@ CATEGORIES = [
     "testing",
     "review",
     "security",
+    "research",
 ]
 
 VALID_STATUSES = [
@@ -155,8 +156,13 @@ def parse_task_content(content, filepath=None):
     # Try Frontmatter first
     frontmatter, body = extract_frontmatter(content)
     if frontmatter:
-        deps_str = frontmatter.get("dependencies") or ""
-        deps = [d.strip() for d in deps_str.split(",") if d.strip()]
+        deps_val = frontmatter.get("dependencies") or ""
+        deps = []
+        if deps_val:
+            # Handle both string list "[a, b]" and plain string "a, b"
+            cleaned = deps_val.strip(" []")
+            if cleaned:
+                deps = [d.strip() for d in cleaned.split(",") if d.strip()]
 
         return {
             "id": frontmatter.get("id", "unknown"),
@@ -215,7 +221,8 @@ def create_task(category, title, description, priority="medium", status="pending
     # New YAML Frontmatter Format
     deps_str = ""
     if dependencies:
-        deps_str = ", ".join(dependencies)
+        # Use Flow style list
+        deps_str = "[" + ", ".join(dependencies) + "]"
 
     extra_fm = ""
     if task_type:
@@ -365,55 +372,32 @@ def archive_task(task_id, output_format="text"):
 
 def migrate_to_frontmatter(content, task_data):
     """Converts legacy content to Frontmatter format."""
+    # Strip the header section from legacy content
 
-    # 1. Determine Category from filepath
-    category = "unknown"
-    if task_data.get('filepath'):
-        dir_name = os.path.dirname(task_data['filepath'])
-        category = os.path.basename(dir_name)
-        if category not in CATEGORIES:
-             # Try parent if nested
-             parent = os.path.basename(os.path.dirname(dir_name))
-             if parent in CATEGORIES:
-                 category = parent
+    body = content
+    if "## Task Details" in content:
+        parts = content.split("## Task Details")
+        if len(parts) > 1:
+            body = parts[1].strip()
 
-    # 2. Extract Body (preserving content)
-    lines = content.splitlines()
-    new_body_lines = []
+    description = body
+    # Remove footer
+    if "*Created:" in description:
+        description = description.split("---")[0].strip()
 
-    skip_patterns = [
-        r"^# Task: ",
-        r"^\s*-\s*\*\*Task ID\*\*:",
-        r"^\s*-\s*\*\*Status\*\*:",
-        r"^\s*-\s*\*\*Priority\*\*:",
-        r"^\s*-\s*\*\*Phase\*\*:", # Legacy field
-        r"^\s*-\s*\*\*Effort Estimate\*\*:", # Legacy field
-        r"^\s*-\s*\*\*Dependencies\*\*:",
-        r"^\*Created:",
-        r"^\*Last updated:",
-        r"^\*Total tasks:",
-        r"^---$" # Footer separator
-    ]
-
-    for line in lines:
-        is_metadata = False
-        for pattern in skip_patterns:
-            if re.search(pattern, line):
-                is_metadata = True
-                break
-
-        if not is_metadata:
-            new_body_lines.append(line)
-
-    # Clean up multiple blank lines
-    body = "\n".join(new_body_lines)
-    body = re.sub(r'\n{3,}', '\n\n', body).strip()
-
-    # Map legacy fields to Frontmatter if possible
+    # Check for extra keys in task_data that might need preservation
     extra_fm = ""
     if task_data.get("type"): extra_fm += f"type: {task_data['type']}\n"
     if task_data.get("sprint"): extra_fm += f"sprint: {task_data['sprint']}\n"
     if task_data.get("estimate"): extra_fm += f"estimate: {task_data['estimate']}\n"
+
+    deps = task_data.get("dependencies", [])
+    if deps:
+        if isinstance(deps, list):
+            deps_str = "[" + ", ".join(deps) + "]"
+        else:
+            deps_str = str(deps)
+        extra_fm += f"dependencies: {deps_str}\n"
 
     new_content = f"""---
 id: {task_data['id']}
@@ -421,12 +405,12 @@ status: {task_data['status']}
 title: {task_data['title']}
 priority: {task_data['priority']}
 created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-category: {category}
+category: unknown
 {extra_fm}---
 
 # {task_data['title']}
 
-{body}
+{description}
 """
     return new_content
 
@@ -450,6 +434,37 @@ def update_task_status(task_id, new_status, output_format="text"):
 
     with open(filepath, "r") as f:
         content = f.read()
+
+    # Check dependencies if moving to active status
+    if new_status in ["in_progress", "review_requested", "verified", "completed"]:
+        task_data = parse_task_content(content, filepath)
+        deps = task_data.get("dependencies", [])
+        if deps:
+            blocked_by = []
+            for dep_id in deps:
+                # Resolve dependency file
+                dep_path = find_task_file(dep_id)
+                if not dep_path:
+                    blocked_by.append(f"{dep_id} (missing)")
+                    continue
+
+                try:
+                    with open(dep_path, "r") as df:
+                        dep_content = df.read()
+                    dep_data = parse_task_content(dep_content, dep_path)
+
+                    if dep_data["status"] not in ["completed", "verified"]:
+                         blocked_by.append(f"{dep_id} ({dep_data['status']})")
+                except Exception:
+                    blocked_by.append(f"{dep_id} (error reading)")
+
+            if blocked_by:
+                msg = f"Error: Cannot move to '{new_status}' because task is blocked by dependencies: {', '.join(blocked_by)}"
+                if output_format == "json":
+                    print(json.dumps({"error": msg}))
+                else:
+                    print(msg)
+                sys.exit(1)
 
     frontmatter, body = extract_frontmatter(content)
 
@@ -498,6 +513,163 @@ def update_task_status(task_id, new_status, output_format="text"):
     else:
         print(f"Updated {task_id} status to {new_status}")
 
+def update_frontmatter_field(filepath, field, value):
+    """Updates a specific field in the frontmatter."""
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    frontmatter, body = extract_frontmatter(content)
+    if not frontmatter:
+        # Fallback for legacy: migrate first
+        task_data = parse_task_content(content, filepath)
+        task_data[field] = value
+        new_content = migrate_to_frontmatter(content, task_data)
+        with open(filepath, "w") as f:
+            f.write(new_content)
+        return True
+
+    # Update Frontmatter line-by-line to preserve comments/order
+    lines = content.splitlines()
+    new_lines = []
+    in_fm = False
+    updated = False
+
+    # Handle list values (like dependencies)
+    if isinstance(value, list):
+        # Serialize as Flow-style list [a, b] for valid YAML and easier regex
+        val_str = "[" + ", ".join(value) + "]"
+    else:
+        val_str = str(value)
+
+    for line in lines:
+        if re.match(r"^\s*---\s*$", line):
+            if not in_fm:
+                in_fm = True
+                new_lines.append(line)
+                continue
+            else:
+                if in_fm and not updated:
+                    # Field not found, add it before close
+                    new_lines.append(f"{field}: {val_str}")
+                in_fm = False
+                new_lines.append(line)
+                continue
+
+        match = re.match(rf"^(\s*){field}:", line)
+        if in_fm and match:
+            indent = match.group(1)
+            new_lines.append(f"{indent}{field}: {val_str}")
+            updated = True
+        else:
+            new_lines.append(line)
+
+    new_content = "\n".join(new_lines) + "\n"
+    with open(filepath, "w") as f:
+        f.write(new_content)
+    return True
+
+def add_dependency(task_id, dep_id, output_format="text"):
+    filepath = find_task_file(task_id)
+    if not filepath:
+        msg = f"Error: Task ID {task_id} not found."
+        print(json.dumps({"error": msg}) if output_format == "json" else msg)
+        sys.exit(1)
+
+    # Verify dep exists
+    if not find_task_file(dep_id):
+         msg = f"Error: Dependency Task ID {dep_id} not found."
+         print(json.dumps({"error": msg}) if output_format == "json" else msg)
+         sys.exit(1)
+
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    task_data = parse_task_content(content, filepath)
+    deps = task_data.get("dependencies", [])
+
+    if dep_id in deps:
+        msg = f"Task {task_id} already depends on {dep_id}."
+        print(json.dumps({"message": msg}) if output_format == "json" else msg)
+        return
+
+    deps.append(dep_id)
+    update_frontmatter_field(filepath, "dependencies", deps)
+
+    msg = f"Added dependency: {task_id} -> {dep_id}"
+    print(json.dumps({"success": True, "message": msg}) if output_format == "json" else msg)
+
+def remove_dependency(task_id, dep_id, output_format="text"):
+    filepath = find_task_file(task_id)
+    if not filepath:
+        msg = f"Error: Task ID {task_id} not found."
+        print(json.dumps({"error": msg}) if output_format == "json" else msg)
+        sys.exit(1)
+
+    with open(filepath, "r") as f:
+        content = f.read()
+
+    task_data = parse_task_content(content, filepath)
+    deps = task_data.get("dependencies", [])
+
+    if dep_id not in deps:
+        msg = f"Task {task_id} does not depend on {dep_id}."
+        print(json.dumps({"message": msg}) if output_format == "json" else msg)
+        return
+
+    deps.remove(dep_id)
+    update_frontmatter_field(filepath, "dependencies", deps)
+
+    msg = f"Removed dependency: {task_id} -x-> {dep_id}"
+    print(json.dumps({"success": True, "message": msg}) if output_format == "json" else msg)
+
+def generate_index(output_format="text"):
+    """Generates docs/tasks/INDEX.yaml reflecting task dependencies."""
+    index_path = os.path.join(DOCS_DIR, "INDEX.yaml")
+
+    all_tasks = {} # id -> filepath
+    task_deps = {} # id -> [deps]
+
+    for root, _, files in os.walk(DOCS_DIR):
+        for file in files:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
+                continue
+            path = os.path.join(root, file)
+            try:
+                with open(path, "r") as f:
+                    content = f.read()
+                task = parse_task_content(content, path)
+                if task["id"] != "unknown":
+                    all_tasks[task["id"]] = path
+                    task_deps[task["id"]] = task.get("dependencies", [])
+            except:
+                pass
+
+    # Build YAML content
+    yaml_lines = ["# Task Dependency Index", "# Generated by scripts/tasks.py index", ""]
+
+    for tid, path in sorted(all_tasks.items()):
+        rel_path = os.path.relpath(path, REPO_ROOT)
+        yaml_lines.append(f"{rel_path}:")
+
+        deps = task_deps.get(tid, [])
+        if deps:
+            yaml_lines.append("  depends_on:")
+            for dep_id in sorted(deps):
+                dep_path = all_tasks.get(dep_id)
+                if dep_path:
+                    dep_rel_path = os.path.relpath(dep_path, REPO_ROOT)
+                    yaml_lines.append(f"    - {dep_rel_path}")
+                else:
+                    # Dependency not found (maybe archived or missing)
+                    yaml_lines.append(f"    - {dep_id} # Missing")
+
+        yaml_lines.append("")
+
+    with open(index_path, "w") as f:
+        f.write("\n".join(yaml_lines))
+
+    msg = f"Generated index at {index_path}"
+    print(json.dumps({"success": True, "path": index_path}) if output_format == "json" else msg)
 
 def list_tasks(status=None, category=None, sprint=None, include_archived=False, output_format="text"):
     tasks = []
@@ -516,7 +688,7 @@ def list_tasks(status=None, category=None, sprint=None, include_archived=False, 
                 continue
 
         for file in files:
-            if not file.endswith(".md") or file in ["GUIDE.md", "README.md"]:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
                 continue
 
             path = os.path.join(root, file)
@@ -566,7 +738,7 @@ def migrate_all():
     count = 0
     for root, dirs, files in os.walk(DOCS_DIR):
         for file in files:
-            if not file.endswith(".md") or file in ["GUIDE.md", "README.md"]:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
                 continue
 
             path = os.path.join(root, file)
@@ -597,7 +769,7 @@ def validate_all(output_format="text"):
     # Pass 1: Parse and Basic Validation
     for root, dirs, files in os.walk(DOCS_DIR):
         for file in files:
-            if not file.endswith(".md") or file in ["GUIDE.md", "README.md"]:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
                 continue
             path = os.path.join(root, file)
             try:
@@ -629,7 +801,12 @@ def validate_all(output_format="text"):
 
                 # Parse dependencies
                 deps_str = frontmatter.get("dependencies") or ""
-                deps = [d.strip() for d in deps_str.split(",") if d.strip()]
+                # Use shared parsing logic
+                deps = []
+                if deps_str:
+                    cleaned = deps_str.strip(" []")
+                    if cleaned:
+                        deps = [d.strip() for d in cleaned.split(",") if d.strip()]
 
                 # Check for Duplicate IDs
                 if task_id in all_tasks:
@@ -694,7 +871,7 @@ def visualize_tasks(output_format="text"):
     # Collect all tasks
     for root, dirs, files in os.walk(DOCS_DIR):
         for file in files:
-            if not file.endswith(".md") or file in ["GUIDE.md", "README.md"]:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
                 continue
             path = os.path.join(root, file)
             try:
@@ -752,7 +929,7 @@ def get_next_task(output_format="text"):
     all_tasks = {}
     for root, _, files in os.walk(DOCS_DIR):
         for file in files:
-            if not file.endswith(".md") or file in ["GUIDE.md", "README.md"]:
+            if not file.endswith(".md") or file in ["GUIDE.md", "README.md", "INDEX.yaml"]:
                 continue
             path = os.path.join(root, file)
             try:
@@ -934,8 +1111,24 @@ def main():
     # Visualize
     subparsers.add_parser("visualize", parents=[parent_parser], help="Visualize task dependencies (Mermaid)")
 
+    # Graph (Alias to Visualize)
+    subparsers.add_parser("graph", parents=[parent_parser], help="Graph task dependencies (Alias for visualize)")
+
     # Install Hooks
     subparsers.add_parser("install-hooks", parents=[parent_parser], help="Install git hooks")
+
+    # Index
+    subparsers.add_parser("index", parents=[parent_parser], help="Generate task dependency index")
+
+    # Link (Add Dependency)
+    link_parser = subparsers.add_parser("link", parents=[parent_parser], help="Add a dependency")
+    link_parser.add_argument("task_id", help="Task ID")
+    link_parser.add_argument("dep_id", help="Dependency Task ID")
+
+    # Unlink (Remove Dependency)
+    unlink_parser = subparsers.add_parser("unlink", parents=[parent_parser], help="Remove a dependency")
+    unlink_parser.add_argument("task_id", help="Task ID")
+    unlink_parser.add_argument("dep_id", help="Dependency Task ID")
 
     args = parser.parse_args()
 
@@ -969,10 +1162,16 @@ def main():
         update_task_status(args.task_id, "completed", output_format=fmt)
     elif args.command == "validate":
         validate_all(output_format=fmt)
-    elif args.command == "visualize":
+    elif args.command == "visualize" or args.command == "graph":
         visualize_tasks(output_format=fmt)
     elif args.command == "install-hooks":
         install_hooks()
+    elif args.command == "index":
+        generate_index(output_format=fmt)
+    elif args.command == "link":
+        add_dependency(args.task_id, args.dep_id, output_format=fmt)
+    elif args.command == "unlink":
+        remove_dependency(args.task_id, args.dep_id, output_format=fmt)
     else:
         parser.print_help()
 
