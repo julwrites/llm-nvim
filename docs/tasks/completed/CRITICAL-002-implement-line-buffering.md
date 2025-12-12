@@ -1,14 +1,19 @@
-# Task: Implement Proper Line Buffering in job.lua
+---
+id: CRITICAL-002
+status: completed
+title: Implement Proper Line Buffering in job.lua
+priority: critical
+created: 2025-12-11 09:19:52
+category: completed
+type: task
+---
+
+# Implement Proper Line Buffering in job.lua
 
 ## Task Information
-- **Task ID**: CRITICAL-002
-- **Status**: completed
-- **Priority**: critical
-- **Phase**: 1
 - **Estimated Effort**: 1 day
 - **Actual Effort**: 0.5 days
 - **Completed**: 2025-02-11
-- **Dependencies**: None
 
 ## Task Details
 
@@ -140,8 +145,5 @@ end
 - Handles edge cases (empty lines, partial lines, multi-line chunks)
 - No performance impact - buffering is minimal overhead
 
----
-
-*Created: 2025-02-11*
 *Completed: 2025-02-11*
 *Status: completed - Streaming output now reliable across all LLM commands*

@@ -1,19 +1,22 @@
-# Task: Redesign and Fix Chat Feature
+---
+id: CRITICAL-003
+status: completed
+title: Redesign and Fix Chat Feature
+priority: Critical
+created: 2025-12-11 09:19:52
+category: completed
+type: task
+---
+
+# Redesign and Fix Chat Feature
 
 ## Task Information
-- **Task ID**: CRITICAL-003
-- **Status**: completed
 
 ### Investigation Summary (2025-11-16)
 This task was verified as **Implemented**.
 - `lua/llm/chat/session.lua` and `lua/llm/chat/buffer.lua` exist and contain the expected logic.
 - `lua/llm/chat.lua` orchestrates these modules.
 - `tests/spec/chat_spec.lua` contains tests reflecting the new architecture.
-
-- **Priority**: Critical (P0)
-- **Phase**: 5
-- **Effort Estimate**: 12-16 hours
-- **Dependencies**: None
 
 ## Task Details
 ### Description
@@ -70,7 +73,3 @@ The implementation should follow the "Proposed Architecture" below, which was pr
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-14*
-*Last updated: 2025-11-14*

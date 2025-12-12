@@ -1,0 +1,15 @@
+#!/bin/bash
+
+# Wrapper for tasks.py to ensure Python 3 is available
+
+if ! command -v python3 &> /dev/null; then
+    echo "Error: Python 3 is not installed or not in PATH."
+    echo "Please install Python 3 to use the task manager."
+    exit 1
+fi
+
+# Get the directory of this script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Execute tasks.py
+exec python3 "$SCRIPT_DIR/tasks.py" "$@"

@@ -1,95 +1,6 @@
-# AI Agent Instructions
+# AGENTS.md
 
-You are an expert Software Engineer working on this project. Your primary responsibility is to implement features and fixes while strictly adhering to the **Task Documentation System**.
-
-## Core Philosophy
-**"If it's not documented in `docs/tasks/`, it didn't happen."**
-
-## Workflow
-1.  **Pick a Task**: Run `python3 scripts/tasks.py context` to see active tasks, or `list` to see pending ones.
-2.  **Plan & Document**:
-    *   **Memory Check**: Run `python3 scripts/memory.py list` (or use the Memory Skill) to recall relevant long-term information.
-    *   **Security Check**: Ask the user about specific security considerations for this task.
-    *   If starting a new task, use `scripts/tasks.py create` (or `python3 scripts/tasks.py create`) to generate a new task file.
-    *   Update the task status: `python3 scripts/tasks.py update [TASK_ID] in_progress`.
-3.  **Implement**: Write code, run tests.
-4.  **Update Documentation Loop**:
-    *   As you complete sub-tasks, check them off in the task document.
-    *   If you hit a blocker, update status to `wip_blocked` and describe the issue in the file.
-    *   Record key architectural decisions in the task document.
-    *   **Memory Update**: If you learn something valuable for the long term, use `scripts/memory.py create` to record it.
-5.  **Review & Verify**:
-    *   Once implementation is complete, update status to `review_requested`: `python3 scripts/tasks.py update [TASK_ID] review_requested`.
-    *   Ask a human or another agent to review the code.
-    *   Once approved and tested, update status to `verified`.
-6.  **Finalize**:
-    *   Update status to `completed`: `python3 scripts/tasks.py update [TASK_ID] completed`.
-    *   Record actual effort in the file.
-    *   Ensure all acceptance criteria are met.
-
-## Tools
-*   **Wrapper**: `./scripts/tasks` (Checks for Python, recommended).
-*   **Create**: `./scripts/tasks create [category] "Title"`
-*   **List**: `./scripts/tasks list [--status pending]`
-*   **Context**: `./scripts/tasks context`
-*   **Update**: `./scripts/tasks update [ID] [status]`
-*   **Migrate**: `./scripts/tasks migrate` (Migrate legacy tasks to new format)
-*   **Memory**: `./scripts/memory.py [create|list|read]`
-*   **JSON Output**: Add `--format json` to any command for machine parsing.
-
-## Documentation Reference
-*   **Guide**: Read `docs/tasks/GUIDE.md` for strict formatting and process rules.
-*   **Architecture**: Refer to `docs/architecture/` for system design.
-*   **Features**: Refer to `docs/features/` for feature specifications.
-*   **Security**: Refer to `docs/security/` for risk assessments and mitigations.
-*   **Memories**: Refer to `docs/memories/` for long-term project context.
-
-## Code Style & Standards
-*   Follow the existing patterns in the codebase.
-*   Ensure all new code is covered by tests (if testing infrastructure exists).
-
-## PR Review Methodology
-When performing a PR review, follow this "Human-in-the-loop" process to ensure depth and efficiency.
-
-### 1. Preparation
-1.  **Create Task**: `python3 scripts/tasks.py create review "Review PR #<N>: <Title>"`
-2.  **Fetch Details**: Use `gh` to get the PR context.
-    *   `gh pr view <N>`
-    *   `gh pr diff <N>`
-
-### 2. Analysis & Planning (The "Review Plan")
-**Do not review line-by-line yet.** Instead, analyze the changes and document a **Review Plan** in the task file (or present it for approval).
-
-Your plan must include:
-*   **High-Level Summary**: Purpose, new APIs, breaking changes.
-*   **Dependency Check**: New libraries, maintenance status, security.
-*   **Impact Assessment**: Effect on existing code/docs.
-*   **Focus Areas**: Prioritized list of files/modules to check.
-*   **Suggested Comments**: Draft comments for specific lines.
-    *   Format: `File: <path> | Line: <N> | Comment: <suggestion>`
-    *   Tone: Friendly, suggestion-based ("Consider...", "Nit: ...").
-
-### 3. Execution
-Once the human approves the plan and comments:
-1.  **Pending Review**: Create a pending review using `gh`.
-    *   `COMMIT_SHA=$(gh pr view <N> --json headRefOid -q .headRefOid)`
-    *   `gh api repos/{owner}/{repo}/pulls/{N}/reviews -f commit_id="$COMMIT_SHA"`
-2.  **Batch Comments**: Add comments to the pending review.
-    *   `gh api repos/{owner}/{repo}/pulls/{N}/comments -f body="..." -f path="..." -f commit_id="$COMMIT_SHA" -F line=<L> -f side="RIGHT"`
-3.  **Submit**:
-    *   `gh pr review <N> --approve --body "Summary..."` (or `--request-changes`).
-
-### 4. Close Task
-*   Update task status to `completed`.
-
-## Agent Interoperability
-- **Task Manager Skill**: `.claude/skills/task_manager/`
-- **Memory Skill**: `.claude/skills/memory/`
-- **Tool Definitions**: `docs/interop/tool_definitions.json`
-
----
-
-# Project Specifics
+This file provides guidance to Qoder (qoder.com) when working with code in this repository.
 
 ## Project Overview
 
@@ -102,6 +13,116 @@ llm-nvim is a Neovim plugin that integrates with Simon Willison's llm CLI tool, 
 - llm CLI tool (`pip install llm` or `brew install llm`)
 
 **Lua Environment**: Neovim uses LuaJIT 2.1+ which provides Lua 5.1 base with 5.2+ extensions. This plugin uses Lua 5.2+ APIs (`table.unpack`) for forward compatibility. See TESTING-001 for full compatibility audit results.
+
+## Documentation
+
+**IMPORTANT**: Always consult these documents during planning and development:
+
+- `docs/features.md`: Complete feature list and requirements
+- `docs/architecture.md`: Architecture decisions, data flows, and technical rationale
+- `docs/tasks/README.md`: Overview of task system and current task status
+- Individual task files in `docs/tasks/[category]/`: Detailed implementation tasks
+
+When planning new features or refactoring:
+1. First read `docs/features.md` to understand existing functionality
+2. Review `docs/architecture.md` to understand design patterns and decisions
+3. Check `docs/tasks/README.md` for pending tasks and priorities
+4. Read specific task documents before implementing
+5. Update task documents as work progresses
+6. Update relevant docs when making architectural changes
+
+## Task Documentation System
+
+All implementation tasks are documented in `docs/tasks/` following a standardized format.
+
+### Task Categories
+
+- **critical/**: Blocking issues affecting functionality (P0)
+- **code-quality/**: Code cleanup and maintainability (P1)
+- **testing/**: Test infrastructure and quality (P1-P2)
+- **documentation/**: Documentation improvements (P2)
+- **performance/**: Performance optimizations (P3)
+
+### Working with Tasks
+
+**Before starting work**:
+1. Check `docs/tasks/README.md` for task overview and status
+2. Read the specific task document in `docs/tasks/[category]/`
+3. Verify dependencies are completed
+4. Update task status to `in_progress`
+
+**During implementation**:
+1. Follow acceptance criteria in the task document
+2. Use implementation notes as guidance
+3. Update task document with:
+   - Completed acceptance criteria (check boxes)
+   - Decisions made and why
+   - Blockers encountered and resolution
+   - Git commits with references
+4. Create new tasks if you discover additional work needed
+
+**After completion**:
+1. Mark all acceptance criteria as complete
+2. Update status to `completed`
+3. Record actual effort and completion date
+4. Update `docs/tasks/README.md` status table
+5. Create follow-up tasks if needed
+
+### Finding Tasks
+
+```bash
+# View all pending tasks by category
+ls docs/tasks/critical/
+ls docs/tasks/code-quality/
+ls docs/tasks/testing/
+
+# Find tasks with no dependencies (can start immediately)
+grep -r "Dependencies**: None" docs/tasks/
+
+# Find blocked tasks
+grep -r "Status**: blocked" docs/tasks/
+```
+
+### Creating New Tasks
+
+1. Choose appropriate category (critical, code-quality, testing, documentation, performance)
+2. Generate task ID: `[CATEGORY]-NNN` (use next available number in category)
+3. Create file: `docs/tasks/[category]/[TASK-ID]-[descriptive-slug].md`
+4. Use template from `task-documentation-guide.md`
+5. Include:
+   - Clear description and problem statement
+   - Acceptance criteria (specific and measurable)
+   - Implementation notes with file references
+   - Architecture components affected
+   - Dependencies on other tasks
+6. Add to `docs/tasks/README.md` task list
+
+### Completed Tasks
+
+When a task is completed, it should be moved from its category directory to the `docs/tasks/completed/` directory. This keeps the main task directories focused on pending work.
+
+## Current Status and Quick Start
+
+### 🎯 Current Priority Tasks
+
+**✅ Completed Tasks** (ready for new feature development):
+- All critical fixes completed
+- Test suite stable (204/204 tests passing)
+- Architecture fully documented with ADRs
+- Core functionality working reliably
+
+**🚀 Ready for New Contributors** (no blockers):
+- Codebase is stable and well-tested
+- Comprehensive documentation available
+- Clear architectural patterns established
+- No blocking technical debt
+
+**📋 What to Work On Next**:
+1. **New Features**: Check `docs/features.md` for planned features
+2. **Enhancements**: Review `docs/tasks/README.md` for pending improvements
+3. **Documentation**: Update docs when adding new functionality
+
+See `docs/tasks/README.md` for complete task list and current status.
 
 ## Testing
 

@@ -1,17 +1,20 @@
-# Task: Add Multi-modal Attachments Support
+---
+id: CRITICAL-006
+status: pending
+title: Add Multi-modal Attachments Support
+priority: Medium
+created: 2025-12-11 09:19:52
+category: critical
+type: task
+---
+
+# Add Multi-modal Attachments Support
 
 ## Task Information
-- **Task ID**: CRITICAL-006
-- **Status**: pending
 
 ### Investigation Summary (2025-11-16)
 This task was verified as **Not Implemented**.
 - The `:LLM` command in `lua/llm/commands.lua` does not handle an `--attach` or `-a` flag.
-
-- **Priority**: Medium (P2)
-- **Phase**: 6
-- **Effort Estimate**: 5 days
-- **Dependencies**: None
 
 ## Task Details
 ### Description
@@ -39,7 +42,3 @@ The `llm` CLI can process images, audio, and video files as attachments to a pro
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-14*
-*Last updated: 2025-11-14*
