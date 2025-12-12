@@ -1,14 +1,19 @@
-# Task: Add Architectural Decision Records
+---
+id: DOCUMENTATION-002
+status: completed
+title: Add Architectural Decision Records
+priority: low
+created: 2025-12-11 09:19:52
+category: completed
+type: task
+---
+
+# Add Architectural Decision Records
 
 ## Task Information
-- **Task ID**: DOCUMENTATION-002
-- **Status**: completed
-- **Priority**: low
-- **Phase**: 3
 - **Estimated Effort**: 0.5 days
 - **Actual Effort**: 0.5 days
 - **Completed**: 2025-02-11
-- **Dependencies**: None
 
 ## Task Details
 
@@ -74,7 +79,6 @@ The plugin has undergone significant architectural evolution (streaming unificat
 - [Related tasks]
 - [External resources]
 
----
 *Date: YYYY-MM-DD*
 *Author: [Name]*
 ```
@@ -254,8 +258,5 @@ Each ADR includes:
 - **Additional ADRs created**: Configuration system, manager pattern, auto-update system, command system
 - **Complete coverage**: All major architectural decisions now documented
 
----
-
-*Created: 2025-02-11*
 *Completed: 2025-02-11*
 *Status: completed - All major architectural decisions documented*

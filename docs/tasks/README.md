@@ -228,7 +228,7 @@ Each task document follows this structure:
 *Metadata footer*
 ```
 
-See `task-documentation-guide.md` for complete documentation standards.
+See `GUIDE.md` for complete documentation standards.
 
 ## Integration with Development
 
@@ -265,7 +265,7 @@ See AGENTS.md for AI-specific task documentation instructions.
 
 ## References
 
-- **task-documentation-guide.md**: Complete guide to task documentation system
+- **GUIDE.md**: Complete guide to task documentation system
 - **docs/architecture.md**: Architectural decisions and patterns
 - **docs/features.md**: Feature list and requirements
 - **AGENTS.md**: AI assistant integration guide

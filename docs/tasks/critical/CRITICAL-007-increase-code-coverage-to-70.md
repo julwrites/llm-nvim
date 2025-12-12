@@ -1,12 +1,16 @@
-# Task: Increase Code Coverage to 70%
+---
+id: CRITICAL-007
+status: in_progress
+title: Increase Code Coverage to 70%
+priority: High
+created: 2025-12-11 09:19:52
+category: critical
+type: task
+---
+
+# Increase Code Coverage to 70%
 
 ## Task Information
-- **Task ID**: CRITICAL-007
-- **Status**: in_progress
-- **Priority**: High (P1)
-- **Phase**: 7
-- **Effort Estimate**: 3 days
-- **Dependencies**: None
 
 ## Task Details
 ### Description
@@ -34,7 +38,3 @@ The current code coverage is below the 70% threshold required by the CI/CD pipel
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-16*
-*Last updated: 2025-11-16*

@@ -1,14 +1,19 @@
-# Task: Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
+---
+id: CRITICAL-001
+status: completed
+title: Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
+priority: critical
+created: 2025-12-11 09:19:52
+category: completed
+type: task
+---
+
+# Fix Lua 5.2+ Compatibility - Replace unpack with table.unpack
 
 ## Task Information
-- **Task ID**: CRITICAL-001
-- **Status**: completed
-- **Priority**: critical
-- **Phase**: 1
 - **Estimated Effort**: 0.25 days
 - **Actual Effort**: 0.1 days (15 minutes)
 - **Completed**: 2025-02-11
-- **Dependencies**: None
 
 ## Task Details
 
@@ -75,8 +80,5 @@ Error -> tests/spec/chat_spec.lua @ 90
 - Confirms Neovim's LuaJIT supports table.unpack
 - The 2 remaining test failures are unrelated to this fix (mock infrastructure issues)
 
----
-
-*Created: 2025-02-11*
 *Completed: 2025-02-11*
 *Status: completed - All chat functionality now working*

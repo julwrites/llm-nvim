@@ -1,0 +1,185 @@
+{
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "task_create",
+        "description": "Create a new development task.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "enum": ["foundation", "infrastructure", "domain", "presentation", "migration", "features", "testing"],
+              "description": "The category of the task."
+            },
+            "title": {
+              "type": "string",
+              "description": "The title of the task."
+            },
+            "description": {
+              "type": "string",
+              "description": "Detailed description of the task."
+            }
+          },
+          "required": ["category", "title"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "task_list",
+        "description": "List existing tasks, optionally filtered by status or category.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "enum": ["pending", "in_progress", "wip_blocked", "review_requested", "verified", "completed", "blocked", "cancelled", "deferred"],
+              "description": "Filter by task status."
+            },
+            "category": {
+              "type": "string",
+              "enum": ["foundation", "infrastructure", "domain", "presentation", "migration", "features", "testing"],
+              "description": "Filter by task category."
+            },
+            "archived": {
+              "type": "boolean",
+              "description": "Include archived tasks in the list."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "task_update",
+        "description": "Update the status of an existing task.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "description": "The ID of the task (e.g., FOUNDATION-20230521-120000)."
+            },
+            "status": {
+              "type": "string",
+              "enum": ["pending", "in_progress", "wip_blocked", "review_requested", "verified", "completed", "blocked", "cancelled", "deferred"],
+              "description": "The new status of the task."
+            }
+          },
+          "required": ["task_id", "status"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "task_show",
+        "description": "Show the details of a specific task.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "description": "The ID of the task."
+            }
+          },
+          "required": ["task_id"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "task_context",
+        "description": "Show tasks that are currently in progress.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "task_archive",
+        "description": "Archive a completed task.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "task_id": {
+              "type": "string",
+              "description": "The ID of the task to archive."
+            }
+          },
+          "required": ["task_id"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "memory_create",
+        "description": "Create a new long-term memory.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "title": {
+              "type": "string",
+              "description": "The title of the memory."
+            },
+            "content": {
+              "type": "string",
+              "description": "The content of the memory."
+            },
+            "tags": {
+              "type": "string",
+              "description": "Comma-separated tags for the memory."
+            }
+          },
+          "required": ["title", "content"]
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "memory_list",
+        "description": "List existing memories, optionally filtered by tag.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string",
+              "description": "Filter by tag."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Limit the number of results."
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "function",
+      "function": {
+        "name": "memory_read",
+        "description": "Read a specific memory.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "filename": {
+              "type": "string",
+              "description": "The filename or slug of the memory to read."
+            }
+          },
+          "required": ["filename"]
+        }
+      }
+    }
+  ]
+}

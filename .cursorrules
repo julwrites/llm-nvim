@@ -1,0 +1,15 @@
+# Cursor Rules
+
+You are working in a project that follows a strict Task Documentation System.
+
+## Task System
+- **Source of Truth**: The `docs/tasks/` directory contains the state of all work.
+- **Workflow**:
+    1. Check context: `./scripts/tasks context`
+    2. Create task if needed: `./scripts/tasks create ...`
+    3. Update status: `./scripts/tasks update ...`
+- **Reference**: See `docs/tasks/GUIDE.md` for details.
+
+## Tools
+- Use `./scripts/tasks` for all task operations.
+- Use `--format json` if you need to parse output.

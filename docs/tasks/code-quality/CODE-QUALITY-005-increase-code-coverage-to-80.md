@@ -1,12 +1,16 @@
-# Task: Increase Code Coverage to 80%
+---
+id: CODE-QUALITY-005
+status: pending
+title: Increase Code Coverage to 80%
+priority: Low
+created: 2025-12-11 09:19:52
+category: code-quality
+type: task
+---
+
+# Increase Code Coverage to 80%
 
 ## Task Information
-- **Task ID**: CODE-QUALITY-005
-- **Status**: pending
-- **Priority**: Low (P3)
-- **Phase**: 8
-- **Effort Estimate**: 5 days
-- **Dependencies**: CRITICAL-007
 
 ## Task Details
 ### Description
@@ -34,7 +38,3 @@ To further improve the quality and reliability of the codebase, this task is to 
 
 ## Git History
 - *No commits yet*
-
----
-*Created: 2025-11-16*
-*Last updated: 2025-11-16*
