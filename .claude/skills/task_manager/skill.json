@@ -1,0 +1,42 @@
+{
+  "name": "Task Manager",
+  "description": "A skill for managing tasks using the project's task management scripts.",
+  "commands": [
+    {
+      "name": "task_create",
+      "description": "Create a new task",
+      "cmd": "python3 scripts/tasks.py create {category} \"{title}\" --desc \"{description}\" --priority {priority} --status {status} --type {type}",
+      "args": {
+        "category": { "type": "string", "description": "Task category (e.g. foundation, features)" },
+        "title": { "type": "string", "description": "Task title" },
+        "description": { "type": "string", "description": "Task description" },
+        "priority": { "type": "string", "default": "medium" },
+        "status": { "type": "string", "default": "pending" },
+        "type": { "type": "string", "default": "task" }
+      }
+    },
+    {
+      "name": "task_list",
+      "description": "List tasks",
+      "cmd": "python3 scripts/tasks.py list --status {status}",
+      "args": {
+        "status": { "type": "string", "description": "Filter by status" }
+      }
+    },
+    {
+      "name": "task_update",
+      "description": "Update task status",
+      "cmd": "python3 scripts/tasks.py update {task_id} {status}",
+      "args": {
+        "task_id": { "type": "string", "description": "Task ID" },
+        "status": { "type": "string", "description": "New status" }
+      }
+    },
+    {
+      "name": "task_next",
+      "description": "Get recommended next task",
+      "cmd": "python3 scripts/tasks.py next",
+      "args": {}
+    }
+  ]
+}

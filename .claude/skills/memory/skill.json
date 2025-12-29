@@ -1,0 +1,33 @@
+{
+  "name": "Memory",
+  "description": "A skill for managing long-term memories.",
+  "commands": [
+    {
+      "name": "memory_create",
+      "description": "Create a new memory",
+      "cmd": "python3 scripts/memory.py create \"{title}\" \"{content}\" --tags \"{tags}\"",
+      "args": {
+        "title": { "type": "string", "description": "Memory title" },
+        "content": { "type": "string", "description": "Memory content" },
+        "tags": { "type": "string", "description": "Comma-separated tags" }
+      }
+    },
+    {
+      "name": "memory_list",
+      "description": "List memories",
+      "cmd": "python3 scripts/memory.py list --tag {tag} --limit {limit}",
+      "args": {
+        "tag": { "type": "string", "description": "Filter by tag" },
+        "limit": { "type": "integer", "default": 20 }
+      }
+    },
+    {
+      "name": "memory_read",
+      "description": "Read a memory",
+      "cmd": "python3 scripts/memory.py read {filename}",
+      "args": {
+        "filename": { "type": "string", "description": "Memory filename" }
+      }
+    }
+  ]
+}
