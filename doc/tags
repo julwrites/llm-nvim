@@ -1,5 +1,5 @@
 :LLM	llm.txt	/*:LLM*
-:LLMChat llm.txt /*:LLMChat*
+:LLM	llm.txt	/*:LLM*
 :LLMConfig	llm.txt	/*:LLMConfig*
 llm-commands	llm.txt	/*llm-commands*
 llm-configuration	llm.txt	/*llm-configuration*

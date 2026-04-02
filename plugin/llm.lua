@@ -139,7 +139,7 @@ end, {
 })
 
 -- Command to open the LLM configuration manager
--- Usage: :LLMConfig [view] where view is one of: models, plugins, keys, fragments, templates, schemas
+-- Usage: :LLMConfig [view] where view is one of: models, plugins, keys, fragments
 vim.api.nvim_create_user_command('LLMConfig', function(opts)
   require('llm.commands').dispatch_command('toggle', opts.fargs[1])
 end, {
