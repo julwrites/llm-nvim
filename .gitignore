@@ -65,3 +65,10 @@ env/
 venv/
 .env
 .DS_Store
+
+# Agent Harness specific ignores
+.agents/registry/*.json
+.agents/messages/**/*.json
+!.agents/**/.keep
+logs/
+.agents/
