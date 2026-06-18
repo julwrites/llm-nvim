@@ -55,3 +55,19 @@ jobs:
           echo "Coverage is below 70%. Failing build."
           exit 1
         fi
+
+  automerge:
+    needs: [test, coverage]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login == 'julwrites' && github.event.pull_request.base.ref == 'staging'
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Automerge PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr review --approve "$PR_URL" || true
+          gh pr merge --rebase --delete-branch "$PR_URL"
