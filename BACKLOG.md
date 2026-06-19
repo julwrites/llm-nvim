@@ -22,13 +22,11 @@
 - Feature Gap: Missing support for Model Aliases management (`aliases`).
 - Feature Gap: Missing integration with Logs (`logs`) for exploring past prompts and responses.
 - Feature Gap: Missing support for Extractions (`-x`, `--extract`) in prompt command execution (only implemented in template creation/saving, but not in general `llm prompt` calls).
-- Tech Debt: `lua/llm/ui/ui.lua` is considered legacy code, with `lua/llm/core/utils/ui.lua` being the active and preferred utility module for UI operations.
 
 ## Ranked Backlog
-1. [Tech Debt] - [Medium Impact/Low Effort] - Remove/Deprecate legacy UI code (`lua/llm/ui/ui.lua`) and migrate all usages to `lua/llm/core/utils/ui.lua`.
-2. [Feature Gap] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
-3. [Feature Gap] - [Medium Impact/High Effort] - Implement Embeddings support to allow searching similar code and semantic search.
-4. [Feature Gap] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
-5. [Feature Gap] - [Medium Impact/Low Effort] - Implement Extractions (`-x`/`--extract`) support in `lua/llm/commands.lua` for prompt generation.
-6. [Feature Gap] - [Low Impact/Low Effort] - Implement Model Aliases management.
-7. [Feature Gap] - [Low Impact/Low Effort] - Expose `logs` command functionally to explore past prompts/responses inside Neovim.
+1. [Feature Gap] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
+2. [Feature Gap] - [Medium Impact/High Effort] - Implement Embeddings support to allow searching similar code and semantic search.
+3. [Feature Gap] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
+4. [Feature Gap] - [Medium Impact/Low Effort] - Implement Extractions (`-x`/`--extract`) support in `lua/llm/commands.lua` for prompt generation.
+5. [Feature Gap] - [Low Impact/Low Effort] - Implement Model Aliases management.
+6. [Feature Gap] - [Low Impact/Low Effort] - Expose `logs` command functionally to explore past prompts/responses inside Neovim.
