@@ -16,17 +16,23 @@
 - Extractions (`-x` / `--extract`): Extract just the content of the first fenced code block.
 
 ## Gaps & Tech Debt
-- Feature Gap: Missing support for Multi-modal attachments (`-a`, `--attachment`).
-- Feature Gap: Missing support for Tools / Function Calling (`-T`, `--tool`, `--functions`).
-- Feature Gap: Missing support for Embeddings (`embed`, `embed-models`, `embed-multi`, `collections`, `similar`).
-- Feature Gap: Missing support for Model Aliases management (`aliases`).
-- Feature Gap: Missing integration with Logs (`logs`) for exploring past prompts and responses.
-- Feature Gap: Missing support for Extractions (`-x`, `--extract`) in prompt command execution (only implemented in template creation/saving, but not in general `llm prompt` calls).
+- [Feature Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`).
+- [Feature Gap 2]: Missing support for Tools / Function Calling (`-T`, `--tool`, `--functions`).
+- [Feature Gap 3]: Missing support for Embeddings (`embed`, `embed-models`, `embed-multi`, `collections`, `similar`).
+- [Feature Gap 4]: Missing support for Model Aliases management (`aliases`).
+- [Feature Gap 5]: Missing integration with Logs (`logs`) for exploring past prompts and responses.
+- [Feature Gap 6]: Missing support for Extractions (`-x`, `--extract`) in prompt command execution (only implemented in template creation/saving, but not in general `llm prompt` calls).
+- [Tech Debt 1]: Increase code coverage to 80% (currently below target, tracked in CODE-QUALITY-005).
+- [Tech Debt 2]: Improve async job handling robustness and line buffering edge cases in `lua/llm/core/utils/job.lua`.
+- [Tech Debt 3]: Improve Lua/Python interoperability performance and reliability when interacting with Python `llm` CLI.
 
 ## Ranked Backlog
-1. [Feature Gap] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
-2. [Feature Gap] - [Medium Impact/High Effort] - Implement Embeddings support to allow searching similar code and semantic search.
-3. [Feature Gap] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
-4. [Feature Gap] - [Medium Impact/Low Effort] - Implement Extractions (`-x`/`--extract`) support in `lua/llm/commands.lua` for prompt generation.
-5. [Feature Gap] - [Low Impact/Low Effort] - Implement Model Aliases management.
-6. [Feature Gap] - [Low Impact/Low Effort] - Expose `logs` command functionally to explore past prompts/responses inside Neovim.
+1. [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
+2. [Feature Gap 3] - [Medium Impact/High Effort] - Implement Embeddings support to allow searching similar code and semantic search.
+3. [Tech Debt 1] - [High Impact/Medium Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress.
+4. [Tech Debt 2] - [High Impact/Low Effort] - Improve async job handling robustness in `job.lua` (e.g. process exiting mid-buffer).
+5. [Tech Debt 3] - [Medium Impact/Medium Effort] - Optimize Lua/Python interoperability for smoother command line execution.
+6. [Feature Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
+7. [Feature Gap 6] - [Medium Impact/Low Effort] - Implement Extractions (`-x`/`--extract`) support in `lua/llm/commands.lua` for prompt generation.
+8. [Feature Gap 4] - [Low Impact/Low Effort] - Implement Model Aliases management.
+9. [Feature Gap 5] - [Low Impact/Low Effort] - Expose `logs` command functionally to explore past prompts/responses inside Neovim.
