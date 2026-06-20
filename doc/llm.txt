@@ -137,7 +137,7 @@ Custom mappings:
     Unified command for all LLM operations.
     Available subcommands:
 
-    *:LLM* {prompt}
+    :LLM {prompt}
         Send a one-off prompt to the configured LLM.
                                                              
     *:LLM file* [{prompt}]                                   
