@@ -27,7 +27,10 @@
 - [Tech Debt 3]: Improve Lua/Python interoperability performance and reliability when interacting with Python `llm` CLI.
 
 ## Ranked Backlog
-1. [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
+1.1 [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Create `tools_manager.lua` and `tools_view.lua` to list and manage tools.
+1.2 [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Integrate tools view into `unified_manager.lua` and `facade.lua`.
+1.3 [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Update `:LLM` command in `commands.lua` and `api.lua` to support passing tool arguments.
+1.4 [Feature Gap 2] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Write tests in `tests/spec/tools_spec.lua` and update docs (`CRITICAL-005-add-tools-support.md`).
 2. [Feature Gap 3] - [Medium Impact/High Effort] - Implement Embeddings support to allow searching similar code and semantic search.
 3. [Tech Debt 1] - [High Impact/Medium Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress.
 4. [Tech Debt 2] - [High Impact/Low Effort] - Improve async job handling robustness in `job.lua` (e.g. process exiting mid-buffer).
