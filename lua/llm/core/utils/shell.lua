@@ -124,6 +124,16 @@ end
 -- Attempt to update the LLM CLI
 function M.update_llm_cli(bufnr, api_obj)
   M.set_last_update_timestamp()
+  if not api_obj then
+    api_obj = require('llm.api')
+  end
+  
+  local function log_to_buf(lines)
+    if bufnr then
+      pcall(vim.api.nvim_buf_set_lines, bufnr, -1, -1, false, lines)
+    end
+  end
+
   local update_methods = {
     {
       cmd_name = "uv",
@@ -159,7 +169,7 @@ function M.update_llm_cli(bufnr, api_obj)
 
   local function run_next_update(index)
     if index > #update_methods then
-      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "LLM CLI update process finished." })
+      log_to_buf({ "", "LLM CLI update process finished." })
       return
     end
 
@@ -169,27 +179,41 @@ function M.update_llm_cli(bufnr, api_obj)
 
     if method.check_exists then
       if not M.command_exists(method.cmd_name) then
-        vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "--- Attempting with " .. method.cmd_name .. " (skipped: command not found) ---" })
+        log_to_buf({ "", "--- Attempting with " .. method.cmd_name .. " (skipped: command not found) ---" })
         can_run = false
       end
     end
 
     if can_run then
-      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "--- Attempting to update llm CLI using " .. method.cmd_name .. " ---" })
-      api_obj.run_llm_command_streamed(cmd_parts, bufnr, {
-        on_exit = function(job_id, exit_code, event_type)
-          if exit_code == 0 then
-            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", method.success_msg })
-            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", "Update successful. Stopping further attempts." })
-          else
-            vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, { "", method.cmd_name .. " update failed with exit code " .. exit_code .. "." })
-            run_next_update(index + 1) -- Try next method
+      log_to_buf({ "", "--- Attempting to update llm CLI using " .. method.cmd_name .. " ---" })
+      
+      -- we use jobstart instead of run_llm_command_streamed if bufnr is nil
+      if bufnr then
+        api_obj.run_llm_command_streamed(cmd_parts, bufnr, {
+          on_exit = function(job_id, exit_code, event_type)
+            if exit_code == 0 then
+              log_to_buf({ "", method.success_msg })
+              log_to_buf({ "", "Update successful. Stopping further attempts." })
+            else
+              log_to_buf({ "", method.cmd_name .. " update failed with exit code " .. exit_code .. "." })
+              run_next_update(index + 1) -- Try next method
+            end
+          end,
+          on_stderr = function(job_id, data, event_type)
+            log_to_buf(data)
+          end,
+        })
+      else
+        require('llm.core.utils.job').run(cmd_parts, {
+          on_exit = function(job_id, exit_code, event_type)
+            if exit_code == 0 then
+              vim.notify("LLM-Nvim: " .. method.success_msg, vim.log.levels.INFO)
+            else
+              run_next_update(index + 1)
+            end
           end
-        end,
-        on_stderr = function(job_id, data, event_type)
-          vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, data)
-        end,
-      })
+        })
+      end
     else
       run_next_update(index + 1) -- Try next method if current one was skipped
     end
