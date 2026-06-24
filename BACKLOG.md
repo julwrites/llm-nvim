@@ -52,18 +52,21 @@
 - [Tech Debt 5]: Custom YAML parsing in `custom_openai.lua` might be fragile.
 
 ## Ranked Backlog
-1.1 [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Create `tools_manager.lua` and `tools_view.lua` to list and manage tools.
-1.2 [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Integrate tools view into `unified_manager.lua` and `facade.lua`.
-1.3 [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Update `:LLM` command in `commands.lua` and `api.lua` to support passing tool arguments.
-1.4 [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim - Write tests in `tests/spec/tools_spec.lua` and update docs (`CRITICAL-005-add-tools-support.md`).
-2.1 [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support - Create `embeddings_manager.lua` and `embeddings_view.lua`.
-2.2 [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support - Integrate embeddings view into `unified_manager.lua`.
-2.3 [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support - Add `:LLMEmbed` command support to generate and store embeddings.
-2.4 [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support - Add `:LLMSimilar` command support to search code.
-3.1 [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress - Write tests for `lua/llm/managers/custom_openai.lua`.
-3.2 [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress - Write tests for `lua/llm/managers/templates_manager.lua`.
-3.3 [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress - Write tests for `lua/llm/managers/models_manager.lua`.
-3.4 [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress - Write tests for other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
+1. [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
+  - Create `tools_manager.lua` and `tools_view.lua` to list and manage tools.
+  - Integrate tools view into `unified_manager.lua` and `facade.lua`.
+  - Update `:LLM` command in `commands.lua` and `api.lua` to support passing tool arguments.
+  - Write tests in `tests/spec/tools_spec.lua` and update docs (`CRITICAL-005-add-tools-support.md`).
+2. [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support.
+  - Create `embeddings_manager.lua` and `embeddings_view.lua`.
+  - Integrate embeddings view into `unified_manager.lua`.
+  - Add `:LLMEmbed` command support to generate and store embeddings.
+  - Add `:LLMSimilar` command support to search code.
+3. [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress.
+  - Write tests for `lua/llm/managers/custom_openai.lua`.
+  - Write tests for `lua/llm/managers/templates_manager.lua`.
+  - Write tests for `lua/llm/managers/models_manager.lua`.
+  - Write tests for other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
 4. [Tech Debt 2] - [High Impact/Low Effort] - Improve async job handling robustness in `job.lua` (e.g. process exiting mid-buffer).
 5. [Tech Debt 3] - [Medium Impact/Medium Effort] - Optimize Lua/Python interoperability for smoother command line execution.
 6. [Gap 3] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
