@@ -52,11 +52,10 @@
 - [Tech Debt 5]: Custom YAML parsing in `custom_openai.lua` might be fragile.
 
 ## Ranked Backlog
-1. [Gap 1] - [High Impact/High Effort] - Implement Tools / Function Calling support to allow models to execute tools within Neovim.
-  - Create `tools_manager.lua` and `tools_view.lua` to list and manage tools.
-  - Integrate tools view into `unified_manager.lua` and `facade.lua`.
-  - Update `:LLM` command in `commands.lua` and `api.lua` to support passing tool arguments.
-  - Write tests in `tests/spec/tools_spec.lua` and update docs (`CRITICAL-005-add-tools-support.md`).
+1. [Gap 1.1] - [High Impact/Medium Effort] - Create core `tools_manager.lua` to interface with the llm CLI to list and execute tools.
+1. [Gap 1.2] - [High Impact/Medium Effort] - Create UI components (`tools_view.lua`) and integrate with `unified_manager.lua` and `facade.lua`.
+1. [Gap 1.3] - [Medium Impact/Low Effort] - Update `:LLM` command in `commands.lua` and `api.lua` to parse and pass tool arguments.
+1. [Gap 1.4] - [High Impact/Low Effort] - Write tests for the new tools features in `tests/spec/tools_spec.lua` and add documentation (`CRITICAL-005-add-tools-support.md`).
 2. [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support.
   - Create `embeddings_manager.lua` and `embeddings_view.lua`.
   - Integrate embeddings view into `unified_manager.lua`.
