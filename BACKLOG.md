@@ -56,16 +56,8 @@
 1. [Gap 1.2] - [High Impact/Medium Effort] - Create UI components (`tools_view.lua`) and integrate with `unified_manager.lua` and `facade.lua`.
 1. [Gap 1.3] - [Medium Impact/Low Effort] - Update `:LLM` command in `commands.lua` and `api.lua` to parse and pass tool arguments.
 1. [Gap 1.4] - [High Impact/Low Effort] - Write tests for the new tools features in `tests/spec/tools_spec.lua` and add documentation (`CRITICAL-005-add-tools-support.md`).
-2. [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support.
-  - Create `embeddings_manager.lua` and `embeddings_view.lua`.
-  - Integrate embeddings view into `unified_manager.lua`.
-  - Add `:LLMEmbed` command support to generate and store embeddings.
-  - Add `:LLMSimilar` command support to search code.
-3. [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress.
-  - Write tests for `lua/llm/managers/custom_openai.lua`.
-  - Write tests for `lua/llm/managers/templates_manager.lua`.
-  - Write tests for `lua/llm/managers/models_manager.lua`.
-  - Write tests for other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
+2. [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support. Create `embeddings_manager.lua` and `embeddings_view.lua`. Integrate embeddings view into `unified_manager.lua`. Add `:LLMEmbed` command support to generate and store embeddings. Add `:LLMSimilar` command support to search code.
+3. [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress. Write tests for `lua/llm/managers/custom_openai.lua`, `lua/llm/managers/templates_manager.lua`, `lua/llm/managers/models_manager.lua`, and other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
 4. [Tech Debt 2] - [High Impact/Low Effort] - Improve async job handling robustness in `job.lua` (e.g. process exiting mid-buffer).
 5. [Tech Debt 3] - [Medium Impact/Medium Effort] - Optimize Lua/Python interoperability for smoother command line execution.
 6. [Gap 3] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
