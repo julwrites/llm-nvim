@@ -29,7 +29,7 @@
 - Save as Template (`--save`): Save prompt with a template name.
 - Async Execution (`--async`): Run prompt asynchronously.
 - Stream Control (`--no-stream`): Do not stream output.
-
+- Key Configuration (`--key`): API key to use for prompt and chat.
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Tools / Function Calling (`-T`, `--tool`, `--functions`, `tools`, `--td`, `--ta`, `--cl`).
 - [Gap 2]: Missing support for Embeddings (`embed`, `embed-models`, `embed-multi`, `collections`, `similar`).
@@ -50,14 +50,20 @@
 - [Tech Debt 3]: Optimize Lua/Python interoperability for smoother command line execution.
 - [Tech Debt 4]: `M.interactive_prompt_with_fragments` in `fragments_manager.lua` is not fully tested.
 - [Tech Debt 5]: Custom YAML parsing in `custom_openai.lua` might be fragile.
-
+- [Gap 15]: Missing support for explicitly setting the API key per command (`--key`).
 ## Ranked Backlog
 1. [Gap 1.1] - [High Impact/Medium Effort] - Create core `tools_manager.lua` to interface with the llm CLI to list and execute tools.
 1. [Gap 1.2] - [High Impact/Medium Effort] - Create UI components (`tools_view.lua`) and integrate with `unified_manager.lua` and `facade.lua`.
 1. [Gap 1.3] - [Medium Impact/Low Effort] - Update `:LLM` command in `commands.lua` and `api.lua` to parse and pass tool arguments.
 1. [Gap 1.4] - [High Impact/Low Effort] - Write tests for the new tools features in `tests/spec/tools_spec.lua` and add documentation (`CRITICAL-005-add-tools-support.md`).
-2. [Gap 2] - [Medium Impact/High Effort] - Implement Embeddings support. Create `embeddings_manager.lua` and `embeddings_view.lua`. Integrate embeddings view into `unified_manager.lua`. Add `:LLMEmbed` command support to generate and store embeddings. Add `:LLMSimilar` command support to search code.
-3. [Tech Debt 1] - [High Impact/High Effort] - Increase Code Coverage to 80% to ensure core logic and features do not regress. Write tests for `lua/llm/managers/custom_openai.lua`, `lua/llm/managers/templates_manager.lua`, `lua/llm/managers/models_manager.lua`, and other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
+2. [Gap 2.1] - [Medium Impact/High Effort] - Implement Embeddings support: Create `embeddings_manager.lua`.
+2. [Gap 2.2] - [Medium Impact/High Effort] - Implement Embeddings support: Create `embeddings_view.lua` and integrate into `unified_manager.lua`.
+2. [Gap 2.3] - [Medium Impact/High Effort] - Implement Embeddings support: Add `:LLMEmbed` command.
+2. [Gap 2.4] - [Medium Impact/High Effort] - Implement Embeddings support: Add `:LLMSimilar` command.
+3. [Tech Debt 1.1] - [High Impact/High Effort] - Increase Code Coverage to 80%: Write tests for `lua/llm/managers/custom_openai.lua`.
+3. [Tech Debt 1.2] - [High Impact/High Effort] - Increase Code Coverage to 80%: Write tests for `lua/llm/managers/templates_manager.lua`.
+3. [Tech Debt 1.3] - [High Impact/High Effort] - Increase Code Coverage to 80%: Write tests for `lua/llm/managers/models_manager.lua`.
+3. [Tech Debt 1.4] - [High Impact/High Effort] - Increase Code Coverage to 80%: Write tests for other managers (`schemas_manager`, `plugins_manager`, `fragments_manager`, etc).
 4. [Tech Debt 2] - [High Impact/Low Effort] - Improve async job handling robustness in `job.lua` (e.g. process exiting mid-buffer).
 5. [Tech Debt 3] - [Medium Impact/Medium Effort] - Optimize Lua/Python interoperability for smoother command line execution.
 6. [Gap 3] - [Medium Impact/Medium Effort] - Implement Multi-modal attachments support (e.g., attaching images to prompts if terminal/UI supports it, or passing paths).
@@ -74,3 +80,4 @@
 17. [Gap 14] - [Low Impact/Low Effort] - Implement Save as Template (`--save`) directly from prompt command.
 18. [Tech Debt 4] - [Low Impact/Medium Effort] - Write tests for `M.interactive_prompt_with_fragments` in `fragments_manager.lua`.
 19. [Tech Debt 5] - [Low Impact/Medium Effort] - Refactor custom YAML parsing in `custom_openai.lua` to be more robust.
+20. [Gap 15] - [Medium Impact/Low Effort] - Support passing API keys via `--key` to override the configured/default key.
