@@ -52,7 +52,7 @@
 - [Tech Debt 5]: Custom YAML parsing in `custom_openai.lua` might be fragile.
 - [Gap 15]: Missing support for explicitly setting the API key per command (`--key`).
 ## Ranked Backlog
-1. [Gap 1.1] - [High Impact/Medium Effort] - Create core `tools_manager.lua` to interface with the llm CLI to list and execute tools.
+1. [Gap 1.1b] - [High Impact/Medium Effort] - Add functionality to `tools_manager.lua` to execute tools.
 1. [Gap 1.2] - [High Impact/Medium Effort] - Create UI components (`tools_view.lua`) and integrate with `unified_manager.lua` and `facade.lua`.
 1. [Gap 1.3] - [Medium Impact/Low Effort] - Update `:LLM` command in `commands.lua` and `api.lua` to parse and pass tool arguments.
 1. [Gap 1.4] - [High Impact/Low Effort] - Write tests for the new tools features in `tests/spec/tools_spec.lua` and add documentation (`CRITICAL-005-add-tools-support.md`).
