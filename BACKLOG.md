@@ -28,16 +28,16 @@
 - [Gap 8]: Missing support for Continue Conversation (`-c`, `--continue`, `--cid`, `--conversation`).
 - [Gap 9]: Missing support for Query Selection (`-q`, `--query`).
 - [Gap 10]: Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
-- [Tech Debt 1]: Increase overall code coverage.
+- [Tech Debt 1]: Increase overall code coverage. Test coverage is currently at ~46%, well below the 80% target. Managers like models_manager, templates_manager, schemas_manager, keys_manager, fragments_manager, custom_openai, plugins_manager all have less than 50% coverage.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `fragments_manager.lua`.
 
 ## Ranked Backlog
-1. [Gap 1] - [High Impact/Medium Effort] - Implement functionality to support executing and integrating tools into the LLM prompts.
-2. [Tech Debt 1] - [High Impact/High Effort] - Increase overall code coverage across managers by adding comprehensive unit testing.
+1. [Gap 1] - [High Impact/Medium Effort] - Implement functionality to support executing and integrating tools into the LLM prompts (`-T`, `--tool`, `--functions`, `--td`, `--ta`, `--cl`).
+2. [Tech Debt 1] - [High Impact/High Effort] - Increase overall code coverage across managers by adding comprehensive unit testing, targeting the >80% goal.
 3. [Gap 3] - [High Impact/Low Effort] - Implement Extractions (`-x`, `--xl`) support for targeted code block extraction from model responses.
 4. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-5. [Gap 2] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types.
+5. [Gap 2] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`).
 6. [Gap 4] - [Medium Impact/Low Effort] - Expose Model Options (`-o`) configuration per model or prompt.
 7. [Gap 5] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`).
 8. [Gap 8] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`) easily from previous prompt sessions.
