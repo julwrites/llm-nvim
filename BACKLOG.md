@@ -33,7 +33,9 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `fragments_manager.lua`.
 
 ## Ranked Backlog
-1. [Gap 1] - [High Impact/Medium Effort] - Implement functionality to support executing and integrating tools into the LLM prompts (`-T`, `--tool`, `--functions`, `--td`, `--ta`, `--cl`).
+1. [Gap 1 - Subtask 1] - [High Impact/Medium Effort] - Implement UI and Manager for Tools (tools_manager.lua, tools_view.lua, unified_manager.lua).
+1. [Gap 1 - Subtask 2] - [High Impact/Medium Effort] - Integrate tool support into command execution and prompting in `commands.lua` and `plugin/llm.lua`.
+1. [Gap 1 - Subtask 3] - [High Impact/Medium Effort] - Add tests for Tools UI and Tools command execution.
 2. [Tech Debt 1] - [High Impact/High Effort] - Increase overall code coverage across managers by adding comprehensive unit testing, targeting the >80% goal.
 3. [Gap 3] - [High Impact/Low Effort] - Implement Extractions (`-x`, `--xl`) support for targeted code block extraction from model responses.
 4. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
