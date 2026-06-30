@@ -15,6 +15,7 @@ local keys_manager = require('llm.managers.keys_manager')
 local fragments_manager = require('llm.managers.fragments_manager')
 local templates_manager = require('llm.managers.templates_manager')
 local schemas_manager = require('llm.managers.schemas_manager')
+local tools_manager = require('llm.managers.tools_manager')
 
 -- State for the unified window
 local state = {
@@ -54,6 +55,12 @@ local views = {
     setup_keymaps = fragments_manager.setup_fragments_keymaps,
     title = "Fragments",
     manager_module = fragments_manager,
+  },
+  Tools = {
+    populate = tools_manager.populate_tools_buffer,
+    setup_keymaps = tools_manager.setup_tools_keymaps,
+    title = "Tools",
+    manager_module = tools_manager,
   },
 }
 
@@ -95,6 +102,7 @@ local function setup_common_keymaps(bufnr)
   set_keymap('n', 'P', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Plugins")<CR>')
   set_keymap('n', 'K', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Keys")<CR>')
   set_keymap('n', 'F', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Fragments")<CR>')
+  set_keymap('n', 'T', '<Cmd>lua require("llm.ui.unified_manager").switch_view("Tools")<CR>')
 end
 
 -- Switch the view within the unified window
