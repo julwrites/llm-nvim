@@ -42,6 +42,11 @@ M.defaults = {
     type = "string",
     desc = "Path to the llm executable (e.g., 'llm' or '/usr/local/bin/llm')"
   },
+  tools = {
+    default = nil,
+    type = "string",
+    desc = "Default tools to make available to the model (comma separated string)"
+  },
   -- Add more config options here
 }
 

@@ -64,6 +64,26 @@ function M.get_fragment_args(fragment_list)
   return args -- Return the table directly
 end
 
+-- Get tools arguments if specified
+function M.get_tool_args()
+  local tools = config.get("tools")
+  if not tools or tools == "" then
+    return {}
+  end
+
+  local args = {}
+  local tool_list = vim.split(tools, ",")
+  for _, tool in ipairs(tool_list) do
+    local trimmed_tool = vim.trim(tool)
+    if trimmed_tool ~= "" then
+      table.insert(args, "-T")
+      table.insert(args, trimmed_tool)
+    end
+  end
+
+  return args
+end
+
 -- Get system fragment arguments if specified
 function M.get_system_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
@@ -204,6 +224,8 @@ function M.prompt(prompt, fragment_paths, bufnr)
     table.insert(cmd_parts, system_prompt)
   end
 
+  vim.list_extend(cmd_parts, M.get_tool_args())
+
   if fragment_paths then
     for _, fragment in ipairs(fragment_paths) do
       table.insert(cmd_parts, "-f")
@@ -253,6 +275,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   -- Add model and system args
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
+  vim.list_extend(cmd_parts, M.get_tool_args())
 
   -- Add user-specified fragments
   if fragment_paths then
@@ -307,6 +330,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   local cmd_parts = { M.get_llm_executable_path() }
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
+  vim.list_extend(cmd_parts, M.get_tool_args())
   if fragment_paths then
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end
