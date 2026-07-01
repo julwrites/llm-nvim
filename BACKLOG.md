@@ -35,7 +35,6 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `fragments_manager.lua`.
 
 ## Ranked Backlog
-1. [Gap 1 - Subtask 2] - [High Impact/Medium Effort] - Integrate tool support into command execution and prompting in `commands.lua` and `plugin/llm.lua`.
 1. [Gap 1 - Subtask 3] - [High Impact/Medium Effort] - Add tests for Tools UI and Tools command execution.
 2. [Tech Debt 1 - Subtask 1] - [High Impact/High Effort] - Increase test coverage for models_manager, templates_manager, and schemas_manager.
 2. [Tech Debt 1 - Subtask 2] - [High Impact/High Effort] - Increase test coverage for keys_manager, fragments_manager.
