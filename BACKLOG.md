@@ -38,7 +38,8 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `fragments_manager.lua`.
 
 ## Ranked Backlog
-1. [Gap 3] - [High Impact/Low Effort] - Implement Extractions (`-x`, `--extract`, `--xl`, `--extract-last`) support for targeted code block extraction from model responses.
+1. [Gap 3 - Subtask 1] - [High Impact/Low Effort] - Add extraction configuration options to config.lua and plugin/llm.lua.
+1. [Gap 3 - Subtask 2] - [High Impact/Low Effort] - Update command execution in commands.lua to append extract flags and add test coverage.
 2. [Gap 1] - [High Impact/Medium Effort] - Add support for Tools / Function Calling (`-T`, `--tool`, `--functions`, `--td`, `--ta`, `--cl`) in commands.
 3. [Gap 4] - [Medium Impact/Low Effort] - Expose Model Options (`-o`, `--option`) configuration per model or prompt.
 4. [Gap 5] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
