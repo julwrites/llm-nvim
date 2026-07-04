@@ -36,6 +36,7 @@
 - [Tech Debt 1]: Increase overall code coverage. Test coverage is currently well below the 80% target.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
+- [Gap 14]: Missing support for specifying an API key per request (`--key`).
 
 ## Ranked Backlog
 1. [Gap 3 - Subtask 2] - [High Impact/Low Effort] - Update command execution in commands.lua to append extract flags and add test coverage.
@@ -56,3 +57,4 @@
 16. [Gap 10] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
 17. [Gap 12] - [Low Impact/Low Effort] - Add support for Database Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
 18. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+19. [Gap 14] - [Low Impact/Low Effort] - Support specifying an API key per request (`--key`).
