@@ -47,6 +47,11 @@ M.defaults = {
     type = "string",
     desc = "Default tools to make available to the model (comma separated string)"
   },
+  extract = {
+    default = false,
+    type = "boolean",
+    desc = "Extract content of fenced code blocks"
+  },
   -- Add more config options here
 }
 

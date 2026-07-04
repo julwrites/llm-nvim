@@ -33,10 +33,12 @@ describe('llm.config', function()
       local user_opts = {
         model = 'test-model',
         debug = true,
+        extract = true,
       }
       config.setup(user_opts)
       assert.are.same('test-model', config.get('model'))
       assert.are.same(true, config.get('debug'))
+      assert.are.same(true, config.get('extract'))
       -- Check a default value was not overwritten
       assert.are.same('You are a helpful assistant.', config.get('system_prompt'))
     end)

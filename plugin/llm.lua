@@ -45,6 +45,7 @@ if vim.g.llm_auto_update_cli then user_config.auto_update_cli = vim.g.llm_auto_u
 if vim.g.llm_auto_update_interval_days then user_config.auto_update_interval_days = vim.g.llm_auto_update_interval_days end
 if vim.g.llm_executable_path then user_config.llm_executable_path = vim.g.llm_executable_path end
 if vim.g.llm_tools then user_config.tools = vim.g.llm_tools end
+if vim.g.llm_extract ~= nil then user_config.extract = vim.g.llm_extract end
 
 llm.setup(user_config)
 
