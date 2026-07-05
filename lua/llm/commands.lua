@@ -84,6 +84,15 @@ function M.get_tool_args()
   return args
 end
 
+-- Get extract argument if specified
+function M.get_extract_arg()
+  local extract = config.get("extract")
+  if extract then
+    return { "-x" }
+  end
+  return {}
+end
+
 -- Get system fragment arguments if specified
 function M.get_system_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
@@ -225,6 +234,7 @@ function M.prompt(prompt, fragment_paths, bufnr)
   end
 
   vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_extract_arg())
 
   if fragment_paths then
     for _, fragment in ipairs(fragment_paths) do
@@ -276,6 +286,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_extract_arg())
 
   -- Add user-specified fragments
   if fragment_paths then
@@ -331,6 +342,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_extract_arg())
   if fragment_paths then
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end
