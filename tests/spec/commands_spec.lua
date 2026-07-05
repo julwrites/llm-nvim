@@ -49,6 +49,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     package.loaded['llm.core.utils.ui'] = nil
   end)
 
+  describe('get_extract_arg', function()
+    it('should return {-x} if extract is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'extract' then return true end
+        return nil
+      end)
+      local result = commands.get_extract_arg()
+      assert.same({ '-x' }, result)
+    end)
+
+    it('should return {} if extract is false', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'extract' then return false end
+        return nil
+      end)
+      local result = commands.get_extract_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('prompt', function()
     it('should call api.run_streaming_command with the correct arguments', function()
       commands.prompt('test prompt', {}, 1)
