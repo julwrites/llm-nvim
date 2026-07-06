@@ -37,20 +37,19 @@
 - [Gap 12]: Missing support for specifying an API key per request (`--key`).
 
 ## Ranked Backlog
-1. [Gap 2] - [Medium Impact/Low Effort] - Expose Model Options (`-o`, `--option`) configuration per model or prompt.
-2. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
-3. [Gap 6] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
-4. [Gap 9] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
-5. [Gap 11] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
-6. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
-7. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-8. [Tech Debt 1 - Subtask 1] - [High Impact/High Effort] - Increase test coverage for models_manager, templates_manager, and schemas_manager.
-9. [Tech Debt 1 - Subtask 2] - [High Impact/High Effort] - Increase test coverage for keys_manager, fragments_manager.
-10. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
-11. [Gap 4] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-12. [Gap 5] - [Low Impact/Low Effort] - Allow composing System Fragments (`--sf`, `--system-fragment`).
-13. [Gap 7] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-14. [Gap 8] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-15. [Gap 10] - [Low Impact/Low Effort] - Add support for Database Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
-16. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-17. [Gap 12] - [Low Impact/Low Effort] - Support specifying an API key per request (`--key`).
+1. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
+2. [Gap 6] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
+3. [Gap 9] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
+4. [Gap 11] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
+5. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
+6. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+7. [Tech Debt 1 - Subtask 1] - [High Impact/High Effort] - Increase test coverage for models_manager, templates_manager, and schemas_manager.
+8. [Tech Debt 1 - Subtask 2] - [High Impact/High Effort] - Increase test coverage for keys_manager, fragments_manager.
+9. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
+10. [Gap 4] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+11. [Gap 5] - [Low Impact/Low Effort] - Allow composing System Fragments (`--sf`, `--system-fragment`).
+12. [Gap 7] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+13. [Gap 8] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+14. [Gap 10] - [Low Impact/Low Effort] - Add support for Database Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
+15. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+16. [Gap 12] - [Low Impact/Low Effort] - Support specifying an API key per request (`--key`).
