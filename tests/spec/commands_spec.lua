@@ -49,6 +49,42 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     package.loaded['llm.core.utils.ui'] = nil
   end)
 
+  describe('get_model_options_args', function()
+    it('should return empty table if model_options is nil', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'model_options' then return nil end
+        return nil
+      end)
+      local result = commands.get_model_options_args()
+      assert.same({}, result)
+    end)
+
+    it('should return -o arguments if model_options is a table', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'model_options' then return { temperature = 0.8, top_p = 0.9 } end
+        return nil
+      end)
+      local result = commands.get_model_options_args()
+      -- Since pairs order is undefined, we need to check if both are present
+      assert.is_true(#result == 6)
+
+      local has_temp = false
+      local has_topp = false
+      for i = 1, #result, 3 do
+        if result[i] == '-o' then
+          if result[i+1] == 'temperature' and result[i+2] == '0.8' then
+            has_temp = true
+          elseif result[i+1] == 'top_p' and result[i+2] == '0.9' then
+            has_topp = true
+          end
+        end
+      end
+
+      assert.is_true(has_temp)
+      assert.is_true(has_topp)
+    end)
+  end)
+
   describe('get_extract_arg', function()
     it('should return {-x} if extract is true', function()
       package.loaded['llm.config'].get = spy.new(function(key)

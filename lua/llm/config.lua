@@ -52,6 +52,11 @@ M.defaults = {
     type = "boolean",
     desc = "Extract content of fenced code blocks"
   },
+  model_options = {
+    default = nil,
+    type = "table",
+    desc = "Key/value options for the model (e.g., {temperature = 0.8, top_p = 0.9})"
+  },
   -- Add more config options here
 }
 
