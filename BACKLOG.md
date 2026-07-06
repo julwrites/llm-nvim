@@ -21,10 +21,10 @@
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
-- [Gap 2]: Missing support for Model Options (`-o`, `--option`).
+- [Gap 2]: Missing support for Template Options (`-t`, `--template`).
 - [Gap 3]: Missing support for Template Parameters (`-p`, `--param`).
 - [Gap 4]: Missing support for Usage tracking (`-u`, `--usage`).
-- [Gap 5]: Missing support for System Fragments (`--sf`, `--system-fragment`).
+- [Gap 5]: Missing support for Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
 - [Gap 6]: Missing support for Continue Conversation (`-c`, `--continue`, `--cid`, `--conversation`).
 - [Gap 7]: Missing support for Query Selection (`-q`, `--query`).
 - [Gap 8]: Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
@@ -35,21 +35,24 @@
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 - [Gap 12]: Missing support for specifying an API key per request (`--key`).
+- [Gap 13]: Missing support for Extract Last (`--xl`, `--extract-last`).
 
 ## Ranked Backlog
-1. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
-2. [Gap 6] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
-3. [Gap 9] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
-4. [Gap 11] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
-5. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
-6. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-7. [Tech Debt 1 - Subtask 1] - [High Impact/High Effort] - Increase test coverage for models_manager, templates_manager, and schemas_manager.
-8. [Tech Debt 1 - Subtask 2] - [High Impact/High Effort] - Increase test coverage for keys_manager, fragments_manager.
-9. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
-10. [Gap 4] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-11. [Gap 5] - [Low Impact/Low Effort] - Allow composing System Fragments (`--sf`, `--system-fragment`).
-12. [Gap 7] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-13. [Gap 8] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-14. [Gap 10] - [Low Impact/Low Effort] - Add support for Database Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
-15. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-16. [Gap 12] - [Low Impact/Low Effort] - Support specifying an API key per request (`--key`).
+1. [Gap 2] - [Medium Impact/Low Effort] - Add support for Template Options (`-t`, `--template`).
+2. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
+3. [Gap 6] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
+4. [Gap 9] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
+5. [Gap 11] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
+6. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
+7. [Gap 5] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
+8. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+9. [Tech Debt 1 - Subtask 1] - [High Impact/High Effort] - Increase test coverage for models_manager, templates_manager, and schemas_manager.
+10. [Tech Debt 1 - Subtask 2] - [High Impact/High Effort] - Increase test coverage for keys_manager, fragments_manager.
+11. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
+12. [Gap 4] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+13. [Gap 7] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+14. [Gap 8] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+15. [Gap 10] - [Low Impact/Low Effort] - Add support for Database Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
+16. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+17. [Gap 12] - [Low Impact/Low Effort] - Support specifying an API key per request (`--key`).
+18. [Gap 13] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
