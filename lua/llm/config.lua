@@ -57,6 +57,11 @@ M.defaults = {
     type = "table",
     desc = "Key/value options for the model (e.g., {temperature = 0.8, top_p = 0.9})"
   },
+  template = {
+    default = nil,
+    type = "string",
+    desc = "Prompt template to use"
+  },
   -- Add more config options here
 }
 
