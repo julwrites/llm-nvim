@@ -85,6 +85,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_template_arg', function()
+    it('should return {-t, template_name} if template is set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'template' then return 'my-template' end
+        return nil
+      end)
+      local result = commands.get_template_arg()
+      assert.same({ '-t', 'my-template' }, result)
+    end)
+
+    it('should return {} if template is not set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'template' then return nil end
+        return nil
+      end)
+      local result = commands.get_template_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_extract_arg', function()
     it('should return {-x} if extract is true', function()
       package.loaded['llm.config'].get = spy.new(function(key)

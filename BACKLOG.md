@@ -21,7 +21,6 @@
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
-- [Gap 2]: Missing support for Template Options (`-t`, `--template`).
 - [Gap 3]: Missing support for Template Parameters (`-p`, `--param`).
 - [Gap 4]: Missing support for Usage tracking (`-u`, `--usage`).
 - [Gap 5]: Missing support for Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
@@ -38,8 +37,7 @@
 - [Gap 13]: Missing support for Extract Last (`--xl`, `--extract-last`).
 
 ## Ranked Backlog
-1. [Gap 2] - [Medium Impact/Low Effort] - Add support for Template Options (`-t`, `--template`).
-2. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
+1. [Gap 3] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
 3. [Gap 6] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
 4. [Gap 9] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
 5. [Gap 11] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
