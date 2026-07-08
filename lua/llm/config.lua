@@ -62,6 +62,11 @@ M.defaults = {
     type = "string",
     desc = "Prompt template to use"
   },
+  template_params = {
+    default = nil,
+    type = "table",
+    desc = "Key/value parameters for the template (e.g., {name = 'World'})"
+  },
   -- Add more config options here
 }
 

@@ -117,6 +117,21 @@ function M.get_template_arg()
   return {}
 end
 
+-- Get template parameters arguments if specified
+function M.get_template_params_args()
+  local template_params = config.get("template_params")
+  if type(template_params) == "table" then
+    local args = {}
+    for key, value in pairs(template_params) do
+      table.insert(args, "-p")
+      table.insert(args, tostring(key))
+      table.insert(args, tostring(value))
+    end
+    return args
+  end
+  return {}
+end
+
 -- Get system fragment arguments if specified
 function M.get_system_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
@@ -261,6 +276,7 @@ function M.prompt(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_template_params_args())
 
   if fragment_paths then
     for _, fragment in ipairs(fragment_paths) do
@@ -315,6 +331,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_template_params_args())
 
   -- Add user-specified fragments
   if fragment_paths then
@@ -373,6 +390,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_template_params_args())
   if fragment_paths then
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end

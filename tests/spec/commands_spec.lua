@@ -85,6 +85,41 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_template_params_args', function()
+    it('should return empty table if template_params is nil', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'template_params' then return nil end
+        return nil
+      end)
+      local result = commands.get_template_params_args()
+      assert.same({}, result)
+    end)
+
+    it('should return -p arguments if template_params is a table', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'template_params' then return { name = 'World', age = 30 } end
+        return nil
+      end)
+      local result = commands.get_template_params_args()
+      assert.is_true(#result == 6)
+
+      local has_name = false
+      local has_age = false
+      for i = 1, #result, 3 do
+        if result[i] == '-p' then
+          if result[i+1] == 'name' and result[i+2] == 'World' then
+            has_name = true
+          elseif result[i+1] == 'age' and result[i+2] == '30' then
+            has_age = true
+          end
+        end
+      end
+
+      assert.is_true(has_name)
+      assert.is_true(has_age)
+    end)
+  end)
+
   describe('get_template_arg', function()
     it('should return {-t, template_name} if template is set', function()
       package.loaded['llm.config'].get = spy.new(function(key)

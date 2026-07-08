@@ -22,7 +22,6 @@
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
-- [Gap 2]: Missing support for Template Parameters (`-p`, `--param`).
 - [Gap 3]: Missing support for Usage tracking (`-u`, `--usage`).
 - [Gap 4]: Missing support for Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
 - [Gap 5]: Missing support for Continue Conversation (`-c`, `--continue`, `--cid`, `--conversation`).
@@ -38,8 +37,7 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 
 ## Ranked Backlog
-1. [Gap 2] - [Medium Impact/Low Effort] - Support dynamic Template Parameters (`-p`, `--param`).
-2. [Gap 5] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
+1. [Gap 5] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
 3. [Gap 8] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
 4. [Gap 10] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
 5. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
