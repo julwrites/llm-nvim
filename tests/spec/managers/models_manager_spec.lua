@@ -6,6 +6,21 @@ local cache = require('llm.core.data.cache')
 local models_io = require('llm.managers.models_io')
 
 describe('models_manager', function()
+  describe('extract_model_name', function()
+    it('should extract correct name for custom OpenAI model', function()
+      local name = models_manager.extract_model_name("OpenAI (custom): my-custom-model")
+      assert.are.equal("my-custom-model", name)
+    end)
+    it('should return empty string for empty input', function()
+      local name = models_manager.extract_model_name("")
+      assert.are.equal("", name)
+    end)
+    it('should extract correct name for standard model', function()
+      local name = models_manager.extract_model_name("OpenAI Chat: gpt-4")
+      assert.are.equal("gpt-4", name)
+    end)
+  end)
+
   describe('get_available_models', function()
     it('should parse the output from llm-cli correctly', function()
       -- Mock the llm_cli.run_llm_command function
@@ -79,6 +94,18 @@ describe('models_manager', function()
 
       -- Restore the original function
       models_manager.get_available_providers = original_get_available_providers
+    end)
+  end)
+
+  describe('generate_models_list', function()
+    it('should return no models message when no models available', function()
+      local original_get_available_models = models_manager.get_available_models
+      models_manager.get_available_models = function() return {} end
+
+      local result = models_manager.generate_models_list()
+      assert.are.equal("# Model Management - No Models Found", result.lines[1])
+
+      models_manager.get_available_models = original_get_available_models
     end)
   end)
 
