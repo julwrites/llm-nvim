@@ -63,6 +63,7 @@ M.api = {
     if not M.bo[bufnr] then M.bo[bufnr] = {} end
     M.bo[bufnr][option] = value
   end,
+  ["nvim_win_set_option"] = function() end,
   ["nvim_buf_set_lines"] = function(bufnr, start, end_, _, lines)
     if not M.api._buffers[bufnr] then M.api._buffers[bufnr] = {} end
 
@@ -248,6 +249,7 @@ function M.system(cmd, opts, callback)
   }
 end
 
+M.o = { columns = 80, lines = 24 }
 
 _G.vim = M
 
