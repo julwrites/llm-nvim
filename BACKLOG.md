@@ -31,6 +31,7 @@
 - [Tech Debt 1]: Increase overall code coverage. Test coverage is currently well below the 80% target.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
+- [Gap 10]: Missing integration of System Fragments (`--sf`, `--system-fragment`) into prompt commands.
 
 ## Ranked Backlog
 3. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
@@ -45,3 +46,4 @@
 12. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
 13. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 14. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+15. [Gap 10] - [Medium Impact/Low Effort] - Integrate System Fragments (`--sf`, `--system-fragment`) into prompt commands.
