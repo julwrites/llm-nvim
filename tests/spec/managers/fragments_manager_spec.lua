@@ -125,4 +125,58 @@ describe('fragments_manager', function()
       assert.spy(llm_cli_spy).was.called_with('fragments store https://github.com/user/repo/blob/main/file.txt')
     end)
   end)
+
+  describe('populate_fragments_buffer', function()
+    it('should set lines in the buffer', function()
+      local nvim_buf_set_lines_spy = spy.on(vim.api, 'nvim_buf_set_lines')
+      local styles = require('llm.ui.styles')
+      local setup_highlights_spy = spy.on(styles, 'setup_highlights')
+      local setup_buffer_syntax_spy = spy.on(styles, 'setup_buffer_syntax')
+      vim.b = { [1] = {} }
+      _G.llm_fragments_show_all = true
+
+      fragments_manager.get_fragments = function()
+        return { { hash = '123', content = 'test', aliases = {'test-alias'} } }
+      end
+
+      fragments_manager.populate_fragments_buffer(1)
+      assert.spy(nvim_buf_set_lines_spy).was_called()
+      setup_highlights_spy:revert()
+      setup_buffer_syntax_spy:revert()
+      nvim_buf_set_lines_spy:revert()
+    end)
+  end)
+
+  describe('toggle_fragments_view', function()
+    it('should switch view and toggle global flag', function()
+      local unified_manager_spy = spy.on(unified_manager, 'switch_view')
+      _G.llm_fragments_show_all = false
+      fragments_manager.toggle_fragments_view(1)
+      assert.is_true(_G.llm_fragments_show_all)
+      assert.spy(unified_manager_spy).was_called_with('Fragments')
+      unified_manager_spy:revert()
+    end)
+  end)
+
+  describe('get_fragment_info_under_cursor', function()
+    it('should return fragment info', function()
+      local nvim_win_get_cursor_spy = spy.on(vim.api, 'nvim_win_get_cursor')
+      vim.api.nvim_win_get_cursor = function() return {1, 0} end
+      vim.b = { [1] = { line_to_fragment = { [1] = '123' }, fragment_data = { ['123'] = { hash = '123' } } } }
+      local fragment_hash, fragment_info = fragments_manager.get_fragment_info_under_cursor(1)
+      assert.are.equal('123', fragment_hash)
+      assert.is_table(fragment_info)
+      nvim_win_get_cursor_spy:revert()
+    end)
+  end)
+
+  describe('manage_fragments', function()
+    it('should call open_specific_manager', function()
+      local open_specific_manager_spy = spy.on(unified_manager, 'open_specific_manager')
+      fragments_manager.manage_fragments(true)
+      assert.is_true(_G.llm_fragments_show_all)
+      assert.spy(open_specific_manager_spy).was_called_with('Fragments')
+      open_specific_manager_spy:revert()
+    end)
+  end)
 end)
