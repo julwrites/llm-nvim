@@ -195,4 +195,122 @@ describe('plugins_manager', function()
       llm_cli.run_llm_command = old_run_llm_command
     end)
   end)
+
+  describe('populate_plugins_buffer', function()
+    it('should handle no available plugins', function()
+      local old_get_available = plugins_manager.get_available_plugins
+      plugins_manager.get_available_plugins = function() return {} end
+
+      local bufnr = 1
+      local lines_set = false
+      vim.api.nvim_buf_set_lines = function() lines_set = true end
+
+      local line_to_plugin, plugin_data = plugins_manager.populate_plugins_buffer(bufnr)
+
+      assert.is_true(lines_set)
+      assert.same({}, line_to_plugin)
+      assert.same({}, plugin_data)
+
+      plugins_manager.get_available_plugins = old_get_available
+    end)
+  end)
+
+  describe('setup_plugins_keymaps', function()
+    it('should set keymaps for plugin actions', function()
+      local bufnr = 1
+      local keymaps_set = 0
+      vim.api.nvim_buf_set_keymap = function() keymaps_set = keymaps_set + 1 end
+
+      plugins_manager.setup_plugins_keymaps(bufnr)
+
+      assert.are.equal(3, keymaps_set)
+    end)
+  end)
+
+  describe('refresh_plugin_list', function()
+    it('should trigger refresh_available_plugins', function()
+      local old_refresh = plugins_manager.refresh_available_plugins
+      local refreshed = false
+      plugins_manager.refresh_available_plugins = function() refreshed = true end
+
+      plugins_manager.refresh_plugin_list(1)
+
+      assert.is_true(refreshed)
+
+      plugins_manager.refresh_available_plugins = old_refresh
+    end)
+  end)
+
+  describe('install_plugin_under_cursor', function()
+    it('should notify if no plugin is selected', function()
+      local old_get_info = plugins_manager.get_plugin_info_under_cursor
+      plugins_manager.get_plugin_info_under_cursor = function() return nil, nil end
+      local notify_called = false
+      vim.notify = function() notify_called = true end
+
+      plugins_manager.install_plugin_under_cursor(1)
+
+      assert.is_true(notify_called)
+
+      plugins_manager.get_plugin_info_under_cursor = old_get_info
+    end)
+  end)
+
+  describe('uninstall_plugin_under_cursor', function()
+    it('should notify if no plugin is selected', function()
+      local old_get_info = plugins_manager.get_plugin_info_under_cursor
+      plugins_manager.get_plugin_info_under_cursor = function() return nil, nil end
+      local notify_called = false
+      vim.notify = function() notify_called = true end
+
+      plugins_manager.uninstall_plugin_under_cursor(1)
+
+      assert.is_true(notify_called)
+
+      plugins_manager.get_plugin_info_under_cursor = old_get_info
+    end)
+  end)
+
+  describe('refresh_available_plugins', function()
+    it('should invalidate cache and schedule fetch', function()
+      local invalidated_count = 0
+      local old_invalidate = cache.invalidate
+      cache.invalidate = function() invalidated_count = invalidated_count + 1 end
+
+      local deferred = false
+      vim.defer_fn = function(fn) fn(); deferred = true end
+
+      local callback_called = false
+      plugins_manager.refresh_available_plugins(function() callback_called = true end)
+
+      assert.are.equal(3, invalidated_count)
+      assert.is_true(deferred)
+      assert.is_true(callback_called)
+
+      cache.invalidate = old_invalidate
+    end)
+  end)
+
+  describe('get_plugin_info_under_cursor', function()
+    it('should return nil if buffer data is missing', function()
+      vim.api.nvim_win_get_cursor = function() return {1, 0} end
+      vim.b = { [1] = {} } -- empty buffer data
+
+      local name, info = plugins_manager.get_plugin_info_under_cursor(1)
+
+      assert.is_nil(name)
+      assert.is_nil(info)
+    end)
+  end)
+
+  describe('manage_plugins', function()
+    it('should open unified manager with Plugins view', function()
+      local mock_unified = { open_specific_manager = function(view) assert.are.equal("Plugins", view) end }
+      package.loaded['llm.ui.unified_manager'] = mock_unified
+
+      plugins_manager.manage_plugins()
+
+      package.loaded['llm.ui.unified_manager'] = nil
+    end)
+  end)
 end)

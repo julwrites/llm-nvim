@@ -1,0 +1,60 @@
+# Sample extra-openai-models.yaml
+# This file allows defining custom OpenAI-compatible models or overriding properties.
+# Models are defined as a YAML list.
+#
+# - model_id: (Required) The unique identifier for the model.
+#   model_name: (Optional) A user-friendly display name. Defaults to model_id.
+#   api_base: (Optional) The base URL for the API.
+#               Example: https://api.example.com/v1
+#   api_key_name: (Optional) The name of the key to use from keys.json.
+#                 Required if 'needs_auth' is true or not specified.
+#                 Example: my_custom_api_key
+#   headers: (Optional) Custom headers to send with requests.
+#            Can be a JSON string or a YAML map.
+#            Example as JSON string: '{"X-My-Header": "value"}'
+#            Example as YAML map:
+#              X-My-Header: value
+#              Authorization: Bearer your_static_token # If token is static and not from keys.json
+#   needs_auth: (Optional) Whether this model requires an API key via 'api_key_name'.
+#               Default: true
+#   supports_functions: (Optional) Whether this model supports function calling.
+#                       Default: false
+#   supports_system_prompt: (Optional) Whether this model supports system prompts.
+#                           Default: true
+
+- model_id: my-custom-gpt4-turbo
+  model_name: My Custom GPT-4 Turbo (Needs Auth)
+  api_base: https://my.openai.proxy/v1
+  api_key_name: my_proxy_key # Must be set in keys.json
+  # headers: '{"X-Custom-Billing-ID": "project-123"}' # Example JSON string for headers
+  # supports_functions: true # Uncomment if it supports functions
+
+- model_id: anyscale-llama3-70b
+  model_name: Anyscale Llama3 70B
+  api_base: https://api.endpoints.anyscale.com/v1
+  api_key_name: anyscale_token # Must be set in keys.json
+  supports_functions: true
+  supports_system_prompt: true
+
+- model_id: local-model-no-auth
+  model_name: Local Model (No Auth)
+  api_base: http://localhost:1234/v1
+  needs_auth: false # No API key needed
+  supports_system_prompt: false
+  # headers: # Example YAML map for headers
+  #   X-Forwarded-To: "llm-nvim"
+
+# - model_id: azure-deployment-id # Example for Azure
+#   model_name: Azure GPT-4 Turbo
+#   api_base: https://your-resource.openai.azure.com/openai/deployments/YOUR_DEPLOYMENT_ID
+#   api_key_name: azure_openai_key # Key for your Azure OpenAI service in keys.json
+#   # For Azure, 'api-version' is often required in headers or as a query param.
+#   # If using headers:
+#   # headers:
+#   #   api-key: Will be overridden by keys.json if api_key_name is also set.
+#   #            Prefer api_key_name for dynamic keys.
+#   #   Api-Version: "2024-02-15-preview" # Or your desired API version
+#   # If needs_auth is true (default), the key from api_key_name will be added
+#   # to headers as 'Authorization: Bearer <key_value>'.
+#   # If your Azure setup needs 'api-key' header instead, manage it through static headers
+#   # and potentially set needs_auth: false if the key is only in the header.
