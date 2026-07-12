@@ -34,7 +34,6 @@
 - [Gap 10]: Missing integration of System Fragments (`--sf`, `--system-fragment`) into prompt commands.
 
 ## Ranked Backlog
-3. [Tech Debt 1 - Subtask 3] - [High Impact/High Effort] - Increase test coverage for custom_openai, plugins_manager.
 4. [Gap 4] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
 5. [Gap 7] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
 6. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).

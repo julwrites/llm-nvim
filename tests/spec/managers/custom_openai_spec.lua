@@ -145,4 +145,79 @@ describe("llm.managers.custom_openai", function()
       assert.is_true(is_valid)
     end)
   end)
+
+  describe("debug_custom_openai_models()", function()
+    it("should print debug information for custom models", function()
+      file_utils.get_config_path = function() return "tests/spec", "tests/spec/extra-openai-models.yaml" end
+      local io_open_orig = io.open
+      io.open = function(path, mode)
+        if string.find(path, "yaml") then
+          return { read = function() return "" end, close = function() end }
+        end
+        return io_open_orig(path, mode)
+      end
+      local notify_called = false
+      vim.notify = function() notify_called = true end
+
+      custom_openai.debug_custom_openai_models()
+
+      assert.is_true(notify_called)
+      io.open = io_open_orig
+    end)
+  end)
+
+  describe("create_sample_yaml_file()", function()
+    it("should return false if config directory is not found", function()
+      file_utils.get_config_path = function() return nil, nil end
+      local result = custom_openai.create_sample_yaml_file()
+      assert.is_false(result)
+    end)
+
+    it("should write a sample file and return true", function()
+      file_utils.get_config_path = function() return "tests/spec", "tests/spec/extra-openai-models.yaml.sample" end
+      local io_open_orig = io.open
+      local write_called = false
+      io.open = function(path, mode)
+        if string.find(path, "yaml") then
+          return { write = function() write_called = true end, close = function() end }
+        end
+        return io_open_orig(path, mode)
+      end
+
+      local result = custom_openai.create_sample_yaml_file()
+      assert.is_true(result)
+      assert.is_true(write_called)
+      io.open = io_open_orig
+    end)
+  end)
+
+  describe("serialize_to_yaml()", function()
+    it("should serialize an empty list to empty string", function()
+      local result = custom_openai.serialize_to_yaml({})
+      assert.are.equal("", result)
+    end)
+
+    it("should serialize valid models", function()
+      local models = {
+        { model_id = "test", model_name = "Test", needs_auth = false, supports_functions = true, supports_system_prompt = false }
+      }
+      local result = custom_openai.serialize_to_yaml(models)
+      assert.is_true(string.find(result, "model_id: test") ~= nil)
+      assert.is_true(string.find(result, "needs_auth: false") ~= nil)
+    end)
+  end)
+
+  describe("add_custom_openai_model()", function()
+    it("should return false if model_id is missing", function()
+      local result, err = custom_openai.add_custom_openai_model({})
+      assert.is_false(result)
+    end)
+  end)
+
+  describe("delete_custom_openai_model()", function()
+    it("should return false if model_id is missing", function()
+      local result, err = custom_openai.delete_custom_openai_model(nil)
+      assert.is_false(result)
+    end)
+  end)
 end)
