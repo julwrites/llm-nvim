@@ -10,7 +10,7 @@
 - [Model Options]: Key/value options for the model.
 - [Template Parameters]: Parameters for template.
 - [Usage tracking]: Show token usage.
-- [System Fragments]: Fragment to add to system prompt.
+- [Logging]: Options to log prompts and responses.
 - [Continue Conversation]: Continue the most recent or specific conversation.
 - [Query Selection]: Use first model matching strings.
 - [Save as Template]: Save prompt with a template name.
@@ -31,18 +31,22 @@
 - [Tech Debt 1]: Increase overall code coverage. Test coverage is currently well below the 80% target.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
-- [Gap 10]: Missing integration of System Fragments (`--sf`, `--system-fragment`) into prompt commands.
+- [Gap 10]: Missing support for Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
+- [Tech Debt 4]: Remove invalid/dead code for `--system-fragment` (`-sf`) in `lua/llm/commands.lua` as it is not supported by upstream `llm` CLI.
+- [Tech Debt 5]: Refactor duplicated command construction logic across `M.prompt`, `M.prompt_with_current_file`, and `M.prompt_with_selection` in `lua/llm/commands.lua`.
 
 ## Ranked Backlog
-4. [Gap 4] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
-5. [Gap 7] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
-6. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
-7. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
-8. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
-9. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-10. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-11. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-12. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-13. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-14. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-15. [Gap 10] - [Medium Impact/Low Effort] - Integrate System Fragments (`--sf`, `--system-fragment`) into prompt commands.
+4. [Tech Debt 4] - [High Impact/Low Effort] - Remove invalid/dead code for `--system-fragment` (`-sf`) in `lua/llm/commands.lua`.
+5. [Gap 4] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
+6. [Gap 7] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
+7. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
+8. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
+9. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
+10. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
+11. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+12. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+13. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+14. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+15. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+16. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+17. [Gap 10] - [Low Impact/Low Effort] - Add support for Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
