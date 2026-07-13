@@ -132,22 +132,6 @@ function M.get_template_params_args()
   return {}
 end
 
--- Get system fragment arguments if specified
-function M.get_system_fragment_args(fragment_list)
-  if not fragment_list or #fragment_list == 0 then
-    return {} -- Return empty table if no fragments
-  end
-
-  local args = {}
-  for _, fragment in ipairs(fragment_list) do
-    -- Add '--system-fragment' and the fragment as separate elements
-    table.insert(args, "--system-fragment")
-    table.insert(args, fragment)
-  end
-
-  return args -- Return the table directly
-end
-
 -- Run an llm command and return the result
 
 function M.get_pre_response_message(source, prompt, fragment_paths)
