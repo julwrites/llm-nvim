@@ -17,6 +17,7 @@
 - [Async Execution]: Run prompt asynchronously.
 - [Stream Control]: Do not stream output.
 - [Schemas]: Manage stored schemas and use them in prompts.
+- [System Fragment]: Add fragment to system prompt.
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
@@ -33,6 +34,7 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 - [Gap 10]: Missing support for Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
 - [Tech Debt 5]: Refactor duplicated command construction logic across `M.prompt`, `M.prompt_with_current_file`, and `M.prompt_with_selection` in `lua/llm/commands.lua`.
+- [Gap 11]: Missing support for System Fragment (`--sf`, `--system-fragment`).
 
 ## Ranked Backlog
 1. [Gap 4] - [Medium Impact/Low Effort] - Add functionality to Continue Conversations (`-c`, `--continue`, `--cid`, `--conversation`) easily from previous prompt sessions.
@@ -48,3 +50,4 @@
 11. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 12. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
 13. [Gap 10] - [Low Impact/Low Effort] - Add support for Logging options (`-d`, `--database`, `-n`, `--no-log`, `--log`).
+14. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
