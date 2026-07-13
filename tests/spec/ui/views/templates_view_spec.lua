@@ -86,13 +86,6 @@
 --   end)
 
 --   describe('get_add_system_fragment_choice()', function()
---     it('should call vim.ui.select', function()
---       vim.ui.select = spy.new(function() end)
---       templates_view.get_add_system_fragment_choice(function() end)
---       assert.spy(vim.ui.select).was.called()
---     end)
---   end)
-
 --   describe('get_option_choice()', function()
 --     it('should call vim.ui.select', function()
 --       vim.ui.select = spy.new(function() end)

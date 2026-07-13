@@ -33,7 +33,7 @@ end
 
 -- Create a template
 -- Save a template
-function M.save_template(name, prompt, system, model, options, fragments, system_fragments, defaults, extract, schema)
+function M.save_template(name, prompt, system, model, options, fragments, defaults, extract, schema)
     local cmd = 'templates save ' .. name
     if prompt then
         cmd = cmd .. " --prompt '" .. prompt .. "'"
@@ -49,9 +49,6 @@ function M.save_template(name, prompt, system, model, options, fragments, system
     end
     for _, f in ipairs(fragments) do
         cmd = cmd .. ' -f ' .. f
-    end
-    for _, f in ipairs(system_fragments) do
-        cmd = cmd .. ' -sf ' .. f
     end
     for k, v in pairs(defaults) do
         cmd = cmd .. " -d " .. k .. " '" .. v .. "'"
@@ -268,7 +265,7 @@ function M.create_template_guided()
       return
     end
 
-    local template = { name = name, defaults = {}, options = {}, fragments = {}, system_fragments = {} }
+    local template = { name = name, defaults = {}, options = {}, fragments = {} }
     M.continue_template_creation_type(template)
   end)
 end
@@ -337,10 +334,6 @@ function M.continue_template_creation_fragments(template)
     if not fragment_choice then return end
     if fragment_choice == "Add fragments" then
       M.add_fragments_loop(template, "fragments", function()
-        M.continue_template_creation_options(template)
-      end)
-    elseif fragment_choice == "Add system fragments" then
-      M.add_fragments_loop(template, "system_fragments", function()
         M.continue_template_creation_options(template)
       end)
     else
@@ -468,7 +461,6 @@ function M.finalize_template_creation(template)
     template.model,
     template.options,
     template.fragments,
-    template.system_fragments,
     template.defaults,
     template.extract,
     template.schema

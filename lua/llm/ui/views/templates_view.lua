@@ -72,8 +72,7 @@ end
 function M.get_fragment_choice(callback)
     vim.ui.select({
         "No fragments",
-        "Add fragments",
-        "Add system fragments"
+        "Add fragments"
     }, {
         prompt = "Do you want to add fragments?"
     }, callback)
@@ -86,16 +85,6 @@ function M.get_add_fragment_choice(callback)
         "Done adding fragments"
     }, {
         prompt = "Add fragment:"
-    }, callback)
-end
-
-function M.get_add_system_fragment_choice(callback)
-    vim.ui.select({
-        "Select from file browser",
-        "Enter fragment path/URL",
-        "Done adding system fragments"
-    }, {
-        prompt = "Add system fragment:"
     }, callback)
 end
 
