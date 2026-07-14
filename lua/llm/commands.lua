@@ -132,6 +132,18 @@ function M.get_template_params_args()
   return {}
 end
 
+-- Get conversation arguments if specified
+function M.get_conversation_args()
+  local args = {}
+  local cid = config.get("conversation_id")
+  if cid and cid ~= "" then
+    return { "--cid", cid }
+  elseif config.get("continue_conversation") then
+    return { "-c" }
+  end
+  return {}
+end
+
 -- Run an llm command and return the result
 
 function M.get_pre_response_message(source, prompt, fragment_paths)
@@ -261,6 +273,7 @@ function M.prompt(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_conversation_args())
 
   if fragment_paths then
     for _, fragment in ipairs(fragment_paths) do
@@ -316,6 +329,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_conversation_args())
 
   -- Add user-specified fragments
   if fragment_paths then
@@ -375,6 +389,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_conversation_args())
   if fragment_paths then
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
   end

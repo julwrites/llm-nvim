@@ -67,6 +67,16 @@ M.defaults = {
     type = "table",
     desc = "Key/value parameters for the template (e.g., {name = 'World'})"
   },
+  continue_conversation = {
+    default = false,
+    type = "boolean",
+    desc = "Continue the most recent conversation"
+  },
+  conversation_id = {
+    default = nil,
+    type = "string",
+    desc = "Continue the conversation with the given ID"
+  },
   -- Add more config options here
 }
 
