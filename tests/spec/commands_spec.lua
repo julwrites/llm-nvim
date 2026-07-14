@@ -160,6 +160,34 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_conversation_args', function()
+    it('should return {--cid, cid} if conversation_id is set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'conversation_id' then return 'test-id' end
+        return nil
+      end)
+      local result = commands.get_conversation_args()
+      assert.same({ '--cid', 'test-id' }, result)
+    end)
+
+    it('should return {-c} if continue_conversation is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'continue_conversation' then return true end
+        return nil
+      end)
+      local result = commands.get_conversation_args()
+      assert.same({ '-c' }, result)
+    end)
+
+    it('should return {} if neither are set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        return nil
+      end)
+      local result = commands.get_conversation_args()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('prompt', function()
     it('should call api.run_streaming_command with the correct arguments', function()
       commands.prompt('test prompt', {}, 1)
