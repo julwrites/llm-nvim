@@ -18,6 +18,8 @@
 - [Schemas]: Manage stored schemas and use them in prompts.
 - [System Fragment]: Add fragment to system prompt.
 - [Embeddings]: Create embeddings, find similar items, and manage collections.
+- [Logs]: Explore logged prompts and responses.
+- [Database Options]: Options for logging to database.
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
@@ -40,6 +42,8 @@
 - [Gap 12.2]: Missing support for Embeddings commands (`similar`).
 - [Gap 12.3]: Missing support for Embeddings commands (`collections` and `aliases`).
 - [Gap 13]: Missing support for API Key override (`--key`).
+- [Gap 14]: Missing support for Logs commands to explore logged prompts and responses.
+- [Gap 15]: Missing support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
 
 ## Ranked Backlog
 1. [Gap 12.1.1a] - [High Impact/Medium Effort] - Core Logic - Create `embeddings_manager.lua` with the underlying API call for `embed`.
@@ -62,3 +66,5 @@
 18. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
 19. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
 20. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
+21. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
+22. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
