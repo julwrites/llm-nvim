@@ -569,4 +569,19 @@ function M.test_terminal_creation()
   vim.cmd('startinsert')
 end
 
+---------------------
+-- Embed Command
+---------------------
+
+function M.embed(args_str)
+  local embeddings_manager = require('llm.managers.embeddings_manager')
+  local result = embeddings_manager.embed(args_str)
+
+  if result then
+    vim.notify("Embeddings generated successfully.", vim.log.levels.INFO)
+  else
+    vim.notify("Failed to generate embeddings.", vim.log.levels.ERROR)
+  end
+end
+
 return M

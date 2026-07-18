@@ -35,9 +35,6 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 5]: Refactor duplicated command construction logic across `M.prompt`, `M.prompt_with_current_file`, and `M.prompt_with_selection` in `lua/llm/commands.lua`.
 - [Gap 11]: Missing support for System Fragment (`--sf`, `--system-fragment`).
-- [Gap 12.1.1a]: Core Logic - Create `embeddings_manager.lua` with the underlying API call for `embed`.
-- [Gap 12.1.1b]: UI/Commands - Update `commands.lua` and `plugin/llm.lua` to expose the `:LLM embed` command.
-- [Gap 12.1.1c]: Testing - Add unit tests for the new embeddings manager and commands.
 - [Gap 12.1.2]: Missing support for Embeddings commands (`embed-multi`).
 - [Gap 12.2]: Missing support for Embeddings commands (`similar`).
 - [Gap 12.3]: Missing support for Embeddings commands (`collections` and `aliases`).
@@ -46,25 +43,22 @@
 - [Gap 15]: Missing support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
 
 ## Ranked Backlog
-1. [Gap 12.1.1a] - [High Impact/Medium Effort] - Core Logic - Create `embeddings_manager.lua` with the underlying API call for `embed`.
-2. [Gap 12.1.1b] - [High Impact/Medium Effort] - UI/Commands - Update `commands.lua` and `plugin/llm.lua` to expose the `:LLM embed` command.
-3. [Gap 12.1.1c] - [High Impact/Medium Effort] - Testing - Add unit tests for the new embeddings manager and commands.
-4. [Gap 12.1.2] - [High Impact/Medium Effort] - Add support for Embeddings commands (`embed-multi`).
-5. [Gap 12.2] - [High Impact/Medium Effort] - Add support for Embeddings commands (`similar`).
-6. [Gap 12.3] - [High Impact/Medium Effort] - Add support for Embeddings commands (`collections` and `aliases`).
-7. [Gap 7] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
-8. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
-9. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
-10. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
-11. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
-12. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
-13. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-14. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-15. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-16. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-17. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-18. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-19. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-20. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
-21. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
-22. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
+1. [Gap 12.1.2] - [High Impact/Medium Effort] - Add support for Embeddings commands (`embed-multi`).
+2. [Gap 12.2] - [High Impact/Medium Effort] - Add support for Embeddings commands (`similar`).
+3. [Gap 12.3] - [High Impact/Medium Effort] - Add support for Embeddings commands (`collections` and `aliases`).
+4. [Gap 7] - [Medium Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompts.
+5. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
+6. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
+7. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
+8. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
+9. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
+10. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+11. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+12. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+13. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+14. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+15. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+16. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+17. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
+18. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
+19. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
