@@ -74,7 +74,8 @@ local command_handlers = {
   end,
   explain = function() require('llm.commands').explain_code(nil, nil) end,
   fragments = function() llm.interactive_prompt_with_fragments() end,
-  update = manual_cli_update
+  update = manual_cli_update,
+  embed = function(prompt, is_range) require('llm.commands').embed(prompt) end
 }
 
 -- Main LLM command with subcommands
