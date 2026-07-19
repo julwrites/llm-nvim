@@ -140,6 +140,34 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_schema_args', function()
+    it('should return {--schema, schema} if schema is set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'schema' then return 'test-schema' end
+        return nil
+      end)
+      local result = commands.get_schema_args()
+      assert.same({ '--schema', 'test-schema' }, result)
+    end)
+
+    it('should return {--schema-multi, schema_multi} if schema_multi is set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'schema_multi' then return 'test-schema-multi' end
+        return nil
+      end)
+      local result = commands.get_schema_args()
+      assert.same({ '--schema-multi', 'test-schema-multi' }, result)
+    end)
+
+    it('should return {} if neither are set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        return nil
+      end)
+      local result = commands.get_schema_args()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_extract_arg', function()
     it('should return {-x} if extract is true', function()
       package.loaded['llm.config'].get = spy.new(function(key)

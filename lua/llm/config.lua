@@ -67,6 +67,16 @@ M.defaults = {
     type = "table",
     desc = "Key/value parameters for the template (e.g., {name = 'World'})"
   },
+  schema = {
+    default = nil,
+    type = "string",
+    desc = "Schema option to validate output against"
+  },
+  schema_multi = {
+    default = nil,
+    type = "string",
+    desc = "Schema multi option to validate array output against"
+  },
   continue_conversation = {
     default = false,
     type = "boolean",
