@@ -117,6 +117,18 @@ function M.get_template_arg()
   return {}
 end
 
+-- Get schema arguments if specified
+function M.get_schema_args()
+  local schema = config.get("schema")
+  local schema_multi = config.get("schema_multi")
+  if schema and schema ~= "" then
+    return { "--schema", schema }
+  elseif schema_multi and schema_multi ~= "" then
+    return { "--schema-multi", schema_multi }
+  end
+  return {}
+end
+
 -- Get template parameters arguments if specified
 function M.get_template_params_args()
   local template_params = config.get("template_params")
@@ -273,6 +285,7 @@ function M.prompt(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())
 
   if fragment_paths then
@@ -329,6 +342,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())
 
   -- Add user-specified fragments
@@ -389,6 +403,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())
   if fragment_paths then
     vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
