@@ -37,6 +37,9 @@
 - [Gap 13]: Missing support for API Key override (`--key`).
 - [Gap 14]: Missing support for Logs commands to explore logged prompts and responses.
 - [Gap 15]: Missing support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
+- [Gap 16]: Missing support for embed-models management (`llm embed-models`).
+- [Gap 17]: Missing support for managing Collections (`llm collections`).
+- [Gap 18]: Missing support for Similarity search (`llm similar`).
 
 ## Ranked Backlog
 1. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
@@ -53,3 +56,6 @@
 12. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
 13. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
 14. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
+15. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+16. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
+17. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
