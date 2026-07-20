@@ -62,6 +62,11 @@ M.defaults = {
     type = "string",
     desc = "Prompt template to use"
   },
+  save = {
+    default = nil,
+    type = "string",
+    desc = "Save prompt as a template with this name"
+  },
   template_params = {
     default = nil,
     type = "table",

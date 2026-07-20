@@ -28,7 +28,6 @@
 - [Gap 5]: Missing support for Query Selection (`-q`, `--query`).
 - [Gap 6]: Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
 - [Gap 7]: Missing support for Schema Options (`--schema`, `--schema-multi`) in prompting.
-- [Gap 8]: Missing support for Save as Template (`--save`).
 - [Gap 9]: Missing support for Extract Last (`--xl`, `--extract-last`).
 - [Tech Debt 1]: Increase overall code coverage. Test coverage is currently well below the 80% target.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
@@ -40,18 +39,17 @@
 - [Gap 15]: Missing support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
 
 ## Ranked Backlog
-1. [Gap 8] - [Medium Impact/Low Effort] - Add support to Save as Template (`--save`).
-2. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
-3. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
-4. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
-5. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
-6. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-7. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-8. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-9. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-10. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-11. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-12. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-13. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
-14. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
-15. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
+1. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `lua/llm/commands.lua`.
+2. [Gap 1] - [Medium Impact/Medium Effort] - Implement Multi-modal attachment support for models that accept images or other data types (`-a`, `--attachment`, `--at`, `--attachment-type`).
+3. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
+4. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
+5. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+6. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+7. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+8. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+9. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+10. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+11. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+12. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
+13. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
+14. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
