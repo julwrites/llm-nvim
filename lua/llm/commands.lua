@@ -93,6 +93,15 @@ function M.get_extract_arg()
   return {}
 end
 
+-- Get save template argument if specified
+function M.get_save_template_arg()
+  local save = config.get("save")
+  if save and save ~= "" then
+    return { "--save", save }
+  end
+  return {}
+end
+
 -- Get model options arguments if specified
 function M.get_model_options_args()
   local model_options = config.get("model_options")
@@ -284,6 +293,7 @@ function M.prompt(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_save_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
   vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())
@@ -341,6 +351,7 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_save_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
   vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())
@@ -402,6 +413,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_save_template_arg())
   vim.list_extend(cmd_parts, M.get_template_params_args())
   vim.list_extend(cmd_parts, M.get_schema_args())
   vim.list_extend(cmd_parts, M.get_conversation_args())

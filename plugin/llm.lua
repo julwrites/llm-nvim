@@ -48,6 +48,7 @@ if vim.g.llm_tools then user_config.tools = vim.g.llm_tools end
 if vim.g.llm_extract ~= nil then user_config.extract = vim.g.llm_extract end
 if vim.g.llm_schema then user_config.schema = vim.g.llm_schema end
 if vim.g.llm_schema_multi then user_config.schema_multi = vim.g.llm_schema_multi end
+if vim.g.llm_save then user_config.save = vim.g.llm_save end
 
 llm.setup(user_config)
 

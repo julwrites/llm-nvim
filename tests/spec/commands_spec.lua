@@ -140,6 +140,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_save_template_arg', function()
+    it('should return {--save, template_name} if save is set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'save' then return 'my-template' end
+        return nil
+      end)
+      local result = commands.get_save_template_arg()
+      assert.same({ '--save', 'my-template' }, result)
+    end)
+
+    it('should return {} if save is not set', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'save' then return nil end
+        return nil
+      end)
+      local result = commands.get_save_template_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_schema_args', function()
     it('should return {--schema, schema} if schema is set', function()
       package.loaded['llm.config'].get = spy.new(function(key)
