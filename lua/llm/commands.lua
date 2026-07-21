@@ -165,6 +165,28 @@ function M.get_conversation_args()
   return {}
 end
 
+-- Build common base command arguments for llm prompt commands
+function M.build_base_cmd(fragment_paths)
+  local cmd_parts = { M.get_llm_executable_path() }
+
+  vim.list_extend(cmd_parts, M.get_model_arg())
+  vim.list_extend(cmd_parts, M.get_system_arg())
+  vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_extract_arg())
+  vim.list_extend(cmd_parts, M.get_model_options_args())
+  vim.list_extend(cmd_parts, M.get_template_arg())
+  vim.list_extend(cmd_parts, M.get_save_template_arg())
+  vim.list_extend(cmd_parts, M.get_template_params_args())
+  vim.list_extend(cmd_parts, M.get_schema_args())
+  vim.list_extend(cmd_parts, M.get_conversation_args())
+
+  if fragment_paths then
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+  end
+
+  return cmd_parts
+end
+
 -- Run an llm command and return the result
 
 function M.get_pre_response_message(source, prompt, fragment_paths)
@@ -210,6 +232,34 @@ end
 function M.fill_response_buffer(bufnr, content)
   ui.replace_buffer_with_content(content, bufnr, "markdown")
   vim.cmd("redraw")
+end
+
+function M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
+  local target_bufnr = bufnr
+  if not target_bufnr then
+    vim.cmd('vnew')
+    target_bufnr = vim.api.nvim_get_current_buf()
+    local buffer_name = "LLM Response - " .. os.time()
+    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
+    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
+    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
+  end
+
+  local callbacks = {
+    on_stdout = function(_, data)
+      if data then
+        for _, line in ipairs(data) do
+          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+        end
+      end
+    end,
+  }
+
+  if on_exit then
+    callbacks.on_exit = on_exit
+  end
+
+  return target_bufnr, callbacks
 end
 
 -- Helper function to select an existing fragment alias
@@ -273,58 +323,8 @@ end
 
 -- Send a prompt to llm
 function M.prompt(prompt, fragment_paths, bufnr)
-  local llm_executable_path = config.get("llm_executable_path")
-  local model = config.get("model")
-  local system_prompt = config.get("system_prompt")
-
-  local cmd_parts = { llm_executable_path }
-
-  if model and model ~= "" then
-    table.insert(cmd_parts, "-m")
-    table.insert(cmd_parts, model)
-  end
-
-  if system_prompt and system_prompt ~= "" then
-    table.insert(cmd_parts, "-s")
-    table.insert(cmd_parts, system_prompt)
-  end
-
-  vim.list_extend(cmd_parts, M.get_tool_args())
-  vim.list_extend(cmd_parts, M.get_extract_arg())
-  vim.list_extend(cmd_parts, M.get_model_options_args())
-  vim.list_extend(cmd_parts, M.get_template_arg())
-  vim.list_extend(cmd_parts, M.get_save_template_arg())
-  vim.list_extend(cmd_parts, M.get_template_params_args())
-  vim.list_extend(cmd_parts, M.get_schema_args())
-  vim.list_extend(cmd_parts, M.get_conversation_args())
-
-  if fragment_paths then
-    for _, fragment in ipairs(fragment_paths) do
-      table.insert(cmd_parts, "-f")
-      table.insert(cmd_parts, fragment)
-    end
-  end
-
-  local target_bufnr = bufnr
-  if not target_bufnr then
-    vim.cmd('vnew')
-    target_bufnr = vim.api.nvim_get_current_buf()
-    local buffer_name = "LLM Response - " .. os.time()
-    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
-    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
-    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
-  end
-
-  local callbacks = {
-    on_stdout = function(_, data) 
-      if data then
-        for _, line in ipairs(data) do
-          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
-        end
-      end
-    end,
-  }
-
+  local cmd_parts = M.build_base_cmd(fragment_paths)
+  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr)
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
 
@@ -342,49 +342,13 @@ function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
     return
   end
 
-  local cmd_parts = { M.get_llm_executable_path() }
-
-  -- Add model and system args
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  vim.list_extend(cmd_parts, M.get_tool_args())
-  vim.list_extend(cmd_parts, M.get_extract_arg())
-  vim.list_extend(cmd_parts, M.get_model_options_args())
-  vim.list_extend(cmd_parts, M.get_template_arg())
-  vim.list_extend(cmd_parts, M.get_save_template_arg())
-  vim.list_extend(cmd_parts, M.get_template_params_args())
-  vim.list_extend(cmd_parts, M.get_schema_args())
-  vim.list_extend(cmd_parts, M.get_conversation_args())
-
-  -- Add user-specified fragments
-  if fragment_paths then
-    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
-  end
+  local cmd_parts = M.build_base_cmd(fragment_paths)
 
   -- Add the current file as a fragment
   table.insert(cmd_parts, "-f")
   table.insert(cmd_parts, filepath)
 
-  local target_bufnr = bufnr
-  if not target_bufnr then
-    vim.cmd('vnew')
-    target_bufnr = vim.api.nvim_get_current_buf()
-    local buffer_name = "LLM Response - " .. os.time()
-    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
-    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
-    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
-  end
-
-  local callbacks = {
-    on_stdout = function(_, data) 
-      if data then
-        for _, line in ipairs(data) do
-          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
-        end
-      end
-    end,
-  }
-
+  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr)
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
 
@@ -406,46 +370,18 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
 
   local temp_file = M.write_context_to_temp_file(selection)
 
-  local cmd_parts = { M.get_llm_executable_path() }
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  vim.list_extend(cmd_parts, M.get_tool_args())
-  vim.list_extend(cmd_parts, M.get_extract_arg())
-  vim.list_extend(cmd_parts, M.get_model_options_args())
-  vim.list_extend(cmd_parts, M.get_template_arg())
-  vim.list_extend(cmd_parts, M.get_save_template_arg())
-  vim.list_extend(cmd_parts, M.get_template_params_args())
-  vim.list_extend(cmd_parts, M.get_schema_args())
-  vim.list_extend(cmd_parts, M.get_conversation_args())
-  if fragment_paths then
-    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
-  end
+  local cmd_parts = M.build_base_cmd(fragment_paths)
+
   table.insert(cmd_parts, "-f")
   table.insert(cmd_parts, temp_file)
-  local target_bufnr = bufnr
-  if not target_bufnr then
-    vim.cmd('vnew')
-    target_bufnr = vim.api.nvim_get_current_buf()
-    local buffer_name = "LLM Response - " .. os.time()
-    vim.api.nvim_buf_set_name(target_bufnr, buffer_name)
-    vim.api.nvim_buf_set_option(target_bufnr, 'filetype', 'markdown')
-    vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
+
+  local on_exit = function()
+    vim.notify("LLM command finished.")
+    -- Clean up the temporary file
+    os.remove(temp_file)
   end
 
-  local callbacks = {
-    on_stdout = function(_, data) 
-      if data then
-        for _, line in ipairs(data) do
-          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
-        end
-      end
-    end,
-    on_exit = function()
-      vim.notify("LLM command finished.")
-      -- Clean up the temporary file
-      os.remove(temp_file)
-    end,
-  }
+  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
 
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
