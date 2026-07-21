@@ -18,8 +18,6 @@
 - [Schemas]: Manage stored schemas and use them in prompts.
 - [System Fragment]: Add fragment to system prompt.
 - [Embeddings]: Create embeddings, find similar items, and manage collections.
-- [Logs]: Explore logged prompts and responses.
-- [Database Options]: Options for logging to database.
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for Multi-modal attachments (`-a`, `--attachment`, `--at`, `--attachment-type`).
@@ -34,9 +32,6 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 5]: Refactor duplicated command construction logic across `M.prompt`, `M.prompt_with_current_file`, and `M.prompt_with_selection` in `lua/llm/commands.lua`.
 - [Gap 11]: Missing support for System Fragment (`--sf`, `--system-fragment`).
-- [Gap 13]: Missing support for API Key override (`--key`).
-- [Gap 14]: Missing support for Logs commands to explore logged prompts and responses.
-- [Gap 15]: Missing support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
 - [Gap 16]: Missing support for embed-models management (`llm embed-models`).
 - [Gap 17]: Missing support for managing Collections (`llm collections`).
 - [Gap 18]: Missing support for Similarity search (`llm similar`).
@@ -46,15 +41,14 @@
 2. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
 3. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
 4. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-5. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-6. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-7. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-8. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-9. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-10. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-11. [Gap 13] - [Low Impact/Low Effort] - Add support for API Key override (`--key`).
-12. [Gap 14] - [Low Impact/Low Effort] - Add support for Logs commands to explore logged prompts and responses.
-13. [Gap 15] - [Low Impact/Low Effort] - Add support for Database Options (`--log`, `--no-log`, `-d`, `--database`).
-14. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
-15. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
-16. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
+5. [Tech Debt 5] - [Medium Impact/Medium Effort] - Refactor duplicated command construction logic in `commands.lua`.
+6. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+7. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+8. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+9. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+10. [Gap 7] - [Low Impact/Low Effort] - Add support for Schema Options (`--schema`, `--schema-multi`) in prompting.
+11. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+12. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+13. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+14. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
+15. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
