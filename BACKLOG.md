@@ -1,22 +1,30 @@
 ## Unranked Catalog (Upstream LLM CLI features applicable to Neovim)
-- [Prompting]: Execute a prompt.
-- [Ongoing Chat]: Hold an ongoing chat with a model.
-- [Model Aliases]: Manage model aliases.
-- [Models]: View available models.
-- [Templates]: Manage stored prompt templates.
-- [Tools / Function Calling]: Make tools available to the model.
-- [Extractions]: Extract content of fenced code blocks.
-- [Model Options]: Key/value options for the model.
-- [Template Parameters]: Parameters for template.
-- [Usage tracking]: Show token usage.
-- [Continue Conversation]: Continue the most recent or specific conversation.
-- [Query Selection]: Use first model matching strings.
-- [Save as Template]: Save prompt with a template name.
-- [Async Execution]: Run prompt asynchronously.
-- [Stream Control]: Do not stream output.
-- [Schemas]: Manage stored schemas and use them in prompts.
-- [System Fragment]: Add fragment to system prompt.
-- [Embeddings]: Create embeddings, find similar items, and manage collections.
+- [Prompting]: Execute a prompt (`llm prompt`).
+- [Ongoing Chat]: Hold an ongoing chat with a model (`llm chat`).
+- [Model Aliases]: Manage model aliases (`llm aliases`).
+- [Models]: View available models (`llm models`).
+- [Templates]: Manage stored prompt templates (`llm templates`).
+- [Tools / Function Calling]: Make tools available to the model (`llm tools`, `-T`, `--functions`).
+- [Extractions]: Extract content of fenced code blocks (`-x`, `--xl`).
+- [Model Options]: Key/value options for the model (`-o`).
+- [Template Parameters]: Parameters for template (`-p`).
+- [Usage tracking]: Show token usage (`-u`).
+- [Continue Conversation]: Continue the most recent or specific conversation (`-c`, `--cid`).
+- [Query Selection]: Use first model matching strings (`-q`).
+- [Save as Template]: Save prompt with a template name (`--save`).
+- [Async Execution]: Run prompt asynchronously (`--async`).
+- [Stream Control]: Do not stream output (`--no-stream`).
+- [Schemas]: Manage stored schemas and use them in prompts (`llm schemas`, `--schema`, `--schema-multi`).
+- [System Fragment]: Add fragment to system prompt (`--sf`).
+- [Fragments]: Manage fragments and add to prompt (`llm fragments`, `-f`).
+- [Embeddings]: Embed text and store or return the result (`llm embed`).
+- [Embed Models]: Manage available embedding models (`llm embed-models`).
+- [Embed Multi]: Store embeddings for multiple strings at once (`llm embed-multi`).
+- [Collections]: View and manage collections of embeddings (`llm collections`).
+- [Similar]: Return top N similar IDs from a collection using cosine similarity (`llm similar`).
+- [Attachments]: Multi-modal models can be called with attachments (`-a`, `--at`).
+- [Logs]: Tools for exploring logged prompts and responses (`llm logs`, `-d`, `-n`, `--log`).
+- [Keys]: Manage stored API keys for different models (`llm keys`).
 
 ## Gaps & Tech Debt
 - [Gap 2]: Missing support for Usage tracking (`-u`, `--usage`).
@@ -33,6 +41,10 @@
 - [Gap 16]: Missing support for embed-models management (`llm embed-models`).
 - [Gap 17]: Missing support for managing Collections (`llm collections`).
 - [Gap 18]: Missing support for Similarity search (`llm similar`).
+- [Gap 19]: Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
+- [Gap 20]: Missing support for embed-multi (`llm embed-multi`).
+- [Gap 21]: Missing support for Database path (`-d`, `--database`).
+- [Gap 22]: Missing support for No Log (`-n`, `--no-log`) and Log (`--log`).
 
 ## Ranked Backlog
 1. [Gap 3] - [Medium Impact/Medium Effort] - Implement Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
@@ -49,3 +61,7 @@
 12. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
 13. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
 14. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
+15. [Gap 19] - [Low Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+16. [Gap 20] - [Low Impact/Medium Effort] - Add support for embed-multi (`llm embed-multi`).
+17. [Gap 21] - [Low Impact/Low Effort] - Add support for Database path (`-d`, `--database`).
+18. [Gap 22] - [Low Impact/Low Effort] - Add support for No Log (`-n`, `--no-log`) and Log (`--log`).
