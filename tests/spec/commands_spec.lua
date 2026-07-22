@@ -208,6 +208,35 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_attachment_args', function()
+    it('should return empty table if attachment is nil', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'attachment' then return nil end
+        return nil
+      end)
+      local result = commands.get_attachment_args()
+      assert.same({}, result)
+    end)
+
+    it('should return -a arguments if attachment is a string', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'attachment' then return 'test_image.png' end
+        return nil
+      end)
+      local result = commands.get_attachment_args()
+      assert.same({ '-a', 'test_image.png' }, result)
+    end)
+
+    it('should return multiple -a arguments if attachment is a table', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'attachment' then return { 'image1.png', 'image2.png' } end
+        return nil
+      end)
+      local result = commands.get_attachment_args()
+      assert.same({ '-a', 'image1.png', '-a', 'image2.png' }, result)
+    end)
+  end)
+
   describe('get_conversation_args', function()
     it('should return {--cid, cid} if conversation_id is set', function()
       package.loaded['llm.config'].get = spy.new(function(key)

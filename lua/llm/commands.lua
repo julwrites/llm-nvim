@@ -84,6 +84,22 @@ function M.get_tool_args()
   return args
 end
 
+-- Get attachment arguments if specified
+function M.get_attachment_args()
+  local attachment = config.get("attachment")
+  if type(attachment) == "string" and attachment ~= "" then
+    return { "-a", attachment }
+  elseif type(attachment) == "table" then
+    local args = {}
+    for _, path in ipairs(attachment) do
+      table.insert(args, "-a")
+      table.insert(args, tostring(path))
+    end
+    return args
+  end
+  return {}
+end
+
 -- Get extract argument if specified
 function M.get_extract_arg()
   local extract = config.get("extract")
@@ -172,6 +188,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_attachment_args())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())

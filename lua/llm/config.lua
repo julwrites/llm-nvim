@@ -47,6 +47,11 @@ M.defaults = {
     type = "string",
     desc = "Default tools to make available to the model (comma separated string)"
   },
+  attachment = {
+    default = nil,
+    type = "table",
+    desc = "Attachments to send to the model"
+  },
   extract = {
     default = false,
     type = "boolean",
