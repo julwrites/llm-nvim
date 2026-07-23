@@ -84,6 +84,40 @@ function M.get_tool_args()
   return args
 end
 
+-- Get functions arguments if specified
+function M.get_functions_arg()
+  local functions = config.get("functions")
+  if functions and functions ~= "" then
+    return { "--functions", functions }
+  end
+  return {}
+end
+
+-- Get tools debug argument if specified
+function M.get_tools_debug_arg()
+  if config.get("tools_debug") then
+    return { "--td" }
+  end
+  return {}
+end
+
+-- Get tools approve argument if specified
+function M.get_tools_approve_arg()
+  if config.get("tools_approve") then
+    return { "--ta" }
+  end
+  return {}
+end
+
+-- Get chain limit argument if specified
+function M.get_chain_limit_arg()
+  local chain_limit = config.get("chain_limit")
+  if chain_limit ~= nil then
+    return { "--cl", tostring(chain_limit) }
+  end
+  return {}
+end
+
 -- Get attachment arguments if specified
 function M.get_attachment_args()
   local attachment = config.get("attachment")
@@ -188,6 +222,10 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_tool_args())
+  vim.list_extend(cmd_parts, M.get_functions_arg())
+  vim.list_extend(cmd_parts, M.get_tools_debug_arg())
+  vim.list_extend(cmd_parts, M.get_tools_approve_arg())
+  vim.list_extend(cmd_parts, M.get_chain_limit_arg())
   vim.list_extend(cmd_parts, M.get_attachment_args())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())

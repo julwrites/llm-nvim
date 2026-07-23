@@ -47,6 +47,26 @@ M.defaults = {
     type = "string",
     desc = "Default tools to make available to the model (comma separated string)"
   },
+  functions = {
+    default = nil,
+    type = "string",
+    desc = "Python code block or file path defining functions to register as tools"
+  },
+  tools_debug = {
+    default = false,
+    type = "boolean",
+    desc = "Show full details of tool executions"
+  },
+  tools_approve = {
+    default = false,
+    type = "boolean",
+    desc = "Manually approve every tool execution"
+  },
+  chain_limit = {
+    default = nil,
+    type = "number",
+    desc = "How many chained tool responses to allow, default 5, set 0 for unlimited"
+  },
   attachment = {
     default = nil,
     type = "table",
