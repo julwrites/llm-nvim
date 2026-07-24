@@ -34,7 +34,7 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
     req = urllib.request.Request(url, json.dumps(data).encode("utf-8"), headers)
 
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             result = json.loads(response.read().decode("utf-8"))
             return result["content"][0]["text"]
     except urllib.error.HTTPError as e:
@@ -66,7 +66,7 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     req = urllib.request.Request(url, json.dumps(data).encode("utf-8"), headers)
 
     try:
-        with urllib.request.urlopen(req) as response:
+        with urllib.request.urlopen(req, timeout=60) as response:
             result = json.loads(response.read().decode("utf-8"))
             return result["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:

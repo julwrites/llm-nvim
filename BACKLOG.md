@@ -28,7 +28,6 @@
 
 ## Gaps & Tech Debt
 - [Bug 1]: Missing carriage return (`\r`) handling when splitting buffer on newlines in `job.lua`.
-- [Bug 2]: Missing timeouts on `urllib.request.urlopen` calls in `scripts/llm.py` which can hang indefinitely.
 - [Gap 2]: Missing support for Usage tracking (`-u`, `--usage`).
 - [Gap 5]: Missing support for Query Selection (`-q`, `--query`).
 - [Gap 6]: Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
@@ -47,21 +46,20 @@
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 
 ## Ranked Backlog
-1. [Bug 2] - [High Impact/Low Effort] - Add timeouts to `urllib.request.urlopen` calls in `scripts/llm.py` to prevent hanging.
-2. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
-3. [Bug 1] - [Medium Impact/Low Effort] - Handle carriage returns (`\r\n`) when splitting buffers in `job.lua`.
-4. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-5. [Gap 23] - [Low Impact/Low Effort] - Add support for Model Aliases (`llm aliases`).
-6. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-7. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-8. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-9. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-10. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-11. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-12. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
-13. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
-14. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
-15. [Gap 19] - [Low Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-16. [Gap 20] - [Low Impact/Medium Effort] - Add support for embed-multi (`llm embed-multi`).
-17. [Gap 21] - [Low Impact/Low Effort] - Add support for Database path (`-d`, `--database`).
-18. [Gap 22] - [Low Impact/Low Effort] - Add support for No Log (`-n`, `--no-log`) and Log (`--log`).
+1. [Tech Debt 1] - [Medium Impact/Medium Effort] - Increase overall code coverage. Test coverage is currently well below the 80% target.
+2. [Bug 1] - [Medium Impact/Low Effort] - Handle carriage returns (`\r\n`) when splitting buffers in `job.lua`.
+3. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+4. [Gap 23] - [Low Impact/Low Effort] - Add support for Model Aliases (`llm aliases`).
+5. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+6. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+7. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+8. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+9. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+10. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+11. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+12. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
+13. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
+14. [Gap 19] - [Low Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+15. [Gap 20] - [Low Impact/Medium Effort] - Add support for embed-multi (`llm embed-multi`).
+16. [Gap 21] - [Low Impact/Low Effort] - Add support for Database path (`-d`, `--database`).
+17. [Gap 22] - [Low Impact/Low Effort] - Add support for No Log (`-n`, `--no-log`) and Log (`--log`).
