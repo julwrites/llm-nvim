@@ -45,6 +45,8 @@
 - [Tech Debt 1.5]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
+- [Tech Debt 4]: Replace `os.tmpname()` with secure temporary file creation and reliable cleanup in `commands.lua`.
+- [Bug 3]: Unhandled empty string return from `write_context_to_temp_file` in `M.prompt_with_selection` leads to invalid command arguments.
 
 ## Ranked Backlog
 1. [Tech Debt 1.1] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
@@ -55,15 +57,17 @@
 6. [Bug 1] - [Medium Impact/Low Effort] - Handle carriage returns (`\r\n`) when splitting buffers in `job.lua`.
 7. [Bug 2] - [Medium Impact/Low Effort] - Missing URLError exception handling in scripts/llm.py.
 8. [Tech Debt 2] - [Medium Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-9. [Gap 23] - [Low Impact/Low Effort] - Add support for Model Aliases (`llm aliases`).
-10. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-11. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-12. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-13. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-14. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-15. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-16. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
-17. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
-18. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
-19. [Gap 19] - [Low Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-20. [Gap 20] - [Low Impact/Medium Effort] - Add support for embed-multi (`llm embed-multi`).
+9. [Bug 3] - [Medium Impact/Low Effort] - Handle empty string return from `write_context_to_temp_file` in `commands.lua`.
+10. [Tech Debt 4] - [Low Impact/Medium Effort] - Replace `os.tmpname()` with secure temporary file creation and reliable cleanup in `commands.lua`.
+11. [Gap 23] - [Low Impact/Low Effort] - Add support for Model Aliases (`llm aliases`).
+12. [Gap 2] - [Low Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+13. [Gap 5] - [Low Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+14. [Gap 6] - [Low Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+15. [Tech Debt 3] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+16. [Gap 9] - [Low Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+17. [Gap 11] - [Low Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+18. [Gap 16] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+19. [Gap 17] - [Low Impact/Medium Effort] - Add support for managing Collections (`llm collections`).
+20. [Gap 18] - [Low Impact/Medium Effort] - Add support for Similarity search (`llm similar`).
+21. [Gap 19] - [Low Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+22. [Gap 20] - [Low Impact/Medium Effort] - Add support for embed-multi (`llm embed-multi`).
