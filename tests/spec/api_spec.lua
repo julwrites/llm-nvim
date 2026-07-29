@@ -69,4 +69,38 @@ describe("api", function()
       assert.spy(jobsend_spy).was.not_called()
     end)
   end)
+
+  describe("job chunking and accumulation", function()
+    local real_job
+
+    before_each(function()
+      package.loaded["llm.core.utils.job"] = nil
+      real_job = require("llm.core.utils.job")
+
+      _G.vim.fn.jobstart = function(cmd, opts)
+        _G._sim_job_opts = opts
+        return 1
+      end
+    end)
+
+    it("handles Neovim data arrays and split lines without truncation", function()
+      local stdout_lines = {}
+      real_job.run({"dummy"}, {
+        on_stdout = function(err, lines)
+          for _, line in ipairs(lines) do
+            table.insert(stdout_lines, line)
+          end
+        end
+      })
+
+      -- Neovim passes split lines. If the final chunk has no newline,
+      -- the last element is that partial line. If it has a newline,
+      -- the last element is an empty string.
+      _G._sim_job_opts.on_stdout(1, {"line1", "line2", "part"})
+      _G._sim_job_opts.on_stdout(1, {"ial", "line3", ""})
+      _G._sim_job_opts.on_exit(1, 0)
+
+      assert.are.same({"line1", "line2", "partial", "line3"}, stdout_lines)
+    end)
+  end)
 end)

@@ -29,25 +29,24 @@ function M.run(cmd, callbacks)
 
     local buffer = (event == "stdout") and stdout_buffer or stderr_buffer
 
-    for _, chunk in ipairs(data) do
-      -- Accumulate chunk into buffer
+    for i, chunk in ipairs(data) do
       buffer = buffer .. chunk
 
-      -- Split buffer on newlines
+      if i < #data then
+        buffer = buffer .. "\n"
+      end
+
       local lines = {}
       while true do
         local newline_pos = buffer:find('\n')
         if not newline_pos then break end
 
-        -- Extract line without the newline
         local line = buffer:sub(1, newline_pos - 1)
         table.insert(lines, line)
 
-        -- Remove processed line from buffer
         buffer = buffer:sub(newline_pos + 1)
       end
 
-      -- Update the appropriate buffer
       if event == "stdout" then
         stdout_buffer = buffer
       else
