@@ -313,6 +313,18 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       assert.are.equal('test prompt', call_args[2])
     end)
 
+    it('should handle on_exit callback', function()
+      local on_exit_spy = spy.new(function() end)
+      commands.prompt('test prompt', {}, 1, on_exit_spy)
+
+      assert.spy(api_mock.run_streaming_command).was.called()
+      local call_args = api_mock.run_streaming_command.calls[1]
+      local callbacks = call_args[3]
+
+      callbacks.on_exit()
+      assert.spy(on_exit_spy).was.called()
+    end)
+
     it('should append data to the buffer on stdout', function()
       commands.prompt('test prompt', {}, 1)
 

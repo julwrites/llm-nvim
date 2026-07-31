@@ -377,9 +377,9 @@ function M.dispatch_command(subcmd, ...)
 end
 
 -- Send a prompt to llm
-function M.prompt(prompt, fragment_paths, bufnr)
+function M.prompt(prompt, fragment_paths, bufnr, on_exit)
   local cmd_parts = M.build_base_cmd(fragment_paths)
-  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr)
+  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
 
@@ -547,13 +547,14 @@ function M.interactive_prompt_with_fragments(opts)
           -- and call M.prompt_with_selection directly with the text, but this adds complexity.
           -- For now, using the temp file path in M.prompt is simpler.
 
-          M.prompt(input_prompt, fragments_list)
-
-          -- Clean up temp file *after* the command runs (or is supposed to run)
-          -- Using defer_fn to ensure it runs after the current execution context
+          local on_exit = nil
           if visual_selection_temp_file then
-            vim.defer_fn(function() os.remove(visual_selection_temp_file) end, 100)
+            on_exit = function()
+              os.remove(visual_selection_temp_file)
+            end
           end
+
+          M.prompt(input_prompt, fragments_list, nil, on_exit)
         end)
       else
         add_more_fragments() -- Should not happen, but ensures loop continues
