@@ -28,6 +28,24 @@ describe('llm.core.utils.job', function()
       assert.spy(on_stdout_spy).was.called_with(nil, {'line1', 'line2'})
     end)
 
+    it('should handle carriage returns', function()
+      -- Given
+      local on_stdout_spy = spy.new()
+      local captured_job_callbacks
+      vim.fn.jobstart = function(_, callbacks)
+        captured_job_callbacks = callbacks
+        return 1
+      end
+
+      -- When
+      job.run({ 'echo', 'line1\r\nline2\r\n' }, { on_stdout = on_stdout_spy })
+      captured_job_callbacks.on_stdout(0, { 'line1\r\nline2\r\n' }, 'stdout')
+
+      -- Then
+      assert.spy(on_stdout_spy).was.called(1)
+      assert.spy(on_stdout_spy).was.called_with(nil, {'line1', 'line2'})
+    end)
+
     it('should handle partial lines', function()
       -- Given
       local on_stdout_spy = spy.new()
