@@ -42,6 +42,9 @@ function M.run(cmd, callbacks)
         if not newline_pos then break end
 
         local line = buffer:sub(1, newline_pos - 1)
+        if line:sub(-1) == '\r' then
+          line = line:sub(1, -2)
+        end
         table.insert(lines, line)
 
         buffer = buffer:sub(newline_pos + 1)
