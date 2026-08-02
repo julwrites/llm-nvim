@@ -364,6 +364,15 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
   end)
 
   describe('prompt_with_selection', function()
+    it('should return early if write_context_to_temp_file returns empty string', function()
+      -- Mock dependencies
+      commands.write_context_to_temp_file = spy.new(function() return '' end)
+
+      commands.prompt_with_selection('test prompt', {}, true, 1)
+
+      assert.spy(api_mock.run_streaming_command).was_not_called()
+    end)
+
     it('should call api.run_streaming_command with the correct arguments', function()
       -- Mock dependencies
       commands.write_context_to_temp_file = spy.new(function() return '/tmp/temp_file' end)

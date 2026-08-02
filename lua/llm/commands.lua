@@ -267,7 +267,7 @@ function M.get_pre_response_message(source, prompt, fragment_paths)
 end
 
 function M.write_context_to_temp_file(context)
-  local temp_file = os.tmpname()
+  local temp_file = vim.fn.tempname()
   local file = io.open(temp_file, "w")
   if not file then
     api.nvim_err_writeln("Failed to create temporary file")
@@ -424,6 +424,9 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
   end
 
   local temp_file = M.write_context_to_temp_file(selection)
+  if temp_file == "" then
+    return
+  end
 
   local cmd_parts = M.build_base_cmd(fragment_paths)
 
@@ -460,7 +463,7 @@ function M.interactive_prompt_with_fragments(opts)
     visual_selection_text = text.get_visual_selection()
     if visual_selection_text and visual_selection_text ~= "" then
       -- Save selection to a temporary file to treat it like a fragment source
-      visual_selection_temp_file = os.tmpname()
+      visual_selection_temp_file = vim.fn.tempname()
       local file = io.open(visual_selection_temp_file, "w")
       if file then
         file:write(visual_selection_text)
