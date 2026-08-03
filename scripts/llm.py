@@ -40,6 +40,8 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         raise Exception(f"Anthropic API Error: {e.code} - {err_body}")
+    except urllib.error.URLError as e:
+        raise Exception(f"Anthropic API Connection Error: {e.reason}")
 
 def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     """Calls OpenAI's Chat Completion API."""
@@ -72,6 +74,8 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         raise Exception(f"OpenAI API Error: {e.code} - {err_body}")
+    except urllib.error.URLError as e:
+        raise Exception(f"OpenAI API Connection Error: {e.reason}")
 
 def complete(prompt, provider="anthropic", system=None, model=None):
     """Unified completion function."""
