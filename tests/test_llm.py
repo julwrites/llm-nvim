@@ -44,5 +44,25 @@ class TestLLM(unittest.TestCase):
         with self.assertRaisesRegex(Exception, "OpenAI API Connection Error: Connection refused"):
             llm.call_openai("hello")
 
+    @patch('scripts.llm.urllib.request.urlopen')
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
+    def test_call_anthropic_json_error(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'invalid json'
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        with self.assertRaisesRegex(Exception, "Anthropic API JSON Decode Error: Expecting value: line 1 column 1 .* - Response: invalid json"):
+            llm.call_anthropic("hello")
+
+    @patch('scripts.llm.urllib.request.urlopen')
+    @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
+    def test_call_openai_json_error(self, mock_urlopen):
+        mock_response = MagicMock()
+        mock_response.read.return_value = b'invalid json'
+        mock_urlopen.return_value.__enter__.return_value = mock_response
+
+        with self.assertRaisesRegex(Exception, "OpenAI API JSON Decode Error: Expecting value: line 1 column 1 .* - Response: invalid json"):
+            llm.call_openai("hello")
+
 if __name__ == '__main__':
     unittest.main()

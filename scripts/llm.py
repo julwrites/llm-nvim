@@ -9,7 +9,7 @@ import urllib.error
 
 def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_key=None):
     """Calls Anthropic's Messages API."""
-    api_key = api_key or os.getenv("ANTHROPIC_API_KEY")
+    api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not set")
 
@@ -35,7 +35,11 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
 
     try:
         with urllib.request.urlopen(req, timeout=60) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            raw_data = response.read().decode("utf-8")
+            try:
+                result = json.loads(raw_data)
+            except json.JSONDecodeError as e:
+                raise Exception(f"Anthropic API JSON Decode Error: {e} - Response: {raw_data}")
             return result["content"][0]["text"]
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
@@ -45,7 +49,7 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
 
 def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     """Calls OpenAI's Chat Completion API."""
-    api_key = api_key or os.getenv("OPENAI_API_KEY")
+    api_key = api_key or os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("OPENAI_API_KEY not set")
 
@@ -69,7 +73,11 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
 
     try:
         with urllib.request.urlopen(req, timeout=60) as response:
-            result = json.loads(response.read().decode("utf-8"))
+            raw_data = response.read().decode("utf-8")
+            try:
+                result = json.loads(raw_data)
+            except json.JSONDecodeError as e:
+                raise Exception(f"OpenAI API JSON Decode Error: {e} - Response: {raw_data}")
             return result["choices"][0]["message"]["content"]
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
