@@ -7,7 +7,7 @@ import urllib.error
 
 # Unified LLM Client for Agent Harness
 
-def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_key=None):
+def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_key=None, timeout=60):
     """Calls Anthropic's Messages API."""
     api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -34,7 +34,7 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
     req = urllib.request.Request(url, json.dumps(data).encode("utf-8"), headers)
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as response:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             raw_data = response.read().decode("utf-8")
             try:
                 result = json.loads(raw_data)
@@ -47,7 +47,7 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
     except urllib.error.URLError as e:
         raise Exception(f"Anthropic API Connection Error: {e.reason}")
 
-def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
+def call_openai(prompt, system=None, model="gpt-4o", api_key=None, timeout=60):
     """Calls OpenAI's Chat Completion API."""
     api_key = api_key or os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
@@ -72,7 +72,7 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     req = urllib.request.Request(url, json.dumps(data).encode("utf-8"), headers)
 
     try:
-        with urllib.request.urlopen(req, timeout=60) as response:
+        with urllib.request.urlopen(req, timeout=timeout) as response:
             raw_data = response.read().decode("utf-8")
             try:
                 result = json.loads(raw_data)
@@ -85,14 +85,14 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None):
     except urllib.error.URLError as e:
         raise Exception(f"OpenAI API Connection Error: {e.reason}")
 
-def complete(prompt, provider="anthropic", system=None, model=None):
+def complete(prompt, provider="anthropic", system=None, model=None, timeout=60):
     """Unified completion function."""
 
     # Provider selection logic
     if provider == "anthropic":
-        return call_anthropic(prompt, system=system, model=model or "claude-3-5-sonnet-20240620")
+        return call_anthropic(prompt, system=system, model=model or "claude-3-5-sonnet-20240620", timeout=timeout)
     elif provider == "openai":
-        return call_openai(prompt, system=system, model=model or "gpt-4o")
+        return call_openai(prompt, system=system, model=model or "gpt-4o", timeout=timeout)
     else:
         raise ValueError(f"Unknown provider: {provider}")
 
@@ -103,11 +103,12 @@ def main():
     parser.add_argument("--system", help="System prompt")
     parser.add_argument("--provider", default="anthropic", choices=["anthropic", "openai"], help="LLM Provider")
     parser.add_argument("--model", help="Specific model name")
+    parser.add_argument("--timeout", type=float, default=60.0, help="Timeout in seconds")
 
     args = parser.parse_args()
 
     try:
-        result = complete(args.prompt, provider=args.provider, system=args.system, model=args.model)
+        result = complete(args.prompt, provider=args.provider, system=args.system, model=args.model, timeout=args.timeout)
         print(result)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
