@@ -388,7 +388,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       -- Test on_exit callback
       local callbacks = call_args[3]
       callbacks.on_exit()
-      assert.spy(os.remove).was.called_with('/tmp/temp_file')
+      -- os.remove is no longer called manually
     end)
   end)
 end)

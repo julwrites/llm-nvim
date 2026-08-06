@@ -43,7 +43,6 @@ function M.save_schema(name, content, test_mode)
     file:close()
 
     local result = llm_cli.run_llm_command('schemas save ' .. name .. ' ' .. temp_file_path)
-    os.remove(temp_file_path)
     cache.invalidate('schemas')
     return result ~= nil
 end
@@ -79,7 +78,7 @@ function M.run_schema(schema_id, input, is_multi, bufnr, test_mode)
 
     local job_id = require('llm.api').run_llm_command_streamed(cmd_parts, target_bufnr, {
         on_exit = function()
-            vim.defer_fn(function() os.remove(temp_file_path) end, 0)
+            -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
         end,
     })
     return job_id
