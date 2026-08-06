@@ -435,8 +435,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
 
   local on_exit = function()
     vim.notify("LLM command finished.")
-    -- Clean up the temporary file
-    os.remove(temp_file)
+    -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
   end
 
   local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
@@ -539,8 +538,7 @@ function M.interactive_prompt_with_fragments(opts)
         }, function(input_prompt)
           if not input_prompt or input_prompt == "" then
             vim.notify("Prompt cannot be empty.", vim.log.levels.ERROR)
-            -- Clean up temp file if prompt is cancelled
-            if visual_selection_temp_file then os.remove(visual_selection_temp_file) end
+            -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
             return
           end
 
@@ -553,7 +551,7 @@ function M.interactive_prompt_with_fragments(opts)
           local on_exit = nil
           if visual_selection_temp_file then
             on_exit = function()
-              os.remove(visual_selection_temp_file)
+              -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
             end
           end
 
