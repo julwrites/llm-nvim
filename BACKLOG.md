@@ -40,24 +40,22 @@
 - [Gap 5]: Missing support for System Fragment (`--sf`, `--system-fragment`).
 - [Gap 6]: Missing support for embed-models management (`llm embed-models`).
 - [Gap 9]: Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
-- [Gap 11]: Missing support for Model Aliases (`llm aliases`).
 - [Gap 12]: Missing SSE streaming support in `scripts/llm.py` (responses are parsed as single JSON objects).
 
 ## Ranked Backlog
-1. [Gap 11] - [High Impact/Medium Effort] - Add support for Model Aliases (`llm aliases`).
-2. [Gap 12] - [High Impact/Medium Effort] - Implement SSE streaming support in `scripts/llm.py` instead of waiting for full response.
-3. [Tech Debt 2] - [High Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-4. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-5. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-6. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-7. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-8. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-9. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-10. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-11. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-12. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-13. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-14. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-15. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-16. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-17. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+1. [Gap 12] - [High Impact/Medium Effort] - Implement SSE streaming support in `scripts/llm.py` instead of waiting for full response.
+2. [Tech Debt 2] - [High Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
+3. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+4. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+5. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+6. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+7. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+8. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+9. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+10. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+11. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+12. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+13. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+14. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+15. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+16. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
