@@ -8,7 +8,7 @@ import urllib.error
 # Unified LLM Client for Agent Harness
 
 def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_key=None, timeout=60):
-    """Calls Anthropic's Messages API."""
+    """Calls Anthropic's Messages API with streaming."""
     api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY not set")
@@ -25,7 +25,8 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
     data = {
         "model": model,
         "max_tokens": 4096,
-        "messages": messages
+        "messages": messages,
+        "stream": True
     }
 
     if system:
@@ -35,12 +36,24 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
 
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
-            raw_data = response.read().decode("utf-8")
-            try:
-                result = json.loads(raw_data)
-            except json.JSONDecodeError as e:
-                raise Exception(f"Anthropic API JSON Decode Error: {e} - Response: {raw_data}")
-            return result["content"][0]["text"]
+            for line_bytes in response:
+                line = line_bytes.decode("utf-8").strip()
+                if line.startswith("data: ") and line != "data: [DONE]":
+                    data_str = line[6:]
+                    try:
+                        event = json.loads(data_str)
+                        if event.get("type") == "error":
+                            err = event.get("error", {})
+                            raise Exception(f"Anthropic API Error in stream: {err.get('message')}")
+                        if event.get("type") == "content_block_delta":
+                            delta = event.get("delta", {})
+                            if delta.get("type") == "text_delta":
+                                print(delta.get("text", ""), end="", flush=True)
+                    except json.JSONDecodeError:
+                        # Anthropic sometimes sends invalid JSON like partial chunks, but typically SSE is well-formed
+                        pass
+            print() # Print final newline
+            return None
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         raise Exception(f"Anthropic API Error: {e.code} - {err_body}")
@@ -48,7 +61,7 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
         raise Exception(f"Anthropic API Connection Error: {e.reason}")
 
 def call_openai(prompt, system=None, model="gpt-4o", api_key=None, timeout=60):
-    """Calls OpenAI's Chat Completion API."""
+    """Calls OpenAI's Chat Completion API with streaming."""
     api_key = api_key or os.getenv("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
     if not api_key:
         raise ValueError("OPENAI_API_KEY not set")
@@ -66,19 +79,30 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None, timeout=60):
 
     data = {
         "model": model,
-        "messages": messages
+        "messages": messages,
+        "stream": True
     }
 
     req = urllib.request.Request(url, json.dumps(data).encode("utf-8"), headers)
 
     try:
         with urllib.request.urlopen(req, timeout=timeout) as response:
-            raw_data = response.read().decode("utf-8")
-            try:
-                result = json.loads(raw_data)
-            except json.JSONDecodeError as e:
-                raise Exception(f"OpenAI API JSON Decode Error: {e} - Response: {raw_data}")
-            return result["choices"][0]["message"]["content"]
+            for line_bytes in response:
+                line = line_bytes.decode("utf-8").strip()
+                if line.startswith("data: ") and line != "data: [DONE]":
+                    data_str = line[6:]
+                    try:
+                        event = json.loads(data_str)
+                        choices = event.get("choices", [])
+                        if choices:
+                            delta = choices[0].get("delta", {})
+                            content = delta.get("content")
+                            if content:
+                                print(content, end="", flush=True)
+                    except json.JSONDecodeError:
+                        pass
+            print() # Print final newline
+            return None
     except urllib.error.HTTPError as e:
         err_body = e.read().decode("utf-8")
         raise Exception(f"OpenAI API Error: {e.code} - {err_body}")
@@ -109,7 +133,8 @@ def main():
 
     try:
         result = complete(args.prompt, provider=args.provider, system=args.system, model=args.model, timeout=args.timeout)
-        print(result)
+        if result is not None:
+            print(result)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
