@@ -35,31 +35,31 @@ function M.run(cmd, callbacks)
       if i < #data then
         buffer = buffer .. "\n"
       end
+    end
 
-      local lines = {}
-      while true do
-        local newline_pos = buffer:find('\n')
-        if not newline_pos then break end
+    local lines = {}
+    while true do
+      local newline_pos = buffer:find('\n')
+      if not newline_pos then break end
 
-        local line = buffer:sub(1, newline_pos - 1)
-        if line:sub(-1) == '\r' then
-          line = line:sub(1, -2)
-        end
-        table.insert(lines, line)
-
-        buffer = buffer:sub(newline_pos + 1)
+      local line = buffer:sub(1, newline_pos - 1)
+      if line:sub(-1) == '\r' then
+        line = line:sub(1, -2)
       end
+      table.insert(lines, line)
 
-      if event == "stdout" then
-        stdout_buffer = buffer
-      else
-        stderr_buffer = buffer
-      end
+      buffer = buffer:sub(newline_pos + 1)
+    end
 
-      -- Call handler with complete lines
-      if #lines > 0 then
-        handler(nil, lines)
-      end
+    if event == "stdout" then
+      stdout_buffer = buffer
+    else
+      stderr_buffer = buffer
+    end
+
+    -- Call handler with complete lines
+    if #lines > 0 then
+      handler(nil, lines)
     end
   end
 
