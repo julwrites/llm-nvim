@@ -50,7 +50,6 @@
 - [Gap 5]: Missing support for System Fragment (`--sf`, `--system-fragment`).
 - [Gap 6]: Missing support for embed-models management (`llm embed-models`).
 - [Gap 9]: Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
-- [Tech Debt 2]: Improve async job handling robustness in `job.lua` based on known failure patterns.
 - [Tech Debt 3]: Test coverage missing for `M.interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 5]: Increase test coverage for templates_manager.lua to >80%.
 - [Tech Debt 6]: Increase test coverage for schemas_manager.lua to >80%.
@@ -60,18 +59,17 @@
 - [Tech Debt 10]: Increase test coverage for tools_manager.lua to >80%.
 
 ## Ranked Backlog
-1. [Tech Debt 2] - [High Impact/Medium Effort] - Enhance async job handling logic in `job.lua` for edge cases.
-2. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-3. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-4. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-5. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-6. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-7. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-8. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-9. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-10. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-11. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-12. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-13. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-14. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-15. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+1. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+2. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+3. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+4. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+5. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+6. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+7. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+8. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+9. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+10. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+11. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+12. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+13. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+14. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
