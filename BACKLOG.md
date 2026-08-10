@@ -8,7 +8,6 @@
 - [Embed-multi]: Store embeddings for multiple strings at once in the... (`llm embed-multi`).
 - [Fragments]: Manage fragments that are stored in the database (`llm fragments`).
 - [Models]: Manage available models (`llm models`).
-- [Logs]: Tools for exploring logged prompts and responses (`llm logs`).
 - [Openai]: Commands for working with OpenAI and OpenAI-compatible APIs (`llm openai`).
 - [Schemas]: Manage stored schemas (`llm schemas`).
 - [Similar]: Return top N similar IDs from a collection using cosine... (`llm similar`).
@@ -47,7 +46,6 @@
 - [--json]: Output the response as JSON, same format as (`--json`).
 
 ## Gaps & Tech Debt
-- [Gap 7]: Missing support for Logs (`llm logs`) - exploring logged prompts.
 - [Gap 8]: Missing support for explicit database selection (`-d`, `--database`).
 - [Gap 10]: Missing support for explicit logging overrides (`-n`, `--no-log`, `--log`).
 - [Gap 11]: Missing support for options management (`llm models options`).
@@ -67,26 +65,31 @@
 - [Tech Debt 10]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 12]: Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
 - [Tech Debt 13]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+- [Gap 12]: Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
+- [Gap 13]: Missing support for JSON output (`--json`).
+- [Gap 14]: Missing support for explicitly setting the API key for a prompt (`--key`).
 
 ## Ranked Backlog
-1. [Gap 7] - [High Impact/Medium Effort] - Expose `llm logs` viewing functionality (e.g., in the unified manager).
-2. [Gap 8] - [Medium Impact/Low Effort] - Add support for explicit database selection (`-d`, `--database`).
-3. [Gap 10] - [Medium Impact/Low Effort] - Add support for explicit logging overrides (`-n`, `--no-log`, `--log`).
-4. [Gap 11] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
-5. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-6. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-7. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-8. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-9. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-10. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-11. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-12. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-13. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-14. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-15. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-16. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-17. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-18. [Tech Debt 11] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-19. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
-20. [Tech Debt 12] - [Low Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
-21. [Tech Debt 13] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+1. [Gap 8] - [Medium Impact/Low Effort] - Add support for explicit database selection (`-d`, `--database`).
+2. [Gap 10] - [Medium Impact/Low Effort] - Add support for explicit logging overrides (`-n`, `--no-log`, `--log`).
+3. [Gap 11] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
+4. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+5. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+6. [Gap 2] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+7. [Gap 3] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+8. [Gap 4] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+9. [Gap 5] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+10. [Gap 9] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+11. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+12. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+13. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+14. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+15. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+16. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+17. [Tech Debt 11] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+18. [Gap 6] - [Low Impact/Medium Effort] - Add support for embed-models management (`llm embed-models`).
+19. [Tech Debt 12] - [Low Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
+20. [Tech Debt 13] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+21. [Gap 12] - [Low Impact/Low Effort] - Add support for Hide Reasoning (`-R`, `--hide-reasoning`).
+22. [Gap 13] - [Low Impact/Low Effort] - Add support for JSON output (`--json`).
+23. [Gap 14] - [Low Impact/Low Effort] - Add support for explicitly setting the API key for a prompt (`--key`).
