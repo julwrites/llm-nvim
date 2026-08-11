@@ -49,6 +49,17 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     package.loaded['llm.core.utils.ui'] = nil
   end)
 
+  describe('Database Option', function()
+    it('get_database_arg should return empty if not set', function()
+      package.loaded['llm.config'].get = spy.new(function(key) return nil end)
+      assert.are.same({}, commands.get_database_arg())
+    end)
+    it('get_database_arg should return argument if set', function()
+      package.loaded['llm.config'].get = spy.new(function(key) if key == 'database' then return 'test.db' end end)
+      assert.are.same({"-d", "test.db"}, commands.get_database_arg())
+    end)
+  end)
+
   describe('Extended Tool Options', function()
     it('get_functions_arg should return empty if not set', function()
       package.loaded['llm.config'].get = spy.new(function(key) return nil end)

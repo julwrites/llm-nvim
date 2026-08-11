@@ -37,6 +37,11 @@ M.defaults = {
     type = "number",
     desc = "Interval in days for checking for updates"
   },
+  database = {
+    default = nil,
+    type = "string",
+    desc = "Path to log database"
+  },
   llm_executable_path = {
     default = "llm",
     type = "string",
