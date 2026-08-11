@@ -46,7 +46,6 @@
 - [--json]: Output the response as JSON, same format as (`--json`).
 
 ## Gaps & Tech Debt
-- [Gap 8]: Missing support for explicit database selection (`-d`, `--database`).
 - [Gap 10]: Missing support for explicit logging overrides (`-n`, `--no-log`, `--log`).
 - [Gap 11]: Missing support for options management (`llm models options`).
 - [Gap 1]: Missing support for Usage tracking (`-u`, `--usage`).
@@ -70,8 +69,7 @@
 - [Gap 14]: Missing support for explicitly setting the API key for a prompt (`--key`).
 
 ## Ranked Backlog
-1. [Gap 8] - [Medium Impact/Low Effort] - Add support for explicit database selection (`-d`, `--database`).
-2. [Gap 10] - [Medium Impact/Low Effort] - Add support for explicit logging overrides (`-n`, `--no-log`, `--log`).
+1. [Gap 10] - [Medium Impact/Low Effort] - Add support for explicit logging overrides (`-n`, `--no-log`, `--log`).
 3. [Gap 11] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
 4. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 5. [Gap 1] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.

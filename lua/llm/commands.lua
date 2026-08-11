@@ -22,6 +22,15 @@ function M.get_llm_executable_path()
   return config.get("llm_executable_path")
 end
 
+-- Get the database argument if specified
+function M.get_database_arg()
+  local database = config.get("database")
+  if database and database ~= "" then
+    return { "-d", database }
+  end
+  return {}
+end
+
 -- Get the model argument if specified
 function M.get_model_arg()
   local model = config.get("model")
@@ -219,6 +228,7 @@ end
 function M.build_base_cmd(fragment_paths)
   local cmd_parts = { M.get_llm_executable_path() }
 
+  vim.list_extend(cmd_parts, M.get_database_arg())
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_tool_args())
