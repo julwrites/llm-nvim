@@ -42,6 +42,16 @@ M.defaults = {
     type = "string",
     desc = "Path to log database"
   },
+  log = {
+    default = false,
+    type = "boolean",
+    desc = "Log prompt and response to the database"
+  },
+  no_log = {
+    default = false,
+    type = "boolean",
+    desc = "Don't log to database"
+  },
   llm_executable_path = {
     default = "llm",
     type = "string",
