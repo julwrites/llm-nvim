@@ -66,27 +66,25 @@
 - [Tech Debt 8]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 9]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 10]: Increase test coverage for custom_openai.lua to >80%.
-- [Tech Debt 11]: Refactor job runner in lua/llm/core/utils/job.lua to accumulate raw stream chunks properly before parsing them into lines.
 
 ## Ranked Backlog
-1. [Tech Debt 11] - [High Impact/Low Effort] - Refactor job runner in lua/llm/core/utils/job.lua to accumulate raw stream chunks properly before parsing them into lines.
-2. [Gap 9] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
-3. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-4. [Gap 4] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-5. [Gap 5] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-6. [Gap 6] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-7. [Gap 7] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-8. [Gap 8] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-9. [Gap 1] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-10. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-11. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-12. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-13. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-14. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-15. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-16. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-17. [Tech Debt 1] - [Low Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
-18. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-19. [Gap 2] - [Low Impact/Low Effort] - Add support for Hide Reasoning (`-R`, `--hide-reasoning`).
-20. [Gap 3] - [Low Impact/Low Effort] - Add support for JSON output (`--json`).
-21. [Gap 10] - [Low Impact/Low Effort] - Add support for explicitly setting the API key for a prompt (`--key`).
+1. [Gap 9] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
+2. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+3. [Gap 4] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+4. [Gap 5] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+5. [Gap 6] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+6. [Gap 7] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+7. [Gap 8] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+8. [Gap 1] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+9. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+10. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+11. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+12. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+13. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+14. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+15. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+16. [Tech Debt 1] - [Low Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
+17. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+18. [Gap 2] - [Low Impact/Low Effort] - Add support for Hide Reasoning (`-R`, `--hide-reasoning`).
+19. [Gap 3] - [Low Impact/Low Effort] - Add support for JSON output (`--json`).
+20. [Gap 10] - [Low Impact/Low Effort] - Add support for explicitly setting the API key for a prompt (`--key`).
