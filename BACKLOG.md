@@ -18,19 +18,20 @@
 - [-d, --database FILE]: Path to log database (`-d, --database FILE`).
 - [-q, --query TEXT]: Use first model matching these strings (`-q, --query TEXT`).
 - [-a, --attachment ATTACHMENT]: Attachment path or URL or - (`-a, --attachment ATTACHMENT`).
+- [--at, --attachment-type TEXT]: Attachment with explicit mimetype (`--at`, `--attachment-type`).
 - [-T, --tool TEXT]: Name of a tool to make available (`-T, --tool TEXT`).
 - [--functions TEXT]: Python code block or file path defining functions (`--functions TEXT`).
 - [--td, --tools-debug]: Show full details of tool executions (`--td, --tools-debug`).
 - [--ta, --tools-approve]: Manually approve every tool execution (`--ta, --tools-approve`).
 - [--cl, --chain-limit INTEGER]: How many chained tool responses to allow (`--cl, --chain-limit INTEGER`).
-- [-o, --option <TEXT TEXT>...]: key/value options for the model (`-o, --option <TEXT TEXT>...`).
+- [-o, --option TEXT]: key/value options for the model (`-o, --option TEXT`).
 - [--options]: Show options for the selected model (`--options`).
 - [--schema TEXT]: JSON schema, filepath or ID (`--schema TEXT`).
 - [--schema-multi TEXT]: JSON schema to use for multiple results (`--schema-multi TEXT`).
 - [-f, --fragment TEXT]: Fragment (alias, URL, hash or file path) to add (`-f, --fragment TEXT`).
 - [--sf, --system-fragment TEXT]: Fragment to add to system prompt (`--sf, --system-fragment TEXT`).
 - [-t, --template TEXT]: Template to use (`-t, --template TEXT`).
-- [-p, --param <TEXT TEXT>...]: Parameters for template (`-p, --param <TEXT TEXT>...`).
+- [-p, --param TEXT]: Parameters for template (`-p, --param TEXT`).
 - [--no-stream]: Do not stream output (`--no-stream`).
 - [-n, --no-log]: Don't log to database (`-n, --no-log`).
 - [--log]: Log prompt and response to the database (`--log`).
@@ -56,6 +57,7 @@
 - [Gap 8]: Missing support for System Fragment (`--sf`, `--system-fragment`).
 - [Gap 9]: Missing support for options management (`llm models options`).
 - [Gap 10]: Missing support for explicitly setting the API key for a prompt (`--key`).
+- [Gap 11]: Missing support for explicit Schema Multi (`--schema-multi`).
 - [Tech Debt 1]: Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
 - [Tech Debt 2]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
 - [Tech Debt 3]: Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
@@ -66,25 +68,30 @@
 - [Tech Debt 8]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 9]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 10]: Increase test coverage for custom_openai.lua to >80%.
+- [Tech Debt 11]: Unsafe temporary file handling in lua/llm/commands.lua; use Neovim's built-in `vim.fn.tempname()` which auto-cleans.
+- [Tech Debt 12]: Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 
 ## Ranked Backlog
-1. [Gap 9] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
-2. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-3. [Gap 4] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
-4. [Gap 5] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
-5. [Gap 6] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
-6. [Gap 7] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
-7. [Gap 8] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
-8. [Gap 1] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
-9. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-10. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-11. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-12. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-13. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-14. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-15. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-16. [Tech Debt 1] - [Low Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
-17. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-18. [Gap 2] - [Low Impact/Low Effort] - Add support for Hide Reasoning (`-R`, `--hide-reasoning`).
-19. [Gap 3] - [Low Impact/Low Effort] - Add support for JSON output (`--json`).
-20. [Gap 10] - [Low Impact/Low Effort] - Add support for explicitly setting the API key for a prompt (`--key`).
+1. [Tech Debt 11] - [High Impact/Low Effort] - Refactor temporary file handling to use Neovim's `vim.fn.tempname()`.
+2. [Tech Debt 1] - [High Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
+3. [Tech Debt 12] - [Medium Impact/Low Effort] - Ensure mock environment correctly implements missing standard `vim` utilities like `vim.trim`.
+4. [Gap 9] - [Low Impact/Medium Effort] - Add support for options management (`llm models options`).
+5. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+6. [Gap 4] - [Medium Impact/Low Effort] - Expose token Usage tracking (`-u`, `--usage`) visually after execution.
+7. [Gap 5] - [Medium Impact/Low Effort] - Enable dynamic Query Selection (`-q`, `--query`).
+8. [Gap 6] - [Medium Impact/Low Effort] - Add options for explicit Async Execution (`--async`) and blocking Stream Control (`--no-stream`).
+9. [Gap 7] - [Medium Impact/Low Effort] - Add support for Extract Last (`--xl`, `--extract-last`).
+10. [Gap 8] - [Medium Impact/Low Effort] - Add support for System Fragment (`--sf`, `--system-fragment`).
+11. [Gap 1] - [Medium Impact/Low Effort] - Add support for explicit Attachment Type (`--at`, `--attachment-type`).
+12. [Gap 11] - [Medium Impact/Low Effort] - Add support for explicit Schema Multi (`--schema-multi`).
+13. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+14. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+15. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+16. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+17. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+18. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+19. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+20. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+21. [Gap 2] - [Low Impact/Low Effort] - Add support for Hide Reasoning (`-R`, `--hide-reasoning`).
+22. [Gap 3] - [Low Impact/Low Effort] - Add support for JSON output (`--json`).
+23. [Gap 10] - [Low Impact/Low Effort] - Add support for explicitly setting the API key for a prompt (`--key`).
