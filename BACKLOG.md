@@ -68,7 +68,6 @@
 - [Tech Debt 8]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 9]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 10]: Increase test coverage for custom_openai.lua to >80%.
-- [Tech Debt 11]: Unsafe temporary file handling in lua/llm/commands.lua; use Neovim's built-in `vim.fn.tempname()` which auto-cleans.
 - [Tech Debt 12]: Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 - [Gap 12]: Missing user-facing commands for aliases (`llm aliases`), schemas (`llm schemas`) and templates (`llm templates`).
 - [Tech Debt 13]: Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
@@ -76,30 +75,29 @@
 - [Tech Debt 15]: Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
 
 ## Ranked Backlog
-1. [Tech Debt 11] - [High Impact/Low Effort] - Unsafe temporary file handling in lua/llm/commands.lua; use Neovim's built-in `vim.fn.tempname()` which auto-cleans.
-2. [Gap 12] - [High Impact/Low Effort] - Missing user-facing commands for aliases (`llm aliases`), schemas (`llm schemas`) and templates (`llm templates`).
-3. [Tech Debt 14] - [High Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
-4. [Tech Debt 1] - [High Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
-5. [Tech Debt 15] - [High Impact/Medium Effort] - Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
-6. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
-7. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
-8. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
-9. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
-10. [Gap 7] - [Medium Impact/Low Effort] - Missing support for Extract Last (`--xl`, `--extract-last`).
-11. [Gap 8] - [Medium Impact/Low Effort] - Missing support for System Fragment (`--sf`, `--system-fragment`).
-12. [Gap 11] - [Medium Impact/Low Effort] - Missing support for explicit Schema Multi (`--schema-multi`).
-13. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-14. [Tech Debt 12] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
-15. [Tech Debt 13] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
-16. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-17. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-18. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-19. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-20. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-21. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-22. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-23. [Gap 2] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
-24. [Gap 3] - [Low Impact/Low Effort] - Missing support for JSON output (`--json`).
-25. [Gap 10] - [Low Impact/Low Effort] - Missing support for explicitly setting the API key for a prompt (`--key`).
-26. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-27. [Gap 9] - [Low Impact/Medium Effort] - Missing support for options management (`llm models options`).
+1. [Gap 12] - [High Impact/Low Effort] - Missing user-facing commands for aliases (`llm aliases`), schemas (`llm schemas`) and templates (`llm templates`).
+2. [Tech Debt 14] - [High Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
+3. [Tech Debt 1] - [High Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
+4. [Tech Debt 15] - [High Impact/Medium Effort] - Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
+5. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
+6. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
+7. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
+8. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
+9. [Gap 7] - [Medium Impact/Low Effort] - Missing support for Extract Last (`--xl`, `--extract-last`).
+10. [Gap 8] - [Medium Impact/Low Effort] - Missing support for System Fragment (`--sf`, `--system-fragment`).
+11. [Gap 11] - [Medium Impact/Low Effort] - Missing support for explicit Schema Multi (`--schema-multi`).
+12. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+13. [Tech Debt 12] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
+14. [Tech Debt 13] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
+15. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+16. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+17. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+18. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+19. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+20. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+21. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+22. [Gap 2] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
+23. [Gap 3] - [Low Impact/Low Effort] - Missing support for JSON output (`--json`).
+24. [Gap 10] - [Low Impact/Low Effort] - Missing support for explicitly setting the API key for a prompt (`--key`).
+25. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+26. [Gap 9] - [Low Impact/Medium Effort] - Missing support for options management (`llm models options`).
