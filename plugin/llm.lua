@@ -147,6 +147,30 @@ end, {
 
 -- Command to open the LLM configuration manager
 -- Usage: :LLMConfig [view] where view is one of: models, plugins, keys, fragments
+-- Command to manage templates
+vim.api.nvim_create_user_command('LLMTemplates', function(opts)
+  require('llm.managers.templates_manager').manage_templates()
+end, {
+  nargs = 0,
+  desc = "Manage LLM templates",
+})
+
+-- Command to manage schemas
+vim.api.nvim_create_user_command('LLMSchemas', function(opts)
+  require('llm.managers.schemas_manager').manage_schemas()
+end, {
+  nargs = 0,
+  desc = "Manage LLM schemas",
+})
+
+-- Command to manage aliases
+vim.api.nvim_create_user_command('LLMAliases', function(opts)
+  require('llm.managers.models_manager').manage_models()
+end, {
+  nargs = 0,
+  desc = "Manage LLM models and aliases",
+})
+
 vim.api.nvim_create_user_command('LLMConfig', function(opts)
   require('llm.commands').dispatch_command('toggle', opts.fargs[1])
 end, {
