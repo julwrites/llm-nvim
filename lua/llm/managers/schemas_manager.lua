@@ -146,9 +146,7 @@ function M.run_schema_with_input_source(schema_id)
 end
 
 function M.handle_manual_text_input(schema_id, is_multi)
-  local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
-  os.execute("mkdir -p " .. temp_dir)
-  local temp_file_path = string.format("%s/schema_input_%s_%s.txt", temp_dir, schema_id:sub(1, 8), os.time())
+  local temp_file_path = vim.fn.tempname() .. ".txt"
 
   local buf = api.nvim_create_buf(false, true)
   api.nvim_buf_set_option(buf, "buftype", "acwrite")
@@ -187,9 +185,6 @@ function M.handle_manual_text_input(schema_id, is_multi)
   api.nvim_buf_create_user_command(buf, "LlmSchemaCancel", function()
     local temp_file = api.nvim_buf_get_var(buf, "llm_temp_file_path")
     api.nvim_command(buf .. "bdelete!")
-    if temp_file and vim.fn.filereadable(temp_file) == 1 then
-      os.remove(temp_file)
-    end
     vim.notify("Schema input cancelled.", vim.log.levels.INFO)
   end, {})
 
@@ -244,11 +239,8 @@ function M.create_schema()
 end
 
 function M.handle_schema_creation(name, format_choice)
-  local temp_dir = vim.fn.stdpath('cache') .. "/llm_nvim_temp"
-  os.execute("mkdir -p " .. temp_dir)
   local file_ext = (format_choice == "JSON Schema") and ".json" or ".dsl"
-  local safe_name = name:gsub("[^%w_-]", "_")
-  local temp_file_path = string.format("%s/schema_edit_%s_%s%s", temp_dir, safe_name, os.time(), file_ext)
+  local temp_file_path = vim.fn.tempname() .. file_ext
 
   local boilerplate = ""
   if format_choice == "JSON Schema" then
@@ -292,9 +284,6 @@ function M.handle_schema_creation(name, format_choice)
   api.nvim_buf_create_user_command(bufnr, "LlmCancel", function()
     local temp_file = api.nvim_buf_get_var(bufnr, "llm_temp_schema_file_path")
     api.nvim_command(bufnr .. "bdelete!")
-    if temp_file and vim.fn.filereadable(temp_file) == 1 then
-      os.remove(temp_file)
-    end
     vim.notify("Schema creation cancelled.", vim.log.levels.INFO)
   end, {})
 
@@ -328,7 +317,6 @@ function M.save_schema_from_temp_file(bufnr)
       M.manage_schemas()
     end, 1500)
     api.nvim_command(bufnr .. "bdelete!")
-    if temp_file_path then os.remove(temp_file_path) end
   else
     vim.notify("Failed to save schema '" .. name .. "'", vim.log.levels.ERROR)
   end
