@@ -74,7 +74,6 @@
 - [Tech Debt 15]: Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
 
 ## Ranked Backlog
-1. [Tech Debt 14] - [High Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 2. [Tech Debt 1] - [High Impact/Medium Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
 3. [Tech Debt 15] - [High Impact/Medium Effort] - Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
 4. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
