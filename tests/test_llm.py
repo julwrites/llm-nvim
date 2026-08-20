@@ -77,6 +77,26 @@ class TestLLM(unittest.TestCase):
             llm.call_anthropic("hello")
 
     @patch('scripts.llm.urllib.request.urlopen')
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
+    def test_call_anthropic_httperror_valid_json(self, mock_urlopen):
+        mock_urlopen.side_effect = llm.urllib.error.HTTPError(
+            url="http://test", code=400, msg="Bad Request", hdrs={},
+            fp=io.BytesIO(b'{"error": {"message": "Invalid prompt"}}')
+        )
+        with self.assertRaisesRegex(Exception, 'Anthropic API Error: 400 - Invalid prompt'):
+            llm.call_anthropic("hello")
+
+    @patch('scripts.llm.urllib.request.urlopen')
+    @patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"})
+    def test_call_anthropic_httperror_malformed_json(self, mock_urlopen):
+        mock_urlopen.side_effect = llm.urllib.error.HTTPError(
+            url="http://test", code=500, msg="Internal Server Error", hdrs={},
+            fp=io.BytesIO(b'Internal Server Error Bad Gateway')
+        )
+        with self.assertRaisesRegex(Exception, 'Anthropic API Error: 500 - Internal Server Error Bad Gateway'):
+            llm.call_anthropic("hello")
+
+    @patch('scripts.llm.urllib.request.urlopen')
     @patch.dict(os.environ, {"OPENAI_API_KEY": "test-key"})
     def test_call_openai_invalid_json(self, mock_urlopen):
         mock_response = MagicMock()

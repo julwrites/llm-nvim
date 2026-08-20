@@ -7,6 +7,21 @@ import urllib.error
 
 # Unified LLM Client for Agent Harness
 
+def _parse_http_error(e: urllib.error.HTTPError) -> str:
+    err_body = e.read().decode("utf-8")
+    err_msg = err_body
+    try:
+        err_json = json.loads(err_body)
+        if isinstance(err_json, dict):
+            error_field = err_json.get("error")
+            if isinstance(error_field, dict) and "message" in error_field:
+                err_msg = error_field["message"]
+            elif isinstance(error_field, str):
+                err_msg = error_field
+    except json.JSONDecodeError:
+        pass
+    return err_msg
+
 def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_key=None, timeout=60):
     """Calls Anthropic's Messages API with streaming."""
     api_key = api_key or os.getenv("ANTHROPIC_API_KEY") or os.environ.get("ANTHROPIC_API_KEY")
@@ -55,8 +70,8 @@ def call_anthropic(prompt, system=None, model="claude-3-5-sonnet-20240620", api_
             print() # Print final newline
             return None
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8")
-        raise Exception(f"Anthropic API Error: {e.code} - {err_body}")
+        err_msg = _parse_http_error(e)
+        raise Exception(f"Anthropic API Error: {e.code} - {err_msg}")
     except urllib.error.URLError as e:
         raise Exception(f"Anthropic API Connection Error: {e.reason}")
 
@@ -104,8 +119,8 @@ def call_openai(prompt, system=None, model="gpt-4o", api_key=None, timeout=60):
             print() # Print final newline
             return None
     except urllib.error.HTTPError as e:
-        err_body = e.read().decode("utf-8")
-        raise Exception(f"OpenAI API Error: {e.code} - {err_body}")
+        err_msg = _parse_http_error(e)
+        raise Exception(f"OpenAI API Error: {e.code} - {err_msg}")
     except urllib.error.URLError as e:
         raise Exception(f"OpenAI API Connection Error: {e.reason}")
 
