@@ -2,20 +2,16 @@
 - [Prompt]: Execute a prompt (`llm prompt`).
 - [Aliases]: Manage model aliases (`llm aliases`).
 - [Chat]: Hold an ongoing chat with a model. (`llm chat`).
-- [Collections]: View and manage collections of embeddings (`llm collections`).
 - [Embed]: Embed text and store or return the result (`llm embed`).
 - [Embed-models]: Manage available embedding models (`llm embed-models`).
 - [Embed-multi]: Store embeddings for multiple strings at once (`llm embed-multi`).
-- [Fragments]: Manage fragments that are stored in the database (`llm fragments`).
 - [Models]: Manage available models (`llm models`).
-- [Openai]: Commands for working with OpenAI and OpenAI-compatible APIs (`llm openai`).
 - [Schemas]: Manage stored schemas (`llm schemas`).
 - [Similar]: Return top N similar IDs from a collection using cosine similarity (`llm similar`).
 - [Templates]: Manage stored prompt templates (`llm templates`).
 - [Tools]: Manage tools that can be made available to LLMs (`llm tools`).
 - [-s, --system TEXT]: System prompt to use (`-s, --system TEXT`).
 - [-m, --model TEXT]: Model to use (`-m, --model TEXT`).
-- [-d, --database FILE]: Path to log database (`-d, --database FILE`).
 - [-q, --query TEXT]: Use first model matching these strings (`-q, --query TEXT`).
 - [-a, --attachment ATTACHMENT]: Attachment path or URL or - (`-a, --attachment ATTACHMENT`).
 - [--at, --attachment-type TEXT]: Attachment with explicit mimetype (`--at`, `--attachment-type`).
@@ -28,13 +24,9 @@
 - [--options]: Show options for the selected model (`--options`).
 - [--schema TEXT]: JSON schema, filepath or ID (`--schema TEXT`).
 - [--schema-multi TEXT]: JSON schema to use for multiple results (`--schema-multi TEXT`).
-- [-f, --fragment TEXT]: Fragment (alias, URL, hash or file path) to add (`-f, --fragment TEXT`).
-- [--sf, --system-fragment TEXT]: Fragment to add to system prompt (`--sf, --system-fragment TEXT`).
 - [-t, --template TEXT]: Template to use (`-t, --template TEXT`).
 - [-p, --param TEXT]: Parameters for template (`-p, --param TEXT`).
 - [--no-stream]: Do not stream output (`--no-stream`).
-- [-n, --no-log]: Don't log to database (`-n, --no-log`).
-- [--log]: Log prompt and response to the database (`--log`).
 - [-R, --hide-reasoning]: Hide reasoning output (`-R, --hide-reasoning`).
 - [-c, --continue]: Continue the most recent conversation (`-c, --continue`).
 - [--cid, --conversation TEXT]: Continue the conversation with the given ID (`--cid, --conversation TEXT`).
@@ -54,10 +46,8 @@
 - [Gap 5]: Missing support for Query Selection (`-q`, `--query`).
 - [Gap 6]: Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
 - [Gap 7]: Missing support for Extract Last (`--xl`, `--extract-last`).
-- [Gap 8]: Missing support for System Fragment (`--sf`, `--system-fragment`).
-- [Gap 9]: Missing support for options management (`llm models options`).
-- [Gap 10]: Missing support for explicitly setting the API key for a prompt (`--key`).
-- [Gap 11]: Missing support for explicit Schema Multi (`--schema-multi`).
+- [Gap 8]: Missing support for explicit Schema Multi (`--schema-multi`).
+- [Gap 9]: Missing support for explicitly setting the API key for a prompt (`--key`).
 - [Tech Debt 1]: Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
 - [Tech Debt 2]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
 - [Tech Debt 3]: Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
@@ -68,23 +58,24 @@
 - [Tech Debt 8]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 9]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 10]: Increase test coverage for custom_openai.lua to >80%.
-- [Tech Debt 12]: Missing mock for `vim.trim` and potentially other global utils when testing under busted.
-- [Tech Debt 13]: Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
-- [Tech Debt 14]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
-- [Tech Debt 15]: Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
+- [Tech Debt 11]: Missing mock for `vim.trim` and potentially other global utils when testing under busted.
+- [Tech Debt 12]: Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
+- [Tech Debt 13]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
+- [Tech Debt 14]: Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
+- [Tech Debt 15]: Refactor process_output in lua/llm/core/utils/job.lua to use table.concat for chunk accumulation to prevent string concatenation performance bottlenecks on large outputs.
 
 ## Ranked Backlog
-1. [Tech Debt 15] - [High Impact/Medium Effort] - Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
-2. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
-3. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
-4. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
-5. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
-6. [Gap 7] - [Medium Impact/Low Effort] - Missing support for Extract Last (`--xl`, `--extract-last`).
-7. [Gap 8] - [Medium Impact/Low Effort] - Missing support for System Fragment (`--sf`, `--system-fragment`).
-8. [Gap 11] - [Medium Impact/Low Effort] - Missing support for explicit Schema Multi (`--schema-multi`).
+1. [Tech Debt 15] - [High Impact/Low Effort] - Refactor process_output in lua/llm/core/utils/job.lua to use table.concat for chunk accumulation to prevent string concatenation performance bottlenecks on large outputs.
+2. [Tech Debt 14] - [High Impact/Medium Effort] - Global API mocks in `api_spec.lua` and others leak global state (e.g. _G.vim.fn.jobstart).
+3. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
+4. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
+5. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
+6. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
+7. [Gap 7] - [Medium Impact/Low Effort] - Missing support for Extract Last (`--xl`, `--extract-last`).
+8. [Gap 8] - [Medium Impact/Low Effort] - Missing support for explicit Schema Multi (`--schema-multi`).
 9. [Tech Debt 3] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
-10. [Tech Debt 12] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
-11. [Tech Debt 13] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
+10. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
+11. [Tech Debt 12] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
 12. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
 13. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
 14. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
@@ -94,6 +85,5 @@
 18. [Tech Debt 10] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
 19. [Gap 2] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
 20. [Gap 3] - [Low Impact/Low Effort] - Missing support for JSON output (`--json`).
-21. [Gap 10] - [Low Impact/Low Effort] - Missing support for explicitly setting the API key for a prompt (`--key`).
+21. [Gap 9] - [Low Impact/Low Effort] - Missing support for explicitly setting the API key for a prompt (`--key`).
 22. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-23. [Gap 9] - [Low Impact/Medium Effort] - Missing support for options management (`llm models options`).
