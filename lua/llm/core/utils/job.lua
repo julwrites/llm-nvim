@@ -29,12 +29,8 @@ function M.run(cmd, callbacks)
 
     local buffer = (event == "stdout") and stdout_buffer or stderr_buffer
 
-    for i, chunk in ipairs(data) do
-      buffer = buffer .. chunk
-
-      if i < #data then
-        buffer = buffer .. "\n"
-      end
+    if #data > 0 then
+      buffer = buffer .. table.concat(data, "\n")
     end
 
     local lines = {}
