@@ -9,8 +9,10 @@ describe('plugin/llm.lua', function()
   local templates_manager_mock
   local shell_mock
   local config_mock
+  local old_vim
 
   before_each(function()
+    old_vim = _G.vim
     -- The existing mock_vim doesn't use a .new() constructor.
     -- We load it and then add the specific spies we need for this test.
     _G.vim = require('tests.spec.mock_vim')
@@ -84,7 +86,7 @@ describe('plugin/llm.lua', function()
     package.loaded['llm.core.utils.shell'] = nil
     package.loaded['llm.config'] = nil
     package.loaded['llm.core.utils.ui'] = nil
-    _G.vim = nil
+    _G.vim = old_vim
   end)
 
   describe(':LLM command handler', function()

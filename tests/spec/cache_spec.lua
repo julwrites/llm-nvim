@@ -4,8 +4,10 @@ describe("llm.core.data.cache", function()
   local cache
   local mock_io
   local mock_json
+  local old_vim
 
   before_each(function()
+    old_vim = _G.vim
     -- Mock io functions
     mock_io = {
       open = function()
@@ -39,7 +41,7 @@ describe("llm.core.data.cache", function()
     -- Restore original modules
     package.loaded['io'] = nil
     package.loaded['llm.core.data.cache'] = nil
-    _G.vim = nil
+    _G.vim = old_vim
   end)
 
   it("should set a value in the cache", function()

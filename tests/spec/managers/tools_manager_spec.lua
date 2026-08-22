@@ -5,7 +5,9 @@ local llm_cli = require('llm.core.data.llm_cli')
 local mock_vim = require('mock_vim')
 
 describe("tools_manager", function()
+  local old_vim
   before_each(function()
+    old_vim = _G.vim
     _G.vim = mock_vim
     stub(llm_cli, "run_llm_command")
 
@@ -16,6 +18,7 @@ describe("tools_manager", function()
   after_each(function()
     llm_cli.run_llm_command:revert()
     vim.fn.json_decode:revert()
+    _G.vim = old_vim
   end)
 
   it("get_tools parses JSON output correctly", function()

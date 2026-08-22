@@ -73,14 +73,21 @@ describe("api", function()
   describe("job chunking and accumulation", function()
     local real_job
 
+    local old_jobstart
+
     before_each(function()
       package.loaded["llm.core.utils.job"] = nil
       real_job = require("llm.core.utils.job")
 
+      old_jobstart = _G.vim.fn.jobstart
       _G.vim.fn.jobstart = function(cmd, opts)
         _G._sim_job_opts = opts
         return 1
       end
+    end)
+
+    after_each(function()
+      _G.vim.fn.jobstart = old_jobstart
     end)
 
     it("handles Neovim data arrays and split lines without truncation", function()
