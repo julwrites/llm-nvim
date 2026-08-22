@@ -4,8 +4,10 @@ local spy = require('luassert.spy')
 
 describe('llm.config', function()
   local config
+  local old_vim
 
   before_each(function()
+    old_vim = _G.vim
     -- Mock the vim object
     _G.vim = {
       tbl_deep_extend = function(_, ...)
@@ -25,7 +27,7 @@ describe('llm.config', function()
   end)
 
   after_each(function()
-    _G.vim = nil
+    _G.vim = old_vim
   end)
 
   describe('setup()', function()

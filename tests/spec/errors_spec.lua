@@ -2,8 +2,10 @@ local spy = require('luassert.spy')
 
 describe('llm.errors', function()
   local errors
+  local old_vim
 
   before_each(function()
+    old_vim = _G.vim
     _G.vim = {
       notify = spy.new(function() end),
       tbl_deep_extend = function(_, ...)
@@ -31,6 +33,7 @@ describe('llm.errors', function()
   end)
 
   after_each(function()
+    _G.vim = old_vim
     package.loaded['llm.errors'] = nil
   end)
 

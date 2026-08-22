@@ -6,8 +6,10 @@ describe('llm.init', function()
   local styles_mock
   local loaders_mock
   local shell_mock
+  local old_vim
 
   before_each(function()
+    old_vim = _G.vim
     _G.vim = {
       env = {},
       fn = {
@@ -69,6 +71,7 @@ describe('llm.init', function()
   end)
 
   after_each(function()
+    _G.vim = old_vim
     package.loaded['llm.config'] = nil
     package.loaded['llm.ui.styles'] = nil
     package.loaded['llm.core.loaders'] = nil

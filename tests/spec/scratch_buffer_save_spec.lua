@@ -34,6 +34,7 @@ describe('llm.commands', function()
     local get_lines_spy = spy.new(function()
         return { "Enter your prompt here and then save and close the buffer to continue.", "test prompt" }
     end)
+    local old_get_lines = _G.vim.api.nvim_buf_get_lines
     _G.vim.api.nvim_buf_get_lines = get_lines_spy
 
     local prompt_spy = spy.on(commands, 'prompt')
@@ -42,11 +43,15 @@ describe('llm.commands', function()
     local create_autocmd_spy = spy.new(function(event, opts)
         opts.callback()
     end)
+    local old_create_autocmd = _G.vim.api.nvim_create_autocmd
     _G.vim.api.nvim_create_autocmd = create_autocmd_spy
 
     local ui_utils = require('llm.core.utils.ui')
     ui_utils.create_prompt_buffer()
 
     assert.spy(prompt_spy).was.called_with('test prompt')
+
+    _G.vim.api.nvim_buf_get_lines = old_get_lines
+    _G.vim.api.nvim_create_autocmd = old_create_autocmd
   end)
 end)
