@@ -37,7 +37,6 @@
 - [--json]: Output the response as JSON (`--json`).
 
 ## Gaps & Tech Debt
-- [Gap 1]: Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
 - [Gap 2]: Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
 - [Gap 3]: Missing support for JSON output (`--json`).
 - [Gap 4]: Missing support for Usage tracking (`-u`, `--usage`).
@@ -59,7 +58,6 @@
 - [Tech Debt 13]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
-1. [Gap 1] - [Medium Impact/Low Effort] - Missing support for explicit Attachment Type (`--at`, `--attachment-type`).
 2. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
 3. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
 4. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
