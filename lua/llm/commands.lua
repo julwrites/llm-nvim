@@ -136,6 +136,15 @@ function M.get_chain_limit_arg()
   return {}
 end
 
+-- Get attachment type argument if specified
+function M.get_attachment_type_args()
+  local attachment_type = config.get("attachment_type")
+  if type(attachment_type) == "string" and attachment_type ~= "" then
+    return { "--at", attachment_type }
+  end
+  return {}
+end
+
 -- Get attachment arguments if specified
 function M.get_attachment_args()
   local attachment = config.get("attachment")
@@ -247,6 +256,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_tools_approve_arg())
   vim.list_extend(cmd_parts, M.get_chain_limit_arg())
   vim.list_extend(cmd_parts, M.get_attachment_args())
+  vim.list_extend(cmd_parts, M.get_attachment_type_args())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())

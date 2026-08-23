@@ -272,6 +272,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_attachment_type_args', function()
+    it('should return empty table if attachment_type is nil', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'attachment_type' then return nil end
+        return nil
+      end)
+      local result = commands.get_attachment_type_args()
+      assert.same({}, result)
+    end)
+
+    it('should return --at argument if attachment_type is a string', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'attachment_type' then return 'image/png' end
+        return nil
+      end)
+      local result = commands.get_attachment_type_args()
+      assert.same({ '--at', 'image/png' }, result)
+    end)
+  end)
+
   describe('get_attachment_args', function()
     it('should return empty table if attachment is nil', function()
       package.loaded['llm.config'].get = spy.new(function(key)

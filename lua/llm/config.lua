@@ -87,6 +87,11 @@ M.defaults = {
     type = "table",
     desc = "Attachments to send to the model"
   },
+  attachment_type = {
+    default = nil,
+    type = "string",
+    desc = "Attachment with explicit mimetype"
+  },
   extract = {
     default = false,
     type = "boolean",
