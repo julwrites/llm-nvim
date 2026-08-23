@@ -58,6 +58,7 @@
 - [Tech Debt 13]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
+1. [Tech Debt 1] - [High Impact/Low Effort] - Refactor scripts/llm.py to cleanly handle urllib exceptions when JSON is malformed.
 2. [Gap 4] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
 3. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
 4. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Stream Control (`--no-stream`) and Async Execution (`--async`).
@@ -75,3 +76,4 @@
 16. [Gap 2] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
 17. [Gap 3] - [Low Impact/Low Effort] - Missing support for JSON output (`--json`).
 18. [Tech Debt 2] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+19. [Tech Debt 13] - [Low Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
