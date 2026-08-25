@@ -60,6 +60,26 @@ function M.get_system_arg()
   return {} -- Return empty table if no system prompt
 end
 
+-- Get system fragment arguments if specified
+function M.get_system_fragment_args()
+  local system_fragment = config.get("system_fragment")
+  if not system_fragment then
+    return {}
+  end
+
+  local args = {}
+  if type(system_fragment) == "string" and system_fragment ~= "" then
+    table.insert(args, "--sf")
+    table.insert(args, system_fragment)
+  elseif type(system_fragment) == "table" then
+    for _, fragment in ipairs(system_fragment) do
+      table.insert(args, "--sf")
+      table.insert(args, fragment)
+    end
+  end
+  return args
+end
+
 -- Get fragment arguments if specified
 function M.get_fragment_args(fragment_list)
   if not fragment_list or #fragment_list == 0 then
@@ -250,6 +270,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_logging_args())
   vim.list_extend(cmd_parts, M.get_model_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
+  vim.list_extend(cmd_parts, M.get_system_fragment_args())
   vim.list_extend(cmd_parts, M.get_tool_args())
   vim.list_extend(cmd_parts, M.get_functions_arg())
   vim.list_extend(cmd_parts, M.get_tools_debug_arg())

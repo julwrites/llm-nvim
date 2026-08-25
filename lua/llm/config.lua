@@ -17,6 +17,11 @@ M.defaults = {
     type = "string",
     desc = "Default system prompt for all queries"
   },
+  system_fragment = {
+    default = nil,
+    type = "table",
+    desc = "Fragment(s) to add to system prompt"
+  },
   no_mappings = {
     default = false,
     type = "boolean",

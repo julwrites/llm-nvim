@@ -65,7 +65,6 @@
 - [Tech Debt 12]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
-1. [Gap 1] - [High Impact/Low Effort] - Missing support for System Fragment (`--sf`, `--system-fragment`).
 2. [Gap 2] - [High Impact/Low Effort] - Missing support for Schema Multi (`--schema-multi`).
 3. [Gap 5] - [Medium Impact/Low Effort] - Missing support for Usage tracking (`-u`, `--usage`).
 4. [Gap 6] - [Medium Impact/Low Effort] - Missing support for Query Selection (`-q`, `--query`).
