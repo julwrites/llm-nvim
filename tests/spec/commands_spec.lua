@@ -49,6 +49,35 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     package.loaded['llm.core.utils.ui'] = nil
   end)
 
+  describe('get_system_fragment_args', function()
+    it('should return empty table if system_fragment is nil', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'system_fragment' then return nil end
+        return nil
+      end)
+      local result = commands.get_system_fragment_args()
+      assert.same({}, result)
+    end)
+
+    it('should return --sf arguments if system_fragment is a string', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'system_fragment' then return 'sys_frag1' end
+        return nil
+      end)
+      local result = commands.get_system_fragment_args()
+      assert.same({ '--sf', 'sys_frag1' }, result)
+    end)
+
+    it('should return multiple --sf arguments if system_fragment is a table', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'system_fragment' then return { 'sys_frag1', 'sys_frag2' } end
+        return nil
+      end)
+      local result = commands.get_system_fragment_args()
+      assert.same({ '--sf', 'sys_frag1', '--sf', 'sys_frag2' }, result)
+    end)
+  end)
+
   describe('Database Option', function()
     it('get_database_arg should return empty if not set', function()
       package.loaded['llm.config'].get = spy.new(function(key) return nil end)
