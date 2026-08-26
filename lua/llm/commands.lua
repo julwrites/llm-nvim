@@ -181,6 +181,15 @@ function M.get_attachment_args()
   return {}
 end
 
+-- Get usage argument if specified
+function M.get_usage_arg()
+  local usage = config.get("usage")
+  if usage then
+    return { "-u" }
+  end
+  return {}
+end
+
 -- Get extract argument if specified
 function M.get_extract_arg()
   local extract = config.get("extract")
@@ -278,6 +287,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_chain_limit_arg())
   vim.list_extend(cmd_parts, M.get_attachment_args())
   vim.list_extend(cmd_parts, M.get_attachment_type_args())
+  vim.list_extend(cmd_parts, M.get_usage_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
