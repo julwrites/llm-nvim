@@ -97,6 +97,11 @@ M.defaults = {
     type = "string",
     desc = "Attachment with explicit mimetype"
   },
+  usage = {
+    default = false,
+    type = "boolean",
+    desc = "Show token usage"
+  },
   extract = {
     default = false,
     type = "boolean",

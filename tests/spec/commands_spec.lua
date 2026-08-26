@@ -281,6 +281,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_usage_arg', function()
+    it('should return {-u} if usage is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'usage' then return true end
+        return nil
+      end)
+      local result = commands.get_usage_arg()
+      assert.same({ '-u' }, result)
+    end)
+
+    it('should return {} if usage is false', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'usage' then return false end
+        return nil
+      end)
+      local result = commands.get_usage_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_extract_arg', function()
     it('should return {-x} if extract is true', function()
       package.loaded['llm.config'].get = spy.new(function(key)
