@@ -40,6 +40,15 @@ function M.get_logging_args()
   return {}
 end
 
+-- Get the query argument if specified
+function M.get_query_arg()
+  local query = config.get("query")
+  if query and query ~= "" then
+    return { "-q", query }
+  end
+  return {}
+end
+
 -- Get the model argument if specified
 function M.get_model_arg()
   local model = config.get("model")
@@ -278,6 +287,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_database_arg())
   vim.list_extend(cmd_parts, M.get_logging_args())
   vim.list_extend(cmd_parts, M.get_model_arg())
+  vim.list_extend(cmd_parts, M.get_query_arg())
   vim.list_extend(cmd_parts, M.get_system_arg())
   vim.list_extend(cmd_parts, M.get_system_fragment_args())
   vim.list_extend(cmd_parts, M.get_tool_args())

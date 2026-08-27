@@ -12,6 +12,11 @@ M.defaults = {
     type = "string",
     desc = "Default model to use (falls back to llm CLI default)"
   },
+  query = {
+    default = nil,
+    type = "string",
+    desc = "Use first model matching these strings (-q, --query TEXT)"
+  },
   system_prompt = {
     default = "You are a helpful assistant.",
     type = "string",
