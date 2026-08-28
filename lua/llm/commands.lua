@@ -208,6 +208,24 @@ function M.get_extract_arg()
   return {}
 end
 
+-- Get no-stream argument if specified
+function M.get_no_stream_arg()
+  local no_stream = config.get("no_stream")
+  if no_stream then
+    return { "--no-stream" }
+  end
+  return {}
+end
+
+-- Get async argument if specified
+function M.get_async_arg()
+  local async = config.get("async")
+  if async then
+    return { "--async" }
+  end
+  return {}
+end
+
 -- Get save template argument if specified
 function M.get_save_template_arg()
   local save = config.get("save")
@@ -299,6 +317,8 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_attachment_type_args())
   vim.list_extend(cmd_parts, M.get_usage_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
+  vim.list_extend(cmd_parts, M.get_no_stream_arg())
+  vim.list_extend(cmd_parts, M.get_async_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
   vim.list_extend(cmd_parts, M.get_template_arg())
   vim.list_extend(cmd_parts, M.get_save_template_arg())
