@@ -132,6 +132,16 @@ M.defaults = {
     type = "table",
     desc = "Key/value parameters for the template (e.g., {name = 'World'})"
   },
+  no_stream = {
+    default = false,
+    type = "boolean",
+    desc = "Do not stream output"
+  },
+  async = {
+    default = false,
+    type = "boolean",
+    desc = "Run prompt asynchronously"
+  },
   schema = {
     default = nil,
     type = "string",
