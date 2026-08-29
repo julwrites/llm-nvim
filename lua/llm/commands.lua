@@ -208,6 +208,15 @@ function M.get_extract_arg()
   return {}
 end
 
+-- Get extract_last argument if specified
+function M.get_extract_last_arg()
+  local extract_last = config.get("extract_last")
+  if extract_last then
+    return { "--xl" }
+  end
+  return {}
+end
+
 -- Get no-stream argument if specified
 function M.get_no_stream_arg()
   local no_stream = config.get("no_stream")
@@ -317,6 +326,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_attachment_type_args())
   vim.list_extend(cmd_parts, M.get_usage_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
+  vim.list_extend(cmd_parts, M.get_extract_last_arg())
   vim.list_extend(cmd_parts, M.get_no_stream_arg())
   vim.list_extend(cmd_parts, M.get_async_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())

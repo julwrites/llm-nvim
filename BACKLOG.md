@@ -44,7 +44,6 @@
 ## Gaps & Tech Debt
 - [Gap 3]: Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
 - [Gap 4]: Missing support for JSON output (`--json`).
-- [Gap 8]: Missing support for Extract Last (`--xl`, `--extract-last`).
 - [Tech Debt 1]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
 - [Tech Debt 2]: Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 3]: Increase test coverage for templates_manager.lua to >80%.
@@ -59,7 +58,6 @@
 - [Tech Debt 12]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
-1. [Gap 8] - [Medium Impact/Low Effort] - Missing support for Extract Last (`--xl`, `--extract-last`).
 3. [Tech Debt 2] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 4. [Tech Debt 10] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 5. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.

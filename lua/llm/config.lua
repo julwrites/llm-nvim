@@ -112,6 +112,11 @@ M.defaults = {
     type = "boolean",
     desc = "Extract content of fenced code blocks"
   },
+  extract_last = {
+    default = false,
+    type = "boolean",
+    desc = "Extract last fenced code block"
+  },
   model_options = {
     default = nil,
     type = "table",
