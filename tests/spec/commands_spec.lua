@@ -360,6 +360,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_extract_last_arg', function()
+    it('should return {--xl} if extract_last is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'extract_last' then return true end
+        return nil
+      end)
+      local result = commands.get_extract_last_arg()
+      assert.same({ '--xl' }, result)
+    end)
+
+    it('should return {} if extract_last is false', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'extract_last' then return false end
+        return nil
+      end)
+      local result = commands.get_extract_last_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_attachment_type_args', function()
     it('should return empty table if attachment_type is nil', function()
       package.loaded['llm.config'].get = spy.new(function(key)
