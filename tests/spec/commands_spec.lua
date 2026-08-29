@@ -340,6 +340,27 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+
+  describe('get_json_arg', function()
+    it('should return {--json} if json is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'json' then return true end
+        return nil
+      end)
+      local result = commands.get_json_arg()
+      assert.same({ '--json' }, result)
+    end)
+
+    it('should return {} if json is false', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'json' then return false end
+        return nil
+      end)
+      local result = commands.get_json_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_extract_arg', function()
     it('should return {-x} if extract is true', function()
       package.loaded['llm.config'].get = spy.new(function(key)
