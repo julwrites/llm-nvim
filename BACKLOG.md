@@ -43,7 +43,6 @@
 
 ## Gaps & Tech Debt
 - [Gap 3]: Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
-- [Gap 4]: Missing support for JSON output (`--json`).
 - [Tech Debt 1]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
 - [Tech Debt 2]: Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 3]: Increase test coverage for templates_manager.lua to >80%.
@@ -61,14 +60,13 @@
 3. [Tech Debt 2] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 4. [Tech Debt 10] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 5. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
-6. [Gap 4] - [Medium Impact/Low Effort] - Missing support for JSON output (`--json`).
-7. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-8. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-9. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-10. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-11. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-12. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-13. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-14. [Gap 3] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
-15. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-16. [Tech Debt 12] - [Low Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
+6. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+7. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+8. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+9. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+10. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+11. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+12. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+13. [Gap 3] - [Low Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
+14. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+15. [Tech Debt 12] - [Low Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.

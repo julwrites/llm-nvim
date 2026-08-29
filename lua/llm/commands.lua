@@ -200,6 +200,16 @@ function M.get_usage_arg()
 end
 
 -- Get extract argument if specified
+
+-- Get json argument if specified
+function M.get_json_arg()
+  local json = config.get("json")
+  if json then
+    return { "--json" }
+  end
+  return {}
+end
+
 function M.get_extract_arg()
   local extract = config.get("extract")
   if extract then
@@ -325,6 +335,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_attachment_args())
   vim.list_extend(cmd_parts, M.get_attachment_type_args())
   vim.list_extend(cmd_parts, M.get_usage_arg())
+  vim.list_extend(cmd_parts, M.get_json_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_extract_last_arg())
   vim.list_extend(cmd_parts, M.get_no_stream_arg())
