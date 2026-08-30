@@ -57,7 +57,6 @@
 - [Tech Debt 12]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
-3. [Tech Debt 2] - [Medium Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 4. [Tech Debt 10] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 5. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
 6. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.

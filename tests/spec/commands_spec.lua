@@ -566,4 +566,209 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       -- os.remove is no longer called manually
     end)
   end)
+
+  describe('interactive_prompt_with_fragments', function()
+    local text_mock
+    local fragments_manager_mock
+
+    local original_vim_ui_select
+    local original_vim_ui_input
+    local original_vim_notify
+    local original_vim_fn_tempname
+    local original_commands_prompt
+    local original_io_open
+    local original_vim_schedule
+
+    before_each(function()
+      original_vim_ui_select = vim.ui and vim.ui.select
+      original_vim_ui_input = vim.ui and vim.ui.input
+      original_vim_notify = vim.notify
+      original_vim_fn_tempname = vim.fn.tempname
+      original_commands_prompt = commands.prompt
+      original_io_open = io.open
+      original_vim_schedule = vim.schedule
+
+      if not vim.ui then vim.ui = {} end
+
+      text_mock = require('llm.core.utils.text')
+      text_mock.get_visual_selection = spy.new(function() return nil end)
+
+      fragments_manager_mock = require('llm.managers.fragments_manager')
+      fragments_manager_mock.add_file_fragment = spy.new(function() end)
+      fragments_manager_mock.add_github_fragment_from_manager = spy.new(function() end)
+
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        on_choice(nil)
+      end)
+      vim.ui.input = spy.new(function(opts, on_confirm)
+        on_confirm(nil)
+      end)
+      vim.notify = spy.new(function() end)
+      commands.prompt = spy.new(function() end)
+      vim.schedule = spy.new(function(cb) cb() end)
+
+      package.loaded['llm.managers.fragments_manager'] = fragments_manager_mock
+    end)
+
+    after_each(function()
+      vim.ui.select = original_vim_ui_select
+      vim.ui.input = original_vim_ui_input
+      vim.notify = original_vim_notify
+      vim.fn.tempname = original_vim_fn_tempname
+      commands.prompt = original_commands_prompt
+      io.open = original_io_open
+      vim.schedule = original_vim_schedule
+    end)
+
+    it('should handle missing options and cancel selection', function()
+      commands.interactive_prompt_with_fragments()
+      assert.spy(vim.ui.select).was.called()
+    end)
+
+    it('should add visual selection if provided and valid', function()
+      text_mock.get_visual_selection = spy.new(function() return "test selection" end)
+      local mock_tempname = "/tmp/visual_selection"
+      vim.fn.tempname = spy.new(function() return mock_tempname end)
+
+      local mock_file = {
+        write = spy.new(function() end),
+        close = spy.new(function() end)
+      }
+      io.open = spy.new(function() return mock_file end)
+
+      commands.interactive_prompt_with_fragments({ range = 1 })
+
+      assert.spy(text_mock.get_visual_selection).was.called()
+      assert.spy(vim.fn.tempname).was.called()
+      assert.spy(io.open).was.called_with(mock_tempname, "w")
+      assert.spy(mock_file.write).was.called_with(mock_file, "test selection")
+      assert.spy(mock_file.close).was.called_with(mock_file)
+      assert.spy(vim.notify).was.called_with("Added visual selection as fragment source.", vim.log.levels.INFO)
+    end)
+
+    it('should add visual selection error when temp file creation fails', function()
+      text_mock.get_visual_selection = spy.new(function() return "test selection" end)
+      local mock_tempname = "/tmp/visual_selection"
+      vim.fn.tempname = spy.new(function() return mock_tempname end)
+
+      io.open = spy.new(function() return nil end)
+
+      commands.interactive_prompt_with_fragments({ range = 1 })
+
+      assert.spy(vim.notify).was.called_with("Failed to create temporary file for visual selection.", vim.log.levels.ERROR)
+    end)
+
+    it('should select file as fragment', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count > 1 then
+          on_choice(nil)
+        else
+          on_choice("Select file as fragment")
+        end
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(fragments_manager_mock.add_file_fragment).was.called()
+    end)
+
+    it('should select github repo as fragment', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count > 1 then
+          on_choice(nil)
+        else
+          on_choice("Use GitHub repository")
+        end
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(fragments_manager_mock.add_github_fragment_from_manager).was.called()
+    end)
+
+    it('should handle enter fragment path/URL', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count > 1 then
+          on_choice(nil)
+        else
+          on_choice("Enter fragment path/URL")
+        end
+      end)
+      vim.ui.input = spy.new(function(opts, on_confirm)
+        on_confirm("http://test.url")
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(vim.ui.input).was.called()
+      assert.spy(vim.notify).was.called_with("Added fragment: http://test.url", vim.log.levels.INFO)
+    end)
+
+    it('should complete with prompt when fragments selected', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count == 1 then
+          on_choice("Enter fragment path/URL")
+        elseif call_count == 2 then
+          on_choice("Done - continue with prompt")
+        else
+          on_choice(nil)
+        end
+      end)
+      vim.ui.input = spy.new(function(opts, on_confirm)
+        if opts.prompt == "Enter fragment path/URL: " then
+          on_confirm("http://test.url")
+        elseif opts.prompt == "Enter prompt: " then
+          on_confirm("test prompt text")
+        end
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(commands.prompt).was.called_with("test prompt text", { "http://test.url" }, nil, match.is_nil())
+    end)
+
+    it('should abort if prompt is empty', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count == 1 then
+          on_choice("Enter fragment path/URL")
+        elseif call_count == 2 then
+          on_choice("Done - continue with prompt")
+        else
+          on_choice(nil)
+        end
+      end)
+      vim.ui.input = spy.new(function(opts, on_confirm)
+        if opts.prompt == "Enter fragment path/URL: " then
+          on_confirm("http://test.url")
+        elseif opts.prompt == "Enter prompt: " then
+          on_confirm("")
+        end
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(vim.notify).was.called_with("Prompt cannot be empty.", vim.log.levels.ERROR)
+      assert.spy(commands.prompt).was_not.called()
+    end)
+
+    it('should notify and exit if done selected with no fragments', function()
+      local call_count = 0
+      vim.ui.select = spy.new(function(items, opts, on_choice)
+        call_count = call_count + 1
+        if call_count > 1 then
+          on_choice(nil)
+        else
+          on_choice("Done - continue with prompt")
+        end
+      end)
+
+      commands.interactive_prompt_with_fragments()
+      assert.spy(vim.notify).was.called_with("No fragments selected.", vim.log.levels.WARN)
+    end)
+  end)
 end)
