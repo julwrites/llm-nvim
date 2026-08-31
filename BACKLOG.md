@@ -55,23 +55,21 @@
 - [Tech Debt 7]: Increase test coverage for plugins_manager.lua to >80%.
 - [Tech Debt 8]: Increase test coverage for tools_manager.lua to >80%.
 - [Tech Debt 9]: Increase test coverage for custom_openai.lua to >80%.
-- [Tech Debt 10]: Missing mock for `vim.trim` and potentially other global utils when testing under busted.
 - [Tech Debt 11]: Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
 - [Tech Debt 12]: Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
 
 ## Ranked Backlog
-1. [Tech Debt 10] - [Medium Impact/Low Effort] - Missing mock for `vim.trim` and potentially other global utils when testing under busted.
-2. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
-3. [Gap 1] - [Medium Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
-4. [Gap 2] - [Medium Impact/Low Effort] - Missing support for explicit API Key override in prompt command (`--key TEXT`).
-5. [Gap 3] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
-6. [Tech Debt 12] - [Medium Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
-7. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-8. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-9. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-10. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-11. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-12. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-13. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-14. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-15. [Tech Debt 2] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+1. [Tech Debt 11] - [Medium Impact/Low Effort] - Missing global utility mocks in `mock_vim.lua` (e.g. vim.split, vim.list_extend, vim.tbl_isempty) for busted test environment.
+2. [Gap 1] - [Medium Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
+3. [Gap 2] - [Medium Impact/Low Effort] - Missing support for explicit API Key override in prompt command (`--key TEXT`).
+4. [Gap 3] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+5. [Tech Debt 12] - [Medium Impact/Low Effort] - Manual `os.remove` calls in `schemas_manager.lua` when using `vim.fn.tempname()` are unnecessary and should be removed.
+6. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+7. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+8. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+9. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+10. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+11. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+12. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+13. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+14. [Tech Debt 2] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
