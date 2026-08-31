@@ -145,6 +145,11 @@ end
 
 M.wait = function() end
 
+M.trim = function(s)
+  if type(s) ~= "string" then return s end
+  return (s:gsub("^%s*(.-)%s*$", "%1"))
+end
+
 M.json = {
   encode = function(val)
     if type(val) == 'table' then
