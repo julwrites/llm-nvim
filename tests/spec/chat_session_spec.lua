@@ -11,6 +11,10 @@ describe("llm.chat.session", function()
       get = function(key)
         if key == "llm_executable_path" then
           return "/usr/bin/llm"
+        elseif key == "attachment" then
+          return "test.png"
+        elseif key == "attachment_type" then
+          return "image/png"
         end
         return nil
       end,
@@ -61,6 +65,10 @@ describe("llm.chat.session", function()
     assert.are.same("test-model", captured_args.command[3])
     assert.are.same("-s", captured_args.command[4])
     assert.are.same("test-system", captured_args.command[5])
+    assert.are.same("-a", captured_args.command[6])
+    assert.are.same("test.png", captured_args.command[7])
+    assert.are.same("--at", captured_args.command[8])
+    assert.are.same("image/png", captured_args.command[9])
     assert.are.same(expected_prompt, captured_args.prompt)
   end)
 
