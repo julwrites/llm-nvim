@@ -35,6 +35,14 @@ function M:build_command(prompt)
     table.insert(cmd_args, self.system_prompt)
   end
 
+  local commands = require("llm.commands")
+  for _, arg in ipairs(commands.get_attachment_args()) do
+    table.insert(cmd_args, arg)
+  end
+  for _, arg in ipairs(commands.get_attachment_type_args()) do
+    table.insert(cmd_args, arg)
+  end
+
   return cmd_args
 end
 

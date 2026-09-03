@@ -48,7 +48,6 @@
 - [Gap 2]: Missing support for explicit API Key override in prompt command (`--key TEXT`).
 - [Gap 3]: Missing support for showing options for the selected model (`--options`).
 - [Gap 6]: Missing support for token usage in `llm chat`.
-- [Gap 7]: Missing support for multi-modal attachments in chat (`-a, --attachment`).
 - [Tech Debt 1]: Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
 - [Tech Debt 2]: Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
 - [Tech Debt 3]: Increase test coverage for templates_manager.lua to >80%.
@@ -60,17 +59,16 @@
 - [Tech Debt 9]: Increase test coverage for custom_openai.lua to >80%.
 
 ## Ranked Backlog
-1. [Gap 7] - [High Impact/Medium Effort] - Missing support for multi-modal attachments in chat (`-a, --attachment`).
-2. [Gap 1] - [Medium Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
-3. [Gap 2] - [Medium Impact/Low Effort] - Missing support for explicit API Key override in prompt command (`--key TEXT`).
-4. [Gap 3] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
-5. [Gap 6] - [Medium Impact/Low Effort] - Missing support for token usage in `llm chat`.
-6. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
-7. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
-8. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
-9. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
-10. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
-11. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
-12. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
-13. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
-14. [Tech Debt 2] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
+1. [Gap 1] - [Medium Impact/Low Effort] - Missing support for Hide Reasoning (`-R`, `--hide-reasoning`).
+2. [Gap 2] - [Medium Impact/Low Effort] - Missing support for explicit API Key override in prompt command (`--key TEXT`).
+3. [Gap 3] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+4. [Gap 6] - [Medium Impact/Low Effort] - Missing support for token usage in `llm chat`.
+5. [Tech Debt 3] - [Medium Impact/Medium Effort] - Increase test coverage for templates_manager.lua to >80%.
+6. [Tech Debt 4] - [Medium Impact/Medium Effort] - Increase test coverage for schemas_manager.lua to >80%.
+7. [Tech Debt 5] - [Medium Impact/Medium Effort] - Increase test coverage for models_manager.lua to >80%.
+8. [Tech Debt 6] - [Medium Impact/Medium Effort] - Increase test coverage for unified_manager.lua to >80%.
+9. [Tech Debt 7] - [Medium Impact/Medium Effort] - Increase test coverage for plugins_manager.lua to >80%.
+10. [Tech Debt 8] - [Medium Impact/Medium Effort] - Increase test coverage for tools_manager.lua to >80%.
+11. [Tech Debt 9] - [Medium Impact/Medium Effort] - Increase test coverage for custom_openai.lua to >80%.
+12. [Tech Debt 1] - [Low Impact/Low Effort] - Test coverage missing for `scripts/llm.py` error conditions (JSONDecodeError handling).
+13. [Tech Debt 2] - [Low Impact/Low Effort] - Write explicit unit tests for `interactive_prompt_with_fragments` in `commands.lua`.
