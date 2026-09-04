@@ -244,6 +244,26 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_hide_reasoning_arg', function()
+    it('should return {-R} if hide_reasoning is true', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'hide_reasoning' then return true end
+        return nil
+      end)
+      local result = commands.get_hide_reasoning_arg()
+      assert.same({ '-R' }, result)
+    end)
+
+    it('should return {} if hide_reasoning is false', function()
+      package.loaded['llm.config'].get = spy.new(function(key)
+        if key == 'hide_reasoning' then return false end
+        return nil
+      end)
+      local result = commands.get_hide_reasoning_arg()
+      assert.same({}, result)
+    end)
+  end)
+
   describe('get_no_stream_arg', function()
     it('get_no_stream_arg should return empty if not set', function()
       package.loaded['llm.config'].get = spy.new(function(key) return nil end)

@@ -117,6 +117,11 @@ M.defaults = {
     type = "boolean",
     desc = "Extract last fenced code block"
   },
+  hide_reasoning = {
+    default = false,
+    type = "boolean",
+    desc = "Hide reasoning output"
+  },
   model_options = {
     default = nil,
     type = "table",

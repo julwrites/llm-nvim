@@ -227,6 +227,15 @@ function M.get_extract_last_arg()
   return {}
 end
 
+-- Get hide-reasoning argument if specified
+function M.get_hide_reasoning_arg()
+  local hide_reasoning = config.get("hide_reasoning")
+  if hide_reasoning then
+    return { "-R" }
+  end
+  return {}
+end
+
 -- Get no-stream argument if specified
 function M.get_no_stream_arg()
   local no_stream = config.get("no_stream")
@@ -338,6 +347,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_json_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_extract_last_arg())
+  vim.list_extend(cmd_parts, M.get_hide_reasoning_arg())
   vim.list_extend(cmd_parts, M.get_no_stream_arg())
   vim.list_extend(cmd_parts, M.get_async_arg())
   vim.list_extend(cmd_parts, M.get_model_options_args())
