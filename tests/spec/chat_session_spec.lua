@@ -15,6 +15,16 @@ describe("llm.chat.session", function()
           return "test.png"
         elseif key == "attachment_type" then
           return "image/png"
+        elseif key == "tools" then
+          return "test-tool"
+        elseif key == "functions" then
+          return "test_functions.py"
+        elseif key == "tools_debug" then
+          return true
+        elseif key == "tools_approve" then
+          return true
+        elseif key == "chain_limit" then
+          return 5
         end
         return nil
       end,
@@ -69,6 +79,14 @@ describe("llm.chat.session", function()
     assert.are.same("test.png", captured_args.command[7])
     assert.are.same("--at", captured_args.command[8])
     assert.are.same("image/png", captured_args.command[9])
+    assert.are.same("-T", captured_args.command[10])
+    assert.are.same("test-tool", captured_args.command[11])
+    assert.are.same("--functions", captured_args.command[12])
+    assert.are.same("test_functions.py", captured_args.command[13])
+    assert.are.same("--td", captured_args.command[14])
+    assert.are.same("--ta", captured_args.command[15])
+    assert.are.same("--cl", captured_args.command[16])
+    assert.are.same("5", captured_args.command[17])
     assert.are.same(expected_prompt, captured_args.prompt)
   end)
 

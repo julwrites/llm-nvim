@@ -42,6 +42,21 @@ function M:build_command(prompt)
   for _, arg in ipairs(commands.get_attachment_type_args()) do
     table.insert(cmd_args, arg)
   end
+  for _, arg in ipairs(commands.get_tool_args()) do
+    table.insert(cmd_args, arg)
+  end
+  for _, arg in ipairs(commands.get_functions_arg()) do
+    table.insert(cmd_args, arg)
+  end
+  for _, arg in ipairs(commands.get_tools_debug_arg()) do
+    table.insert(cmd_args, arg)
+  end
+  for _, arg in ipairs(commands.get_tools_approve_arg()) do
+    table.insert(cmd_args, arg)
+  end
+  for _, arg in ipairs(commands.get_chain_limit_arg()) do
+    table.insert(cmd_args, arg)
+  end
 
   return cmd_args
 end
