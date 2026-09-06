@@ -122,6 +122,11 @@ M.defaults = {
     type = "boolean",
     desc = "Hide reasoning output"
   },
+  api_key = {
+    default = nil,
+    type = "string",
+    desc = "API key to use (--key TEXT)"
+  },
   model_options = {
     default = nil,
     type = "table",

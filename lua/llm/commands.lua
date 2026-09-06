@@ -227,6 +227,15 @@ function M.get_extract_last_arg()
   return {}
 end
 
+-- Get api key argument if specified
+function M.get_api_key_arg()
+  local api_key = config.get("api_key")
+  if type(api_key) == "string" and api_key ~= "" then
+    return { "--key", api_key }
+  end
+  return {}
+end
+
 -- Get hide-reasoning argument if specified
 function M.get_hide_reasoning_arg()
   local hide_reasoning = config.get("hide_reasoning")
@@ -347,6 +356,7 @@ function M.build_base_cmd(fragment_paths)
   vim.list_extend(cmd_parts, M.get_json_arg())
   vim.list_extend(cmd_parts, M.get_extract_arg())
   vim.list_extend(cmd_parts, M.get_extract_last_arg())
+  vim.list_extend(cmd_parts, M.get_api_key_arg())
   vim.list_extend(cmd_parts, M.get_hide_reasoning_arg())
   vim.list_extend(cmd_parts, M.get_no_stream_arg())
   vim.list_extend(cmd_parts, M.get_async_arg())
