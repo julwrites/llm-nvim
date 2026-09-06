@@ -2,7 +2,9 @@
 - [Prompt]: Execute a prompt (`llm prompt`).
 - [Aliases]: Manage model aliases (`llm aliases`).
 - [Chat]: Hold an ongoing chat with a model. (`llm chat`).
+- [Collections]: View and manage collections of embeddings (`llm collections`).
 - [Embed]: Embed text and store or return the result (`llm embed`).
+- [Embed-models]: Manage available embedding models (`llm embed-models`).
 - [Embed-multi]: Store embeddings for multiple strings at once (`llm embed-multi`).
 - [Fragments]: Manage fragments that are stored in the database (`llm fragments`).
 - [Models]: Manage available models (`llm models`).
@@ -44,7 +46,13 @@
 - [--json]: Output the response as JSON (`--json`).
 
 ## Gaps & Tech Debt
+- [Gap 1]: Missing support for managing available embedding models (`llm embed-models`).
 - [Gap 2]: Missing support for showing options for the selected model (`--options`).
+- [Bug 1]: Lua 5.2+ compatibility issue - `unpack` is used instead of `table.unpack` in `lua/llm/chat/buffer.lua`.
+- [Tech Debt 1]: Hacky directory writability check using test file creation and `os.remove` in `file_utils.lua` instead of `vim.fn.filewritable`.
 
 ## Ranked Backlog
-1. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+1. [Bug 1] - [High Impact/Low Effort] - Lua 5.2+ compatibility issue - `unpack` is used instead of `table.unpack` in `lua/llm/chat/buffer.lua`.
+2. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+3. [Tech Debt 1] - [Medium Impact/Low Effort] - Hacky directory writability check using test file creation and `os.remove` in `file_utils.lua` instead of `vim.fn.filewritable`.
+4. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
