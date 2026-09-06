@@ -278,6 +278,20 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
     end)
   end)
 
+  describe('get_api_key_arg', function()
+    it('get_api_key_arg should return empty if not set', function()
+      package.loaded['llm.config'].get = spy.new(function(key) return nil end)
+      local result = commands.get_api_key_arg()
+      assert.are.same({}, result)
+    end)
+
+    it('get_api_key_arg should return argument if set', function()
+      package.loaded['llm.config'].get = spy.new(function(key) if key == 'api_key' then return 'test-key' end return nil end)
+      local result = commands.get_api_key_arg()
+      assert.are.same({"--key", "test-key"}, result)
+    end)
+  end)
+
   describe('get_async_arg', function()
     it('get_async_arg should return empty if not set', function()
       package.loaded['llm.config'].get = spy.new(function(key) return nil end)
