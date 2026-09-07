@@ -2,9 +2,6 @@
 
 local M = {}
 
--- Compatibility shim for unpack function
-local unpack = table.unpack or _G.unpack
-
 function M.new(opts)
   local self = setmetatable({}, { __index = M })
   opts = opts or {}
@@ -22,7 +19,7 @@ function M:get_bufnr()
 end
 
 function M:get_user_input()
-  local current_cursor_line, _ = unpack(vim.api.nvim_win_get_cursor(0))
+  local current_cursor_line, _ = table.unpack(vim.api.nvim_win_get_cursor(0))
   local all_buffer_lines = vim.api.nvim_buf_get_lines(self.bufnr, 0, -1, false)
 
   local you_marker_line_num = -1
