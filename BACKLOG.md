@@ -48,11 +48,9 @@
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for managing available embedding models (`llm embed-models`).
 - [Gap 2]: Missing support for showing options for the selected model (`--options`).
-- [Bug 1]: Lua 5.2+ compatibility issue - `unpack` is used instead of `table.unpack` in `lua/llm/chat/buffer.lua`.
 - [Tech Debt 1]: Hacky directory writability check using test file creation and `os.remove` in `file_utils.lua` instead of `vim.fn.filewritable`.
 
 ## Ranked Backlog
-1. [Bug 1] - [High Impact/Low Effort] - Lua 5.2+ compatibility issue - `unpack` is used instead of `table.unpack` in `lua/llm/chat/buffer.lua`.
-2. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
-3. [Tech Debt 1] - [Medium Impact/Low Effort] - Hacky directory writability check using test file creation and `os.remove` in `file_utils.lua` instead of `vim.fn.filewritable`.
-4. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
+1. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+2. [Tech Debt 1] - [Medium Impact/Low Effort] - Hacky directory writability check using test file creation and `os.remove` in `file_utils.lua` instead of `vim.fn.filewritable`.
+3. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
