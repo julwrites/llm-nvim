@@ -48,13 +48,7 @@
 ## Gaps & Tech Debt
 - [Gap 1]: Missing support for managing available embedding models (`llm embed-models`).
 - [Gap 2]: Missing support for showing options for the selected model (`--options`).
-- [Gap 3]: Missing support for explicitly disabling logging via `--no-log` (`-n, --no-log`).
-- [Gap 4]: Missing support for explicitly enabling logging via `--log` (`--log`).
-- [Gap 5]: Missing commands for logs management in editor context (`llm logs list`).
 
 ## Ranked Backlog
-1. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
-2. [Gap 3] - [Low Impact/Low Effort] - Missing support for explicitly disabling logging via `--no-log` (`-n, --no-log`).
-3. [Gap 4] - [Low Impact/Low Effort] - Missing support for explicitly enabling logging via `--log` (`--log`).
-4. [Gap 5] - [Low Impact/Medium Effort] - Missing commands for logs management in editor context (`llm logs list`).
-5. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
+1. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
+2. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
