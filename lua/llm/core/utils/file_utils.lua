@@ -27,34 +27,15 @@ end
 
 local config_dir_cache = nil
 
-local function with_directory(dir, action)
-  if not dir or dir == "" then return false end
-
-  local test_file = join_path(dir, ".llm_nvim_test")
-  local success, err = pcall(function()
-    local f = io.open(test_file, "a")
-    if not f then return false end
-    f:close()
-
-    if action == "test" then
-      os.remove(test_file)
-      return true
-    elseif action == "create" then
-      local mkdir_cmd = string.format("mkdir -p '%s'", dir)
-      return os.execute(mkdir_cmd) == 0
-    end
-    return false
-  end)
-
-  return success and err ~= false
-end
-
 function M._test_directory_writable(dir)
-  return with_directory(dir, "test")
+  if not dir or dir == "" then return false end
+  return vim.fn.filewritable(dir) == 2
 end
 
 function M._create_directory(dir)
-  if with_directory(dir, "create") then
+  if not dir or dir == "" then return false end
+  local mkdir_cmd = string.format("mkdir -p '%s'", dir)
+  if os.execute(mkdir_cmd) == 0 then
     debug_log("Created directory: " .. dir)
     return true
   else
