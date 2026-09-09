@@ -37,6 +37,21 @@ function M.embed(opts)
   return llm_cli.run_llm_command(cmd)
 end
 
+function M.embed_models(opts)
+  if type(opts) == 'string' then
+    return llm_cli.run_llm_command('embed-models ' .. opts)
+  end
+  opts = opts or {}
+  local cmd = 'embed-models'
+  if opts.subcommand then
+    cmd = cmd .. ' ' .. opts.subcommand
+  end
+  if opts.args then
+    cmd = cmd .. ' ' .. opts.args
+  end
+  return llm_cli.run_llm_command(cmd)
+end
+
 function M.embed_multi(opts)
   if type(opts) == 'string' then
     return llm_cli.run_llm_command('embed-multi ' .. opts)
