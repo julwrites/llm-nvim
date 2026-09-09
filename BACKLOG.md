@@ -46,9 +46,7 @@
 - [--json]: Output the response as JSON (`--json`).
 
 ## Gaps & Tech Debt
-- [Gap 1]: Missing support for managing available embedding models (`llm embed-models`).
 - [Gap 2]: Missing support for showing options for the selected model (`--options`).
 
 ## Ranked Backlog
-1. [Gap 1] - [Medium Impact/Medium Effort] - Missing support for managing available embedding models (`llm embed-models`).
-2. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
+1. [Gap 2] - [Medium Impact/Low Effort] - Missing support for showing options for the selected model (`--options`).
