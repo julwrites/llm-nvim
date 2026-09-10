@@ -502,6 +502,11 @@ function M.setup_models_keymaps(bufnr, manager_module)
   set_keymap('n', 'c', -- New keymap for adding custom OpenAI model
     string.format([[<Cmd>lua require('%s').add_custom_openai_model_interactive(%d)<CR>]],
       manager_module.__name or 'llm.managers.models_manager', bufnr))
+
+  -- Show options for model under cursor
+  set_keymap('n', 'o',
+    string.format([[<Cmd>lua require('%s').show_options_for_model_under_cursor(%d)<CR>]],
+      manager_module.__name or 'llm.managers.models_manager', bufnr))
 end
 
 -- Action functions called by keymaps (now accept bufnr)
@@ -611,6 +616,19 @@ function M.set_alias_for_model_under_cursor(bufnr)
       vim.cmd('stopinsert')
     end
   end)
+end
+
+-- Shows options for the model under the cursor.
+function M.show_options_for_model_under_cursor(bufnr)
+  local model_id, model_info = M.get_model_info_under_cursor(bufnr)
+  if not model_id or not model_info then return end
+
+  local output = require('llm.core.data.llm_cli').run_llm_command("prompt --options -m " .. model_id)
+  if not output or output == "" then
+    vim.notify("No options available for model '" .. model_id .. "'", vim.log.levels.INFO)
+    return
+  end
+  require('llm.core.utils.ui').create_buffer_with_content(output, "Model Options: " .. model_id)
 end
 
 -- Removes an alias associated with the model under the cursor.
