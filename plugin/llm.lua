@@ -163,6 +163,14 @@ end, {
   desc = "Manage LLM schemas",
 })
 
+-- Command to open the models manager
+vim.api.nvim_create_user_command('LLMModels', function(opts)
+  require('llm.managers.models_manager').manage_models()
+end, {
+  nargs = 0,
+  desc = "Manage LLM models",
+})
+
 -- Command to manage aliases
 vim.api.nvim_create_user_command('LLMAliases', function(opts)
   require('llm.managers.models_manager').manage_models()

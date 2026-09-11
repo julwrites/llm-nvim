@@ -47,8 +47,6 @@
 
 ## Gaps & Tech Debt
 - [Gap 1]: Missing command to view default options for all models (`llm models options`).
-- [Gap 2]: Unused code/missing global command for `models_manager.manage_models` or `unified_manager.open_specific_manager("Models")`. There is no `:LLMModels` user command to easily open the model manager.
 
 ## Ranked Backlog
-1. [Gap 2] - [High Impact/Low Effort] - Missing global command `:LLMModels` to directly open the models manager view.
-2. [Gap 1] - [Medium Impact/Medium Effort] - Missing command to view default options for all models (`llm models options`).
+1. [Gap 1] - [Medium Impact/Medium Effort] - Missing command to view default options for all models (`llm models options`).
