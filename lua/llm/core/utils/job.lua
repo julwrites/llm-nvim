@@ -22,29 +22,28 @@ function M.run(cmd, callbacks)
   local stderr_buffer = ""
 
   local function process_output(data, event)
-    if not data then return end
+    if not data or #data == 0 then return end
 
     local handler = (event == "stdout" and callbacks.on_stdout) or (event == "stderr" and callbacks.on_stderr)
     if not handler then return end
 
     local buffer = (event == "stdout") and stdout_buffer or stderr_buffer
 
-    if #data > 0 then
-      buffer = buffer .. table.concat(data, "\n")
-    end
+    -- Neovim passes split lines. The array always represents implicitly newline-terminated
+    -- lines, except the last element which represents a partial line.
 
-    local lines = {}
-    while true do
-      local newline_pos = buffer:find('\n')
-      if not newline_pos then break end
+    -- Prepend existing buffer to the first element
+    data[1] = buffer .. (data[1] or "")
 
-      local line = buffer:sub(1, newline_pos - 1)
+    -- The last element is the new buffer (partial line)
+    buffer = table.remove(data)
+
+    -- data now contains only complete lines
+    local lines = data
+    for i, line in ipairs(lines) do
       if line:sub(-1) == '\r' then
-        line = line:sub(1, -2)
+        lines[i] = line:sub(1, -2)
       end
-      table.insert(lines, line)
-
-      buffer = buffer:sub(newline_pos + 1)
     end
 
     if event == "stdout" then

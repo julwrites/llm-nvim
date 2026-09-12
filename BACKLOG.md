@@ -50,5 +50,4 @@
 - [Tech Debt 1]: `lua/llm/core/utils/job.lua` uses an inefficient and error-prone manual loop with string splitting to process `stdout` chunks instead of efficiently using `table.concat` or processing Neovim's built-in array of string lines natively.
 
 ## Ranked Backlog
-1. [Tech Debt 1] - [High Impact/Low Effort] - Refactor `lua/llm/core/utils/job.lua` to efficiently handle stdout array buffering via `table.concat` instead of manual newline iteration.
-2. [Gap 1] - [Low Impact/Medium Effort] - Implement `--options` parsing and flag forwarding in `lua/llm/commands.lua`.
+1. [Gap 1] - [Low Impact/Medium Effort] - Implement `--options` parsing and flag forwarding in `lua/llm/commands.lua`.
