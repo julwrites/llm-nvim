@@ -21,7 +21,7 @@ describe('llm.core.utils.job', function()
 
       -- When
       job.run({ 'echo', 'line1\nline2' }, { on_stdout = on_stdout_spy })
-      captured_job_callbacks.on_stdout(0, { 'line1\nline2\n' }, 'stdout')
+      captured_job_callbacks.on_stdout(0, { 'line1', 'line2', '' }, 'stdout')
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
@@ -39,7 +39,7 @@ describe('llm.core.utils.job', function()
 
       -- When
       job.run({ 'echo', 'line1\r\nline2\r\n' }, { on_stdout = on_stdout_spy })
-      captured_job_callbacks.on_stdout(0, { 'line1\r\nline2\r\n' }, 'stdout')
+      captured_job_callbacks.on_stdout(0, { 'line1\r', 'line2\r', '' }, 'stdout')
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
@@ -58,7 +58,7 @@ describe('llm.core.utils.job', function()
       -- When
       job.run({ 'echo', 'partial' }, { on_stdout = on_stdout_spy })
       captured_job_callbacks.on_stdout(0, { 'part' }, 'stdout')
-      captured_job_callbacks.on_stdout(0, { 'ial\n' }, 'stdout')
+      captured_job_callbacks.on_stdout(0, { 'ial', '' }, 'stdout')
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
@@ -76,7 +76,7 @@ describe('llm.core.utils.job', function()
 
       -- When
       job.run({ 'echo', '\n' }, { on_stdout = on_stdout_spy })
-      captured_job_callbacks.on_stdout(0, { '\n' }, 'stdout')
+      captured_job_callbacks.on_stdout(0, { '', '' }, 'stdout')
 
       -- Then
       assert.spy(on_stdout_spy).was.called(1)
