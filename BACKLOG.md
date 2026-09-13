@@ -49,3 +49,4 @@
 - [Tech Debt 1]: `lua/llm/core/utils/job.lua` uses an inefficient and error-prone manual loop with string splitting to process `stdout` chunks instead of efficiently using `table.concat` or processing Neovim's built-in array of string lines natively.
 
 ## Ranked Backlog
+1. [Tech Debt 1] - [High Impact/Low Effort] - `lua/llm/core/utils/job.lua` uses an inefficient and error-prone manual loop with string splitting to process `stdout` chunks instead of efficiently using `table.concat` or processing Neovim's built-in array of string lines natively.
