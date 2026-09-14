@@ -24,7 +24,6 @@
 - [--ta, --tools-approve]: Manually approve every tool execution (`--ta`, `--tools-approve`).
 - [--cl, --chain-limit INTEGER]: How many chained tool responses to allow (`--cl`, `--chain-limit`).
 - [-o, --option TEXT]: key/value options for the model (`-o`, `--option`).
-- [--options]: Show options for the selected model (`--options`).
 - [--schema TEXT]: Schema DSL, JSON schema, filepath or ID (`--schema`).
 - [--schema-multi TEXT]: Schema for multiple results (`--schema-multi`).
 - [-f, --fragment TEXT]: Fragment to add to the prompt (`-f`, `--fragment`).
@@ -33,7 +32,6 @@
 - [-p, --param TEXT]: Parameters for template (`-p`, `--param`).
 - [--no-stream]: Do not stream output (`--no-stream`).
 - [-n, --no-log]: Don't log to database (`-n`, `--no-log`).
-- [--log]: Log prompt and response to the database (`--log`).
 - [-R, --hide-reasoning]: Hide reasoning output (`-R`, `--hide-reasoning`).
 - [-c, --continue]: Continue the most recent conversation (`-c`, `--continue`).
 - [--cid, --conversation TEXT]: Continue the conversation with the given ID (`--cid`, `--conversation`).
@@ -46,5 +44,11 @@
 - [--json]: Output the response as JSON (`--json`).
 
 ## Gaps & Tech Debt
+- [Missing Feature]: `-c, --continue` is not implemented via explicit flag or config (only `--cid` via `conversation_id`).
+- [Tech Debt/Bug]: In `lua/llm/commands.lua`, `on_stdout` callbacks receive partial chunks but blindly iterate and append `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")` or proper string buffering.
+- [Tech Debt]: `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config.
 
 ## Ranked Backlog
+1. [Stream chunk buffering bug] - [High Impact/Low Effort] - In `lua/llm/commands.lua`, `on_stdout` callback receives partial chunks but blindly iterates and appends `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")`.
+2. [Missing `--continue` option] - [Medium Impact/Low Effort] - Add support for `--continue` (`-c`) in `commands.lua`.
+3. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
