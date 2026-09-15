@@ -32,6 +32,7 @@
 - [-p, --param TEXT]: Parameters for template (`-p`, `--param`).
 - [--no-stream]: Do not stream output (`--no-stream`).
 - [-n, --no-log]: Don't log to database (`-n`, `--no-log`).
+- [--log]: Log prompt and response to the database (`--log`).
 - [-R, --hide-reasoning]: Hide reasoning output (`-R`, `--hide-reasoning`).
 - [-c, --continue]: Continue the most recent conversation (`-c`, `--continue`).
 - [--cid, --conversation TEXT]: Continue the conversation with the given ID (`--cid`, `--conversation`).
@@ -44,10 +45,11 @@
 - [--json]: Output the response as JSON (`--json`).
 
 ## Gaps & Tech Debt
-- [Missing Feature]: `-c, --continue` is not implemented via explicit flag or config (only `--cid` via `conversation_id`).
-- [Tech Debt/Bug]: In `lua/llm/commands.lua`, `on_stdout` callbacks receive partial chunks but blindly iterate and append `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")` or proper string buffering.
+- [Missing Feature]: `--log` is not implemented in `lua/llm/commands.lua` as an option. (Note: `--options` is handled in `models_manager.lua` and `-c` is handled in `commands.lua`).
+- [Tech Debt/Bug]: In `lua/llm/api.lua`, `run_llm_command_streamed`'s `on_stdout` callbacks receive partial chunks but blindly iterate and append `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")` or proper string buffering.
 - [Tech Debt]: `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config.
 
 ## Ranked Backlog
-1. [Missing `--continue` option] - [Medium Impact/Low Effort] - Add support for `--continue` (`-c`) in `commands.lua`.
-2. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
+1. [Tech Debt in api.lua] - [High Impact/Low Effort] - Fix blind iteration and newline appending in `on_stdout` callback in `lua/llm/api.lua` by using `table.concat(data, "\n")`.
+2. [Missing `--log` option] - [Medium Impact/Low Effort] - Add support for `--log` in `commands.lua`.
+3. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
