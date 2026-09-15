@@ -49,6 +49,5 @@
 - [Tech Debt]: `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config.
 
 ## Ranked Backlog
-1. [Stream chunk buffering bug] - [High Impact/Low Effort] - In `lua/llm/commands.lua`, `on_stdout` callback receives partial chunks but blindly iterates and appends `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")`.
-2. [Missing `--continue` option] - [Medium Impact/Low Effort] - Add support for `--continue` (`-c`) in `commands.lua`.
-3. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
+1. [Missing `--continue` option] - [Medium Impact/Low Effort] - Add support for `--continue` (`-c`) in `commands.lua`.
+2. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.

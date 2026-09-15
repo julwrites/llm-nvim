@@ -434,9 +434,10 @@ function M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
 
   local callbacks = {
     on_stdout = function(_, data)
-      if data then
-        for _, line in ipairs(data) do
-          ui.append_to_buffer(target_bufnr, line .. "\n", "LlmModelResponse")
+      if data and #data > 0 then
+        local chunk = table.concat(data, "\n")
+        if chunk ~= "" then
+          ui.append_to_buffer(target_bufnr, chunk, "LlmModelResponse")
         end
       end
     end,

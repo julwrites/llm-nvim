@@ -541,7 +541,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local callbacks = call_args[3]
       callbacks.on_stdout(nil, { 'test output' })
 
-      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output\n', 'LlmModelResponse')
+      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output', 'LlmModelResponse')
     end)
   end)
 
@@ -568,7 +568,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local callbacks = call_args[3]
       callbacks.on_stdout(nil, { 'test output' })
 
-      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output\n', 'LlmModelResponse')
+      assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output', 'LlmModelResponse')
     end)
   end)
 
