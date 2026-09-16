@@ -1,54 +1,50 @@
 ## Unranked Catalog (Upstream LLM CLI features applicable to Neovim)
 - [Prompt]: Execute a prompt (`llm prompt`).
-- [Aliases]: Manage model aliases (`llm aliases`).
-- [Chat]: Hold an ongoing chat with a model (`llm chat`).
+- [Chat]: Hold an ongoing chat with a model. (`llm chat`).
 - [Collections]: View and manage collections of embeddings (`llm collections`).
 - [Embed]: Embed text and store or return the result (`llm embed`).
-- [Embed-models]: Manage available embedding models (`llm embed-models`).
-- [Embed-multi]: Store embeddings for multiple strings at once (`llm embed-multi`).
-- [Fragments]: Manage fragments that are stored in the database (`llm fragments`).
-- [Models]: Manage available models (`llm models`).
-- [Schemas]: Manage stored schemas (`llm schemas`).
+- [Embed-multi]: Store embeddings for multiple strings at once in the database (`llm embed-multi`).
 - [Similar]: Return top N similar IDs from a collection using cosine similarity (`llm similar`).
-- [Templates]: Manage stored prompt templates (`llm templates`).
 - [Tools]: Manage tools that can be made available to LLMs (`llm tools`).
-- [-s, --system TEXT]: System prompt to use (`-s`, `--system`).
-- [-m, --model TEXT]: Model to use (`-m`, `--model`).
-- [-d, --database FILE]: Path to log database (`-d`, `--database`).
-- [-q, --query TEXT]: Use first model matching these strings (`-q`, `--query`).
-- [-a, --attachment ATTACHMENT]: Attachment path or URL or - (`-a`, `--attachment`).
-- [--at, --attachment-type TEXT]: Attachment with explicit mimetype (`--at`, `--attachment-type`).
-- [-T, --tool TEXT]: Name of a tool to make available (`-T`, `--tool`).
-- [--functions TEXT]: Python code block or file path defining functions (`--functions`).
-- [--td, --tools-debug]: Show full details of tool executions (`--td`, `--tools-debug`).
-- [--ta, --tools-approve]: Manually approve every tool execution (`--ta`, `--tools-approve`).
-- [--cl, --chain-limit INTEGER]: How many chained tool responses to allow (`--cl`, `--chain-limit`).
-- [-o, --option TEXT]: key/value options for the model (`-o`, `--option`).
-- [--schema TEXT]: Schema DSL, JSON schema, filepath or ID (`--schema`).
-- [--schema-multi TEXT]: Schema for multiple results (`--schema-multi`).
-- [-f, --fragment TEXT]: Fragment to add to the prompt (`-f`, `--fragment`).
-- [--sf, --system-fragment TEXT]: Fragment to add to system prompt (`--sf`, `--system-fragment`).
-- [-t, --template TEXT]: Template to use (`-t`, `--template`).
-- [-p, --param TEXT]: Parameters for template (`-p`, `--param`).
+- [-s, --system TEXT]: System prompt to use (`-s`).
+- [-m, --model TEXT]: Model to use (`-m`).
+- [-d, --database FILE]: Path to log database (`-d`).
+- [-q, --query TEXT]: Use first model matching these strings (`-q`).
+- [-a, --attachment ATTACHMENT]: Attachment path or URL or - (`-a`).
+- [--at, --attachment-type <TEXT TEXT>...]: Attachment with explicit mimetype, (`--at`).
+- [-T, --tool TEXT]: Name of a tool to make available to the model (`-T`).
+- [--functions TEXT]: Python code block or file path defining functions to register as tools (`--functions TEXT`).
+- [--td, --tools-debug]: Show full details of tool executions (`--td`).
+- [--ta, --tools-approve]: Manually approve every tool execution (`--ta`).
+- [--cl, --chain-limit INTEGER]: How many chained tool responses to allow, default 5, set 0 for unlimited (`--cl`).
+- [-o, --option <TEXT TEXT>...]: key/value options for the model (`-o`).
+- [--options]: Show options for the selected model (`--options`).
+- [--schema TEXT]: Schema DSL, JSON schema, filepath or ID (`--schema TEXT`).
+- [--schema-multi TEXT]: Schema for multiple results (`--schema-multi TEXT`).
+- [-f, --fragment TEXT]: Fragment (alias, URL, hash or file path) to add to the prompt (`-f`).
+- [--sf, --system-fragment TEXT]: Fragment to add to system prompt (`--sf`).
+- [-t, --template TEXT]: Template to use; can be repeated to combine templates (`-t`).
+- [-p, --param <TEXT TEXT>...]: Parameters for template (`-p`).
 - [--no-stream]: Do not stream output (`--no-stream`).
-- [-n, --no-log]: Don't log to database (`-n`, `--no-log`).
+- [-n, --no-log]: Don't log to database (`-n`).
 - [--log]: Log prompt and response to the database (`--log`).
-- [-R, --hide-reasoning]: Hide reasoning output (`-R`, `--hide-reasoning`).
-- [-c, --continue]: Continue the most recent conversation (`-c`, `--continue`).
-- [--cid, --conversation TEXT]: Continue the conversation with the given ID (`--cid`, `--conversation`).
-- [--key TEXT]: API key to use (`--key`).
-- [--save TEXT]: Save prompt with this template name (`--save`).
+- [-R, --hide-reasoning]: Hide reasoning output (`-R`).
+- [-c, --continue]: Continue the most recent conversation. (`-c`).
+- [--cid, --conversation TEXT]: Continue the conversation with the given ID. (`--cid`).
+- [--key TEXT]: API key to use (`--key TEXT`).
+- [--save TEXT]: Save prompt with this template name (`--save TEXT`).
 - [--async]: Run prompt asynchronously (`--async`).
-- [-u, --usage]: Show token usage (`-u`, `--usage`).
-- [-x, --extract]: Extract first fenced code block (`-x`, `--extract`).
-- [--xl, --extract-last]: Extract last fenced code block (`--xl`, `--extract-last`).
-- [--json]: Output the response as JSON (`--json`).
+- [-u, --usage]: Show token usage (`-u`).
+- [-x, --extract]: Extract first fenced code block (`-x`).
+- [--xl, --extract-last]: Extract last fenced code block (`--xl`).
+- [--json]: Output the response as JSON, same format as llm logs --json (`--json`).
 
 ## Gaps & Tech Debt
-- [Missing Feature]: `--log` is not implemented in `lua/llm/commands.lua` as an option. (Note: `--options` is handled in `models_manager.lua` and `-c` is handled in `commands.lua`).
-- [Tech Debt/Bug]: In `lua/llm/api.lua`, `run_llm_command_streamed`'s `on_stdout` callbacks receive partial chunks but blindly iterate and append `line .. "\n"`. This should be fixed by using `table.concat(data, "\n")` or proper string buffering.
-- [Tech Debt]: `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config.
+- [Missing Feature]: `--log` is not implemented in `lua/llm/commands.lua` as an option.
+- [Tech Debt]: In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
+- [Tech Debt]: In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
 
 ## Ranked Backlog
 1. [Missing `--log` option] - [Medium Impact/Low Effort] - Add support for `--log` in `commands.lua`.
-2. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
+2. [Fix String Buffering in Chat] - [High Impact/Low Effort] - In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
+3. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
