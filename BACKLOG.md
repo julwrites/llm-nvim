@@ -50,6 +50,5 @@
 - [Tech Debt]: `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config.
 
 ## Ranked Backlog
-1. [Tech Debt in api.lua] - [High Impact/Low Effort] - Fix blind iteration and newline appending in `on_stdout` callback in `lua/llm/api.lua` by using `table.concat(data, "\n")`.
-2. [Missing `--log` option] - [Medium Impact/Low Effort] - Add support for `--log` in `commands.lua`.
-3. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.
+1. [Missing `--log` option] - [Medium Impact/Low Effort] - Add support for `--log` in `commands.lua`.
+2. [Global config coupling] - [Medium Impact/Medium Effort] - `commands.lua` parses arguments directly from `config.get()`. This couples argument parsing to the global config, which should be refactored to allow local overrides.

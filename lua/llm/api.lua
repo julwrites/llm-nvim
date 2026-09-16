@@ -77,10 +77,9 @@ function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
   opts = opts or {}
   local callbacks = {
     on_stdout = function(_, data)
-      if data then
-        for _, line in ipairs(data) do
-          ui.append_to_buffer(bufnr, line .. "\n", "LlmModelResponse")
-        end
+      if data and #data > 0 then
+        local content = table.concat(data, "\n")
+        ui.append_to_buffer(bufnr, content, "LlmModelResponse")
       end
       if opts.on_stdout then opts.on_stdout(_, data) end
     end,
