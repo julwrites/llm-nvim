@@ -40,11 +40,9 @@
 - [--json]: Output the response as JSON, same format as llm logs --json (`--json`).
 
 ## Gaps & Tech Debt
-- [Missing Feature]: `--log` is not implemented in `lua/llm/commands.lua` as an option.
 - [Tech Debt]: In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
 - [Tech Debt]: In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
 
 ## Ranked Backlog
-1. [Missing `--log` option] - [Medium Impact/Low Effort] - Add support for `--log` in `commands.lua`.
-2. [Fix String Buffering in Chat] - [High Impact/Low Effort] - In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
-3. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
+1. [Fix String Buffering in Chat] - [High Impact/Low Effort] - In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
+2. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
