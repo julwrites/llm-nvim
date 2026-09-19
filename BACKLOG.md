@@ -41,7 +41,6 @@
 - [Tech Debt]: In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
 
 ## Ranked Backlog
-1. [Fix String Buffering in Chat] - [High Impact/Low Effort] - In `lua/llm/chat.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
-2. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
-3. [Integrate Informational Queries UI] - [Medium Impact/Medium Effort] - Bridge the gap between native `--options` implementation in `models_manager.lua` and streaming generation flow to seamlessly surface options to users.
-4. [Database Selection UI] - [Low Impact/Low Effort] - Plumb `get_database_arg` into the UI/commands so users can interactively select custom logging databases.
+1. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
+2. [Integrate Informational Queries UI] - [Medium Impact/Medium Effort] - Bridge the gap between native `--options` implementation in `models_manager.lua` and streaming generation flow to seamlessly surface options to users.
+3. [Database Selection UI] - [Low Impact/Low Effort] - Plumb `get_database_arg` into the UI/commands so users can interactively select custom logging databases.

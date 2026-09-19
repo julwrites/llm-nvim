@@ -92,9 +92,13 @@ function M.send_message()
   buffer:add_llm_header()
   
   -- Send prompt to LLM
+  local stdout_buffer = ""
   local job_id = session:send_prompt(prompt, {
     on_stdout = function(_, data)
-      if data then
+      if data and #data > 0 then
+        data[1] = stdout_buffer .. (data[1] or "")
+        stdout_buffer = table.remove(data)
+
         for _, line in ipairs(data) do
           local new_conv_id = session:extract_conversation_id(line)
           if new_conv_id then
@@ -115,6 +119,16 @@ function M.send_message()
     end,
     
     on_exit = function(_, exit_code)
+      if stdout_buffer ~= "" then
+        local new_conv_id = session:extract_conversation_id(stdout_buffer)
+        if new_conv_id then
+          session.conversation_id = new_conv_id
+        else
+          buffer:append_llm_message(stdout_buffer)
+        end
+        stdout_buffer = ""
+      end
+
       -- Reset session state to ready regardless of exit code
       session:reset_state()
 
