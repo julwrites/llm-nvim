@@ -40,9 +40,7 @@
 ## Gaps & Tech Debt
 - [Feature Gap]: Missing `database` selection integration in UI, though `get_database_arg` exists in `commands.lua`.
 - [Tech Debt]: In `lua/llm/core/data/llm_cli.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
-- [Tech Debt]: In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
 
 ## Ranked Backlog
-1. [Global Config Coupling] - [Medium Impact/Medium Effort] - In `lua/llm/commands.lua`, argument parsing is directly coupled to `config.get()`, limiting the ability to supply local overrides per command execution.
-2. [Fix CLI Buffering] - [Medium Impact/Low Effort] - In `lua/llm/core/data/llm_cli.lua`, fix the `on_stdout` callback to accumulate a proper string buffer for parsing lines.
-3. [Database Selection UI] - [Low Impact/Low Effort] - Plumb `get_database_arg` into the UI/commands so users can interactively select custom logging databases.
+1. [Fix CLI Buffering] - [Medium Impact/Low Effort] - In `lua/llm/core/data/llm_cli.lua`, fix the `on_stdout` callback to accumulate a proper string buffer for parsing lines.
+2. [Database Selection UI] - [Low Impact/Low Effort] - Plumb `get_database_arg` into the UI/commands so users can interactively select custom logging databases.

@@ -805,4 +805,39 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       assert.spy(vim.notify).was.called_with("No fragments selected.", vim.log.levels.WARN)
     end)
   end)
+
+  describe('local options override', function()
+    it('should respect opts over config.get', function()
+      local opts = {
+        model = 'local-override-model',
+        database = 'local.db'
+      }
+      -- model argument
+      local model_arg = commands.get_model_arg(opts)
+      assert.are.same({ '-m', 'local-override-model' }, model_arg)
+
+      -- database argument
+      local db_arg = commands.get_database_arg(opts)
+      assert.are.same({ '-d', 'local.db' }, db_arg)
+
+      -- base command builds with opts
+      local cmd_parts = commands.build_base_cmd(nil, opts)
+
+      -- check if table contains 'local-override-model'
+      local found_model = false
+      local found_db = false
+      for _, v in ipairs(cmd_parts) do
+        if v == 'local-override-model' then found_model = true end
+        if v == 'local.db' then found_db = true end
+      end
+
+      assert.is_true(found_model)
+      assert.is_true(found_db)
+    end)
+
+    it('should fallback to config.get when opts is nil', function()
+      local model_arg = commands.get_model_arg()
+      assert.are.same({ '-m', 'test-model' }, model_arg)
+    end)
+  end)
 end)
