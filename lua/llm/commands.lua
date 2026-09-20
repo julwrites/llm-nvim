@@ -18,31 +18,40 @@ local job = require('llm.core.utils.job')
 ---------------------
 
 -- Get the configured llm executable path
-function M.get_llm_executable_path()
-  return config.get("llm_executable_path")
+
+-- Helper to get option from local opts or global config
+local function get_opt(key, opts)
+  if opts ~= nil and type(opts) == "table" and opts[key] ~= nil then
+    return opts[key]
+  end
+  return config.get(key)
+end
+
+function M.get_llm_executable_path(opts)
+  return get_opt("llm_executable_path", opts)
 end
 
 -- Get the database argument if specified
-function M.get_database_arg()
-  local database = config.get("database")
+function M.get_database_arg(opts)
+  local database = get_opt("database", opts)
   if database and database ~= "" then
     return { "-d", database }
   end
   return {}
 end
 
-function M.get_logging_args()
-  if config.get("no_log") then
+function M.get_logging_args(opts)
+  if get_opt("no_log", opts) then
     return { "--no-log" }
-  elseif config.get("log") then
+  elseif get_opt("log", opts) then
     return { "--log" }
   end
   return {}
 end
 
 -- Get the query argument if specified
-function M.get_query_arg()
-  local query = config.get("query")
+function M.get_query_arg(opts)
+  local query = get_opt("query", opts)
   if query and query ~= "" then
     return { "-q", query }
   end
@@ -50,8 +59,8 @@ function M.get_query_arg()
 end
 
 -- Get the model argument if specified
-function M.get_model_arg()
-  local model = config.get("model")
+function M.get_model_arg(opts)
+  local model = get_opt("model", opts)
   if model and model ~= "" then
     -- Return as a table element for later concatenation
     return { "-m", model }
@@ -60,8 +69,8 @@ function M.get_model_arg()
 end
 
 -- Get the system prompt argument if specified
-function M.get_system_arg()
-  local system = config.get("system_prompt")
+function M.get_system_arg(opts)
+  local system = get_opt("system_prompt", opts)
   if system and system ~= "" then
     -- Return as a table element for later concatenation
     return { "-s", system }
@@ -70,8 +79,8 @@ function M.get_system_arg()
 end
 
 -- Get system fragment arguments if specified
-function M.get_system_fragment_args()
-  local system_fragment = config.get("system_fragment")
+function M.get_system_fragment_args(opts)
+  local system_fragment = get_opt("system_fragment", opts)
   if not system_fragment then
     return {}
   end
@@ -90,7 +99,7 @@ function M.get_system_fragment_args()
 end
 
 -- Get fragment arguments if specified
-function M.get_fragment_args(fragment_list)
+function M.get_fragment_args(fragment_list, opts)
   if not fragment_list or #fragment_list == 0 then
     return {} -- Return empty table if no fragments
   end
@@ -103,7 +112,7 @@ function M.get_fragment_args(fragment_list)
 
     -- Debug output
     local config = require('llm.config')
-    if config.get('debug') then
+    if get_opt('debug', opts) then
       vim.notify("Adding fragment: " .. fragment, vim.log.levels.DEBUG)
     end
   end
@@ -112,8 +121,8 @@ function M.get_fragment_args(fragment_list)
 end
 
 -- Get tools arguments if specified
-function M.get_tool_args()
-  local tools = config.get("tools")
+function M.get_tool_args(opts)
+  local tools = get_opt("tools", opts)
   if not tools or tools == "" then
     return {}
   end
@@ -132,8 +141,8 @@ function M.get_tool_args()
 end
 
 -- Get functions arguments if specified
-function M.get_functions_arg()
-  local functions = config.get("functions")
+function M.get_functions_arg(opts)
+  local functions = get_opt("functions", opts)
   if functions and functions ~= "" then
     return { "--functions", functions }
   end
@@ -141,24 +150,24 @@ function M.get_functions_arg()
 end
 
 -- Get tools debug argument if specified
-function M.get_tools_debug_arg()
-  if config.get("tools_debug") then
+function M.get_tools_debug_arg(opts)
+  if get_opt("tools_debug", opts) then
     return { "--td" }
   end
   return {}
 end
 
 -- Get tools approve argument if specified
-function M.get_tools_approve_arg()
-  if config.get("tools_approve") then
+function M.get_tools_approve_arg(opts)
+  if get_opt("tools_approve", opts) then
     return { "--ta" }
   end
   return {}
 end
 
 -- Get chain limit argument if specified
-function M.get_chain_limit_arg()
-  local chain_limit = config.get("chain_limit")
+function M.get_chain_limit_arg(opts)
+  local chain_limit = get_opt("chain_limit", opts)
   if chain_limit ~= nil then
     return { "--cl", tostring(chain_limit) }
   end
@@ -166,8 +175,8 @@ function M.get_chain_limit_arg()
 end
 
 -- Get attachment type argument if specified
-function M.get_attachment_type_args()
-  local attachment_type = config.get("attachment_type")
+function M.get_attachment_type_args(opts)
+  local attachment_type = get_opt("attachment_type", opts)
   if type(attachment_type) == "string" and attachment_type ~= "" then
     return { "--at", attachment_type }
   end
@@ -175,8 +184,8 @@ function M.get_attachment_type_args()
 end
 
 -- Get attachment arguments if specified
-function M.get_attachment_args()
-  local attachment = config.get("attachment")
+function M.get_attachment_args(opts)
+  local attachment = get_opt("attachment", opts)
   if type(attachment) == "string" and attachment ~= "" then
     return { "-a", attachment }
   elseif type(attachment) == "table" then
@@ -191,8 +200,8 @@ function M.get_attachment_args()
 end
 
 -- Get usage argument if specified
-function M.get_usage_arg()
-  local usage = config.get("usage")
+function M.get_usage_arg(opts)
+  local usage = get_opt("usage", opts)
   if usage then
     return { "-u" }
   end
@@ -202,16 +211,16 @@ end
 -- Get extract argument if specified
 
 -- Get json argument if specified
-function M.get_json_arg()
-  local json = config.get("json")
+function M.get_json_arg(opts)
+  local json = get_opt("json", opts)
   if json then
     return { "--json" }
   end
   return {}
 end
 
-function M.get_extract_arg()
-  local extract = config.get("extract")
+function M.get_extract_arg(opts)
+  local extract = get_opt("extract", opts)
   if extract then
     return { "-x" }
   end
@@ -219,8 +228,8 @@ function M.get_extract_arg()
 end
 
 -- Get extract_last argument if specified
-function M.get_extract_last_arg()
-  local extract_last = config.get("extract_last")
+function M.get_extract_last_arg(opts)
+  local extract_last = get_opt("extract_last", opts)
   if extract_last then
     return { "--xl" }
   end
@@ -228,8 +237,8 @@ function M.get_extract_last_arg()
 end
 
 -- Get api key argument if specified
-function M.get_api_key_arg()
-  local api_key = config.get("api_key")
+function M.get_api_key_arg(opts)
+  local api_key = get_opt("api_key", opts)
   if type(api_key) == "string" and api_key ~= "" then
     return { "--key", api_key }
   end
@@ -237,8 +246,8 @@ function M.get_api_key_arg()
 end
 
 -- Get hide-reasoning argument if specified
-function M.get_hide_reasoning_arg()
-  local hide_reasoning = config.get("hide_reasoning")
+function M.get_hide_reasoning_arg(opts)
+  local hide_reasoning = get_opt("hide_reasoning", opts)
   if hide_reasoning then
     return { "-R" }
   end
@@ -246,8 +255,8 @@ function M.get_hide_reasoning_arg()
 end
 
 -- Get no-stream argument if specified
-function M.get_no_stream_arg()
-  local no_stream = config.get("no_stream")
+function M.get_no_stream_arg(opts)
+  local no_stream = get_opt("no_stream", opts)
   if no_stream then
     return { "--no-stream" }
   end
@@ -255,8 +264,8 @@ function M.get_no_stream_arg()
 end
 
 -- Get async argument if specified
-function M.get_async_arg()
-  local async = config.get("async")
+function M.get_async_arg(opts)
+  local async = get_opt("async", opts)
   if async then
     return { "--async" }
   end
@@ -264,8 +273,8 @@ function M.get_async_arg()
 end
 
 -- Get save template argument if specified
-function M.get_save_template_arg()
-  local save = config.get("save")
+function M.get_save_template_arg(opts)
+  local save = get_opt("save", opts)
   if save and save ~= "" then
     return { "--save", save }
   end
@@ -273,8 +282,8 @@ function M.get_save_template_arg()
 end
 
 -- Get model options arguments if specified
-function M.get_model_options_args()
-  local model_options = config.get("model_options")
+function M.get_model_options_args(opts)
+  local model_options = get_opt("model_options", opts)
   if type(model_options) == "table" then
     local args = {}
     for key, value in pairs(model_options) do
@@ -288,8 +297,8 @@ function M.get_model_options_args()
 end
 
 -- Get template argument if specified
-function M.get_template_arg()
-  local template = config.get("template")
+function M.get_template_arg(opts)
+  local template = get_opt("template", opts)
   if template and template ~= "" then
     return { "-t", template }
   end
@@ -297,9 +306,9 @@ function M.get_template_arg()
 end
 
 -- Get schema arguments if specified
-function M.get_schema_args()
-  local schema = config.get("schema")
-  local schema_multi = config.get("schema_multi")
+function M.get_schema_args(opts)
+  local schema = get_opt("schema", opts)
+  local schema_multi = get_opt("schema_multi", opts)
   if schema and schema ~= "" then
     return { "--schema", schema }
   elseif schema_multi and schema_multi ~= "" then
@@ -309,8 +318,8 @@ function M.get_schema_args()
 end
 
 -- Get template parameters arguments if specified
-function M.get_template_params_args()
-  local template_params = config.get("template_params")
+function M.get_template_params_args(opts)
+  local template_params = get_opt("template_params", opts)
   if type(template_params) == "table" then
     local args = {}
     for key, value in pairs(template_params) do
@@ -324,51 +333,51 @@ function M.get_template_params_args()
 end
 
 -- Get conversation arguments if specified
-function M.get_conversation_args()
+function M.get_conversation_args(opts)
   local args = {}
-  local cid = config.get("conversation_id")
+  local cid = get_opt("conversation_id", opts)
   if cid and cid ~= "" then
     return { "--cid", cid }
-  elseif config.get("continue_conversation") then
+  elseif get_opt("continue_conversation", opts) then
     return { "-c" }
   end
   return {}
 end
 
 -- Build common base command arguments for llm prompt commands
-function M.build_base_cmd(fragment_paths)
-  local cmd_parts = { M.get_llm_executable_path() }
+function M.build_base_cmd(fragment_paths, opts)
+  local cmd_parts = { M.get_llm_executable_path(opts) }
 
-  vim.list_extend(cmd_parts, M.get_database_arg())
-  vim.list_extend(cmd_parts, M.get_logging_args())
-  vim.list_extend(cmd_parts, M.get_model_arg())
-  vim.list_extend(cmd_parts, M.get_query_arg())
-  vim.list_extend(cmd_parts, M.get_system_arg())
-  vim.list_extend(cmd_parts, M.get_system_fragment_args())
-  vim.list_extend(cmd_parts, M.get_tool_args())
-  vim.list_extend(cmd_parts, M.get_functions_arg())
-  vim.list_extend(cmd_parts, M.get_tools_debug_arg())
-  vim.list_extend(cmd_parts, M.get_tools_approve_arg())
-  vim.list_extend(cmd_parts, M.get_chain_limit_arg())
-  vim.list_extend(cmd_parts, M.get_attachment_args())
-  vim.list_extend(cmd_parts, M.get_attachment_type_args())
-  vim.list_extend(cmd_parts, M.get_usage_arg())
-  vim.list_extend(cmd_parts, M.get_json_arg())
-  vim.list_extend(cmd_parts, M.get_extract_arg())
-  vim.list_extend(cmd_parts, M.get_extract_last_arg())
-  vim.list_extend(cmd_parts, M.get_api_key_arg())
-  vim.list_extend(cmd_parts, M.get_hide_reasoning_arg())
-  vim.list_extend(cmd_parts, M.get_no_stream_arg())
-  vim.list_extend(cmd_parts, M.get_async_arg())
-  vim.list_extend(cmd_parts, M.get_model_options_args())
-  vim.list_extend(cmd_parts, M.get_template_arg())
-  vim.list_extend(cmd_parts, M.get_save_template_arg())
-  vim.list_extend(cmd_parts, M.get_template_params_args())
-  vim.list_extend(cmd_parts, M.get_schema_args())
-  vim.list_extend(cmd_parts, M.get_conversation_args())
+  vim.list_extend(cmd_parts, M.get_database_arg(opts))
+  vim.list_extend(cmd_parts, M.get_logging_args(opts))
+  vim.list_extend(cmd_parts, M.get_model_arg(opts))
+  vim.list_extend(cmd_parts, M.get_query_arg(opts))
+  vim.list_extend(cmd_parts, M.get_system_arg(opts))
+  vim.list_extend(cmd_parts, M.get_system_fragment_args(opts))
+  vim.list_extend(cmd_parts, M.get_tool_args(opts))
+  vim.list_extend(cmd_parts, M.get_functions_arg(opts))
+  vim.list_extend(cmd_parts, M.get_tools_debug_arg(opts))
+  vim.list_extend(cmd_parts, M.get_tools_approve_arg(opts))
+  vim.list_extend(cmd_parts, M.get_chain_limit_arg(opts))
+  vim.list_extend(cmd_parts, M.get_attachment_args(opts))
+  vim.list_extend(cmd_parts, M.get_attachment_type_args(opts))
+  vim.list_extend(cmd_parts, M.get_usage_arg(opts))
+  vim.list_extend(cmd_parts, M.get_json_arg(opts))
+  vim.list_extend(cmd_parts, M.get_extract_arg(opts))
+  vim.list_extend(cmd_parts, M.get_extract_last_arg(opts))
+  vim.list_extend(cmd_parts, M.get_api_key_arg(opts))
+  vim.list_extend(cmd_parts, M.get_hide_reasoning_arg(opts))
+  vim.list_extend(cmd_parts, M.get_no_stream_arg(opts))
+  vim.list_extend(cmd_parts, M.get_async_arg(opts))
+  vim.list_extend(cmd_parts, M.get_model_options_args(opts))
+  vim.list_extend(cmd_parts, M.get_template_arg(opts))
+  vim.list_extend(cmd_parts, M.get_save_template_arg(opts))
+  vim.list_extend(cmd_parts, M.get_template_params_args(opts))
+  vim.list_extend(cmd_parts, M.get_schema_args(opts))
+  vim.list_extend(cmd_parts, M.get_conversation_args(opts))
 
   if fragment_paths then
-    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths))
+    vim.list_extend(cmd_parts, M.get_fragment_args(fragment_paths, opts))
   end
 
   return cmd_parts
@@ -376,7 +385,7 @@ end
 
 -- Run an llm command and return the result
 
-function M.get_pre_response_message(source, prompt, fragment_paths)
+function M.get_pre_response_message(source, prompt, fragment_paths, opts)
   local message_parts = {}
 
   table.insert(message_parts, "Passing your prompt to llm tool")
@@ -510,8 +519,8 @@ function M.dispatch_command(subcmd, ...)
 end
 
 -- Send a prompt to llm
-function M.prompt(prompt, fragment_paths, bufnr, on_exit)
-  local cmd_parts = M.build_base_cmd(fragment_paths)
+function M.prompt(prompt, fragment_paths, bufnr, on_exit, opts)
+  local cmd_parts = M.build_base_cmd(fragment_paths, opts)
   local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
   api.run_streaming_command(cmd_parts, prompt, callbacks)
 end
@@ -523,14 +532,14 @@ function M.explain_code(fragment_paths, bufnr)
   M.prompt_with_current_file("Explain this code", fragment_paths, bufnr)
 end
 
-function M.prompt_with_current_file(prompt, fragment_paths, bufnr)
+function M.prompt_with_current_file(prompt, fragment_paths, bufnr, opts)
   local filepath = vim.fn.expand('%:p')
   if filepath == "" then
     vim.notify("Current buffer has no file path", vim.log.levels.ERROR)
     return
   end
 
-  local cmd_parts = M.build_base_cmd(fragment_paths)
+  local cmd_parts = M.build_base_cmd(fragment_paths, opts)
 
   -- Add the current file as a fragment
   table.insert(cmd_parts, "-f")
@@ -543,7 +552,7 @@ end
 
 
 -- Send selected text with a prompt to llm
-function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr)
+function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr, opts)
   local selection
   if from_visual_mode then
     selection = text.get_visual_selection()
@@ -561,7 +570,7 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     return
   end
 
-  local cmd_parts = M.build_base_cmd(fragment_paths)
+  local cmd_parts = M.build_base_cmd(fragment_paths, opts)
 
   table.insert(cmd_parts, "-f")
   table.insert(cmd_parts, temp_file)
