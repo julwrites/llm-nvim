@@ -39,10 +39,8 @@
 
 ## Gaps & Tech Debt
 - [Feature Gap]: Missing Interactive Command implementations for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), and Output Control (`--json`, `-R`). These arguments are parsed in `commands.lua` but lack exposed interactive UI flows.
-- [Tech Debt]: In `lua/llm/core/data/llm_cli.lua`, the `on_stdout` callback blindly iterates over chunks and improperly parses partial lines instead of accumulating a proper string buffer.
 
 ## Ranked Backlog
-1. [Fix CLI Buffering] - [High Impact/Low Effort] - In `lua/llm/core/data/llm_cli.lua`, fix the `on_stdout` callback to accumulate a proper string buffer for parsing lines to prevent malformed output streams.
-2. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
-3. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
-4. [Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-R` hide reasoning flag into the UI/commands to support models that output long thought traces.
+1. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
+2. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
+3. [Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-R` hide reasoning flag into the UI/commands to support models that output long thought traces.
