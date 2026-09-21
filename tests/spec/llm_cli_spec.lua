@@ -47,4 +47,59 @@ describe("llm.core.data.llm_cli", function()
     llm_cli.run_llm_command(command)
     assert.spy(spy).was.called_with("llm " .. command)
   end)
+
+  describe("run_llm_command_async", function()
+    local api
+
+    before_each(function()
+      api = {
+        run_streaming_command = function() end,
+      }
+      package.loaded['llm.api'] = api
+      package.loaded['llm.core.data.llm_cli'] = nil
+      llm_cli = require('llm.core.data.llm_cli')
+    end)
+
+    after_each(function()
+      package.loaded['llm.api'] = nil
+      package.loaded['llm.core.data.llm_cli'] = nil
+    end)
+
+    it("should correctly buffer partial stdout data chunks", function()
+      local command_ran = false
+      api.run_streaming_command = function(_, _, callbacks)
+        command_ran = true
+        -- Send partial data stream
+        callbacks.on_stdout(nil, { "first line", "second p" })
+        callbacks.on_stdout(nil, { "artial", "third line", "" })
+
+        callbacks.on_exit(nil, 0)
+      end
+
+      local callback_called = false
+      local result_data = nil
+      llm_cli.run_llm_command_async("test", function(data)
+        callback_called = true
+        result_data = data
+      end)
+
+      assert.is_true(command_ran)
+      assert.is_true(callback_called)
+      assert.are.equal("first line\nsecond partial\nthird line", result_data)
+    end)
+
+    it("should include any leftover buffer on exit", function()
+      api.run_streaming_command = function(_, _, callbacks)
+        callbacks.on_stdout(nil, { "first line", "partial end" })
+        callbacks.on_exit(nil, 0)
+      end
+
+      local result_data = nil
+      llm_cli.run_llm_command_async("test", function(data)
+        result_data = data
+      end)
+
+      assert.are.equal("first line\npartial end", result_data)
+    end)
+  end)
 end)
