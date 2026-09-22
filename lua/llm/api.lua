@@ -75,11 +75,20 @@ end
 -- @return number: The job ID if the job started successfully, otherwise nil.
 function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
   opts = opts or {}
+  local stdout_buffer = ""
   local callbacks = {
     on_stdout = function(_, data)
       if data and #data > 0 then
-        local content = table.concat(data, "\n")
-        ui.append_to_buffer(bufnr, content, "LlmModelResponse")
+        local lines = {}
+        for i, v in ipairs(data) do lines[i] = v end
+
+        lines[1] = stdout_buffer .. (lines[1] or "")
+        stdout_buffer = table.remove(lines)
+
+        if #lines > 0 then
+          local content = table.concat(lines, "\n")
+          ui.append_to_buffer(bufnr, content, "LlmModelResponse")
+        end
       end
       if opts.on_stdout then opts.on_stdout(_, data) end
     end,
@@ -92,6 +101,10 @@ function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
       if opts.on_stderr then opts.on_stderr(_, data) end
     end,
     on_exit = function(_, exit_code)
+      if stdout_buffer ~= "" then
+        ui.append_to_buffer(bufnr, stdout_buffer, "LlmModelResponse")
+        stdout_buffer = ""
+      end
       vim.notify("LLM command finished with exit code: " .. tostring(exit_code), vim.log.levels.INFO)
       if opts.on_exit then opts.on_exit(_, exit_code) end
     end,
