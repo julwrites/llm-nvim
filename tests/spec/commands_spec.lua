@@ -540,6 +540,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local call_args = api_mock.run_streaming_command.calls[1]
       local callbacks = call_args[3]
       callbacks.on_stdout(nil, { 'test output' })
+      callbacks.on_exit(nil, 0)
 
       assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output', 'LlmModelResponse')
     end)
@@ -567,6 +568,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local call_args = api_mock.run_streaming_command.calls[1]
       local callbacks = call_args[3]
       callbacks.on_stdout(nil, { 'test output' })
+      callbacks.on_exit(nil, 0)
 
       assert.spy(ui_mock.append_to_buffer).was.called_with(1, 'test output', 'LlmModelResponse')
     end)

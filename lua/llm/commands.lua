@@ -441,20 +441,32 @@ function M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
     vim.api.nvim_buf_set_lines(target_bufnr, 0, -1, false, { "Waiting for response..." })
   end
 
+  local stdout_buffer = ""
   local callbacks = {
     on_stdout = function(_, data)
       if data and #data > 0 then
-        local chunk = table.concat(data, "\n")
-        if chunk ~= "" then
+        local lines = {}
+        for i, v in ipairs(data) do lines[i] = v end
+
+        lines[1] = stdout_buffer .. (lines[1] or "")
+        stdout_buffer = table.remove(lines)
+
+        if #lines > 0 then
+          local chunk = table.concat(lines, "\n")
           ui.append_to_buffer(target_bufnr, chunk, "LlmModelResponse")
         end
       end
     end,
+    on_exit = function(_, exit_code)
+      if stdout_buffer ~= "" then
+        ui.append_to_buffer(target_bufnr, stdout_buffer, "LlmModelResponse")
+        stdout_buffer = ""
+      end
+      if on_exit then
+        on_exit(_, exit_code)
+      end
+    end
   }
-
-  if on_exit then
-    callbacks.on_exit = on_exit
-  end
 
   return target_bufnr, callbacks
 end
