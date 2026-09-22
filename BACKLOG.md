@@ -4,6 +4,7 @@
 - [Tools]: Manage tools that can be made available to LLMs (`llm tools`).
 - [Collections]: View and manage collections of embeddings (`llm collections`).
 - [Embed]: Embed text and store or return the result (`llm embed`).
+- [Embed Multi]: Store embeddings for multiple strings at once (`llm embed-multi`).
 - [Similar]: Return top N similar IDs from a collection using cosine similarity (`llm similar`).
 - [-s, --system TEXT]: System prompt to use (`-s`).
 - [-m, --model TEXT]: Model to use (`-m`).
@@ -38,11 +39,12 @@
 - [--json]: Output the response as JSON, same format as llm logs --json (`--json`).
 
 ## Gaps & Tech Debt
-- [Feature Gap]: Missing Interactive Command implementations for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), token usage (`-u`), explicit attachment type (`--at`), and tool options (`--td`, `--ta`, `--cl`). These arguments are parsed in `commands.lua` but lack exposed interactive UI flows.
-- [Tech Debt & Bugs]: In `lua/llm/commands.lua` (and other modules executing CLI streaming), `on_stdout` callbacks blindly iterate or concatenate chunks using `table.concat(data, "\n")` without maintaining a stateful string buffer for incomplete lines. This breaks stream buffering since partial chunks get artificial newlines attached or overwrite one another.
+- [Feature Gap]: Missing Interactive Command implementations for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), token usage (`-u`), explicit attachment type (`--at`), and tool options (`--td`, `--ta`, `--cl`). These arguments are parsed in `lua/llm/commands.lua` but lack exposed interactive UI flows.
+- [Tech Debt & Bugs]: In modules evaluating callback logic (`lua/llm/chat.lua`, `lua/llm/core/data/llm_cli.lua`, and `lua/llm/core/utils/job.lua`), `on_stdout` callbacks blindly iterate and directly mutate the original `data` array payload (e.g., `data[1] = ...`, `table.remove(data)`), which breaks downstream consumers expecting the original payload. Furthermore, `lua/llm/core/data/llm_cli.lua` uses inefficient O(N) manual iteration with `table.insert` instead of directly leveraging `table.concat`.
 
 ## Ranked Backlog
-1. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
-2. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
-3. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) into the UI/commands for better tool debugging and approval.
-4. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
+1. [Stream Buffering State Fix] - [High Impact/Low Effort] - Refactor `on_stdout` callbacks in `lua/llm/chat.lua`, `lua/llm/core/data/llm_cli.lua`, and `lua/llm/core/utils/job.lua` to first copy the `data` array before stateful modification, preventing mutation bugs for downstream consumers, and replace blind iterations with `table.concat(data, "\n")` where applicable.
+2. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
+3. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
+4. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) into the UI/commands for better tool debugging and approval.
+5. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
