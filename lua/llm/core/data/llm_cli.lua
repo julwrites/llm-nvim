@@ -24,11 +24,13 @@ function M.run_llm_command_async(command, callback)
     api.run_streaming_command(full_command_parts, nil, {
         on_stdout = function(_, data)
             if data and #data > 0 then
-                data[1] = stdout_buffer .. (data[1] or "")
-                stdout_buffer = table.remove(data)
+                local lines = {}
+                for i, v in ipairs(data) do lines[i] = v end
+                lines[1] = stdout_buffer .. (lines[1] or "")
+                stdout_buffer = table.remove(lines)
 
-                for _, line in ipairs(data) do
-                    table.insert(stdout_data, line)
+                if #lines > 0 then
+                    table.insert(stdout_data, table.concat(lines, "\n"))
                 end
             end
         end,
