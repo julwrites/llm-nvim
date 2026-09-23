@@ -96,10 +96,12 @@ function M.send_message()
   local job_id = session:send_prompt(prompt, {
     on_stdout = function(_, data)
       if data and #data > 0 then
-        data[1] = stdout_buffer .. (data[1] or "")
-        stdout_buffer = table.remove(data)
+        local lines = {}
+        for i, v in ipairs(data) do lines[i] = v end
+        lines[1] = stdout_buffer .. (lines[1] or "")
+        stdout_buffer = table.remove(lines)
 
-        for _, line in ipairs(data) do
+        for _, line in ipairs(lines) do
           local new_conv_id = session:extract_conversation_id(line)
           if new_conv_id then
             session.conversation_id = new_conv_id
