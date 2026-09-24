@@ -40,11 +40,9 @@
 
 ## Gaps & Tech Debt
 - [Feature Gap]: Missing Interactive Command implementations for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), token usage (`-u`), explicit attachment type (`--at`), and tool options (`--td`, `--ta`, `--cl`). These arguments are parsed in `lua/llm/commands.lua` but lack exposed interactive UI flows.
-- [Tech Debt & Bugs]: In modules evaluating callback logic (`lua/llm/chat.lua`, `lua/llm/core/data/llm_cli.lua`, and `lua/llm/core/utils/job.lua`), `on_stdout` callbacks blindly iterate and directly mutate the original `data` array payload (e.g., `data[1] = ...`, `table.remove(data)`), which breaks downstream consumers expecting the original payload. Furthermore, `lua/llm/core/data/llm_cli.lua` uses inefficient O(N) manual iteration with `table.insert` instead of directly leveraging `table.concat`.
 
 ## Ranked Backlog
-1. [Fix Callback Mutation Bug] - [High Impact/Low Effort] - Fix `on_stdout` callbacks in `lua/llm/chat.lua`, `lua/llm/core/data/llm_cli.lua`, and `lua/llm/core/utils/job.lua` mutating `data` array payload and optimize table accumulation in `llm_cli.lua`.
-2. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
-3. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
-4. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) into the UI/commands for better tool debugging and approval.
-5. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
+1. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
+2. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
+3. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) into the UI/commands for better tool debugging and approval.
+4. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
