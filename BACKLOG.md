@@ -47,8 +47,9 @@
 - [Tech Debt - Loss of Blank Lines in ui.lua]: `content_to_lines` in `lua/llm/core/utils/ui.lua` uses `gmatch("[^\r\n]+")` which drops consecutive blank lines entirely, corrupting LLM output formatting.
 
 ## Ranked Backlog
-1. [Fix String Buffering & Blank Lines in UI/Callbacks] - [High Impact/Medium Effort] - Fix faulty string buffering implementation in `lua/llm/commands.lua`, `lua/llm/chat.lua`, and `lua/llm/api.lua` (improper string buffering and `table.concat` issues) and fix `content_to_lines` in `lua/llm/core/utils/ui.lua` which drops consecutive blank lines.
-2. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
-3. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
-4. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) and explicit attachments (`--at`) into the UI/commands for better tool debugging and approval.
-5. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
+1. [Fix Loss of Blank Lines in UI] - [Medium Impact/Low Effort] - Fix `content_to_lines` in `lua/llm/core/utils/ui.lua` to properly process empty lines.
+2. [Fix String Buffering in Callbacks] - [High Impact/Medium Effort] - Fix faulty string buffering implementations in `lua/llm/commands.lua`, `lua/llm/chat.lua`, and `lua/llm/api.lua` (improper string buffering and `table.concat` issues).
+3. [Extraction UI Flow] - [Medium Impact/Medium Effort] - Plumb extraction flags (`-x`, `--xl`) into the UI/commands so users can interactively request just code blocks rather than full text responses.
+4. [Schema Output Flow] - [Medium Impact/Medium Effort] - Plumb schema flags (`--schema`, `--schema-multi`, `--json`) into the UI/commands to allow users to enforce structured output generation inside the editor.
+5. [Tool Options UI] - [Low Impact/Medium Effort] - Plumb tool flags (`--td`, `--ta`, `--cl`) and explicit attachments (`--at`) into the UI/commands for better tool debugging and approval.
+6. [Token Usage & Hide Reasoning UI] - [Low Impact/Low Effort] - Plumb the `-u` usage flag and `-R` hide reasoning flag into the UI/commands to show token usage for prompts and responses, and support models that output long thought traces.
