@@ -22,7 +22,7 @@
 - Async Execution: Running prompts asynchronously
 
 ## Gaps & Tech Debt
-- [Tech Debt 1]: Streaming chunk callback in `lua/llm/api.lua` (`on_stdout`) doesn't efficiently use `table.concat(data, "\n")` for accumulation and improperly mutates lines or incorrectly appends trailing newlines, which breaks stream buffering.
+- [Tech Debt 1]: Streaming chunk callback in `lua/llm/core/utils/job.lua` (`on_stdout`) doesn't efficiently use `table.concat(data, "\n")` for accumulation and improperly mutates lines or incorrectly appends trailing newlines, which breaks stream buffering.
 - [Tech Debt 2]: Output formatting in `lua/llm/core/utils/ui.lua` splits text via `gmatch("[^\r\n]+")` (`content_to_lines`), which strips consecutive/empty blank lines and breaks markdown structures.
 - [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and tool options (`--td`, `--ta`, `--cl`, `--functions`). These are parsed in `commands.lua` but have no UI.
 
