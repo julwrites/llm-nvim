@@ -7,7 +7,8 @@
 - Extractions: Parsing codeblocks out of markdown responses
 - Extract Last: Extracting the last fenced code block
 - Model Options: Setting specific parameters like temperature
-- Template Options & Parameters: Using templates with specific variables
+- Template Options: Using templates with specific variables
+- Template Parameters: Parameters for template
 - System Fragments: Adding fragments to system prompts
 - Embeddings: 'embed', 'collections', 'similar', and 'embed-multi' commands
 - Database Selection: Specifying the path to the log database
