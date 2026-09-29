@@ -28,5 +28,6 @@
 - [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and tool options (`--td`, `--ta`, `--cl`, `--functions`). These are parsed in `commands.lua` but have no UI.
 
 ## Ranked Backlog
-1. Fix stripping of blank lines in UI (Tech Debt 2) - High Impact / Low Effort - Update `content_to_lines` to preserve empty lines so that streaming output doesn't lose formatting.
-2. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for the advanced arguments already parsed in `commands.lua` (Extractions, Schemas, Tools, etc.).
+1. Fix stream buffer accumulation in `on_stdout` (Tech Debt 1) - High Impact / Low Effort - Fix string buffering by accumulating chunks with `table.concat(data, "\n")` without mutating arrays and without artificial newlines.
+2. Fix stripping of blank lines in UI (Tech Debt 2) - High Impact / Low Effort - Update `content_to_lines` to use standard line splitting rather than `gmatch("[^\r\n]+")` to preserve empty lines in streaming output.
+3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, etc.).
