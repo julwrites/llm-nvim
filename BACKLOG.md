@@ -2,30 +2,34 @@
 - Text Generation (prompt command): Core completion functionality
 - Chat (chat command): Ongoing multi-turn conversation
 - Tools / Function Calling: Passing functions to models via JSON schema or files
-- Extended Tool Options: Detailed tool execution and chain limits
-- Multi-modal attachments: Passing images and documents
-- Extractions: Parsing codeblocks out of markdown responses
-- Extract Last: Extracting the last fenced code block
-- Model Options: Setting specific parameters like temperature
-- Template Options: Using templates with specific variables
-- Template Parameters: Parameters for template
-- System Fragments: Adding fragments to system prompts
+- Extended Tool Options: Detailed tool execution and chain limits (`--td`, `--ta`, `--cl`, `--functions`)
+- Multi-modal attachments: Passing images and documents (`-a`)
+- Explicit attachment type: Attachment with explicit mimetype (`--at`)
+- Extractions: Parsing codeblocks out of markdown responses (`-x`)
+- Extract Last: Extracting the last fenced code block (`--xl`)
+- Model Options: Setting specific parameters like temperature (`-o`)
+- Template Options: Using templates with specific variables (`-t`)
+- Template Parameters: Parameters for template (`-p`)
+- System Fragments: Adding fragments to system prompts (`--sf`)
 - Embeddings: 'embed', 'collections', 'similar', and 'embed-multi' commands
-- Database Selection: Specifying the path to the log database
-- API Key override: Ad-hoc API key usage
-- Usage tracking: Showing token usage
+- Database Selection: Specifying the path to the log database (`-d`)
+- API Key override: Ad-hoc API key usage (`--key`)
+- Usage tracking: Showing token usage (`-u`)
 - Continue Conversation: Continuing from a specific conversation ID
-- Schema Options: Constraining output to JSON Schema
+- Schema Options: Constraining output to JSON Schema (`--schema`, `--schema-multi`)
 - Save as Template: Saving prompts as templates
 - Logging Overrides: Disabling or enabling logging to database
 - Query Selection: Using first model matching a query string
-- Stream Control: Disabling streaming output
-- Async Execution: Running prompts asynchronously
+- Stream Control: Disabling streaming output (`--no-stream`)
+- Async Execution: Running prompts asynchronously (`--async`)
+- Output Control: Formatting responses (`--json`, `-R`)
 
 ## Gaps & Tech Debt
-- [Tech Debt 2]: Output formatting in `lua/llm/core/utils/ui.lua` splits text via `gmatch("[^\r\n]+")` (`content_to_lines`), which strips consecutive/empty blank lines and breaks markdown structures.
-- [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and tool options (`--td`, `--ta`, `--cl`, `--functions`). These are parsed in `commands.lua` but have no UI.
+- [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for advanced arguments. Options for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and Extended tool options (`--td`, `--ta`, `--cl`, `--functions`) are parsed in `lua/llm/commands.lua` but have no user-facing UI flows.
+- [Tech Debt 1]: Output formatting in `lua/llm/core/utils/ui.lua` (`content_to_lines`) splits text via `gmatch("[^\r\n]+")`, which completely strips consecutive/empty blank lines and breaks markdown structures.
+- [Tech Debt 2]: In `lua/llm/chat.lua`, the `on_stdout` callback processes `data` chunks using blind manual iteration rather than efficiently handling chunk accumulation using `table.concat(data, "\n")` which can handle internal newlines efficiently.
 
 ## Ranked Backlog
-1. Fix stripping of blank lines in UI (Tech Debt 2) - High Impact / Low Effort - Update `content_to_lines` to use standard line splitting rather than `gmatch("[^\r\n]+")` to preserve empty lines in streaming output.
-2. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, etc.).
+1. Fix stripping of blank lines in UI (Tech Debt 1) - High Impact / Low Effort - Update `content_to_lines` in `lua/llm/core/utils/ui.lua` to use standard line splitting rather than `gmatch("[^\r\n]+")` to preserve empty lines in streaming output.
+2. Refactor chunk accumulation in Chat callback (Tech Debt 2) - Medium Impact / Low Effort - Update `lua/llm/chat.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
+3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
