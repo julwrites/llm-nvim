@@ -32,20 +32,24 @@ function M.run(cmd, callbacks)
     -- Neovim passes split lines. The array always represents implicitly newline-terminated
     -- lines, except the last element which represents a partial line.
 
+    local text = buffer .. table.concat(data, "\n")
+
     local lines = {}
-    for i, v in ipairs(data) do lines[i] = v end
+    -- Pattern correctly splits by internal newlines
+    for line in text:gmatch("([^\n]*)\n") do
+        if line:sub(-1) == '\r' then
+            line = line:sub(1, -2)
+        end
+        table.insert(lines, line)
+    end
 
-    -- Prepend existing buffer to the first element
-    lines[1] = buffer .. (lines[1] or "")
-
-    -- The last element is the new buffer (partial line)
-    buffer = table.remove(lines)
-
-    -- data now contains only complete lines
-    for i, line in ipairs(lines) do
-      if line:sub(-1) == '\r' then
-        lines[i] = line:sub(1, -2)
-      end
+    local last_newline_idx = text:find("\n[^\n]*$")
+    if last_newline_idx then
+        buffer = text:sub(last_newline_idx + 1)
+    elseif not text:find("\n") then
+        buffer = text
+    else
+        buffer = ""
     end
 
     if event == "stdout" then
