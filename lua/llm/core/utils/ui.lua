@@ -11,8 +11,18 @@ local DEFAULT_BUFFER_OPTS = {
 -- Convert content string to lines array
 local function content_to_lines(content)
   local lines = {}
-  for line in content:gmatch("[^\r\n]+") do
-    table.insert(lines, line)
+  if not content or content == "" then return lines end
+  -- Normalize line endings
+  content = content:gsub("\r\n", "\n")
+  local pos = 1
+  while true do
+    local first, last = content:find("\n", pos, true)
+    if not first then
+      table.insert(lines, content:sub(pos))
+      break
+    end
+    table.insert(lines, content:sub(pos, first - 1))
+    pos = last + 1
   end
   return lines
 end
