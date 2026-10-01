@@ -30,6 +30,5 @@
 - [Tech Debt 2]: In `lua/llm/chat.lua`, the `on_stdout` callback processes `data` chunks using blind manual iteration rather than efficiently handling chunk accumulation using `table.concat(data, "\n")` which can handle internal newlines efficiently.
 
 ## Ranked Backlog
-1. Fix stripping of blank lines in UI (Tech Debt 1) - High Impact / Low Effort - Update `content_to_lines` in `lua/llm/core/utils/ui.lua` to use standard line splitting rather than `gmatch("[^\r\n]+")` to preserve empty lines in streaming output.
-2. Refactor chunk accumulation in Chat callback (Tech Debt 2) - Medium Impact / Low Effort - Update `lua/llm/chat.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
-3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. Refactor chunk accumulation in Chat callback (Tech Debt 2) - Medium Impact / Low Effort - Update `lua/llm/chat.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
+2. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
