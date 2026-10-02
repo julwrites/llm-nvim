@@ -26,13 +26,10 @@
 
 ## Gaps & Tech Debt
 - [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for advanced arguments. Options for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and Extended tool options (`--td`, `--ta`, `--cl`, `--functions`) are parsed in `lua/llm/commands.lua` but have no user-facing UI flows.
-- [Tech Debt 1]: Output formatting in `lua/llm/core/utils/ui.lua` (`content_to_lines`) previously split text via `gmatch("[^\r\n]+")`, completely stripping consecutive/empty blank lines and breaking markdown structures.
-- [Tech Debt 2]: In `lua/llm/chat.lua`, the `on_stdout` callback processes `data` chunks using blind manual iteration rather than efficiently handling chunk accumulation using `table.concat(data, "\n")` which can handle internal newlines efficiently.
-- [Tech Debt 3]: In `lua/llm/commands.lua`, the `on_stdout` callback processes `data` chunks using blind manual iteration rather than efficiently handling chunk accumulation using `table.concat(data, "\n")` which can handle internal newlines efficiently.
-- [Tech Debt 4]: The `mock_vim.lua` test environment contains a flawed implementation of `vim.split` that incorrectly drops empty strings using `gmatch("([^" .. sep .. "]+)")`, which masks issues with markdown structure preservation in the unit tests.
+- [Tech Debt 1]: The `mock_vim.lua` test environment contains a flawed implementation of `vim.split` that incorrectly drops empty strings using `gmatch("([^" .. sep .. "]+)")`, which masks issues with markdown structure preservation in the unit tests.
+- [Tech Debt 2]: In `lua/llm/managers/embeddings_manager.lua`, `vim.fn.shellescape` is inappropriately used for appending simple subcommands and arguments, which wraps them in single quotes and breaks downstream CLI parsing.
 
 ## Ranked Backlog
-1. Refactor chunk accumulation in Commands callback (Tech Debt 3) - Medium Impact / Low Effort - Update `lua/llm/commands.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
-2. Fix vim.split mock implementation (Tech Debt 4) - High Impact / Low Effort - Update `M.split` in `tests/spec/mock_vim.lua` to properly preserve empty lines.
+1. Fix vim.split mock implementation (Tech Debt 1) - High Impact / Low Effort - Update `M.split` in `tests/spec/mock_vim.lua` to properly preserve empty lines.
+2. Fix shellescape usage in embeddings manager (Tech Debt 2) - Medium Impact / Low Effort - Remove `vim.fn.shellescape` for simple subcommand appending in `lua/llm/managers/embeddings_manager.lua`.
 3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
-4. Fix markdown parsing in UI formatter (Tech Debt 1) - High Impact / Low Effort - Update `content_to_lines` in `lua/llm/core/utils/ui.lua` to properly preserve empty lines when formatting content.
