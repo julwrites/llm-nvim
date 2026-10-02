@@ -101,13 +101,17 @@ function M.send_message()
         lines[1] = stdout_buffer .. (lines[1] or "")
         stdout_buffer = table.remove(lines)
 
+        local filtered_lines = {}
         for _, line in ipairs(lines) do
           local new_conv_id = session:extract_conversation_id(line)
           if new_conv_id then
             session.conversation_id = new_conv_id
           else
-            buffer:append_llm_message(line)
+            table.insert(filtered_lines, line)
           end
+        end
+        if #filtered_lines > 0 then
+          buffer:append_llm_message(table.concat(filtered_lines, "\n"))
         end
       end
     end,

@@ -32,8 +32,7 @@
 - [Tech Debt 4]: The `mock_vim.lua` test environment contains a flawed implementation of `vim.split` that incorrectly drops empty strings using `gmatch("([^" .. sep .. "]+)")`, which masks issues with markdown structure preservation in the unit tests.
 
 ## Ranked Backlog
-1. Refactor chunk accumulation in Chat callback (Tech Debt 2) - Medium Impact / Low Effort - Update `lua/llm/chat.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
-2. Refactor chunk accumulation in Commands callback (Tech Debt 3) - Medium Impact / Low Effort - Update `lua/llm/commands.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
-3. Fix vim.split mock implementation (Tech Debt 4) - High Impact / Low Effort - Update `M.split` in `tests/spec/mock_vim.lua` to properly preserve empty lines.
-4. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
-5. Fix markdown parsing in UI formatter (Tech Debt 1) - High Impact / Low Effort - Update `content_to_lines` in `lua/llm/core/utils/ui.lua` to properly preserve empty lines when formatting content.
+1. Refactor chunk accumulation in Commands callback (Tech Debt 3) - Medium Impact / Low Effort - Update `lua/llm/commands.lua`'s `on_stdout` to efficiently handle chunk accumulation using `table.concat(data, "\n")` to avoid manual string concatenation loops.
+2. Fix vim.split mock implementation (Tech Debt 4) - High Impact / Low Effort - Update `M.split` in `tests/spec/mock_vim.lua` to properly preserve empty lines.
+3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+4. Fix markdown parsing in UI formatter (Tech Debt 1) - High Impact / Low Effort - Update `content_to_lines` in `lua/llm/core/utils/ui.lua` to properly preserve empty lines when formatting content.
