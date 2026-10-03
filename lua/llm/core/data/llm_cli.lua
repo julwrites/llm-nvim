@@ -7,7 +7,11 @@ local shell = require('llm.core.utils.shell')
 local api = require('llm.api') -- Added for streaming
 
 function M.run_llm_command(command, bufnr)
-    local full_command_parts = vim.split('llm ' .. command, ' ')
+    local full_cmd = 'llm'
+    if command and command ~= "" then
+        full_cmd = full_cmd .. ' ' .. command
+    end
+    local full_command_parts = vim.split(full_cmd, ' ')
 
     if bufnr then
         return api.run_llm_command_streamed(full_command_parts, bufnr)
