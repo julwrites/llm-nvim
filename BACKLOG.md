@@ -26,9 +26,8 @@
 
 ## Gaps & Tech Debt
 - [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for advanced arguments. Options for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and Extended tool options (`--td`, `--ta`, `--cl`, `--functions`) are parsed in `lua/llm/commands.lua` but have no user-facing UI flows.
-- [Tech Debt 1]: The `mock_vim.lua` test environment contains a flawed implementation of `vim.split` that incorrectly drops empty strings using `gmatch("([^" .. sep .. "]+)")`, which masks issues with markdown structure preservation in the unit tests.
-- [Tech Debt 2]: In `lua/llm/managers/embeddings_manager.lua`, `vim.fn.shellescape` is inappropriately used for appending simple subcommands and arguments, which wraps them in single quotes and breaks downstream CLI parsing.
+- [Tech Debt 1]: In `lua/llm/managers/embeddings_manager.lua`, `vim.fn.shellescape` is inappropriately used for appending simple subcommands and arguments, which wraps them in single quotes and breaks downstream CLI parsing.
 
 ## Ranked Backlog
-1. Fix shellescape usage in embeddings manager (Tech Debt 2) - Medium Impact / Low Effort - Remove `vim.fn.shellescape` for simple subcommand appending in `lua/llm/managers/embeddings_manager.lua`.
+1. Fix shellescape usage in embeddings manager (Tech Debt 1) - Medium Impact / Low Effort - Remove `vim.fn.shellescape` for simple subcommand appending in `lua/llm/managers/embeddings_manager.lua`.
 2. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
