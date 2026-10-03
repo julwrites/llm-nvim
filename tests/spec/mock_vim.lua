@@ -196,10 +196,24 @@ M.env = {}
 M.b = {}
 M.bo = {}
 M.g = {}
-M.split = function(str, sep)
+M.split = function(str, sep, opts)
+  opts = opts or {}
   local result = {}
-  for s in string.gmatch(str, "([^" .. sep .. "]+)") do
-    table.insert(result, s)
+  local start = 1
+  while true do
+    local find_start, find_end = string.find(str, sep, start, opts.plain)
+    if not find_start then
+      local s = string.sub(str, start)
+      if not opts.trimempty or s ~= "" then
+        table.insert(result, s)
+      end
+      break
+    end
+    local s = string.sub(str, start, find_start - 1)
+    if not opts.trimempty or s ~= "" then
+      table.insert(result, s)
+    end
+    start = find_end + 1
   end
   return result
 end
