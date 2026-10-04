@@ -29,5 +29,4 @@
 - [Tech Debt 1]: In `lua/llm/managers/embeddings_manager.lua`, `vim.fn.shellescape` is inappropriately used for appending simple subcommands and arguments, which wraps them in single quotes and breaks downstream CLI parsing.
 
 ## Ranked Backlog
-1. Fix shellescape usage in embeddings manager (Tech Debt 1) - Medium Impact / Low Effort - Remove `vim.fn.shellescape` for simple subcommand appending in `lua/llm/managers/embeddings_manager.lua`.
-2. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
