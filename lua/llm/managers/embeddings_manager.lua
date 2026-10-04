@@ -108,7 +108,7 @@ function M.collections(opts)
   opts = opts or {}
   local cmd = 'collections'
   if opts.subcommand then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.subcommand)
+    cmd = cmd .. ' ' .. opts.subcommand
   end
   if opts.args then
     cmd = cmd .. ' ' .. opts.args
@@ -123,7 +123,7 @@ function M.aliases(opts)
   opts = opts or {}
   local cmd = 'aliases'
   if opts.subcommand then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.subcommand)
+    cmd = cmd .. ' ' .. opts.subcommand
   end
   if opts.args then
     cmd = cmd .. ' ' .. opts.args
