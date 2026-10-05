@@ -11,7 +11,7 @@
 - Template Options: Using templates with specific variables (`-t`)
 - Template Parameters: Parameters for template (`-p`)
 - System Fragments: Adding fragments to system prompts (`--sf`)
-- Embeddings: 'embed', 'collections', 'similar', and 'embed-multi' commands
+- Embeddings: `embed`, `collections`, `similar`, and `embed-multi` commands
 - Database Selection: Specifying the path to the log database (`-d`)
 - API Key override: Ad-hoc API key usage (`--key`)
 - Usage tracking: Showing token usage (`-u`)
@@ -28,8 +28,12 @@
 - [Feature Gap 1]: `llm-nvim` lacks exposed interactive UI flows for advanced arguments. Options for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and Extended tool options (`--td`, `--ta`, `--cl`, `--functions`) are parsed in `lua/llm/commands.lua` but have no user-facing UI flows.
 - [Tech Debt 1]: In `lua/llm/managers/embeddings_manager.lua`, `vim.fn.shellescape` is inappropriately used for appending simple subcommands and arguments, which wraps them in single quotes and breaks downstream CLI parsing.
 - [Tech Debt 2]: In `lua/llm/commands.lua` within the `on_stdout` callback inside `prepare_response_buffer_and_callbacks`, it attempts to process partial output incorrectly by appending trailing newlines unconditionally when passing chunks to `ui.append_to_buffer`.
+- [Tech Debt 3]: In multiple modules (e.g., `lua/llm/commands.lua`, `lua/llm/core/utils/shell.lua`, `lua/llm/managers/keys_manager.lua`), directory writability or file operations rely on manually creating and deleting temporary files via `io.open` instead of `vim.fn.filewritable`.
+- [Tech Debt 4]: Lua 5.1/LuaJIT `unpack` is used in `lua/llm/chat/buffer.lua`, instead of Lua 5.2+ compatible `table.unpack`, risking Neovim Lua environment stability issues.
 
 ## Ranked Backlog
 1. Fix improper `on_stdout` chunk processing in `lua/llm/commands.lua` (Tech Debt 2) - High Impact / Low Effort - Fix string buffering logic to avoid corrupting streaming output.
 2. Fix `vim.fn.shellescape` usage in `lua/llm/managers/embeddings_manager.lua` (Tech Debt 1) - High Impact / Low Effort - Replace `vim.fn.shellescape` with string concatenation for simple CLI arguments.
-3. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+3. Replace deprecated `unpack` with `table.unpack` in `lua/llm/chat/buffer.lua` (Tech Debt 4) - Medium Impact / Low Effort - Use `table.unpack` for Lua 5.2+ compatibility.
+4. Refactor file writability checks to use `vim.fn.filewritable` (Tech Debt 3) - Low Impact / Medium Effort - Avoid manual temp file creation via `io.open`.
+5. Expose interactive UI for advanced options (Feature Gap 1) - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
