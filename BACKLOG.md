@@ -33,6 +33,5 @@
 - [Tech Debt 2]: Widespread use of `io.open` for file I/O operations (e.g., in `lua/llm/commands.lua`, `lua/llm/managers/custom_openai.lua`) blocks the Neovim event loop. These should be refactored to use asynchronous methods.
 
 ## Ranked Backlog
-1. [Tech Debt 1] Fix `vim.fn.shellescape` usage in `lua/llm/managers/embeddings_manager.lua` - High Impact / Low Effort - Replace `vim.fn.shellescape` with string concatenation for simple CLI arguments.
-2. [Tech Debt 2] Replace blocking `io.open` calls with asynchronous methods - Medium Impact / Medium Effort - Refactor file operations across managers to prevent blocking the editor.
-3. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. [Tech Debt 2] Replace blocking `io.open` calls with asynchronous methods - Medium Impact / Medium Effort - Refactor file operations across managers to prevent blocking the editor.
+2. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
