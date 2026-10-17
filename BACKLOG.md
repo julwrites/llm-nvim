@@ -21,6 +21,5 @@
 - [Tech Debt 2]: Trailing newlines are artificially appended to partial string chunks in `on_stdout` callbacks. In `lua/llm/commands.lua` and `lua/llm/chat.lua`, chunks are reconstructed via `table.concat(lines, "\n")` and passed downstream, which forces newlines onto partial chunks and breaks stream buffering logic.
 
 ## Ranked Backlog
-1. [Tech Debt 2] Fix trailing newline appending in on_stdout callbacks - High Impact / Low Effort - Remove `table.concat(lines, "\n")` artificially forcing newlines onto partial chunks in `lua/llm/commands.lua` and `lua/llm/chat.lua` to fix stream buffering.
-2. [Tech Debt 1] Replace synchronous `io.open` calls with asynchronous conceptual methods - Medium Impact / Medium Effort - Refactor file operations across managers and utils to prevent blocking the Neovim event loop.
-3. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. [Tech Debt 1] Replace synchronous `io.open` calls with asynchronous conceptual methods - Medium Impact / Medium Effort - Refactor file operations across managers and utils to prevent blocking the Neovim event loop.
+2. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).

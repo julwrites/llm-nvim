@@ -110,8 +110,8 @@ function M.send_message()
             table.insert(filtered_lines, line)
           end
         end
-        if #filtered_lines > 0 then
-          buffer:append_llm_message(table.concat(filtered_lines, "\n"))
+        for _, line in ipairs(filtered_lines) do
+          buffer:append_llm_message(line)
         end
       end
     end,
