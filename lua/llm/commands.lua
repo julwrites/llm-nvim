@@ -451,9 +451,8 @@ function M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
         lines[1] = stdout_buffer .. (lines[1] or "")
         stdout_buffer = table.remove(lines)
 
-        if #lines > 0 then
-          local chunk = table.concat(lines, "\n")
-          ui.append_to_buffer(target_bufnr, chunk, "LlmModelResponse")
+        for _, line in ipairs(lines) do
+          ui.append_to_buffer(target_bufnr, line, "LlmModelResponse")
         end
       end
     end,
