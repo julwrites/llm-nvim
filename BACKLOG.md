@@ -21,6 +21,9 @@
 - [Tech Debt 2]: Trailing newlines are artificially appended to partial string chunks in `on_stdout` callbacks. In `lua/llm/api.lua`, chunks are reconstructed via `table.concat(lines, "\n")` and passed downstream, which forces newlines onto partial chunks and breaks stream buffering logic.
 
 ## Ranked Backlog
-1. [Tech Debt 1] Replace synchronous `io.open` calls with asynchronous conceptual methods - Medium Impact / Medium Effort - Refactor file operations across managers and utils to prevent blocking the Neovim event loop.
-2. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
-3. [Tech Debt 2] Fix string chunking in on_stdout callbacks - High Impact / Low Effort - Modify `on_stdout` callbacks in `api.lua` to pass filtered elements iteratively to UI functions instead of concatenating them with newlines.
+1. [Tech Debt 1a] Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/commands.lua` and `lua/llm/managers/keys_manager.lua`.
+2. [Tech Debt 1b] Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/text.lua` and `lua/llm/core/utils/file_utils.lua`.
+3. [Tech Debt 1c] Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/shell.lua` and `lua/llm/core/data/cache.lua`.
+4. [Tech Debt 1d] Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/managers/custom_openai.lua` and `lua/llm/managers/schemas_manager.lua`.
+5. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+6. [Tech Debt 2] Fix string chunking in on_stdout callbacks - High Impact / Low Effort - Modify `on_stdout` callbacks in `api.lua` to pass filtered elements iteratively to UI functions instead of concatenating them with newlines.
