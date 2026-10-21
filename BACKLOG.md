@@ -22,12 +22,10 @@
 - [Bug 1]: Missing feature coverage. The `llm` CLI natively supports piped input, yet Neovim plugin integration for piped input via buffer commands or direct API is undocumented or completely unexposed in CLI.
 
 ## Ranked Backlog
-1. [Tech Debt 1a-1] Refactor remove_api_key in keys_manager.lua to be asynchronous - High Impact / High Effort - Refactor `M.remove_api_key` to accept a callback instead of returning boolean synchronously.
-2. [Tech Debt 1a-2] Refactor UI flows relying on remove_api_key - High Impact / High Effort - Update dependent UI code in `keys_manager.lua` to work with the asynchronous `remove_api_key`.
-3. [Tech Debt 1a-3] Replace synchronous io.open in commands.lua - High Impact / Medium Effort - Replace synchronous `io.open` calls with async implementations in `lua/llm/commands.lua`.
-4. [Tech Debt 1b] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/text.lua` and `lua/llm/core/utils/file_utils.lua`.
-5. [Tech Debt 1c] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/shell.lua` and `lua/llm/core/data/cache.lua`.
-6. [Tech Debt 1d] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/managers/custom_openai.lua` and `lua/llm/managers/schemas_manager.lua`.
-7. [Tech Debt 2] Fix string chunking in on_stdout callbacks - High Impact / Low Effort - Modify `on_stdout` callbacks in `lua/llm/core/data/llm_cli.lua` and `lua/llm/core/utils/job.lua` to pass filtered elements iteratively to UI functions instead of concatenating them with newlines.
-8. [Bug 1] Support piped input integration - Medium Impact / Low Effort - Investigate missing piped input integration or update codebase to cleanly accept visually selected lines as standard input for CLI operations.
-9. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. [Tech Debt 1a-3] Replace synchronous io.open in commands.lua - High Impact / Medium Effort - Replace synchronous `io.open` calls with async implementations in `lua/llm/commands.lua`.
+2. [Tech Debt 1b] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/text.lua` and `lua/llm/core/utils/file_utils.lua`.
+3. [Tech Debt 1c] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/shell.lua` and `lua/llm/core/data/cache.lua`.
+4. [Tech Debt 1d] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/managers/custom_openai.lua` and `lua/llm/managers/schemas_manager.lua`.
+5. [Tech Debt 2] Fix string chunking in on_stdout callbacks - High Impact / Low Effort - Modify `on_stdout` callbacks in `lua/llm/core/data/llm_cli.lua` and `lua/llm/core/utils/job.lua` to pass filtered elements iteratively to UI functions instead of concatenating them with newlines.
+6. [Bug 1] Support piped input integration - Medium Impact / Low Effort - Investigate missing piped input integration or update codebase to cleanly accept visually selected lines as standard input for CLI operations.
+7. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
