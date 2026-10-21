@@ -1,31 +1,32 @@
 ## Unranked Catalog (Upstream LLM CLI features applicable to Neovim)
-- Text Generation (`prompt`): Execute a prompt and generate text.
-- Piped Input (`cat image | llm`): Pass piped content.
-- Chat (`chat`): Hold an ongoing chat with a model.
-- Model Aliases (`aliases`): Manage model aliases.
-- Embeddings (`embed`, `collections`, `similar`): Embed text and manage embedding collections.
-- Extractions (`-x`, `--extract`, `--xl`, `--extract-last`): Extract first or last fenced code block.
-- Schema Options (`--schema`, `--schema-multi`): Structure output using a schema DSL or JSON schema.
-- Output Control (`--json`, `-R`, `--hide-reasoning`): Format output as JSON and control reasoning output.
-- Token Usage (`-u`, `--usage`): Show token usage statistics.
-- Attachments (`-a`, `--attachment`, `--at`, `--attachment-type`): Support for multi-modal file attachments.
-- Advanced Tool Options (`--td`, `--ta`, `--cl`, `--functions`): Fine-grained control over tool execution and definitions.
-- Model Selection & Options (`-m`, `--model`, `-o`, `--option`): Select and configure specific models.
-- System Prompts & Fragments (`-s`, `--system`, `-f`, `--fragment`, `--sf`, `--system-fragment`): Inject system instructions and reusable fragments.
-- Conversation Management (`-c`, `--continue`, `--cid`, `--conversation`): Resume previous chat sessions.
-- Streaming & Async (`--no-stream`, `--async`): Control response streaming and asynchronous execution.
+- Text generation (`prompt`): Sending prompts and receiving text completions.
+- Piped input: Sending text from the buffer or selection to the model via standard input.
+- Chat sessions (`chat`): Holding ongoing interactive conversations with history.
+- Model aliases (`aliases`): Managing shortcuts for longer model names.
+- Multi-modal attachments (`-a`, `--at`): Attaching images or other files to prompts.
+- Tools and function calling (`-T`, `--functions`): Allowing the model to execute tools.
+- Extractions (`-x`, `--xl`): Extracting code blocks from the model's response.
+- Structured output options (`--schema`, `--schema-multi`): Forcing output to follow a JSON schema.
+- Token usage tracking (`-u`): Viewing tokens consumed by a prompt.
+- System prompt and fragments (`-s`, `--sf`, `-f`): Appending predefined text.
+- Template options (`-t`, `-p`): Reusable prompt templates and parameters.
+- Embedding commands (`embed`, `embed-multi`, `collections`, `similar`): Creating and managing embeddings.
 
 ## Gaps & Tech Debt
-- [Feature Gap 1]: Missing interactive UI flows for advanced CLI arguments. While options for Extractions (`-x`, `--xl`), Schema Options (`--schema`, `--schema-multi`), Output Control (`--json`, `-R`), explicit attachment type (`--at`), token usage (`-u`), and Extended tool options (`--td`, `--ta`, `--cl`, `--functions`) are parsed in `lua/llm/commands.lua`, they lack exposed user-facing interactive UI configuration flows.
-- [Tech Debt 1]: Widespread use of synchronous `io.open` for file I/O operations. Code in `lua/llm/commands.lua`, `lua/llm/managers/keys_manager.lua`, `lua/llm/core/utils/text.lua`, `lua/llm/core/utils/file_utils.lua`, `lua/llm/core/utils/shell.lua`, `lua/llm/core/data/cache.lua`, `lua/llm/managers/custom_openai.lua`, and `lua/llm/managers/schemas_manager.lua` uses blocking `io.open` calls which can block the Neovim event loop. These should be refactored to use asynchronous conceptual methods.
-- [Tech Debt 2]: Trailing newlines are artificially appended to partial string chunks in `on_stdout` callbacks. In files like `lua/llm/core/data/llm_cli.lua` and `lua/llm/core/utils/job.lua`, chunks are reconstructed via `table.concat(lines, "\n")` and passed downstream, which forces newlines onto partial chunks and breaks stream buffering logic.
-- [Bug 1]: Missing feature coverage. The `llm` CLI natively supports piped input, yet Neovim plugin integration for piped input via buffer commands or direct API is undocumented or completely unexposed in CLI.
+- Feature Gap: No exposed interactive UI flows for Extractions (`-x`, `--xl`).
+- Feature Gap: No exposed interactive UI flows for Schema Options (`--schema`, `--schema-multi`).
+- Feature Gap: No exposed interactive UI flows for explicit attachment types (`--at`) or multi-modal attachments (`-a`).
+- Feature Gap: No exposed interactive UI flows for Extended Tool Options (`--functions`, `--td`, `--ta`, `--cl`).
+- Feature Gap: No exposed interactive UI flows for Model Options (`-o`) during inference.
+- Feature Gap: No exposed interactive UI flows for token usage tracking (`-u`).
+- Tech Debt: Widespread use of synchronous blocking file I/O operations (e.g., `io.open`) in `lua/llm/managers/custom_openai.lua`, `lua/llm/commands.lua`, and `lua/llm/managers/keys_manager.lua` which block the Neovim event loop.
+- Tech Debt: `table.concat(lines, "\n")` is sometimes used improperly on chunks emitted from `on_stdout` callbacks, potentially breaking stream buffering for partial lines before passing to UI functions.
 
 ## Ranked Backlog
-1. [Tech Debt 1a-3] Replace synchronous io.open in commands.lua - High Impact / Medium Effort - Replace synchronous `io.open` calls with async implementations in `lua/llm/commands.lua`.
-2. [Tech Debt 1b] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/text.lua` and `lua/llm/core/utils/file_utils.lua`.
-3. [Tech Debt 1c] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/core/utils/shell.lua` and `lua/llm/core/data/cache.lua`.
-4. [Tech Debt 1d] Replace synchronous `io.open` - High Impact / Medium Effort - Replace synchronous `io.open` calls with asynchronous conceptual methods in `lua/llm/managers/custom_openai.lua` and `lua/llm/managers/schemas_manager.lua`.
-5. [Tech Debt 2] Fix string chunking in on_stdout callbacks - High Impact / Low Effort - Modify `on_stdout` callbacks in `lua/llm/core/data/llm_cli.lua` and `lua/llm/core/utils/job.lua` to pass filtered elements iteratively to UI functions instead of concatenating them with newlines.
-6. [Bug 1] Support piped input integration - Medium Impact / Low Effort - Investigate missing piped input integration or update codebase to cleanly accept visually selected lines as standard input for CLI operations.
-7. [Feature Gap 1] Expose interactive UI for advanced options - Medium Impact / High Effort - Provide UI flows for advanced arguments parsed in `commands.lua` (Extractions, Schemas, Tools, Output Control, etc.).
+1. Refactor synchronous file I/O to asynchronous equivalents - High Impact / Medium Effort - Convert blocking `io.open` calls in managers (like `custom_openai.lua`, `keys_manager.lua`, and `commands.lua`) to asynchronous alternatives to prevent UI freezing during file operations.
+2. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Allow users to easily apply JSON schemas to outputs directly from Neovim, enhancing structured data extraction.
+3. Fix stream buffering concatenation in `on_stdout` - Medium Impact / Low Effort - Ensure `table.concat(lines, "\n")` is not used to join reconstructed string chunks before passing to `ui.append_to_buffer` or `append_llm_message`, resolving potential UI rendering issues with partial lines.
+4. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
+5. Implement UI flows for Multi-modal Attachments (`-a`, `--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
+6. Implement UI flows for Tool Options (`--functions`, etc.) - Low Impact / High Effort - Provide a mechanism to register and configure local tool functions for the model to use within the editor.
+7. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
