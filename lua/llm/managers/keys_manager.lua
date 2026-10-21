@@ -49,53 +49,59 @@ function M.set_api_key(key_name, key_value)
 end
 
 -- Remove an API key by directly modifying the keys.json file
-function M.remove_api_key(key_name)
-    -- Get the path to the keys.json file
-    local keys_path_output = llm_cli.run_llm_command('keys path')
-    if not keys_path_output or keys_path_output == "" then
-        vim.notify("Failed to get keys.json file path", vim.log.levels.ERROR)
-        return false
-    end
-
-    -- Read the current keys.json file
-    local keys_file = io.open(keys_path_output, "r")
-    if not keys_file then
-        vim.notify("Failed to open keys.json file", vim.log.levels.ERROR)
-        return false
-    end
-
-    local keys_content = keys_file:read("*a")
-    keys_file:close()
-
-    -- Parse the JSON content
-    local success, keys_data = pcall(vim.fn.json_decode, keys_content)
-    if not success or not keys_data then
-        vim.notify("Failed to parse keys.json file", vim.log.levels.ERROR)
-        return false
-    end
-
-    -- Remove the specified key
-    if keys_data[key_name] then
-        keys_data[key_name] = nil
-
-        -- Write the updated content back to the file
-        local updated_content = vim.fn.json_encode(keys_data)
-        local keys_file_write = io.open(keys_path_output, "w")
-        if not keys_file_write then
-            vim.notify("Failed to write to keys.json file", vim.log.levels.ERROR)
-            return false
+function M.remove_api_key(key_name, callback)
+    llm_cli.run_llm_command_async('keys path', function(keys_path_output)
+        if not keys_path_output or vim.trim(keys_path_output) == "" then
+            vim.notify("Failed to get keys.json file path", vim.log.levels.ERROR)
+            if callback then callback(false) end
+            return
         end
 
-        keys_file_write:write(updated_content)
-        keys_file_write:close()
+        local keys_path = vim.trim(keys_path_output)
 
-        cache.invalidate('keys')
-        cache.invalidate('models') -- Invalidate models cache when keys change
-        return true
-    else
-        vim.notify("Key '" .. key_name .. "' not found in keys.json", vim.log.levels.WARN)
-        return false
-    end
+        -- Read the current keys.json file
+        local keys_file = io.open(keys_path, "r")
+        if not keys_file then
+            vim.notify("Failed to open keys.json file", vim.log.levels.ERROR)
+            if callback then callback(false) end
+            return
+        end
+
+        local keys_content = keys_file:read("*a")
+        keys_file:close()
+
+        -- Parse the JSON content
+        local success, keys_data = pcall(vim.fn.json_decode, keys_content)
+        if not success or not keys_data then
+            vim.notify("Failed to parse keys.json file", vim.log.levels.ERROR)
+            if callback then callback(false) end
+            return
+        end
+
+        -- Remove the specified key
+        if keys_data[key_name] then
+            keys_data[key_name] = nil
+
+            -- Write the updated content back to the file
+            local updated_content = vim.fn.json_encode(keys_data)
+            local keys_file_write = io.open(keys_path, "w")
+            if not keys_file_write then
+                vim.notify("Failed to write to keys.json file", vim.log.levels.ERROR)
+                if callback then callback(false) end
+                return
+            end
+
+            keys_file_write:write(updated_content)
+            keys_file_write:close()
+
+            cache.invalidate('keys')
+            cache.invalidate('models') -- Invalidate models cache when keys change
+            if callback then callback(true) end
+        else
+            vim.notify("Key '" .. key_name .. "' not found in keys.json", vim.log.levels.WARN)
+            if callback then callback(false) end
+        end
+    end)
 end
 
 -- Populate the buffer with key management content
@@ -239,15 +245,17 @@ function M.remove_key_under_cursor(bufnr)
   end
 
   keys_view.confirm_remove_key(provider_name, function()
-    if M.remove_api_key(provider_name) then
-      vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
-      -- Use vim.schedule to ensure cache invalidation completes before refresh
-      vim.schedule(function()
-        require('llm.ui.unified_manager').switch_view("Keys")
-      end)
-    else
-      vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
-    end
+    M.remove_api_key(provider_name, function(success)
+      if success then
+        vim.notify("Key for '" .. provider_name .. "' removed", vim.log.levels.INFO)
+        -- Use vim.schedule to ensure cache invalidation completes before refresh
+        vim.schedule(function()
+          require('llm.ui.unified_manager').switch_view("Keys")
+        end)
+      else
+        vim.notify("Failed to remove key for '" .. provider_name .. "'", vim.log.levels.ERROR)
+      end
+    end)
   end)
 end
 

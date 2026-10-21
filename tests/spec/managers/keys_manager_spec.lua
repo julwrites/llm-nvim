@@ -56,8 +56,10 @@ describe('llm.managers.keys_manager', function()
   end)
 
   describe('remove_api_key', function()
-    it('should call `llm_cli.run_llm_command` with `\'keys path\'`', function()
-      local llm_cli_spy = spy.on(llm_cli, 'run_llm_command')
+    it('should call `llm_cli.run_llm_command_async` with `\'keys path\'`', function()
+      stub(llm_cli, 'run_llm_command_async', function(cmd, cb)
+        cb('/mock/path')
+      end)
       -- Mock the file operations to avoid actual file I/O in tests
       local mock_file = {
         read = function() return '{"openai": "test-key"}' end,
@@ -73,10 +75,12 @@ describe('llm.managers.keys_manager', function()
       stub(vim.fn, 'json_decode', function() return { openai = "test-key" } end)
       stub(vim.fn, 'json_encode', function() return '{}' end)
 
-      KeysManager.remove_api_key('openai')
-      assert.spy(llm_cli_spy).was_called_with('keys path')
+      local callback_spy = spy.new(function() end)
+      KeysManager.remove_api_key('openai', callback_spy)
+      assert.spy(llm_cli.run_llm_command_async).was_called_with('keys path', match.is_function())
+      assert.spy(callback_spy).was_called_with(true)
 
-      llm_cli_spy:revert()
+      mock.revert(llm_cli)
       mock.revert(io)
       mock.revert(vim.fn)
     end)
