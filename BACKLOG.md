@@ -23,10 +23,13 @@
 - Tech Debt: `table.concat(lines, "\n")` is sometimes used improperly on chunks emitted from `on_stdout` callbacks, potentially breaking stream buffering for partial lines before passing to UI functions.
 
 ## Ranked Backlog
-1. Refactor synchronous file I/O to asynchronous equivalents - High Impact / Medium Effort - Convert blocking `io.open` calls in managers (like `custom_openai.lua`, `keys_manager.lua`, and `commands.lua`) to asynchronous alternatives to prevent UI freezing during file operations.
-2. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Allow users to easily apply JSON schemas to outputs directly from Neovim, enhancing structured data extraction.
-3. Fix stream buffering concatenation in `on_stdout` - Medium Impact / Low Effort - Ensure `table.concat(lines, "\n")` is not used to join reconstructed string chunks before passing to `ui.append_to_buffer` or `append_llm_message`, resolving potential UI rendering issues with partial lines.
-4. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
-5. Implement UI flows for Multi-modal Attachments (`-a`, `--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
-6. Implement UI flows for Tool Options (`--functions`, etc.) - Low Impact / High Effort - Provide a mechanism to register and configure local tool functions for the model to use within the editor.
-7. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
+1. Refactor synchronous file I/O in `commands.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing during file operations.
+2. Refactor synchronous file I/O in `custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing during file operations.
+3. Refactor synchronous file I/O in `keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing during file operations.
+4. Refactor remaining synchronous file I/O operations to asynchronous equivalents - High Impact / Medium Effort - Convert remaining blocking `io.open` calls in `schemas_manager.lua`, `cache.lua`, etc.
+5. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Allow users to easily apply JSON schemas to outputs directly from Neovim, enhancing structured data extraction.
+6. Fix stream buffering concatenation in `on_stdout` - Medium Impact / Low Effort - Ensure `table.concat(lines, "\n")` is not used to join reconstructed string chunks before passing to `ui.append_to_buffer` or `append_llm_message`, resolving potential UI rendering issues with partial lines.
+7. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
+8. Implement UI flows for Multi-modal Attachments (`-a`, `--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
+9. Implement UI flows for Tool Options (`--functions`, etc.) - Low Impact / High Effort - Provide a mechanism to register and configure local tool functions for the model to use within the editor.
+10. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
