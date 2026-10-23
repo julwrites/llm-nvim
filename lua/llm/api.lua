@@ -86,8 +86,9 @@ function M.run_llm_command_streamed(cmd_parts, bufnr, opts)
         stdout_buffer = table.remove(lines)
 
         if #lines > 0 then
-          local content = table.concat(lines, "\n")
-          ui.append_to_buffer(bufnr, content, "LlmModelResponse")
+          for _, line in ipairs(lines) do
+            ui.append_to_buffer(bufnr, line, "LlmModelResponse")
+          end
         end
       end
       if opts.on_stdout then opts.on_stdout(_, data) end
