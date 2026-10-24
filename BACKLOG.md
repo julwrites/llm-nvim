@@ -33,7 +33,9 @@
 - Tech Debt: `table.concat(lines, "\n")` is improperly used in `lua/llm/core/data/llm_cli.lua` on chunks emitted from `on_stdout` callbacks, which breaks stream buffering for partial lines.
 
 ## Ranked Backlog
-1. Refactor synchronous file I/O in `lua/llm/commands.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+1a. Refactor `write_context_to_temp_file` to use asynchronous file I/O - High Impact / Medium Effort - Convert synchronous `io.open` to an asynchronous approach.
+1b. Refactor `prompt_with_selection` to support asynchronous context writing - High Impact / Medium Effort - Update callers to handle the asynchronous nature of the refactored context writing.
+1c. Refactor `interactive_prompt_with_fragments` to use asynchronous file I/O - High Impact / Medium Effort - Convert synchronous `io.open` for visual selection saving to an asynchronous approach.
 2. Refactor synchronous file I/O in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
 3. Refactor synchronous file I/O in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
 4. Refactor synchronous file I/O in `lua/llm/managers/schemas_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
