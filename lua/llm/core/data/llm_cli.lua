@@ -34,7 +34,9 @@ function M.run_llm_command_async(command, callback)
                 stdout_buffer = table.remove(lines)
 
                 if #lines > 0 then
-                    table.insert(stdout_data, table.concat(lines, "\n"))
+                    for _, line in ipairs(lines) do
+                        table.insert(stdout_data, line)
+                    end
                 end
             end
         end,
