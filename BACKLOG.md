@@ -34,16 +34,16 @@
 - Tech Debt: Vulnerable `vim.fn.shellescape()` usage with manual string concatenation in `lua/llm/managers/embeddings_manager.lua` could lead to OS command injection or broken parsing.
 
 ## Ranked Backlog
-1. Refactor `write_context_to_temp_file` in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
-2. Refactor `interactive_prompt_with_fragments` in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
-3. Refactor synchronous file I/O in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-4. Refactor synchronous file I/O in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-5. Refactor synchronous file I/O in `lua/llm/managers/schemas_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-6. Fix `table.concat` in `lua/llm/core/data/llm_cli.lua` - High Impact / Low Effort - Properly accumulate stream chunks to fix partial line buffering.
-7. Fix string concatenation for commands in `lua/llm/managers/embeddings_manager.lua` - High Impact / Medium Effort - Replace direct concatenation of `shellescape` with a proper array of arguments or safe builder.
+1. Fix string concatenation for commands in `lua/llm/managers/embeddings_manager.lua` - High Impact / Low Effort - Replace direct concatenation of `shellescape` with a proper array of arguments or safe builder.
+2. Fix `table.concat` in `lua/llm/core/data/llm_cli.lua` - High Impact / Low Effort - Properly accumulate stream chunks to fix partial line buffering.
+3. Refactor synchronous file I/O operations at line 412 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
+4. Refactor synchronous file I/O operations at line 619 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
+5. Refactor synchronous file I/O in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+6. Refactor synchronous file I/O in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+7. Refactor synchronous file I/O in `lua/llm/managers/schemas_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
 8. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Create interactive commands/UI to easily apply JSON schemas to outputs directly from Neovim.
 9. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
-10. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
-11. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide a mechanism to register and configure local tool execution settings.
-12. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles for JSON output and hiding reasoning.
-13. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
+10. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles for JSON output and hiding reasoning.
+11. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
+12. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
+13. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide a mechanism to register and configure local tool execution settings.
