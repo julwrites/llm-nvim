@@ -11,30 +11,34 @@ function M.embed(opts)
   end
 
   opts = opts or {}
-  local cmd = 'embed'
+  local cmd_parts = {'embed'}
 
   if opts.collection then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.collection)
+    table.insert(cmd_parts, vim.fn.shellescape(opts.collection))
   end
   if opts.id then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.id)
+    table.insert(cmd_parts, vim.fn.shellescape(opts.id))
   end
   if opts.model then
-    cmd = cmd .. ' -m ' .. vim.fn.shellescape(opts.model)
+    table.insert(cmd_parts, '-m')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.model))
   end
   if opts.input then
-    cmd = cmd .. ' -i ' .. vim.fn.shellescape(opts.input)
+    table.insert(cmd_parts, '-i')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.input))
   elseif opts.content then
-    cmd = cmd .. ' -c ' .. vim.fn.shellescape(opts.content)
+    table.insert(cmd_parts, '-c')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.content))
   end
   if opts.format then
-    cmd = cmd .. ' -f ' .. vim.fn.shellescape(opts.format)
+    table.insert(cmd_parts, '-f')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.format))
   end
   if opts.store then
-    cmd = cmd .. ' --store'
+    table.insert(cmd_parts, '--store')
   end
 
-  return llm_cli.run_llm_command(cmd)
+  return llm_cli.run_llm_command(table.concat(cmd_parts, ' '))
 end
 
 function M.embed_models(opts)
@@ -61,22 +65,40 @@ function M.embed_multi(opts)
     return { success = false, message = "Collection name is required for embed-multi" }
   end
 
-  local cmd = 'embed-multi ' .. vim.fn.shellescape(opts.collection)
+  local cmd_parts = {'embed-multi', vim.fn.shellescape(opts.collection)}
   if opts.input_path then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.input_path)
+    table.insert(cmd_parts, vim.fn.shellescape(opts.input_path))
   end
 
-  if opts.format then cmd = cmd .. ' --format ' .. vim.fn.shellescape(opts.format) end
+  if opts.format then
+    table.insert(cmd_parts, '--format')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.format))
+  end
   if opts.files_dir and opts.files_pattern then
-    cmd = cmd .. ' --files ' .. vim.fn.shellescape(opts.files_dir) .. ' ' .. vim.fn.shellescape(opts.files_pattern)
+    table.insert(cmd_parts, '--files')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.files_dir))
+    table.insert(cmd_parts, vim.fn.shellescape(opts.files_pattern))
   end
-  if opts.encoding then cmd = cmd .. ' --encoding ' .. vim.fn.shellescape(opts.encoding) end
-  if opts.binary then cmd = cmd .. ' --binary' end
-  if opts.sql then cmd = cmd .. ' --sql ' .. vim.fn.shellescape(opts.sql) end
-  if opts.model then cmd = cmd .. ' -m ' .. vim.fn.shellescape(opts.model) end
-  if opts.store then cmd = cmd .. ' --store' end
+  if opts.encoding then
+    table.insert(cmd_parts, '--encoding')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.encoding))
+  end
+  if opts.binary then
+    table.insert(cmd_parts, '--binary')
+  end
+  if opts.sql then
+    table.insert(cmd_parts, '--sql')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.sql))
+  end
+  if opts.model then
+    table.insert(cmd_parts, '-m')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.model))
+  end
+  if opts.store then
+    table.insert(cmd_parts, '--store')
+  end
 
-  return llm_cli.run_llm_command(cmd)
+  return llm_cli.run_llm_command(table.concat(cmd_parts, ' '))
 end
 
 function M.similar(opts)
@@ -88,17 +110,28 @@ function M.similar(opts)
     return { success = false, message = "Collection name is required for similar" }
   end
 
-  local cmd = 'similar ' .. vim.fn.shellescape(opts.collection)
+  local cmd_parts = {'similar', vim.fn.shellescape(opts.collection)}
   if opts.id then
-    cmd = cmd .. ' ' .. vim.fn.shellescape(opts.id)
+    table.insert(cmd_parts, vim.fn.shellescape(opts.id))
   end
 
-  if opts.input then cmd = cmd .. ' -i ' .. vim.fn.shellescape(opts.input) end
-  if opts.content then cmd = cmd .. ' -c ' .. vim.fn.shellescape(opts.content) end
-  if opts.binary then cmd = cmd .. ' --binary' end
-  if opts.number then cmd = cmd .. ' -n ' .. tostring(opts.number) end
+  if opts.input then
+    table.insert(cmd_parts, '-i')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.input))
+  end
+  if opts.content then
+    table.insert(cmd_parts, '-c')
+    table.insert(cmd_parts, vim.fn.shellescape(opts.content))
+  end
+  if opts.binary then
+    table.insert(cmd_parts, '--binary')
+  end
+  if opts.number then
+    table.insert(cmd_parts, '-n')
+    table.insert(cmd_parts, tostring(opts.number))
+  end
 
-  return llm_cli.run_llm_command(cmd)
+  return llm_cli.run_llm_command(table.concat(cmd_parts, ' '))
 end
 
 function M.collections(opts)
