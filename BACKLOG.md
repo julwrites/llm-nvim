@@ -30,18 +30,16 @@
 - Feature Gap: No exposed interactive UI flows for Output Control (`--json`, `-R`).
 - Feature Gap: No exposed interactive UI flows for token usage tracking (`-u`).
 - Tech Debt: Widespread use of synchronous blocking file I/O operations (e.g., `io.open`) in `lua/llm/managers/custom_openai.lua`, `lua/llm/commands.lua`, `lua/llm/managers/keys_manager.lua`, and `lua/llm/managers/schemas_manager.lua` which block the Neovim event loop.
-- Tech Debt: `table.concat(lines, "\n")` is improperly used in `lua/llm/core/data/llm_cli.lua` on chunks emitted from `on_stdout` callbacks, which breaks stream buffering for partial lines.
 
 ## Ranked Backlog
-1. Fix `table.concat` in `lua/llm/core/data/llm_cli.lua` - High Impact / Low Effort - Properly accumulate stream chunks to fix partial line buffering.
-2. Refactor synchronous file I/O operations at line 412 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
-3. Refactor synchronous file I/O operations at line 619 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
-4. Refactor synchronous file I/O in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-5. Refactor synchronous file I/O in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-6. Refactor synchronous file I/O in `lua/llm/managers/schemas_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
-7. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Create interactive commands/UI to easily apply JSON schemas to outputs directly from Neovim.
-8. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
-9. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
-10. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles for JSON output and hiding reasoning.
-11. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
-12. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide a mechanism to register and configure local tool execution settings.
+1. Refactor synchronous file I/O operations at line 412 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
+2. Refactor synchronous file I/O operations at line 619 in `lua/llm/commands.lua` to be asynchronous - High Impact / Medium Effort - Convert blocking `io.open` calls to async using callbacks to prevent UI freezing.
+3. Refactor synchronous file I/O in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+4. Refactor synchronous file I/O in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+5. Refactor synchronous file I/O in `lua/llm/managers/schemas_manager.lua` - High Impact / Medium Effort - Convert blocking `io.open` calls to asynchronous alternatives to prevent UI freezing.
+6. Implement UI flows for Schema Options (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Create interactive commands/UI to easily apply JSON schemas to outputs directly from Neovim.
+7. Implement UI flows for Extractions (`-x`, `--xl`) - Medium Impact / Low Effort - Add simple toggles or commands to extract code blocks from model responses directly into the buffer.
+8. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a file picker or visual selection mechanism to easily attach images or context to prompts.
+9. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles for JSON output and hiding reasoning.
+10. Expose token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics after a prompt completes.
+11. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide a mechanism to register and configure local tool execution settings.
