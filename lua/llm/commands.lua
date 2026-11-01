@@ -407,18 +407,25 @@ function M.get_pre_response_message(source, prompt, fragment_paths, opts)
   return table.concat(message_parts, "\n")
 end
 
-function M.write_context_to_temp_file(context)
+function M.write_context_to_temp_file(context, callback)
   local temp_file = vim.fn.tempname()
-  local file = io.open(temp_file, "w")
-  if not file then
-    api.nvim_err_writeln("Failed to create temporary file")
-    return ""
-  end
+  vim.uv.fs_open(temp_file, "w", 438, function(err, fd)
+    if err or not fd then
+      vim.schedule(function()
+        api.nvim_err_writeln("Failed to create temporary file")
+        if callback then callback("") end
+      end)
+      return
+    end
 
-  file:write(context)
-  file:close()
-
-  return temp_file
+    vim.uv.fs_write(fd, context, -1, function(write_err)
+      vim.uv.fs_close(fd, function()
+        if callback then
+          vim.schedule(function() callback(temp_file) end)
+        end
+      end)
+    end)
+  end)
 end
 
 function M.create_response_buffer(content)
@@ -576,24 +583,25 @@ function M.prompt_with_selection(prompt, fragment_paths, from_visual_mode, bufnr
     return
   end
 
-  local temp_file = M.write_context_to_temp_file(selection)
-  if temp_file == "" then
-    return
-  end
+  M.write_context_to_temp_file(selection, function(temp_file)
+    if temp_file == "" then
+      return
+    end
 
-  local cmd_parts = M.build_base_cmd(fragment_paths, opts)
+    local cmd_parts = M.build_base_cmd(fragment_paths, opts)
 
-  table.insert(cmd_parts, "-f")
-  table.insert(cmd_parts, temp_file)
+    table.insert(cmd_parts, "-f")
+    table.insert(cmd_parts, temp_file)
 
-  local on_exit = function()
-    vim.notify("LLM command finished.")
-    -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
-  end
+    local on_exit = function()
+      vim.notify("LLM command finished.")
+      -- Temporary files created via vim.fn.tempname() are automatically cleaned up by Neovim
+    end
 
-  local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
+    local _, callbacks = M.prepare_response_buffer_and_callbacks(bufnr, on_exit)
 
-  api.run_streaming_command(cmd_parts, prompt, callbacks)
+    api.run_streaming_command(cmd_parts, prompt, callbacks)
+  end)
 end
 
 
@@ -609,27 +617,6 @@ function M.interactive_prompt_with_fragments(opts)
   local fragments_list = {}
   local visual_selection_text = nil
   local visual_selection_temp_file = nil
-
-  -- Check for visual selection
-  if opts.range and opts.range > 0 then
-    visual_selection_text = text.get_visual_selection()
-    if visual_selection_text and visual_selection_text ~= "" then
-      -- Save selection to a temporary file to treat it like a fragment source
-      visual_selection_temp_file = vim.fn.tempname()
-      local file = io.open(visual_selection_temp_file, "w")
-      if file then
-        file:write(visual_selection_text)
-        file:close()
-        table.insert(fragments_list, visual_selection_temp_file)
-        vim.notify("Added visual selection as fragment source.", vim.log.levels.INFO)
-      else
-        vim.notify("Failed to create temporary file for visual selection.", vim.log.levels.ERROR)
-        visual_selection_temp_file = nil -- Ensure it's nil if creation failed
-      end
-    else
-      visual_selection_text = nil -- Reset if selection was empty
-    end
-  end
 
   local function add_more_fragments()
     local options = {
@@ -716,8 +703,39 @@ function M.interactive_prompt_with_fragments(opts)
     end)
   end
 
-  -- Start the fragment selection loop
-  add_more_fragments()
+  -- Check for visual selection
+  if opts.range and opts.range > 0 then
+    visual_selection_text = text.get_visual_selection()
+    if visual_selection_text and visual_selection_text ~= "" then
+      -- Save selection to a temporary file to treat it like a fragment source
+      visual_selection_temp_file = vim.fn.tempname()
+      vim.uv.fs_open(visual_selection_temp_file, "w", 438, function(err, fd)
+        if err or not fd then
+          vim.schedule(function()
+            vim.notify("Failed to create temporary file for visual selection.", vim.log.levels.ERROR)
+            visual_selection_temp_file = nil -- Ensure it's nil if creation failed
+            add_more_fragments()
+          end)
+          return
+        end
+        vim.uv.fs_write(fd, visual_selection_text, -1, function(write_err)
+          vim.uv.fs_close(fd, function()
+            vim.schedule(function()
+              table.insert(fragments_list, visual_selection_temp_file)
+              vim.notify("Added visual selection as fragment source.", vim.log.levels.INFO)
+              add_more_fragments()
+            end)
+          end)
+        end)
+      end)
+    else
+      visual_selection_text = nil -- Reset if selection was empty
+      add_more_fragments()
+    end
+  else
+    -- Start the fragment selection loop
+    add_more_fragments()
+  end
 end
 
 -- Test function to verify terminal creation

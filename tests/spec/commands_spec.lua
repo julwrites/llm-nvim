@@ -577,7 +577,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
   describe('prompt_with_selection', function()
     it('should return early if write_context_to_temp_file returns empty string', function()
       -- Mock dependencies
-      commands.write_context_to_temp_file = spy.new(function() return '' end)
+      commands.write_context_to_temp_file = spy.new(function(_, cb) cb('') end)
 
       commands.prompt_with_selection('test prompt', {}, true, 1)
 
@@ -586,7 +586,7 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
 
     it('should call api.run_streaming_command with the correct arguments', function()
       -- Mock dependencies
-      commands.write_context_to_temp_file = spy.new(function() return '/tmp/temp_file' end)
+      commands.write_context_to_temp_file = spy.new(function(_, cb) cb('/tmp/temp_file') end)
       os.remove = spy.new(function() end)
 
       commands.prompt_with_selection('test prompt', {}, true, 1)
@@ -666,20 +666,32 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local mock_tempname = "/tmp/visual_selection"
       vim.fn.tempname = spy.new(function() return mock_tempname end)
 
-      local mock_file = {
-        write = spy.new(function() end),
-        close = spy.new(function() end)
-      }
-      io.open = spy.new(function() return mock_file end)
+      local original_uv_fs_open = vim.uv.fs_open
+      local original_uv_fs_write = vim.uv.fs_write
+      local original_uv_fs_close = vim.uv.fs_close
+
+      vim.uv.fs_open = spy.new(function(path, flags, mode, cb)
+        cb(nil, 1)
+      end)
+      vim.uv.fs_write = spy.new(function(fd, data, offset, cb)
+        cb(nil)
+      end)
+      vim.uv.fs_close = spy.new(function(fd, cb)
+        cb(nil)
+      end)
 
       commands.interactive_prompt_with_fragments({ range = 1 })
 
       assert.spy(text_mock.get_visual_selection).was.called()
       assert.spy(vim.fn.tempname).was.called()
-      assert.spy(io.open).was.called_with(mock_tempname, "w")
-      assert.spy(mock_file.write).was.called_with(mock_file, "test selection")
-      assert.spy(mock_file.close).was.called_with(mock_file)
+      assert.spy(vim.uv.fs_open).was.called_with(mock_tempname, "w", 438, match.is_function())
+      assert.spy(vim.uv.fs_write).was.called_with(1, "test selection", -1, match.is_function())
+      assert.spy(vim.uv.fs_close).was.called_with(1, match.is_function())
       assert.spy(vim.notify).was.called_with("Added visual selection as fragment source.", vim.log.levels.INFO)
+
+      vim.uv.fs_open = original_uv_fs_open
+      vim.uv.fs_write = original_uv_fs_write
+      vim.uv.fs_close = original_uv_fs_close
     end)
 
     it('should add visual selection error when temp file creation fails', function()
@@ -687,11 +699,16 @@ describe('llm.commands', function() -- This is a new test suite for llm.commands
       local mock_tempname = "/tmp/visual_selection"
       vim.fn.tempname = spy.new(function() return mock_tempname end)
 
-      io.open = spy.new(function() return nil end)
+      local original_uv_fs_open = vim.uv.fs_open
+      vim.uv.fs_open = spy.new(function(path, flags, mode, cb)
+        cb("error", nil)
+      end)
 
       commands.interactive_prompt_with_fragments({ range = 1 })
 
       assert.spy(vim.notify).was.called_with("Failed to create temporary file for visual selection.", vim.log.levels.ERROR)
+
+      vim.uv.fs_open = original_uv_fs_open
     end)
 
     it('should select file as fragment', function()
