@@ -270,6 +270,31 @@ end
 
 M.o = { columns = 80, lines = 24 }
 
+M.uv = {
+  fs_open = function(path, flags, mode, cb)
+    local fd = 1 -- Mock fd
+    if cb then
+      cb(nil, fd)
+    else
+      return fd, nil
+    end
+  end,
+  fs_write = function(fd, data, offset, cb)
+    if cb then
+      cb(nil)
+    else
+      return true, nil
+    end
+  end,
+  fs_close = function(fd, cb)
+    if cb then
+      cb(nil)
+    else
+      return true, nil
+    end
+  end,
+}
+
 _G.vim = M
 
 return M
