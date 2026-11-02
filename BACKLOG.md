@@ -23,9 +23,9 @@
 - Tech Debt: Widespread use of synchronous blocking file I/O operations (`io.open`) which block the Neovim event loop. Verified in `lua/llm/core/utils/text.lua` (line 58), `lua/llm/core/utils/file_utils.lua` (line 87), `lua/llm/core/utils/shell.lua` (lines 96, 109), `lua/llm/core/data/cache.lua` (lines 11, 30), `lua/llm/managers/keys_manager.lua` (lines 63, 87), `lua/llm/managers/custom_openai.lua` (lines 41, 203, 295, 375, 437, 463, 504), and `lua/llm/managers/schemas_manager.lua` (lines 38, 57, 252).
 
 ## Ranked Backlog
-1. Refactor `load_custom_openai_models` and `debug_custom_openai_models` (lines 41, 203) to async in `custom_openai.lua`.
-2. Refactor `create_sample_yaml_file` (line 295) to async in `custom_openai.lua`.
-3. Refactor `add_custom_openai_model` and `delete_custom_openai_model` (lines 375, 437, 463, 504) to async in `custom_openai.lua`.
+1. Refactor `load_custom_openai_models` and `debug_custom_openai_models` (lines 41, 203) to async in `custom_openai.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
+2. Refactor `create_sample_yaml_file` (line 295) to async in `custom_openai.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
+3. Refactor `add_custom_openai_model` and `delete_custom_openai_model` (lines 375, 437, 463, 504) to async in `custom_openai.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
 4. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` (lines 63, 87) - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
 5. Refactor synchronous `io.open` calls in `lua/llm/core/data/cache.lua` (lines 11, 30) - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
 6. Refactor synchronous `io.open` calls in `lua/llm/managers/schemas_manager.lua` (lines 38, 57, 252) - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
