@@ -27,12 +27,16 @@
 - Tech Debt: Widespread use of synchronous, blocking file I/O operations (`io.open`) which block the Neovim event loop. Explicitly verified in `lua/llm/managers/custom_openai.lua` and `lua/llm/managers/keys_manager.lua`.
 
 ## Ranked Backlog
-1. Refactor synchronous `io.open` calls in `lua/llm/managers/custom_openai.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous `vim.uv` alternatives to prevent freezing the editor.
-2. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous `vim.uv` alternatives to prevent freezing the editor.
-3. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
-4. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
-5. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
-6. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
-7. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
-8. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide UI to configure tool debugging, approval, and chain limits.
-9. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.
+1. Refactor `load_custom_openai_models` in `lua/llm/managers/custom_openai.lua` to async - High Impact / High Effort - Refactor load and its dependents to use `vim.uv` async APIs.\
+2. Refactor `debug_custom_openai_models` in `lua/llm/managers/custom_openai.lua` to async - Low Impact / Medium Effort - Refactor debug and its dependents to use `vim.uv` async APIs.\
+3. Refactor `create_sample_yaml_file` in `lua/llm/managers/custom_openai.lua` to async - Low Impact / Medium Effort - Refactor create_sample and its dependents to use `vim.uv` async APIs.\
+4. Refactor `add_custom_openai_model` in `lua/llm/managers/custom_openai.lua` to async - Medium Impact / High Effort - Refactor add and its dependents to use `vim.uv` async APIs.\
+5. Refactor `delete_custom_openai_model` in `lua/llm/managers/custom_openai.lua` to async - Medium Impact / High Effort - Refactor delete and its dependents to use `vim.uv` async APIs.
+6. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous `vim.uv` alternatives to prevent freezing the editor.
+7. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
+8. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
+9. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
+10. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
+11. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
+12. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide UI to configure tool debugging, approval, and chain limits.
+13. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.
