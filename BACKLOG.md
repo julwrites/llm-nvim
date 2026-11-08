@@ -16,6 +16,7 @@
 - Database (`-d`, `--database`): Specify path to log database.
 - Logging (`--log`, `--no-log`): Control logging to the database.
 - Structured output schemas (`--schema`, `--schema-multi`): Define a JSON schema for the output.
+
 ## Gaps & Tech Debt
 - Feature Gap: No interactive UI flows or Neovim commands exposed to utilize the Extract code blocks options (`-x`, `--xl`).
 - Feature Gap: No interactive UI flows or Neovim commands exposed for Output Control options (`--json`, `-R`).
@@ -26,11 +27,12 @@
 - Feature Gap: No interactive UI flows or Neovim commands exposed for Asynchronous execution (`--async`).
 - Feature Gap: No interactive UI flows or Neovim commands exposed for Structured output schemas (`--schema`, `--schema-multi`).
 - Tech Debt: Widespread use of synchronous, blocking file I/O operations (`io.open`) which block the Neovim event loop. Explicitly verified in `lua/llm/managers/custom_openai.lua`, `lua/llm/managers/keys_manager.lua`, `lua/llm/core/utils/text.lua`, `lua/llm/core/utils/file_utils.lua`, `lua/llm/core/utils/shell.lua`, `lua/llm/core/data/cache.lua`.
+
 ## Ranked Backlog
-1. Refactor file write operations in `lua/llm/managers/custom_openai.lua` to async - High Impact / Medium Effort - Convert blocking I/O write calls (`add_custom_openai_model`, etc.) to use `vim.uv` async APIs.
+1. Refactor file write operations in `lua/llm/managers/custom_openai.lua` to async - High Impact / Medium Effort - Convert blocking I/O write calls (`add_custom_openai_model`, etc.) to use asynchronous alternatives (`vim.uv` is used elsewhere for this).
 2. Refactor `models_manager.lua` and views to support asynchronous custom model validation - High Impact / High Effort - Update synchronous validation checks to be non-blocking.
-3. Refactor `load_custom_openai_models` to async - High Impact / High Effort - Convert the main blocking read operation to use `vim.uv` async APIs.
-4. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous `vim.uv` alternatives to prevent freezing the editor.
+3. Refactor `load_custom_openai_models` to async - High Impact / High Effort - Convert the main blocking read operation to use asynchronous alternatives.
+4. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives to prevent freezing the editor.
 5. Implement UI flows for Structured output schemas (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Add Neovim UI or commands to define and send schemas for structured outputs.
 6. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
 7. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
