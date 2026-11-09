@@ -169,25 +169,32 @@ describe("llm.managers.custom_openai", function()
   describe("create_sample_yaml_file()", function()
     it("should return false if config directory is not found", function()
       file_utils.get_config_path = function() return nil, nil end
-      local result = custom_openai.create_sample_yaml_file()
+      local result = false
+      custom_openai.create_sample_yaml_file(function(res) result = res end)
       assert.is_false(result)
     end)
 
     it("should write a sample file and return true", function()
       file_utils.get_config_path = function() return "tests/spec", "tests/spec/extra-openai-models.yaml.sample" end
-      local io_open_orig = io.open
+      local original_uv_fs_open = vim.uv.fs_open
+      local original_uv_fs_write = vim.uv.fs_write
       local write_called = false
-      io.open = function(path, mode)
-        if string.find(path, "yaml") then
-          return { write = function() write_called = true end, close = function() end }
-        end
-        return io_open_orig(path, mode)
+
+      vim.uv.fs_open = function(path, flags, mode, cb)
+        if cb then cb(nil, 1) else return 1, nil end
+      end
+      vim.uv.fs_write = function(fd, data, offset, cb)
+        write_called = true
+        if cb then cb(nil) else return true, nil end
       end
 
-      local result = custom_openai.create_sample_yaml_file()
+      local result = false
+      custom_openai.create_sample_yaml_file(function(res) result = res end)
       assert.is_true(result)
       assert.is_true(write_called)
-      io.open = io_open_orig
+
+      vim.uv.fs_open = original_uv_fs_open
+      vim.uv.fs_write = original_uv_fs_write
     end)
   end)
 
@@ -209,14 +216,16 @@ describe("llm.managers.custom_openai", function()
 
   describe("add_custom_openai_model()", function()
     it("should return false if model_id is missing", function()
-      local result, err = custom_openai.add_custom_openai_model({})
+      local result, err
+      custom_openai.add_custom_openai_model({}, function(res, e) result = res; err = e end)
       assert.is_false(result)
     end)
   end)
 
   describe("delete_custom_openai_model()", function()
     it("should return false if model_id is missing", function()
-      local result, err = custom_openai.delete_custom_openai_model(nil)
+      local result, err
+      custom_openai.delete_custom_openai_model(nil, function(res, e) result = res; err = e end)
       assert.is_false(result)
     end)
   end)
