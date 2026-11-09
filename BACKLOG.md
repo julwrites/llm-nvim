@@ -29,15 +29,14 @@
 - Tech Debt: Widespread use of synchronous, blocking file I/O operations (`io.open`) which block the Neovim event loop. Explicitly verified in `lua/llm/managers/custom_openai.lua`, `lua/llm/managers/keys_manager.lua`, `lua/llm/core/utils/text.lua`, `lua/llm/core/utils/file_utils.lua`, `lua/llm/core/utils/shell.lua`, `lua/llm/core/data/cache.lua`.
 
 ## Ranked Backlog
-1. Refactor file write operations in `lua/llm/managers/custom_openai.lua` to async - High Impact / Medium Effort - Convert blocking I/O write calls (`add_custom_openai_model`, etc.) to use asynchronous alternatives (`vim.uv` is used elsewhere for this).
-2. Refactor `models_manager.lua` and views to support asynchronous custom model validation - High Impact / High Effort - Update synchronous validation checks to be non-blocking.
-3. Refactor `load_custom_openai_models` to async - High Impact / High Effort - Convert the main blocking read operation to use asynchronous alternatives.
-4. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives to prevent freezing the editor.
-5. Implement UI flows for Structured output schemas (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Add Neovim UI or commands to define and send schemas for structured outputs.
-6. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
-7. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
-8. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
-9. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
-10. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
-11. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide UI to configure tool debugging, approval, and chain limits.
-12. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.
+1. Refactor `models_manager.lua` and views to support asynchronous custom model validation - High Impact / High Effort - Update synchronous validation checks to be non-blocking.
+2. Refactor `load_custom_openai_models` to async - High Impact / High Effort - Convert the main blocking read operation to use asynchronous alternatives.
+3. Refactor synchronous `io.open` calls in `lua/llm/managers/keys_manager.lua` - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives to prevent freezing the editor.
+4. Implement UI flows for Structured output schemas (`--schema`, `--schema-multi`) - High Impact / Medium Effort - Add Neovim UI or commands to define and send schemas for structured outputs.
+5. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
+6. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
+7. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
+8. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
+9. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
+10. Implement UI flows for Extended Tool Options (`--td`, `--ta`, `--cl`) - Low Impact / High Effort - Provide UI to configure tool debugging, approval, and chain limits.
+11. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.

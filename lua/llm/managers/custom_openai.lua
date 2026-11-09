@@ -222,11 +222,12 @@ function M.debug_custom_openai_models()
 end
 
 -- Create sample YAML file
-function M.create_sample_yaml_file()
+function M.create_sample_yaml_file(cb)
   local config_dir, yaml_path = file_utils.get_config_path("extra-openai-models.yaml.sample")
 
   if not config_dir then
     vim.notify("Could not find config directory", vim.log.levels.ERROR)
+    if cb then cb(false) else return false end
     return false
   end
 
@@ -292,17 +293,30 @@ function M.create_sample_yaml_file()
 #   # and potentially set needs_auth: false if the key is only in the header.
 ]]
 
-  local file = io.open(yaml_path, "w")
-  if not file then
-    vim.notify("Could not create sample YAML file: " .. yaml_path, vim.log.levels.ERROR)
-    return false
-  end
+  vim.uv.fs_open(yaml_path, "w", 438, function(open_err, fd)
+    if open_err or not fd then
+      vim.schedule(function()
+        vim.notify("Could not create sample YAML file: " .. yaml_path, vim.log.levels.ERROR)
+        if cb then cb(false) end
+      end)
+      return
+    end
 
-  file:write(sample_content)
-  file:close()
-
-  vim.notify("Created sample YAML file at: " .. yaml_path, vim.log.levels.INFO)
-  return true
+    vim.uv.fs_write(fd, sample_content, -1, function(write_err)
+      if write_err then
+        vim.schedule(function()
+          vim.notify("Failed to write to sample YAML file: " .. yaml_path, vim.log.levels.ERROR)
+          if cb then cb(false) end
+        end)
+      else
+        vim.schedule(function()
+          vim.notify("Created sample YAML file at: " .. yaml_path, vim.log.levels.INFO)
+          if cb then cb(true) end
+        end)
+      end
+      vim.uv.fs_close(fd)
+    end)
+  end)
 end
 
 -- Helper function to serialize a list of models to YAML
@@ -361,14 +375,16 @@ function M.serialize_to_yaml(models_list)
 end
 
 -- Add a new custom OpenAI model to the extra-openai-models.yaml file
-function M.add_custom_openai_model(model_details)
+function M.add_custom_openai_model(model_details, cb)
   if not model_details or not model_details.model_id or model_details.model_id == "" then
-    return false, "model_id is required"
+    if cb then cb(false, "model_id is required") else return false, "model_id is required" end
+    return
   end
 
   local _, yaml_path = file_utils.get_config_path("extra-openai-models.yaml")
   if not yaml_path then
-    return false, "Could not determine or create config directory for extra-openai-models.yaml"
+    if cb then cb(false, "Could not determine or create config directory for extra-openai-models.yaml") else return false, "Could not determine or create config directory for extra-openai-models.yaml" end
+    return
   end
 
   local models_list = {}
@@ -434,29 +450,42 @@ function M.add_custom_openai_model(model_details)
   table.insert(models_list, new_model_entry)
   local yaml_content = M.serialize_to_yaml(models_list)
 
-  local out_file = io.open(yaml_path, "w")
-  if not out_file then
-    return false, "Failed to open YAML file for writing: " .. yaml_path
-  end
+  vim.uv.fs_open(yaml_path, "w", 438, function(open_err, fd)
+    if open_err or not fd then
+      vim.schedule(function()
+        if cb then cb(false, "Failed to open YAML file for writing: " .. yaml_path) end
+      end)
+      return
+    end
 
-  out_file:write(yaml_content)
-  out_file:close()
-
-  -- Clear the cache so it reloads next time
-  M.custom_openai_models = {}
-
-  return true, nil -- Success, no error message
+    vim.uv.fs_write(fd, yaml_content, -1, function(write_err)
+      if write_err then
+        vim.schedule(function()
+          if cb then cb(false, "Failed to write to YAML file: " .. write_err) end
+        end)
+      else
+        vim.schedule(function()
+          -- Clear the cache so it reloads next time
+          M.custom_openai_models = {}
+          if cb then cb(true, nil) end
+        end)
+      end
+      vim.uv.fs_close(fd)
+    end)
+  end)
 end
 
 -- Delete a custom OpenAI model from the extra-openai-models.yaml file
-function M.delete_custom_openai_model(model_id)
+function M.delete_custom_openai_model(model_id, cb)
   if not model_id or model_id == "" then
-    return false, "model_id is required"
+    if cb then cb(false, "model_id is required") else return false, "model_id is required" end
+    return
   end
 
   local _, yaml_path = file_utils.get_config_path("extra-openai-models.yaml")
   if not yaml_path then
-    return false, "Could not determine or create config directory for extra-openai-models.yaml"
+    if cb then cb(false, "Could not determine or create config directory for extra-openai-models.yaml") else return false, "Could not determine or create config directory for extra-openai-models.yaml" end
+    return
   end
 
   local models_list = {}
@@ -501,18 +530,29 @@ function M.delete_custom_openai_model(model_id)
 
   local yaml_content = M.serialize_to_yaml(new_models_list)
 
-  local out_file = io.open(yaml_path, "w")
-  if not out_file then
-    return false, "Failed to open YAML file for writing: " .. yaml_path
-  end
+  vim.uv.fs_open(yaml_path, "w", 438, function(open_err, fd)
+    if open_err or not fd then
+      vim.schedule(function()
+        if cb then cb(false, "Failed to open YAML file for writing: " .. yaml_path) end
+      end)
+      return
+    end
 
-  out_file:write(yaml_content)
-  out_file:close()
-
-  -- Clear the cache so it reloads next time
-  M.custom_openai_models = {}
-
-  return true, nil -- Success, no error message
+    vim.uv.fs_write(fd, yaml_content, -1, function(write_err)
+      if write_err then
+        vim.schedule(function()
+          if cb then cb(false, "Failed to write to YAML file: " .. write_err) end
+        end)
+      else
+        vim.schedule(function()
+          -- Clear the cache so it reloads next time
+          M.custom_openai_models = {}
+          if cb then cb(true, nil) end
+        end)
+      end
+      vim.uv.fs_close(fd)
+    end)
+  end)
 end
 
 return M

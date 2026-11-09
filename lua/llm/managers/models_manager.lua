@@ -514,16 +514,17 @@ end
 -- Function to add a new custom OpenAI model via interactive input
 function M.add_custom_openai_model_interactive(bufnr)
   models_view.get_custom_model_details(function(details)
-    local success, err_msg = custom_openai.add_custom_openai_model(details)
-    if success then
-      custom_openai.load_custom_openai_models() -- Reload models
-      vim.notify("Custom OpenAI model '" .. (details.model_name or details.model_id) .. "' added successfully.",
-        vim.log.levels.INFO)
-      require('llm.ui.unified_manager').switch_view("Models")
-    else
-      vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
-    end
-    vim.cmd('stopinsert') -- Ensure normal mode
+    custom_openai.add_custom_openai_model(details, function(success, err_msg)
+      if success then
+        custom_openai.load_custom_openai_models() -- Reload models
+        vim.notify("Custom OpenAI model '" .. (details.model_name or details.model_id) .. "' added successfully.",
+          vim.log.levels.INFO)
+        require('llm.ui.unified_manager').switch_view("Models")
+      else
+        vim.notify("Failed to add custom OpenAI model: " .. (err_msg or "Unknown error"), vim.log.levels.ERROR)
+      end
+      vim.cmd('stopinsert') -- Ensure normal mode
+    end)
   end)
 end
 
@@ -714,8 +715,8 @@ function M.debug_custom_openai_models()
 end
 
 -- Create sample YAML file (delegates to custom_openai module)
-function M.create_sample_yaml_file()
-  return custom_openai.create_sample_yaml_file()
+function M.create_sample_yaml_file(cb)
+  return custom_openai.create_sample_yaml_file(cb)
 end
 
 -- Add module name for require path in keymaps
