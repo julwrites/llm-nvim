@@ -26,11 +26,13 @@
 - Tech Debt: Widespread use of synchronous, blocking file I/O operations (`io.open`) which block the Neovim event loop. Explicitly verified in `lua/llm/managers/custom_openai.lua` (lines 41, 203, 391, 492), `lua/llm/managers/keys_manager.lua` (lines 63, 87), and `lua/llm/managers/schemas_manager.lua` (lines 38, 57, 252).
 
 ## Ranked Backlog
-1. Refactor synchronous `io.open` calls in manager modules (`lua/llm/managers/custom_openai.lua`, `lua/llm/managers/keys_manager.lua`, `lua/llm/managers/schemas_manager.lua`) - High Impact / Medium Effort - Convert blocking I/O calls to asynchronous alternatives.
-2. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
-3. Implement interface for exploring logged prompts (`logs`) - Medium Impact / High Effort - Add a unified manager view to browse past interactions.
-4. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
-5. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
-6. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
-7. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
-8. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.
+1. Refactor synchronous io.open calls in lua/llm/managers/custom_openai.lua - High Impact / Low Effort - Convert blocking I/O calls to asynchronous alternatives.
+2. Refactor synchronous io.open calls in lua/llm/managers/keys_manager.lua - High Impact / Low Effort - Convert blocking I/O calls to asynchronous alternatives.
+3. Refactor synchronous io.open calls in lua/llm/managers/schemas_manager.lua - High Impact / Low Effort - Convert blocking I/O calls to asynchronous alternatives.
+4. Implement UI flows for Extract code blocks (`-x`, `--xl`) - Medium Impact / Low Effort - Add Neovim commands or keymaps to extract code blocks directly from model responses.
+5. Implement interface for exploring logged prompts (`logs`) - Medium Impact / High Effort - Add a unified manager view to browse past interactions.
+6. Implement UI flows for explicit attachment type (`--at`) - Medium Impact / High Effort - Create a UI mechanism to pass explicit mimetypes for attachments.
+7. Implement UI flows for Database explicit path (`-d`) - Medium Impact / Medium Effort - Allow explicit passing of log database location via plugin configuration or UI.
+8. Implement UI flows for Output Control (`--json`, `-R`) - Low Impact / Low Effort - Expose toggles or configuration for JSON output and hiding reasoning.
+9. Expose Token usage tracking (`-u`) - Low Impact / Low Effort - Add an option to display token usage statistics in the Neovim UI after a prompt completes.
+10. Implement UI flows for Asynchronous execution (`--async`) - Low Impact / High Effort - Add asynchronous prompt execution options to the Neovim interface.
